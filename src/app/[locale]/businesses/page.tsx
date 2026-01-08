@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { Container } from "@/components/Container";
+import { buttonVariants, Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { notFound } from "next/navigation";
@@ -38,7 +40,7 @@ export default async function BusinessesPage({
         </div>
         <Link
           href={`/${locale}`}
-          className="text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white"
+          className={buttonVariants({ variant: "ghost", size: "sm" })}
         >
           {locale === "ar" ? "العودة للرئيسية" : "Back to home"}
         </Link>
@@ -48,15 +50,14 @@ export default async function BusinessesPage({
         className="mt-6 flex flex-col gap-3 sm:flex-row"
         action={`/${locale}/businesses`}
       >
-        <input
-          className="h-11 w-full rounded-xl border border-black/10 bg-white px-4 text-sm outline-none ring-0 placeholder:text-zinc-400 focus:border-zinc-300 dark:border-white/15 dark:bg-black dark:placeholder:text-zinc-600"
+        <Input
           placeholder={dict.home.searchPlaceholder}
           name="q"
           defaultValue={q}
         />
-        <button className="inline-flex h-11 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+        <Button type="submit">
           {locale === "ar" ? "بحث" : "Search"}
-        </button>
+        </Button>
       </form>
 
       <div className="mt-8 grid gap-4">

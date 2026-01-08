@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { buttonVariants } from "@/components/ui/Button";
 
 type Theme = "light" | "dark";
 
@@ -43,7 +44,7 @@ export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
         window.localStorage.setItem("theme", next);
         applyTheme(next);
       }}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/10 bg-white text-zinc-900 shadow-sm transition hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 dark:border-white/15 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900 dark:focus-visible:ring-white/20"
+      className={buttonVariants({ variant: "secondary", size: "icon" })}
     >
       {theme === "dark" ? (
         // Sun icon

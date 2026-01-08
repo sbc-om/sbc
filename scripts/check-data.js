@@ -38,6 +38,10 @@ async function main() {
   const businesses = root.openDB({ name: "businesses" });
   const businessSlugs = root.openDB({ name: "businessSlugs" });
 
+  // These are index databases; opening them validates they exist.
+  void userEmails;
+  void businessSlugs;
+
   console.log("=== USERS ===");
   let userCount = 0;
   for (const entry of users.getRange()) {

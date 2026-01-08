@@ -6,6 +6,9 @@ import { getBusinessById } from "@/lib/db/businesses";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { updateBusinessAction } from "@/app/[locale]/admin/actions";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Textarea } from "@/components/ui/Textarea";
 
 export const runtime = "nodejs";
 
@@ -23,11 +26,7 @@ function Field({
       <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
         {label}
       </span>
-      <input
-        className="h-11 rounded-xl border border-black/10 bg-white px-4 text-sm outline-none focus:border-zinc-300 dark:border-white/15 dark:bg-black"
-        name={name}
-        defaultValue={defaultValue}
-      />
+      <Input name={name} defaultValue={defaultValue} />
     </label>
   );
 }
@@ -46,11 +45,7 @@ function TextArea({
       <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
         {label}
       </span>
-      <textarea
-        className="min-h-28 rounded-xl border border-black/10 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-300 dark:border-white/15 dark:bg-black"
-        name={name}
-        defaultValue={defaultValue}
-      />
+      <Textarea name={name} defaultValue={defaultValue} />
     </label>
   );
 }
@@ -115,9 +110,9 @@ export default async function AdminEditBusinessPage({
           defaultValue={business.tags?.join(", ")}
         />
 
-        <button className="mt-2 inline-flex h-11 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+        <Button type="submit" className="mt-2">
           {locale === "ar" ? "حفظ" : "Save"}
-        </button>
+        </Button>
       </form>
     </Container>
   );

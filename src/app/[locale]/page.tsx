@@ -1,4 +1,6 @@
 import { Container } from "@/components/Container";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { notFound } from "next/navigation";
@@ -33,14 +35,14 @@ export default async function LocaleHome({
             className="mt-2 flex flex-col gap-3 sm:flex-row"
             action={`/${locale}/businesses`}
           >
-            <input
-              className="h-11 w-full rounded-xl border px-4 text-sm outline-none ring-0 placeholder:text-zinc-400 focus:border-zinc-300 bg-transparent border-(--surface-border) dark:placeholder:text-zinc-500"
+            <Input
+              className="bg-transparent shadow-none"
               placeholder={dict.home.searchPlaceholder}
               name="q"
             />
-            <button className="inline-flex h-11 items-center justify-center rounded-xl px-4 text-sm font-medium bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+            <Button type="submit">
               {dict.home.browseAll}
-            </button>
+            </Button>
           </form>
         </div>
       </div>

@@ -6,6 +6,7 @@ import type { Dictionary } from "@/lib/i18n/getDictionary";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { logoutAction } from "@/app/[locale]/auth/actions";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { buttonVariants } from "@/components/ui/Button";
 
 export async function Header({
   locale,
@@ -29,7 +30,7 @@ export async function Header({
         <nav className="flex items-center gap-3">
           <Link
             href={`/${locale}/businesses`}
-            className="text-sm font-medium text-(--muted-foreground) hover:text-foreground"
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
           >
             {dict.nav.businesses}
           </Link>
@@ -37,7 +38,7 @@ export async function Header({
           {user ? (
             <Link
               href={`/${locale}/dashboard`}
-              className="text-sm font-medium text-(--muted-foreground) hover:text-foreground"
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
             >
               {dict.nav.dashboard}
             </Link>
@@ -45,13 +46,13 @@ export async function Header({
             <>
               <Link
                 href={`/${locale}/login`}
-                className="text-sm font-medium text-(--muted-foreground) hover:text-foreground"
+                className={buttonVariants({ variant: "secondary", size: "sm" })}
               >
                 {dict.nav.login}
               </Link>
               <Link
                 href={`/${locale}/register`}
-                className="text-sm font-medium text-(--muted-foreground) hover:text-foreground"
+                className={buttonVariants({ variant: "primary", size: "sm" })}
               >
                 {dict.nav.register}
               </Link>
@@ -61,7 +62,7 @@ export async function Header({
           {user?.role === "admin" ? (
             <Link
               href={`/${locale}/admin`}
-              className="text-sm font-medium text-(--muted-foreground) hover:text-foreground"
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
             >
               {dict.nav.admin}
             </Link>
@@ -71,7 +72,7 @@ export async function Header({
             <form action={logoutAction.bind(null, locale)}>
               <button
                 type="submit"
-                className="text-sm font-medium text-(--muted-foreground) hover:text-foreground"
+                className={buttonVariants({ variant: "ghost", size: "sm" })}
               >
                 {dict.nav.logout}
               </button>

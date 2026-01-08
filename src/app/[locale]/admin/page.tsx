@@ -7,6 +7,7 @@ import { listBusinesses } from "@/lib/db/businesses";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { deleteBusinessAction } from "@/app/[locale]/admin/actions";
+import { buttonVariants, Button } from "@/components/ui/Button";
 
 export const runtime = "nodejs";
 
@@ -34,7 +35,7 @@ export default async function AdminPage({
         </div>
         <Link
           href={`/${locale}/admin/new`}
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          className={buttonVariants({ variant: "primary", size: "sm", className: "h-10 px-4" })}
         >
           {locale === "ar" ? "إضافة عمل" : "Add business"}
         </Link>
@@ -66,23 +67,20 @@ export default async function AdminPage({
             <div className="flex shrink-0 flex-wrap items-center gap-2">
               <Link
                 href={`/${locale}/businesses/${b.slug}`}
-                className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-medium text-zinc-900 hover:bg-zinc-50 dark:border-white/15 dark:bg-black dark:text-zinc-50 dark:hover:bg-zinc-900"
+                className={buttonVariants({ variant: "secondary", size: "xs" })}
               >
                 {locale === "ar" ? "عرض" : "View"}
               </Link>
               <Link
                 href={`/${locale}/admin/${b.id}/edit`}
-                className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-medium text-zinc-900 hover:bg-zinc-50 dark:border-white/15 dark:bg-black dark:text-zinc-50 dark:hover:bg-zinc-900"
+                className={buttonVariants({ variant: "secondary", size: "xs" })}
               >
                 {locale === "ar" ? "تعديل" : "Edit"}
               </Link>
               <form action={deleteBusinessAction.bind(null, locale as Locale, b.id)}>
-                <button
-                  className="rounded-xl border border-red-500/25 bg-red-600 px-3 py-2 text-xs font-medium text-white hover:bg-red-500"
-                  type="submit"
-                >
+                <Button variant="destructive" size="xs" type="submit">
                   {locale === "ar" ? "حذف" : "Delete"}
-                </button>
+                </Button>
               </form>
             </div>
           </div>

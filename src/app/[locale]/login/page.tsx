@@ -5,6 +5,8 @@ import { Container } from "@/components/Container";
 import { loginAction } from "@/app/[locale]/auth/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 
 export const runtime = "nodejs";
 
@@ -39,21 +41,14 @@ export default async function LoginPage({
           <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
             {dict.auth.email}
           </span>
-          <input
-            className="h-11 rounded-xl border border-black/10 bg-white px-4 text-sm outline-none focus:border-zinc-300 dark:border-white/15 dark:bg-black"
-            name="email"
-            type="email"
-            required
-            autoComplete="email"
-          />
+          <Input name="email" type="email" required autoComplete="email" />
         </label>
 
         <label className="grid gap-1">
           <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
             {dict.auth.password}
           </span>
-          <input
-            className="h-11 rounded-xl border border-black/10 bg-white px-4 text-sm outline-none focus:border-zinc-300 dark:border-white/15 dark:bg-black"
+          <Input
             name="password"
             type="password"
             required
@@ -61,9 +56,9 @@ export default async function LoginPage({
           />
         </label>
 
-        <button className="mt-2 inline-flex h-11 items-center justify-center rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+        <Button type="submit" className="mt-2">
           {dict.auth.signIn}
-        </button>
+        </Button>
 
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
           {locale === "ar" ? "ليس لديك حساب؟" : "No account?"}{" "}

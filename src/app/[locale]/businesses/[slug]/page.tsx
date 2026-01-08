@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { Container } from "@/components/Container";
-import { isLocale, type Locale } from "@/lib/i18n/locales";
+import { isLocale } from "@/lib/i18n/locales";
 import { getBusinessBySlug } from "@/lib/db/businesses";
 
 export default async function BusinessDetailPage({
