@@ -1,0 +1,12 @@
+packages:
+  - .
+
+# Allow these dependencies to run native build scripts during install.
+# (pnpm v10+ may require explicit allow-listing)
+onlyBuiltDependencies:
+  - lmdb
+  - msgpackr-extract
+
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
