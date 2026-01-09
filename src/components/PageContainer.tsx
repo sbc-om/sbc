@@ -10,7 +10,7 @@ export function PageContainer({
   withPadding?: boolean;
 }) {
   return (
-    <div className={`${withPadding ? "pt-28 pb-10" : ""} ${className}`}>
+    <div className={`${withPadding ? "pt-10 pb-10" : ""} ${className}`}>
       {children}
     </div>
   );

@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Container } from "@/components/Container";
-import { PageContainer } from "@/components/PageContainer";
+import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { listBusinesses } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
@@ -29,8 +28,7 @@ export default async function AdminPage({
   const categoriesById = new Map(categories.map((c) => [c.id, c] as const));
 
   return (
-    <PageContainer>
-      <Container>
+    <AppPage>
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{dict.nav.admin}</h1>
@@ -84,7 +82,6 @@ export default async function AdminPage({
           })
         )}
       </div>
-    </Container>
-    </PageContainer>
+    </AppPage>
   );
 }

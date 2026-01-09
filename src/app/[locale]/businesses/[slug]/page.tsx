@@ -1,13 +1,13 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
-import { Container } from "@/components/Container";
-import { PageContainer } from "@/components/PageContainer";
+import { PublicPage } from "@/components/PublicPage";
 import { isLocale } from "@/lib/i18n/locales";
 import { getBusinessBySlug } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { buttonVariants } from "@/components/ui/Button";
+import { getCurrentUser } from "@/lib/auth/currentUser";
 
 export default async function BusinessDetailPage({
   params,
@@ -16,6 +16,10 @@ export default async function BusinessDetailPage({
 }) {
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
+
+  // When logged in, keep the experience inside the app shell (sidebar) and identical paddings.
+  const user = await getCurrentUser();
+  if (user) redirect(`/${locale}/explorer/${slug}`);
 
   const business = getBusinessBySlug(slug);
   if (!business) notFound();
@@ -36,9 +40,7 @@ export default async function BusinessDetailPage({
     : null;
 
   return (
-    <PageContainer>
-      <Container>
-
+    <PublicPage>
       {/* Top bar */}
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0">
@@ -409,7 +411,6 @@ export default async function BusinessDetailPage({
           ) : null}
         </aside>
       </div>
-    </Container>
-    </PageContainer>
+    </PublicPage>
   );
 }

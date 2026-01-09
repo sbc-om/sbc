@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
-import { Container } from "@/components/Container";
-import { PageContainer } from "@/components/PageContainer";
+import { PublicPage } from "@/components/PublicPage";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { buttonVariants } from "@/components/ui/Button";
@@ -21,8 +20,7 @@ export default async function ContactPage({
   const dict = await getDictionary(locale as Locale);
 
   return (
-    <PageContainer>
-      <Container>
+    <PublicPage>
         {/* Header */}
         <div className="flex items-start justify-between gap-6">
           <div>
@@ -328,7 +326,6 @@ export default async function ContactPage({
             </div>
           </aside>
         </div>
-      </Container>
-    </PageContainer>
+    </PublicPage>
   );
 }

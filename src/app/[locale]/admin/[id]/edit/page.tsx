@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 
-import { Container } from "@/components/Container";
-import { PageContainer } from "@/components/PageContainer";
+import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getBusinessById } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
@@ -29,8 +28,7 @@ export default async function AdminEditBusinessPage({
   const title = locale === "ar" ? "تعديل النشاط التجاري" : "Edit Business";
 
   return (
-    <PageContainer>
-      <Container className="max-w-3xl">
+    <AppPage>
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
@@ -48,7 +46,6 @@ export default async function AdminEditBusinessPage({
         categories={categories}
         emailLabel={dict.auth.email}
       />
-    </Container>
-    </PageContainer>
+    </AppPage>
   );
 }

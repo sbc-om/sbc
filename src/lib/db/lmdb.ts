@@ -10,6 +10,10 @@ export type LmdbHandles = {
   categorySlugs: ReturnType<ReturnType<typeof open>["openDB"]>;
   users: ReturnType<ReturnType<typeof open>["openDB"]>;
   userEmails: ReturnType<ReturnType<typeof open>["openDB"]>;
+  userCategoryFollows: ReturnType<ReturnType<typeof open>["openDB"]>;
+  chatConversations: ReturnType<ReturnType<typeof open>["openDB"]>;
+  chatMessages: ReturnType<ReturnType<typeof open>["openDB"]>;
+  businessRequests: ReturnType<ReturnType<typeof open>["openDB"]>;
 };
 
 declare global {
@@ -33,6 +37,10 @@ export function getLmdb(): LmdbHandles {
     existing.categorySlugs ??= existing.root.openDB({ name: "categorySlugs" });
     existing.users ??= existing.root.openDB({ name: "users" });
     existing.userEmails ??= existing.root.openDB({ name: "userEmails" });
+    existing.userCategoryFollows ??= existing.root.openDB({ name: "userCategoryFollows" });
+    existing.chatConversations ??= existing.root.openDB({ name: "chatConversations" });
+    existing.chatMessages ??= existing.root.openDB({ name: "chatMessages" });
+    existing.businessRequests ??= existing.root.openDB({ name: "businessRequests" });
 
     globalThis.__sbcLmdb = existing as LmdbHandles;
     return globalThis.__sbcLmdb;
@@ -52,6 +60,10 @@ export function getLmdb(): LmdbHandles {
   const categorySlugs = root.openDB({ name: "categorySlugs" });
   const users = root.openDB({ name: "users" });
   const userEmails = root.openDB({ name: "userEmails" });
+  const userCategoryFollows = root.openDB({ name: "userCategoryFollows" });
+  const chatConversations = root.openDB({ name: "chatConversations" });
+  const chatMessages = root.openDB({ name: "chatMessages" });
+  const businessRequests = root.openDB({ name: "businessRequests" });
 
   globalThis.__sbcLmdb = {
     root,
@@ -61,6 +73,10 @@ export function getLmdb(): LmdbHandles {
     categorySlugs,
     users,
     userEmails,
+    userCategoryFollows,
+    chatConversations,
+    chatMessages,
+    businessRequests,
   };
 
   return globalThis.__sbcLmdb;

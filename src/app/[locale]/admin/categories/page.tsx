@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Container } from "@/components/Container";
-import { PageContainer } from "@/components/PageContainer";
+import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { listCategories } from "@/lib/db/categories";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -30,8 +29,7 @@ export default async function AdminCategoriesPage({
   const title = locale === "ar" ? "التصنيفات" : "Categories";
 
   return (
-    <PageContainer>
-      <Container className="max-w-4xl">
+    <AppPage>
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
@@ -96,7 +94,6 @@ export default async function AdminCategoriesPage({
           </div>
         ))}
       </div>
-    </Container>
-    </PageContainer>
+    </AppPage>
   );
 }

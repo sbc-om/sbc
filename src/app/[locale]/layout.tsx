@@ -5,9 +5,13 @@ import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { DictionaryProvider } from "@/lib/i18n/DictionaryProvider";
+import { SidebarLayout } from "@/components/SidebarLayout";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { DirectionSync } from "@/components/DirectionSync";
+import { Sidebar } from "@/components/Sidebar";
+import { MobileNav } from "@/components/MobileNav";
+import { getCurrentUser } from "@/lib/auth/currentUser";
 
 export async function generateMetadata({
   params,
@@ -34,15 +38,43 @@ export default async function LocaleLayout({
   if (!isLocale(locale)) notFound();
 
   const dict = await getDictionary(locale as Locale);
+  const user = await getCurrentUser();
 
   return (
     <DictionaryProvider locale={locale as Locale} dict={dict}>
       <DirectionSync locale={locale as Locale} />
-      <div className="min-h-dvh bg-transparent text-foreground flex flex-col">
-        <Header locale={locale as Locale} dict={dict} />
-        <main className="flex-1">{children}</main>
-        <Footer locale={locale as Locale} dict={dict} />
-      </div>
+      {user ? (
+        // Logged in: Show sidebar layout
+        <SidebarLayout>
+          <div className="min-h-dvh bg-transparent text-foreground">
+            <Sidebar
+              locale={locale as Locale}
+              dict={dict}
+              user={{
+                username: user.email.split("@")[0],
+                role: user.role,
+                email: user.email,
+              }}
+            />
+            <div
+              className="min-h-dvh transition-[margin] duration-300 ease-in-out"
+              style={{
+                marginInlineStart: "var(--sidebar-width, 0)",
+              }}
+            >
+              <main className="w-full pb-20 lg:pb-6">{children}</main>
+            </div>
+            <MobileNav locale={locale as Locale} dict={dict} />
+          </div>
+        </SidebarLayout>
+      ) : (
+        // Not logged in: Show header + footer
+        <div className="min-h-dvh bg-transparent text-foreground flex flex-col">
+          <Header locale={locale as Locale} dict={dict} />
+          <main className="flex-1">{children}</main>
+          <Footer locale={locale as Locale} dict={dict} />
+        </div>
+      )}
     </DictionaryProvider>
   );
 }

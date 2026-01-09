@@ -10,7 +10,13 @@ export async function Header({
   locale: Locale;
   dict: Dictionary;
 }) {
-  const user = await getCurrentUser();
+  const currentUser = await getCurrentUser();
+  const user = currentUser
+    ? {
+        username: currentUser.email.split("@")[0],
+        role: currentUser.role,
+      }
+    : null;
 
   return <AnimatedHeader locale={locale} dict={dict} user={user} />;
 }

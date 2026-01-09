@@ -1,12 +1,18 @@
 import { Container } from "@/components/Container";
+import { PublicPage } from "@/components/PublicPage";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ScrollLottie } from "@/components/ScrollLottie";
 import { BusinessCard } from "@/components/BusinessCard";
+import { BusinessFeedCard } from "@/components/BusinessFeedCard";
+import { FeedProfileHeader } from "@/components/FeedProfileHeader";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { listBusinesses } from "@/lib/db/businesses";
+import { getCategoryById } from "@/lib/db/categories";
+import { getCurrentUser } from "@/lib/auth/currentUser";
 import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 
 export default async function LocaleHome({
   params,
@@ -17,21 +23,25 @@ export default async function LocaleHome({
   if (!isLocale(locale)) notFound();
 
   const dict = await getDictionary(locale as Locale);
+  const user = await getCurrentUser();
   
-  // Get latest 10 businesses
+  // Get latest businesses
   const allBusinesses = listBusinesses({ locale: locale as Locale });
-  const latestBusinesses = allBusinesses.slice(0, 10);
+  const latestBusinesses = allBusinesses.slice(0, user ? 20 : 10);
+
+  // Logged in users land on the followed feed.
+  if (user) {
+    redirect(`/${locale}/home`);
+  }
 
   return (
+    <PublicPage>
     <div className="min-h-screen">
       {/* Hero Section with Lottie Animation */}
-      <section className="relative pt-28 pb-16 overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 -z-20 bg-gradient-to-b from-accent/5 via-accent-2/5 to-transparent" />
-        
-        <Container>
+      <section className="relative pt-6 pb-16 overflow-hidden">
+        <Container size="lg">
           <div className="text-center mb-12">
-            <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6 bg-gradient-to-r from-accent via-accent-2 to-accent bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-4 duration-1000">
+            <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6 bg-linear-to-r from-accent via-accent-2 to-accent bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-4 duration-1000">
               {dict.home.title}
             </h1>
             <p className="max-w-3xl mx-auto text-xl leading-8 text-muted-foreground animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-150">
@@ -45,7 +55,7 @@ export default async function LocaleHome({
       </section>
 
       {/* Search Section */}
-      <Container>
+      <Container size="lg">
         <div className="max-w-4xl mx-auto pb-20">
           <div 
             className="relative rounded-3xl p-8 backdrop-blur-xl shadow-2xl"
@@ -85,7 +95,7 @@ export default async function LocaleHome({
       {/* Latest Businesses Section */}
       {latestBusinesses.length > 0 && (
         <section className="py-16">
-          <Container>
+          <Container size="lg">
             <div className="mb-10">
               <h2 className="text-3xl font-bold text-foreground mb-3">
                 {locale === "ar" ? "أحدث الأعمال" : "Latest Businesses"}
@@ -110,5 +120,6 @@ export default async function LocaleHome({
         </section>
       )}
     </div>
+    </PublicPage>
   );
 }

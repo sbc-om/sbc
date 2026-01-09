@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { HiX, HiMenu } from "react-icons/hi";
 import { Container } from "@/components/Container";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { Locale } from "@/lib/i18n/locales";
@@ -79,7 +80,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   }, [mobileOpen]);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50">
+    <header className="fixed top-0 inset-x-0 z-50 w-full">
       {mobileOpen ? (
         <div
           className="fixed inset-0 bg-black/20 backdrop-blur-[2px] md:hidden"
@@ -88,11 +89,11 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
         />
       ) : null}
       <div
-        className={`transition-all duration-500 ease-out ${
+        className={`w-full transition-all duration-500 ease-out ${
           scrolled ? "py-2" : "py-3"
         }`}
       >
-        <Container>
+        <Container size="lg">
           <div
             ref={mobileMenuRootRef}
             className={`relative rounded-2xl overflow-visible backdrop-blur-xl shadow-lg border ${
@@ -249,27 +250,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   aria-controls="mobile-nav"
                   onClick={() => setMobileOpen((v) => !v)}
                 >
-                  {mobileOpen ? (
-                    // X icon
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                      <path
-                        d="M6 6l12 12M18 6L6 18"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  ) : (
-                    // Hamburger icon
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-                      <path
-                        d="M4 7h16M4 12h16M4 17h16"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                  )}
+                  {mobileOpen ? <HiX className="h-5 w-5" /> : <HiMenu className="h-5 w-5" />}
                 </button>
               </div>
             </div>
