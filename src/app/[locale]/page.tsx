@@ -22,12 +22,12 @@ export default async function LocaleHome({
           <h1 className="text-3xl font-semibold leading-tight tracking-tight">
             {dict.home.title}
           </h1>
-          <p className="max-w-2xl text-base leading-7 text-zinc-600 dark:text-zinc-300">
+          <p className="max-w-2xl text-base leading-7 text-(--muted-foreground)">
             {dict.home.subtitle}
           </p>
         </div>
 
-        <div className="rounded-2xl border p-5 shadow-(--shadow) bg-(--surface) border-(--surface-border)">
+        <div className="sbc-card rounded-2xl p-5">
           <label className="block text-sm font-medium text-(--muted-foreground)">
             {dict.home.searchPlaceholder}
           </label>

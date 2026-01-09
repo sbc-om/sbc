@@ -30,7 +30,7 @@ export default async function BusinessesPage({
           <h1 className="text-2xl font-semibold tracking-tight">
             {dict.businesses.title}
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+          <p className="mt-1 text-sm text-(--muted-foreground)">
             {businesses.length === 0 ? dict.businesses.empty : (
               locale === "ar"
                 ? `عدد النتائج: ${businesses.length}`
@@ -65,7 +65,7 @@ export default async function BusinessesPage({
           <Link
             key={b.id}
             href={`/${locale}/businesses/${b.slug}`}
-            className="group rounded-2xl border border-black/5 bg-white p-6 shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-zinc-950"
+            className="group sbc-card sbc-card--interactive rounded-2xl p-6"
           >
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -73,21 +73,21 @@ export default async function BusinessesPage({
                   {locale === "ar" ? b.name.ar : b.name.en}
                 </div>
                 {b.description ? (
-                  <p className="mt-1 line-clamp-2 text-sm text-zinc-600 dark:text-zinc-300">
+                  <p className="mt-1 line-clamp-2 text-sm text-(--muted-foreground)">
                     {locale === "ar" ? b.description.ar : b.description.en}
                   </p>
                 ) : null}
               </div>
-              <span className="shrink-0 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-medium text-zinc-700 group-hover:bg-zinc-50 dark:border-white/15 dark:bg-black dark:text-zinc-200 dark:group-hover:bg-zinc-900">
+              <span className="sbc-chip shrink-0 rounded-full px-3 py-1 text-xs font-medium group-hover:brightness-[1.03]">
                 {b.category || (locale === "ar" ? "عمل" : "Business")}
               </span>
             </div>
 
-            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-(--muted-foreground)">
               <span className="font-mono">/{b.slug}</span>
               {b.city ? <span>{b.city}</span> : null}
               {b.tags?.slice(0, 4).map((t) => (
-                <span key={t} className="rounded-full bg-zinc-100 px-2 py-0.5 dark:bg-zinc-900">
+                <span key={t} className="sbc-chip rounded-full px-2 py-0.5">
                   {t}
                 </span>
               ))}

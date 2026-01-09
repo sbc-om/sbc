@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/cn";
 
 const base =
-  "h-11 w-full rounded-xl border border-(--surface-border) bg-white/70 px-4 text-sm text-foreground shadow-sm outline-none placeholder:text-zinc-500 backdrop-blur transition focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:bg-black/30 dark:placeholder:text-zinc-500 dark:focus-visible:ring-white/20 dark:focus-visible:ring-offset-black";
+  "h-11 w-full rounded-xl border border-(--surface-border) bg-(--surface) px-4 text-sm text-foreground shadow-[var(--shadow)] outline-none placeholder:text-(--muted-foreground) backdrop-blur transition focus-visible:border-[color:var(--accent)] focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)]";
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 

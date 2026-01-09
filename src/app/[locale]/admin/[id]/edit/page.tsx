@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { Container } from "@/components/Container";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getBusinessById } from "@/lib/db/businesses";
+import { listCategories } from "@/lib/db/categories";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { updateBusinessAction } from "@/app/[locale]/admin/actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { BusinessMediaManager } from "@/components/admin/BusinessMediaManager";
 
 export const runtime = "nodejs";
 
@@ -23,7 +25,7 @@ function Field({
 }) {
   return (
     <label className="grid gap-1">
-      <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+      <span className="text-sm font-medium text-(--muted-foreground)">
         {label}
       </span>
       <Input name={name} defaultValue={defaultValue} />
@@ -42,7 +44,7 @@ function TextArea({
 }) {
   return (
     <label className="grid gap-1">
-      <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+      <span className="text-sm font-medium text-(--muted-foreground)">
         {label}
       </span>
       <Textarea name={name} defaultValue={defaultValue} />
@@ -61,6 +63,8 @@ export default async function AdminEditBusinessPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
 
+  const categories = listCategories();
+
   const business = getBusinessById(id);
   if (!business) notFound();
 
@@ -69,7 +73,7 @@ export default async function AdminEditBusinessPage({
   return (
     <Container className="max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+      <p className="mt-1 text-sm text-(--muted-foreground)">
         {locale === "ar" ? "قم بتحديث البيانات ثم احفظ." : "Update fields and save."}
       </p>
 
@@ -79,7 +83,33 @@ export default async function AdminEditBusinessPage({
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={locale === "ar" ? "Slug" : "Slug"} name="slug" defaultValue={business.slug} />
-          <Field label={locale === "ar" ? "Category" : "Category"} name="category" defaultValue={business.category} />
+          <label className="grid gap-1">
+            <span className="text-sm font-medium text-(--muted-foreground)">
+              {locale === "ar" ? "التصنيف" : "Category"}
+            </span>
+            <select
+              name="categoryId"
+              required
+              defaultValue={business.categoryId ?? ""}
+              className="h-11 w-full rounded-xl border border-(--surface-border) bg-(--surface) px-4 text-sm text-foreground shadow-(--shadow) outline-none backdrop-blur transition focus-visible:border-(--accent) focus-visible:ring-2 focus-visible:ring-(--ring) focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <option value="" disabled>
+                {locale === "ar" ? "اختر تصنيفاً" : "Select a category"}
+              </option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {locale === "ar" ? c.name.ar : c.name.en}
+                </option>
+              ))}
+            </select>
+            {categories.length === 0 ? (
+              <span className="text-xs text-(--muted-foreground)">
+                {locale === "ar"
+                  ? "لا توجد تصنيفات بعد. أضف تصنيفاً من صفحة التصنيفات." 
+                  : "No categories yet. Add one from the categories page."}
+              </span>
+            ) : null}
+          </label>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -114,6 +144,12 @@ export default async function AdminEditBusinessPage({
           {locale === "ar" ? "حفظ" : "Save"}
         </Button>
       </form>
+
+      <BusinessMediaManager
+        businessId={id}
+        locale={locale as "en" | "ar"}
+        initialMedia={business.media}
+      />
     </Container>
   );
 }

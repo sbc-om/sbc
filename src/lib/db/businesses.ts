@@ -19,7 +19,10 @@ export const businessInputSchema = z.object({
   slug: slugSchema,
   name: localizedStringSchema,
   description: localizedStringSchema.optional(),
+  // Legacy free-text category (kept for backward compatibility + search)
   category: z.string().trim().min(1).optional(),
+  // Preferred: managed category reference
+  categoryId: z.string().trim().min(1).optional(),
   city: z.string().trim().min(1).optional(),
   address: z.string().trim().min(1).optional(),
   phone: z.string().trim().min(1).optional(),
@@ -29,6 +32,8 @@ export const businessInputSchema = z.object({
 });
 
 export type BusinessInput = z.infer<typeof businessInputSchema>;
+
+export type BusinessMediaKind = "cover" | "logo" | "banner" | "gallery" | "video";
 
 export function getBusinessById(id: string): Business | null {
   const { businesses } = getLmdb();
@@ -97,6 +102,7 @@ export function createBusiness(input: BusinessInput): Business {
     name: data.name as LocalizedString,
     description: data.description as LocalizedString | undefined,
     category: data.category,
+    categoryId: data.categoryId,
     city: data.city,
     address: data.address,
     phone: data.phone,
@@ -148,4 +154,102 @@ export function deleteBusiness(id: string) {
 
   businesses.remove(id);
   businessSlugs.remove(current.slug);
+}
+
+function ensureBusiness(id: string) {
+  const { businesses } = getLmdb();
+  const current = businesses.get(id) as Business | undefined;
+  if (!current) throw new Error("NOT_FOUND");
+  return current;
+}
+
+export function setBusinessSingleMedia(
+  id: string,
+  kind: Extract<BusinessMediaKind, "cover" | "logo" | "banner">,
+  url: string | null,
+): Business {
+  const { businesses } = getLmdb();
+  const current = ensureBusiness(id);
+
+  const next: Business = {
+    ...current,
+    media: {
+      ...current.media,
+      [kind]: url ?? undefined,
+    },
+    updatedAt: new Date().toISOString(),
+  };
+
+  businesses.put(id, next);
+  return next;
+}
+
+export function setBusinessLogo(id: string, url: string | null): Business {
+  // Backward compatibility
+  return setBusinessSingleMedia(id, "logo", url);
+}
+
+export function addBusinessMedia(
+  id: string,
+  kind: Extract<BusinessMediaKind, "gallery" | "video">,
+  urls: string[],
+): Business {
+  const { businesses } = getLmdb();
+  const current = ensureBusiness(id);
+
+  const existing = kind === "gallery"
+    ? current.media?.gallery ?? []
+    : current.media?.videos ?? [];
+
+  const merged = Array.from(new Set([...existing, ...urls]));
+
+  const next: Business = {
+    ...current,
+    media: {
+      ...current.media,
+      ...(kind === "gallery" ? { gallery: merged } : { videos: merged }),
+    },
+    updatedAt: new Date().toISOString(),
+  };
+
+  businesses.put(id, next);
+  return next;
+}
+
+export function removeBusinessMedia(
+  id: string,
+  kind: BusinessMediaKind,
+  url: string,
+): Business {
+  const { businesses } = getLmdb();
+  const current = ensureBusiness(id);
+
+  let nextMedia = current.media ?? {};
+
+  if (kind === "cover") {
+    if (nextMedia.cover === url) nextMedia = { ...nextMedia, cover: undefined };
+  } else if (kind === "logo") {
+    if (nextMedia.logo === url) nextMedia = { ...nextMedia, logo: undefined };
+  } else if (kind === "banner") {
+    if (nextMedia.banner === url) nextMedia = { ...nextMedia, banner: undefined };
+  } else if (kind === "gallery") {
+    nextMedia = {
+      ...nextMedia,
+      gallery: (nextMedia.gallery ?? []).filter((u) => u !== url),
+    };
+  } else {
+    nextMedia = {
+      ...nextMedia,
+      videos: (nextMedia.videos ?? []).filter((u) => u !== url),
+    };
+  }
+
+  const next: Business = {
+    ...current,
+    media: nextMedia,
+    updatedAt: new Date().toISOString(),
+  };
+
+  businesses.put(id, next);
+  return next;
 }

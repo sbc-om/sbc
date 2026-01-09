@@ -9,7 +9,19 @@
   --surface: rgba(255, 255, 255, 0.72);
   --surface-border: rgba(15, 23, 42, 0.08);
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  --shadow-hover: 0 16px 45px rgba(15, 23, 42, 0.10);
   --muted-foreground: rgba(15, 23, 42, 0.70);
+
+  /* Brand / accents */
+  --accent: #4f46e5; /* indigo-600-ish */
+  --accent-2: #06b6d4; /* cyan-500-ish */
+  --accent-foreground: #ffffff;
+  --ring: rgba(79, 70, 229, 0.35);
+
+  /* Chips / badges */
+  --chip-bg: rgba(15, 23, 42, 0.05);
+  --chip-border: rgba(15, 23, 42, 0.10);
+  --chip-foreground: rgba(15, 23, 42, 0.80);
 }
 
 .dark {
@@ -18,7 +30,17 @@
   --surface: rgba(2, 6, 23, 0.55);
   --surface-border: rgba(255, 255, 255, 0.10);
   --shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  --shadow-hover: 0 16px 50px rgba(0, 0, 0, 0.55);
   --muted-foreground: rgba(229, 231, 235, 0.78);
+
+  --accent: #7c6cff;
+  --accent-2: #22d3ee;
+  --accent-foreground: #0b1020;
+  --ring: rgba(124, 108, 255, 0.35);
+
+  --chip-bg: rgba(255, 255, 255, 0.06);
+  --chip-border: rgba(255, 255, 255, 0.12);
+  --chip-foreground: rgba(255, 255, 255, 0.86);
 }
 
 @theme inline {
@@ -38,6 +60,34 @@ body {
     linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 1));
   background-color: var(--background);
   background-attachment: fixed;
+  /* Prevent theme flash - no transition on body/html */
+  transition: none !important;
+}
+
+/* Shared UI building blocks (keeps cards/buttons in sync with theme) */
+.sbc-card {
+  border: 1px solid var(--surface-border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  border-radius: 1rem; /* ~rounded-2xl */
+  backdrop-filter: blur(12px);
+}
+
+.sbc-card--interactive {
+  transition: box-shadow 150ms ease, transform 150ms ease, border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.sbc-card--interactive:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.sbc-chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--chip-border);
+  background: var(--chip-bg);
+  color: var(--chip-foreground);
 }
 
 .dark body {
@@ -53,8 +103,16 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-a,
-button {
+/* Prevent flash on initial load */
+html,
+html *,
+body {
+  transition: none !important;
+}
+
+/* Re-enable transitions after page load */
+html.loaded a,
+html.loaded button {
   transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease,
     box-shadow 150ms ease, transform 150ms ease;
 }

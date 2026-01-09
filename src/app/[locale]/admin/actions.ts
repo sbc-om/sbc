@@ -6,6 +6,65 @@ import { redirect } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import { createBusiness, deleteBusiness, updateBusiness } from "@/lib/db/businesses";
 import { requireAdmin } from "@/lib/auth/requireUser";
+import { getCategoryById } from "@/lib/db/categories";
+
+function deriveLegacyCategoryText(categoryId: string | null) {
+  if (!categoryId) return { categoryId: undefined, category: undefined };
+  const cat = getCategoryById(categoryId);
+  if (!cat) throw new Error("INVALID_CATEGORY");
+  // Keep legacy string populated for search/backward compatibility.
+  return { categoryId, category: `${cat.name.en} ${cat.name.ar}` };
+}
+
+export type CreateBusinessDraftResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string };
+
+export async function createBusinessDraftAction(
+  locale: Locale,
+  _prevState: CreateBusinessDraftResult | null,
+  formData: FormData,
+): Promise<CreateBusinessDraftResult> {
+  await requireAdmin(locale);
+
+  try {
+    const descEn = String(formData.get("desc_en") || "").trim();
+    const descAr = String(formData.get("desc_ar") || "").trim();
+    const description = descEn && descAr ? { en: descEn, ar: descAr } : undefined;
+
+    const tagsRaw = String(formData.get("tags") || "").trim();
+    const tags = tagsRaw ? tagsRaw.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
+
+    const categoryIdRaw = String(formData.get("categoryId") || "").trim();
+    const categoryId = categoryIdRaw || null;
+    const categoryPatch = deriveLegacyCategoryText(categoryId);
+
+    const business = createBusiness({
+      slug: String(formData.get("slug") || ""),
+      name: {
+        en: String(formData.get("name_en") || ""),
+        ar: String(formData.get("name_ar") || ""),
+      },
+      description,
+      ...categoryPatch,
+      city: String(formData.get("city") || "") || undefined,
+      address: String(formData.get("address") || "") || undefined,
+      phone: String(formData.get("phone") || "") || undefined,
+      website: String(formData.get("website") || "") || undefined,
+      email: String(formData.get("email") || "") || undefined,
+      tags,
+    });
+
+    revalidatePath(`/${locale}/businesses`);
+    revalidatePath(`/${locale}/businesses/${business.slug}`);
+    revalidatePath(`/${locale}/admin`);
+
+    return { ok: true, id: business.id };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "CREATE_FAILED";
+    return { ok: false, error: message };
+  }
+}
 
 export async function createBusinessAction(locale: Locale, formData: FormData) {
   await requireAdmin(locale);
@@ -17,6 +76,10 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
   const tagsRaw = String(formData.get("tags") || "").trim();
   const tags = tagsRaw ? tagsRaw.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
 
+  const categoryIdRaw = String(formData.get("categoryId") || "").trim();
+  const categoryId = categoryIdRaw || null;
+  const categoryPatch = deriveLegacyCategoryText(categoryId);
+
   const business = createBusiness({
     slug: String(formData.get("slug") || ""),
     name: {
@@ -24,7 +87,7 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
       ar: String(formData.get("name_ar") || ""),
     },
     description,
-    category: String(formData.get("category") || "") || undefined,
+    ...categoryPatch,
     city: String(formData.get("city") || "") || undefined,
     address: String(formData.get("address") || "") || undefined,
     phone: String(formData.get("phone") || "") || undefined,
@@ -36,7 +99,7 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
   revalidatePath(`/${locale}/businesses`);
   revalidatePath(`/${locale}/businesses/${business.slug}`);
   revalidatePath(`/${locale}/admin`);
-  redirect(`/${locale}/admin`);
+  redirect(`/${locale}/admin/${business.id}/edit`);
 }
 
 export async function updateBusinessAction(locale: Locale, id: string, formData: FormData) {
@@ -49,6 +112,10 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   const tagsRaw = String(formData.get("tags") || "").trim();
   const tags = tagsRaw ? tagsRaw.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
 
+  const categoryIdRaw = String(formData.get("categoryId") || "").trim();
+  const categoryId = categoryIdRaw || null;
+  const categoryPatch = deriveLegacyCategoryText(categoryId);
+
   const next = updateBusiness(id, {
     slug: String(formData.get("slug") || "") || undefined,
     name: {
@@ -56,7 +123,7 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
       ar: String(formData.get("name_ar") || ""),
     },
     description,
-    category: String(formData.get("category") || "") || undefined,
+    ...categoryPatch,
     city: String(formData.get("city") || "") || undefined,
     address: String(formData.get("address") || "") || undefined,
     phone: String(formData.get("phone") || "") || undefined,

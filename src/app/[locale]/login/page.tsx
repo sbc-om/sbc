@@ -38,14 +38,14 @@ export default async function LoginPage({
         {next ? <input type="hidden" name="next" value={next} /> : null}
 
         <label className="grid gap-1">
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+          <span className="text-sm font-medium text-(--muted-foreground)">
             {dict.auth.email}
           </span>
           <Input name="email" type="email" required autoComplete="email" />
         </label>
 
         <label className="grid gap-1">
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+          <span className="text-sm font-medium text-(--muted-foreground)">
             {dict.auth.password}
           </span>
           <Input
@@ -60,11 +60,11 @@ export default async function LoginPage({
           {dict.auth.signIn}
         </Button>
 
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+        <p className="mt-2 text-sm text-(--muted-foreground)">
           {locale === "ar" ? "ليس لديك حساب؟" : "No account?"}{" "}
           <Link
             href={`/${locale}/register`}
-            className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-white"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
           >
             {dict.nav.register}
           </Link>

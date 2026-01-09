@@ -26,7 +26,7 @@ export default async function DashboardPage({
           <h1 className="text-2xl font-semibold tracking-tight">
             {dict.nav.dashboard}
           </h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+          <p className="mt-1 text-sm text-(--muted-foreground)">
             {locale === "ar" ? "مرحباً" : "Welcome"}: <span className="font-medium">{user.email}</span>
           </p>
         </div>
@@ -34,14 +34,14 @@ export default async function DashboardPage({
         {user.role === "admin" ? (
           <Link
             href={`/${locale}/admin`}
-            className="text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white"
+            className="text-sm font-medium text-(--muted-foreground) hover:text-foreground"
           >
             {dict.nav.admin}
           </Link>
         ) : null}
       </div>
 
-      <div className="mt-8 rounded-2xl border border-black/5 bg-white p-6 text-sm text-zinc-600 dark:border-white/10 dark:bg-zinc-950 dark:text-zinc-300">
+      <div className="mt-8 sbc-card rounded-2xl p-6 text-sm text-(--muted-foreground)">
         {locale === "ar"
           ? "هذه لوحة التحكم الأساسية. لاحقاً يمكن إضافة حفظ المفضلة أو اقتراحات الأعمال."
           : "This is a minimal dashboard. Later we can add favorites or business suggestions."}

@@ -6,24 +6,24 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive" | "link";
 type ButtonSize = "xs" | "sm" | "md" | "icon";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-xl font-medium whitespace-nowrap select-none outline-none transition disabled:pointer-events-none disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-white/20 dark:focus-visible:ring-offset-black";
+  "inline-flex items-center justify-center gap-2 rounded-xl font-medium whitespace-nowrap select-none outline-none transition disabled:pointer-events-none disabled:opacity-60 disabled:saturate-50 focus-visible:ring-2 focus-visible:ring-[color:var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--background)]";
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-zinc-900 text-white shadow-sm hover:bg-zinc-800 active:bg-zinc-900/90 dark:bg-white dark:text-black dark:hover:bg-zinc-200 dark:active:bg-white/90",
+    "bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[var(--shadow)] hover:brightness-[1.05] active:brightness-[0.97]",
   secondary:
-    "border border-(--surface-border) bg-(--surface) text-foreground shadow-sm hover:bg-white/70 dark:hover:bg-white/5",
+    "border border-(--surface-border) bg-(--surface) text-foreground shadow-[var(--shadow)] hover:brightness-[1.02] active:brightness-[0.98]",
   ghost:
-    "bg-transparent text-(--muted-foreground) hover:bg-black/5 hover:text-foreground dark:hover:bg-white/7",
+    "bg-transparent text-(--muted-foreground) hover:bg-(--chip-bg) hover:text-foreground",
   destructive:
-    "bg-red-600 text-white shadow-sm hover:bg-red-500 active:bg-red-600/90 focus-visible:ring-red-300 dark:focus-visible:ring-red-400/40",
+    "bg-red-600 text-white shadow-[var(--shadow)] hover:bg-red-500 active:bg-red-600/90 focus-visible:ring-[color:rgba(239,68,68,0.35)]",
   link: "bg-transparent text-foreground underline-offset-4 hover:underline",
 };
 
 const sizes: Record<ButtonSize, string> = {
   xs: "h-8 px-2.5 text-xs",
-  sm: "h-9 px-3 text-sm",
-  md: "h-11 px-4 text-sm",
+  sm: "h-9 px-3.5 text-sm",
+  md: "h-11 px-5 text-sm",
   icon: "h-9 w-9 rounded-full",
 };
 

@@ -22,16 +22,48 @@ function getInitialTheme(): Theme {
 }
 
 export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
-  const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
+  const [theme, setTheme] = useState<Theme>("light");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+    // Only run on client after mount to avoid hydration mismatch
+    setTheme(getInitialTheme());
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      applyTheme(theme);
+    }
+  }, [theme, mounted]);
 
   const label = useMemo(() => {
+    if (!mounted) return locale === "ar" ? "تبديل المظهر" : "Toggle theme";
     if (locale === "ar") return theme === "dark" ? "مظهر فاتح" : "مظهر داكن";
     return theme === "dark" ? "Light theme" : "Dark theme";
-  }, [locale, theme]);
+  }, [locale, theme, mounted]);
+
+  // Render a placeholder until mounted to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        aria-label={label}
+        title={label}
+        className={buttonVariants({ variant: "secondary", size: "icon" })}
+        disabled
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          className="h-4 w-4 opacity-50"
+        >
+          <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
+        </svg>
+      </button>
+    );
+  }
 
   return (
     <button

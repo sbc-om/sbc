@@ -38,14 +38,14 @@ export default async function RegisterPage({
         {next ? <input type="hidden" name="next" value={next} /> : null}
 
         <label className="grid gap-1">
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+          <span className="text-sm font-medium text-(--muted-foreground)">
             {dict.auth.email}
           </span>
           <Input name="email" type="email" required autoComplete="email" />
         </label>
 
         <label className="grid gap-1">
-          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
+          <span className="text-sm font-medium text-(--muted-foreground)">
             {dict.auth.password}
           </span>
           <Input
@@ -55,7 +55,7 @@ export default async function RegisterPage({
             minLength={8}
             autoComplete="new-password"
           />
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="text-xs text-(--muted-foreground)">
             {locale === "ar" ? "8 أحرف على الأقل" : "At least 8 characters"}
           </span>
         </label>
@@ -64,11 +64,11 @@ export default async function RegisterPage({
           {dict.auth.signUp}
         </Button>
 
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+        <p className="mt-2 text-sm text-(--muted-foreground)">
           {locale === "ar" ? "لديك حساب بالفعل؟" : "Already have an account?"}{" "}
           <Link
             href={`/${locale}/login`}
-            className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-white"
+            className="font-medium text-foreground underline-offset-4 hover:underline"
           >
             {dict.nav.login}
           </Link>

@@ -39,23 +39,15 @@ export default async function RootLayout({
   const locale = await getRequestLocale();
   const dir = localeDir(locale);
 
-  // Runs before React hydration to avoid theme flash.
-  const themeInit = `(() => {
-    try {
-      const saved = localStorage.getItem('theme');
-      const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = (saved === 'dark' || saved === 'light') ? saved : (systemDark ? 'dark' : 'light');
-      const root = document.documentElement;
-      root.classList.toggle('dark', theme === 'dark');
-      root.style.colorScheme = theme === 'dark' ? 'dark' : 'light';
-    } catch (e) {}
-  })();`;
+  // Critical inline script - MUST run before any CSS/rendering to prevent flash
+  const themeInit = `(function(){try{var s=localStorage.getItem('theme');var d=s==='dark'||(s!=='light'&&matchMedia('(prefers-color-scheme:dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark')}r.style.colorScheme=d?'dark':'light';window.addEventListener('load',function(){r.classList.add('loaded')},false)}catch(e){}})();`;
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <head>
-        <meta name="color-scheme" content="light dark" />
+        {/* CRITICAL: This script MUST be first to prevent theme flash */}
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+        <meta name="color-scheme" content="light dark" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoKufiArabic.variable} antialiased`}
