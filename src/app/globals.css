@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "overlayscrollbars/overlayscrollbars.css";
 
 /* Tailwind v4: make `dark:` respond to a `.dark` class (so we can toggle theme). */
 @custom-variant dark (&:where(.dark, .dark *));

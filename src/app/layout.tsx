@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Noto_Kufi_Arabic } from "next/font/google";
 import "./globals.css";
 import { defaultLocale, isLocale, localeDir } from "@/lib/i18n/locales";
+import { OverlayScrollbarsInit } from "@/components/OverlayScrollbarsInit";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,6 +53,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${notoKufiArabic.variable} antialiased`}
       >
+        <OverlayScrollbarsInit />
         {children}
       </body>
     </html>

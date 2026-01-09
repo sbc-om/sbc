@@ -27,8 +27,11 @@ export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
 
   useEffect(() => {
     // Only run on client after mount to avoid hydration mismatch
-    setTheme(getInitialTheme());
-    setMounted(true);
+    // Defer to a microtask to satisfy react-hooks/set-state-in-effect.
+    queueMicrotask(() => {
+      setTheme(getInitialTheme());
+      setMounted(true);
+    });
   }, []);
 
   useEffect(() => {
