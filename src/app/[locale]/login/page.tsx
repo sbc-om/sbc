@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Container } from "@/components/Container";
+import { PageContainer } from "@/components/PageContainer";
 import { loginAction } from "@/app/[locale]/auth/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -24,7 +25,8 @@ export default async function LoginPage({
   const { error, next } = await searchParams;
 
   return (
-    <Container className="max-w-md">
+    <PageContainer>
+      <Container className="max-w-md">
       <h1 className="text-2xl font-semibold tracking-tight">{dict.nav.login}</h1>
 
       {error === "invalid" ? (
@@ -71,5 +73,6 @@ export default async function LoginPage({
         </p>
       </form>
     </Container>
+    </PageContainer>
   );
 }

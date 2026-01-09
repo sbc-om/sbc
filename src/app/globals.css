@@ -6,7 +6,9 @@
 :root {
   --background: #ffffff;
   --foreground: #0f172a;
+  --foreground-rgb: 15, 23, 42;
   --surface: rgba(255, 255, 255, 0.72);
+  --surface-rgb: 255, 255, 255;
   --surface-border: rgba(15, 23, 42, 0.08);
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
   --shadow-hover: 0 16px 45px rgba(15, 23, 42, 0.10);
@@ -27,7 +29,9 @@
 .dark {
   --background: #070a10;
   --foreground: #e5e7eb;
+  --foreground-rgb: 229, 231, 235;
   --surface: rgba(2, 6, 23, 0.55);
+  --surface-rgb: 2, 6, 23;
   --surface-border: rgba(255, 255, 255, 0.10);
   --shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
   --shadow-hover: 0 16px 50px rgba(0, 0, 0, 0.55);
@@ -46,6 +50,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -119,4 +125,74 @@ html.loaded button {
 
 html[dir="rtl"] body {
   font-family: var(--font-arabic), Arial, Helvetica, sans-serif;
+}
+
+/* Custom animations for scroll effects */
+@keyframes animate-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-in {
+  animation: animate-in 0.6s ease-out;
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.slide-in-from-bottom-4 {
+  animation: slideInFromBottom 0.8s ease-out;
+}
+
+.slide-in-from-bottom-6 {
+  animation: slideInFromBottom 1s ease-out;
+}
+
+.delay-150 {
+  animation-delay: 150ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulse animation for glowing elements */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

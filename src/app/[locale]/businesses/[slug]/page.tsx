@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { Container } from "@/components/Container";
+import { PageContainer } from "@/components/PageContainer";
 import { isLocale } from "@/lib/i18n/locales";
 import { getBusinessBySlug } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
@@ -24,7 +25,8 @@ export default async function BusinessDetailPage({
   const categoryLabel = category ? (locale === "ar" ? category.name.ar : category.name.en) : business.category;
 
   return (
-    <Container>
+    <PageContainer>
+      <Container>
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0">
           <h1 className="text-3xl font-semibold leading-tight tracking-tight">
@@ -202,5 +204,6 @@ export default async function BusinessDetailPage({
         </div>
       ) : null}
     </Container>
+    </PageContainer>
   );
 }

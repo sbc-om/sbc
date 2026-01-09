@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { Container } from "@/components/Container";
+import { PageContainer } from "@/components/PageContainer";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getCategoryById } from "@/lib/db/categories";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -43,7 +44,8 @@ export default async function AdminEditCategoryPage({
   const title = locale === "ar" ? "تعديل تصنيف" : "Edit category";
 
   return (
-    <Container className="max-w-3xl">
+    <PageContainer>
+      <Container className="max-w-3xl">
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
       <p className="mt-1 text-sm text-(--muted-foreground)">
         {locale === "ar" ? "قم بتحديث البيانات ثم احفظ." : "Update fields and save."}
@@ -61,5 +63,6 @@ export default async function AdminEditCategoryPage({
         </Button>
       </form>
     </Container>
+    </PageContainer>
   );
 }

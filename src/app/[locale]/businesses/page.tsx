@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Container } from "@/components/Container";
+import { PageContainer } from "@/components/PageContainer";
 import { buttonVariants, Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -24,7 +25,8 @@ export default async function BusinessesPage({
   const businesses = listBusinesses({ q, locale: locale as Locale });
 
   return (
-    <Container>
+    <PageContainer>
+      <Container>
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -96,5 +98,6 @@ export default async function BusinessesPage({
         ))}
       </div>
     </Container>
+    </PageContainer>
   );
 }
