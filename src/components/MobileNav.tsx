@@ -9,6 +9,8 @@ import { logoutAction } from "@/app/[locale]/auth/actions";
 import { 
   HiHome, 
   HiOutlineHome,
+  HiShoppingBag,
+  HiOutlineShoppingBag,
   HiCollection,
   HiOutlineCollection,
   HiChat,
@@ -91,6 +93,13 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
       path: "/categories",
       Icon: HiCollection,
       IconOutline: HiOutlineCollection,
+    },
+    {
+      key: "store",
+      label: (dict.nav as any).store ?? (locale === "ar" ? "المتجر" : "Store"),
+      path: "/store",
+      Icon: HiShoppingBag,
+      IconOutline: HiOutlineShoppingBag,
     },
     {
       key: "chat",

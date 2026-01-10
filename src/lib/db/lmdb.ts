@@ -14,6 +14,9 @@ export type LmdbHandles = {
   chatConversations: ReturnType<ReturnType<typeof open>["openDB"]>;
   chatMessages: ReturnType<ReturnType<typeof open>["openDB"]>;
   businessRequests: ReturnType<ReturnType<typeof open>["openDB"]>;
+  loyaltySubscriptions: ReturnType<ReturnType<typeof open>["openDB"]>;
+  loyaltyCustomers: ReturnType<ReturnType<typeof open>["openDB"]>;
+  loyaltyCards: ReturnType<ReturnType<typeof open>["openDB"]>;
 };
 
 declare global {
@@ -42,6 +45,11 @@ export function getLmdb(): LmdbHandles {
     existing.chatMessages ??= existing.root.openDB({ name: "chatMessages" });
     existing.businessRequests ??= existing.root.openDB({ name: "businessRequests" });
 
+    // Loyalty / CRM
+    existing.loyaltySubscriptions ??= existing.root.openDB({ name: "loyaltySubscriptions" });
+    existing.loyaltyCustomers ??= existing.root.openDB({ name: "loyaltyCustomers" });
+    existing.loyaltyCards ??= existing.root.openDB({ name: "loyaltyCards" });
+
     globalThis.__sbcLmdb = existing as LmdbHandles;
     return globalThis.__sbcLmdb;
   }
@@ -52,6 +60,9 @@ export function getLmdb(): LmdbHandles {
   const root = open({
     path: dbPath,
     compression: true,
+    // We keep adding named DBs (tables) over time.
+    // LMDB has a maxdbs limit per environment; bump it to avoid MDB_DBS_FULL.
+    maxDbs: 64,
   });
 
   const businesses = root.openDB({ name: "businesses" });
@@ -65,6 +76,11 @@ export function getLmdb(): LmdbHandles {
   const chatMessages = root.openDB({ name: "chatMessages" });
   const businessRequests = root.openDB({ name: "businessRequests" });
 
+  // Loyalty / CRM
+  const loyaltySubscriptions = root.openDB({ name: "loyaltySubscriptions" });
+  const loyaltyCustomers = root.openDB({ name: "loyaltyCustomers" });
+  const loyaltyCards = root.openDB({ name: "loyaltyCards" });
+
   globalThis.__sbcLmdb = {
     root,
     businesses,
@@ -77,6 +93,9 @@ export function getLmdb(): LmdbHandles {
     chatConversations,
     chatMessages,
     businessRequests,
+    loyaltySubscriptions,
+    loyaltyCustomers,
+    loyaltyCards,
   };
 
   return globalThis.__sbcLmdb;

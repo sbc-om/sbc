@@ -3,6 +3,7 @@ export const ar = {
   nav: {
     home: "الرئيسية",
     businesses: "الأعمال",
+    store: "المتجر",
     explore: "استكشاف",
     categories: "التصنيفات",
     chat: "الدردشة",

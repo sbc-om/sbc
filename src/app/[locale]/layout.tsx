@@ -12,6 +12,8 @@ import { DirectionSync } from "@/components/DirectionSync";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { getCurrentUser } from "@/lib/auth/currentUser";
+import { CartProvider } from "@/components/store/CartProvider";
+import { CartFloating } from "@/components/store/CartFloating";
 
 export async function generateMetadata({
   params,
@@ -44,30 +46,34 @@ export default async function LocaleLayout({
     <DictionaryProvider locale={locale as Locale} dict={dict}>
       <DirectionSync locale={locale as Locale} />
       {user ? (
-        // Logged in: Show sidebar layout
-        <SidebarLayout>
-          <div className="min-h-dvh bg-transparent text-foreground">
-            <Sidebar
-              locale={locale as Locale}
-              dict={dict}
-              user={{
-                displayName: user.displayName ?? user.email.split("@")[0],
-                role: user.role,
-                email: user.email,
-                avatarUrl: user.avatarUrl ?? null,
-              }}
-            />
-            <div
-              className="min-h-dvh transition-[margin] duration-300 ease-in-out"
-              style={{
-                marginInlineStart: "var(--sidebar-width, 0)",
-              }}
-            >
-              <main className="w-full pb-20 lg:pb-6">{children}</main>
+        <CartProvider userKey={user.id}>
+          <CartFloating locale={locale as Locale} />
+
+          {/* Logged in: Show sidebar layout */}
+          <SidebarLayout>
+            <div className="min-h-dvh bg-transparent text-foreground">
+              <Sidebar
+                locale={locale as Locale}
+                dict={dict}
+                user={{
+                  displayName: user.displayName ?? user.email.split("@")[0],
+                  role: user.role,
+                  email: user.email,
+                  avatarUrl: user.avatarUrl ?? null,
+                }}
+              />
+              <div
+                className="min-h-dvh transition-[margin] duration-300 ease-in-out"
+                style={{
+                  marginInlineStart: "var(--sidebar-width, 0)",
+                }}
+              >
+                <main className="w-full pb-20 lg:pb-6">{children}</main>
+              </div>
+              <MobileNav locale={locale as Locale} dict={dict} />
             </div>
-            <MobileNav locale={locale as Locale} dict={dict} />
-          </div>
-        </SidebarLayout>
+          </SidebarLayout>
+        </CartProvider>
       ) : (
         // Not logged in: Show header + footer
         <div className="min-h-dvh bg-transparent text-foreground flex flex-col">

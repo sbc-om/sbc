@@ -16,6 +16,8 @@ import {
   HiOutlineChat,
   HiViewGrid,
   HiOutlineViewGrid,
+  HiShoppingBag,
+  HiOutlineShoppingBag,
   HiSearch,
   HiOutlineSearch,
   HiChartSquareBar,
@@ -121,6 +123,13 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       path: "/categories",
       Icon: HiCollection,
       IconOutline: HiOutlineCollection,
+    },
+    {
+      key: "store",
+      label: (dict.nav as any).store ?? (locale === "ar" ? "المتجر" : "Store"),
+      path: "/store",
+      Icon: HiShoppingBag,
+      IconOutline: HiOutlineShoppingBag,
     },
     {
       key: "dashboard",

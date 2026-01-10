@@ -104,6 +104,20 @@ export function Footer({ locale, dict }: FooterProps) {
                   </Link>
                   <span className="text-(--muted-foreground) opacity-40">•</span>
                   <Link
+                    href={`/${locale}/loyalty`}
+                    className="text-foreground hover:text-accent transition-colors"
+                  >
+                    {locale === "ar" ? "بطاقة الولاء" : "Loyalty"}
+                  </Link>
+                  <span className="text-(--muted-foreground) opacity-40">•</span>
+                  <Link
+                    href={`/${locale}/marketing-platform`}
+                    className="text-foreground hover:text-accent transition-colors"
+                  >
+                    {locale === "ar" ? "منصة التسويق" : "Marketing"}
+                  </Link>
+                  <span className="text-(--muted-foreground) opacity-40">•</span>
+                  <Link
                     href={`/${locale}/about`}
                     className="text-foreground hover:text-accent transition-colors"
                   >

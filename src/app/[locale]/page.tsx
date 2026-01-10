@@ -11,6 +11,7 @@ import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { listBusinesses } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { getCurrentUser } from "@/lib/auth/currentUser";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
 
@@ -91,6 +92,81 @@ export default async function LocaleHome({
           </div>
         </div>
       </Container>
+
+      {/* Products Section */}
+      <section className="py-10">
+        <Container size="lg">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-foreground mb-3">
+              {locale === "ar" ? "المنتجات" : "Products"}
+            </h2>
+            <p className="text-base text-foreground opacity-70">
+              {locale === "ar"
+                ? "هذه هي التطبيقات التي ستعمل على هذا النظام: دليل الأعمال، بطاقة الولاء، ومنصة التسويق." 
+                : "Apps you can run on this system: Business Directory, Loyalty Card, and Marketing Platform."}
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className="sbc-card rounded-2xl p-6">
+              <div className="text-lg font-semibold">
+                {locale === "ar" ? "دليل الأعمال" : "Business Directory"}
+              </div>
+              <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
+                {locale === "ar"
+                  ? "استكشف الأعمال والتصنيفات وصفحات النشاط." 
+                  : "Browse businesses, categories, and business pages."}
+              </p>
+              <div className="mt-4">
+                <Link
+                  href={`/${locale}/businesses`}
+                  className="inline-flex items-center text-sm font-medium text-accent hover:underline"
+                >
+                  {locale === "ar" ? "فتح" : "Open"}
+                </Link>
+              </div>
+            </div>
+
+            <div className="sbc-card rounded-2xl p-6">
+              <div className="text-lg font-semibold">
+                {locale === "ar" ? "بطاقة الولاء" : "Loyalty Card"}
+              </div>
+              <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
+                {locale === "ar"
+                  ? "أصدر بطاقات ولاء رقمية (Apple/Google Wallet) وادِر عملاءك ونقاطهم." 
+                  : "Issue digital loyalty cards (Apple/Google Wallet) and manage customers & points."}
+              </p>
+              <div className="mt-4">
+                <Link
+                  href={`/${locale}/loyalty`}
+                  className="inline-flex items-center text-sm font-medium text-accent hover:underline"
+                >
+                  {locale === "ar" ? "فتح" : "Open"}
+                </Link>
+              </div>
+            </div>
+
+            <div className="sbc-card rounded-2xl p-6">
+              <div className="text-lg font-semibold">
+                {locale === "ar" ? "منصة التسويق" : "Marketing Platform"}
+              </div>
+              <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
+                {locale === "ar"
+                  ? "API مخصص لواتساب وتلغرام—قابل للاستخدام في أي نظام مع تخصيص كامل." 
+                  : "Custom WhatsApp + Telegram APIs you can use anywhere with full customization."}
+              </p>
+              <div className="mt-4">
+                <Link
+                  href={`/${locale}/marketing-platform`}
+                  className="inline-flex items-center text-sm font-medium text-accent hover:underline"
+                >
+                  {locale === "ar" ? "فتح" : "Open"}
+                </Link>
+              </div>
+            </div>
+          </div>
+        </Container>
+      </section>
 
       {/* Latest Businesses Section */}
       {latestBusinesses.length > 0 && (

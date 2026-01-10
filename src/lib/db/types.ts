@@ -55,3 +55,41 @@ export type User = {
   /** Optional updated timestamp (profile edits, avatar changes, etc). */
   updatedAt?: string;
 };
+
+export type LoyaltyPlan = "starter" | "pro";
+
+export type LoyaltySubscription = {
+  /** Subscription is keyed by the owner userId. */
+  userId: string;
+  plan: LoyaltyPlan;
+  status: "active" | "inactive";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LoyaltyCustomer = {
+  id: string;
+  /** Business owner (our user id). */
+  userId: string;
+  fullName: string;
+  phone?: string;
+  email?: string;
+  notes?: string;
+  tags?: string[];
+  /** The issued loyalty card id for this customer. */
+  cardId: string;
+  /** Simple points system (phase 1). */
+  points: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LoyaltyCard = {
+  id: string;
+  userId: string;
+  customerId: string;
+  status: "active" | "revoked";
+  points: number;
+  createdAt: string;
+  updatedAt: string;
+};
