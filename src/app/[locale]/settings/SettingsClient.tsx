@@ -58,7 +58,7 @@ function ToggleRow({
 
       <input
         type="checkbox"
-        className="mt-0.5 h-5 w-5 accent-[color:var(--accent)]"
+        className="mt-0.5 h-5 w-5 accent-accent"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
       />

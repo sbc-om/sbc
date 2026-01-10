@@ -137,11 +137,11 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
             aria-haspopup="menu"
             aria-expanded={profileMenuOpen}
           >
-            {(isActive("/dashboard") ? HiUser : HiOutlineUser)({
-              className: `h-6 w-6 ${isActive("/dashboard") ? "text-foreground" : "text-(--muted-foreground)"}`,
+            {(isActive("/profile") ? HiUser : HiOutlineUser)({
+              className: `h-6 w-6 ${isActive("/profile") ? "text-foreground" : "text-(--muted-foreground)"}`,
             })}
             <span
-              className={`text-xs truncate ${isActive("/dashboard") ? "font-semibold" : "font-normal text-(--muted-foreground)"}`}
+              className={`text-xs truncate ${isActive("/profile") ? "font-semibold" : "font-normal text-(--muted-foreground)"}`}
             >
               {dict.nav.profile}
             </span>
@@ -159,7 +159,7 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
             >
               <Link
                 role="menuitem"
-                href={`/${locale}/dashboard`}
+                href={`/${locale}/profile`}
                 onClick={() => setProfileMenuOpen(false)}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
               >
@@ -179,10 +179,12 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
 
               <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
 
-              <form action={logoutAction.bind(null, locale)}>
+              <form
+                action={logoutAction.bind(null, locale)}
+                onSubmit={() => setProfileMenuOpen(false)}
+              >
                 <button
                   type="submit"
-                  onClick={() => setProfileMenuOpen(false)}
                   className="w-full flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
                 >
                   {(HiOutlineLogout as any)({ className: "h-5 w-5 shrink-0" })}

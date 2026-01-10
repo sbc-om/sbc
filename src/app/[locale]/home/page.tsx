@@ -9,6 +9,7 @@ import { getFollowedCategoryIds } from "@/lib/db/follows";
 import { getCategoryById } from "@/lib/db/categories";
 import { AppPage } from "@/components/AppPage";
 import { BusinessCard } from "@/components/BusinessCard";
+import { FeedProfileHeader } from "@/components/FeedProfileHeader";
 
 export default async function HomeFollowedPage({
   params,
@@ -21,6 +22,13 @@ export default async function HomeFollowedPage({
   const dict = await getDictionary(locale as Locale);
   const user = await requireUser(locale as Locale);
 
+  const viewUser = {
+    displayName: user.displayName ?? user.email.split("@")[0],
+    email: user.email,
+    role: user.role,
+    avatarUrl: user.avatarUrl ?? null,
+  };
+
   const followedCategoryIds = new Set(getFollowedCategoryIds(user.id));
   const allBusinesses = listBusinesses({ locale: locale as Locale });
 
@@ -30,6 +38,8 @@ export default async function HomeFollowedPage({
 
   return (
     <AppPage>
+      <FeedProfileHeader user={viewUser} locale={locale as Locale} />
+
         <div className="flex items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">

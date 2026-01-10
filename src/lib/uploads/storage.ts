@@ -8,6 +8,8 @@ import { nanoid } from "nanoid";
 
 export type UploadKind = "cover" | "logo" | "banner" | "gallery" | "video";
 
+export type UserUploadKind = "avatar";
+
 const MEDIA_URL_PREFIX = "/media/";
 
 function resolveUploadsRoot() {
@@ -35,6 +37,26 @@ async function writeUploadMetadata(params: {
 
   // Sidecar metadata file next to the upload for traceability/debugging.
   // Example: photo.jpg.json
+  await fs.writeFile(`${params.absPath}.json`, JSON.stringify(meta, null, 2));
+}
+
+async function writeUserUploadMetadata(params: {
+  absPath: string;
+  userId: string;
+  kind: UserUploadKind;
+  file: File;
+  url: string;
+}) {
+  const meta = {
+    userId: params.userId,
+    kind: params.kind,
+    url: params.url,
+    originalName: params.file.name,
+    contentType: params.file.type || "application/octet-stream",
+    size: params.file.size,
+    uploadedAt: new Date().toISOString(),
+  };
+
   await fs.writeFile(`${params.absPath}.json`, JSON.stringify(meta, null, 2));
 }
 
@@ -182,4 +204,65 @@ export function validateUpload(params: {
     if (!videoMimes.includes(mime)) throw new Error("UNSUPPORTED_VIDEO_TYPE");
     if (size > 200 * 1024 * 1024) throw new Error("VIDEO_TOO_LARGE");
   }
+}
+
+export function validateUserImageUpload(params: {
+  kind: UserUploadKind;
+  file: File;
+}) {
+  const { kind, file } = params;
+
+  if (kind !== "avatar") throw new Error("INVALID_KIND");
+
+  const mime = file.type;
+  const size = file.size;
+
+  const imageMimes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  if (!imageMimes.includes(mime)) throw new Error("UNSUPPORTED_IMAGE_TYPE");
+  // Slightly stricter for avatars
+  if (size > 5 * 1024 * 1024) throw new Error("IMAGE_TOO_LARGE");
+}
+
+export async function storeUserUpload(params: {
+  userId: string;
+  kind: UserUploadKind;
+  file: File;
+}) {
+  const { userId, kind, file } = params;
+
+  const mime = file.type || "application/octet-stream";
+  const originalExt = path.extname(file.name || "");
+  const ext = (originalExt && originalExt.length <= 10 ? originalExt : "") || extFromMime(mime);
+
+  const now = new Date();
+  const yyyy = String(now.getUTCFullYear());
+  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+
+  const filename = `${nanoid()}${ext}`;
+  const relDir = path.posix.join("users", userId, kind, yyyy, mm);
+  const relPath = path.posix.join(relDir, filename);
+
+  const root = resolveUploadsRoot();
+  const absDir = path.join(root, relDir);
+  const absPath = path.join(root, relPath);
+
+  await fs.mkdir(absDir, { recursive: true });
+
+  const webStream = file.stream();
+  const nodeReadable = Readable.fromWeb(webStream as unknown as NodeReadableStream);
+  const nodeWritable = fssync.createWriteStream(absPath, { flags: "wx" });
+
+  await pipeline(nodeReadable, nodeWritable);
+
+  const url = mediaUrlFromRelativePath(relPath);
+  await writeUserUploadMetadata({ absPath, userId, kind, file, url });
+
+  return {
+    url,
+    relativePath: relPath,
+    diskPath: absPath,
+    contentType: mime,
+    size: file.size,
+    originalName: file.name,
+  };
 }

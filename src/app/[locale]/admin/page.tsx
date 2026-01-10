@@ -38,6 +38,12 @@ export default async function AdminPage({
         </div>
         <div className="flex items-center gap-2">
           <Link
+            href={`/${locale}/admin/users`}
+            className={buttonVariants({ variant: "secondary", size: "sm", className: "h-10 px-4" })}
+          >
+            {dict.nav.users ?? (locale === "ar" ? "المستخدمون" : "Users")}
+          </Link>
+          <Link
             href={`/${locale}/admin/categories`}
             className={buttonVariants({ variant: "secondary", size: "sm", className: "h-10 px-4" })}
           >

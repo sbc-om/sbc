@@ -5,6 +5,8 @@ import { z } from "zod";
 import { getLmdb } from "./lmdb";
 import type { Role, User } from "./types";
 
+export type UserListItem = Pick<User, "id" | "email" | "role" | "createdAt">;
+
 const emailSchema = z
   .string()
   .trim()
@@ -34,12 +36,56 @@ export async function createUser(input: {
     passwordHash,
     role: input.role,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    displayName: email.split("@")[0] || undefined,
   };
 
   users.put(user.id, user);
   userEmails.put(email, user.id);
 
   return user;
+}
+
+function ensureUser(id: string): User {
+  const { users } = getLmdb();
+  const current = users.get(id) as User | undefined;
+  if (!current) throw new Error("NOT_FOUND");
+  return current;
+}
+
+export function updateUserProfile(
+  id: string,
+  patch: { displayName?: string | null; bio?: string | null },
+): User {
+  const { users } = getLmdb();
+  const current = ensureUser(id);
+
+  const displayName = patch.displayName === null ? undefined : patch.displayName;
+  const bio = patch.bio === null ? undefined : patch.bio;
+
+  const next: User = {
+    ...current,
+    displayName: typeof displayName === "string" ? displayName.trim() || undefined : current.displayName,
+    bio: typeof bio === "string" ? bio.trim() || undefined : current.bio,
+    updatedAt: new Date().toISOString(),
+  };
+
+  users.put(id, next);
+  return next;
+}
+
+export function setUserAvatar(id: string, url: string | null): User {
+  const { users } = getLmdb();
+  const current = ensureUser(id);
+
+  const next: User = {
+    ...current,
+    avatarUrl: url ?? undefined,
+    updatedAt: new Date().toISOString(),
+  };
+
+  users.put(id, next);
+  return next;
 }
 
 export function getUserById(id: string): User | null {
@@ -66,4 +112,23 @@ export async function verifyUserPassword(input: {
 
   const ok = await bcrypt.compare(input.password, user.passwordHash);
   return ok ? user : null;
+}
+
+export function listUsers(): UserListItem[] {
+  const { users } = getLmdb();
+  const out: UserListItem[] = [];
+
+  for (const entry of users.getRange()) {
+    const u = entry.value as User;
+    out.push({
+      id: u.id,
+      email: u.email,
+      role: u.role,
+      createdAt: u.createdAt,
+    });
+  }
+
+  // Newest first (ISO strings sort lexicographically)
+  out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+  return out;
 }

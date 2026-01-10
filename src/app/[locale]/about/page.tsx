@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 
 import { PublicPage } from "@/components/PublicPage";
+import { AboutLogoLottie } from "@/components/AboutLogoLottie";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { buttonVariants } from "@/components/ui/Button";
@@ -40,14 +40,7 @@ export default async function AboutPage({
         {/* Hero Section with Logo */}
         <div className="mt-8 sbc-card rounded-2xl p-8 sm:p-12 text-center">
           <div className="flex justify-center mb-6">
-            <Image
-              src="/images/sbc.svg"
-              alt="SBC Logo"
-              width={120}
-              height={120}
-              className="h-28 w-28 sm:h-32 sm:w-32"
-              priority
-            />
+            <AboutLogoLottie className="h-28 w-28 sm:h-32 sm:w-32" />
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent">
             {locale === "ar" ? "مركز الأعمال الذكية" : "Smart Business Center"}

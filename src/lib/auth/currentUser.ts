@@ -17,6 +17,8 @@ export async function getCurrentUser() {
       id: user.id,
       email: user.email,
       role: user.role,
+      displayName: user.displayName ?? user.email.split("@")[0],
+      avatarUrl: user.avatarUrl ?? null,
     };
   } catch {
     return null;

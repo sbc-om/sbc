@@ -14,7 +14,6 @@ export type Category = {
   createdAt: string;
   updatedAt: string;
 };
-
 export type Business = {
   id: string;
   slug: string;
@@ -47,4 +46,12 @@ export type User = {
   passwordHash: string;
   role: Role;
   createdAt: string;
+  /** Optional, user-editable profile display name. */
+  displayName?: string;
+  /** Optional, user-editable short bio. */
+  bio?: string;
+  /** Optional avatar media URL (served via /media/...). */
+  avatarUrl?: string;
+  /** Optional updated timestamp (profile edits, avatar changes, etc). */
+  updatedAt?: string;
 };

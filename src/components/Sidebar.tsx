@@ -24,7 +24,6 @@ import {
   HiOutlineCog,
   HiCollection,
   HiOutlineCollection,
-  HiLogout,
   HiOutlineLogout,
   HiChevronLeft,
   HiChevronRight,
@@ -37,7 +36,7 @@ import {
 interface SidebarProps {
   locale: Locale;
   dict: Dictionary;
-  user: { username: string; role: string; email: string };
+  user: { displayName: string; role: string; email: string; avatarUrl: string | null };
 }
 
 type NavItem = {
@@ -62,6 +61,10 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   };
 
   const isActive = (path: string) => pathname.startsWith(`/${locale}${path}`);
+
+  const avatarInitial = (user.displayName?.trim() || user.email.split("@")[0] || "U")
+    .slice(0, 1)
+    .toUpperCase();
 
   // Close profile menu on navigation changes
   useEffect(() => {
@@ -205,7 +208,27 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
         })}
       </nav>
 
-      {/* User Profile */}
+      {/* Collapse (last menu option) - Desktop Only */}
+      {!isMobile && (
+        <div className="mt-2 px-2 pt-2 mb-2" style={{ borderColor: "var(--surface-border)" }}>
+          <button
+            onClick={toggleCollapsed}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl hover:bg-(--surface) transition-all hover:scale-105"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {locale === "ar" ? (
+              collapsed ? <HiChevronLeft className="h-5 w-5" /> : <HiChevronRight className="h-5 w-5" />
+            ) : (
+              collapsed ? <HiChevronRight className="h-5 w-5" /> : <HiChevronLeft className="h-5 w-5" />
+            )}
+            {!collapsed && (
+              <span className="text-sm font-medium">{locale === "ar" ? "إخفاء" : "Collapse"}</span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* User Profile (separate section) */}
       <div
         ref={profileMenuRef}
         className="mt-auto border-t pt-4 px-2 relative"
@@ -217,18 +240,26 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           className={`w-full flex items-center rounded-xl py-2 hover:bg-(--surface) transition-colors text-left ${
             iconOnly ? "justify-center px-2" : "justify-start gap-3 px-3"
           }`}
-          title={collapsed && !isMobile ? user.username : undefined}
+          title={collapsed && !isMobile ? user.displayName : undefined}
           aria-haspopup="menu"
           aria-expanded={profileMenuOpen}
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-accent to-accent-2 shrink-0 ring-2 ring-accent/20">
-            <span className="text-sm font-bold text-white">
-              {user.username.charAt(0).toUpperCase()}
-            </span>
+          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-linear-to-br from-accent to-accent-2 shrink-0 ring-2 ring-accent/20">
+            {user.avatarUrl ? (
+              <Image
+                src={user.avatarUrl}
+                alt={user.displayName || user.email}
+                fill
+                className="object-cover"
+                sizes="40px"
+              />
+            ) : (
+              <span className="text-sm font-bold text-white">{avatarInitial}</span>
+            )}
           </div>
           {(!collapsed || isMobile) && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">{user.username}</p>
+              <p className="text-sm font-semibold truncate">{user.displayName}</p>
               <p className="text-xs text-(--muted-foreground) truncate">{user.email}</p>
             </div>
           )}
@@ -250,14 +281,14 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
 
             <Link
               role="menuitem"
-              href={`/${locale}/dashboard`}
+              href={`/${locale}/profile`}
               onClick={() => {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
               className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
             >
-              {(isActive("/dashboard") ? HiUser : HiOutlineUser)({ className: "h-5 w-5 shrink-0" })}
+              {(isActive("/profile") ? HiUser : HiOutlineUser)({ className: "h-5 w-5 shrink-0" })}
               <span className="min-w-0 truncate">{dict.nav.profile}</span>
             </Link>
 
@@ -276,13 +307,15 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
 
             <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
 
-            <form action={logoutAction.bind(null, locale)}>
+            <form
+              action={logoutAction.bind(null, locale)}
+              onSubmit={() => {
+                setProfileMenuOpen(false);
+                if (isMobile) setMobileOpen(false);
+              }}
+            >
               <button
                 type="submit"
-                onClick={() => {
-                  setProfileMenuOpen(false);
-                  if (isMobile) setMobileOpen(false);
-                }}
                 className="w-full flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
               >
                 {(HiOutlineLogout as any)({ className: "h-5 w-5 shrink-0" })}
@@ -292,26 +325,6 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           </div>
         )}
       </div>
-
-      {/* Toggle Button - Desktop Only */}
-      {!isMobile && (
-        <div className="pt-3 border-t mt-3 px-2" style={{ borderColor: "var(--surface-border)" }}>
-          <button
-            onClick={toggleCollapsed}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl hover:bg-(--surface) transition-all hover:scale-105"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {locale === "ar" ? (
-              collapsed ? <HiChevronLeft className="h-5 w-5" /> : <HiChevronRight className="h-5 w-5" />
-            ) : (
-              collapsed ? <HiChevronRight className="h-5 w-5" /> : <HiChevronLeft className="h-5 w-5" />
-            )}
-            {!collapsed && (
-              <span className="text-sm font-medium">{locale === "ar" ? "إخفاء" : "Collapse"}</span>
-            )}
-          </button>
-        </div>
-      )}
     </>
   );
 

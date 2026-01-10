@@ -3,30 +3,42 @@ import Image from "next/image";
 import type { Locale } from "@/lib/i18n/locales";
 
 interface FeedProfileHeaderProps {
-  user: { username: string; email: string; role: string };
+  user: { displayName: string; email: string; role: string; avatarUrl: string | null };
   locale: Locale;
 }
 
 export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
+  const initial = (user.displayName?.trim() || user.email.split("@")[0] || "U")
+    .slice(0, 1)
+    .toUpperCase();
+
   return (
     <div className="sbc-card rounded-2xl p-6 mb-6">
       <div className="flex items-center gap-4">
         {/* Avatar */}
-        <Link href={`/${locale}/dashboard`} className="shrink-0">
+        <Link href={`/${locale}/profile`} className="shrink-0">
           <div className="relative">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-linear-to-br from-accent to-accent-2 ring-2 ring-accent/20">
-              <span className="text-2xl font-bold text-white">
-                {user.username.charAt(0).toUpperCase()}
-              </span>
+            <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-linear-to-br from-accent to-accent-2 ring-2 ring-accent/20">
+              {user.avatarUrl ? (
+                <Image
+                  src={user.avatarUrl}
+                  alt={user.displayName || user.email}
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                />
+              ) : (
+                <span className="text-2xl font-bold text-white">{initial}</span>
+              )}
             </div>
           </div>
         </Link>
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <Link href={`/${locale}/dashboard`}>
+          <Link href={`/${locale}/profile`}>
             <h2 className="text-xl font-bold hover:opacity-80 transition-opacity">
-              {user.username}
+              {user.displayName}
             </h2>
           </Link>
           <p className="text-sm text-(--muted-foreground) truncate">{user.email}</p>
@@ -66,7 +78,7 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
       {/* Action Buttons */}
       <div className="flex items-center gap-3 mt-4">
         <Link
-          href={`/${locale}/dashboard`}
+          href={`/${locale}/profile`}
           className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-center bg-(--surface) hover:bg-(--muted-foreground)/10 transition-colors"
         >
           {locale === "ar" ? "تعديل الملف الشخصي" : "Edit Profile"}

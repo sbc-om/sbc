@@ -187,7 +187,7 @@ export function BusinessMediaManager({
               accept="image/png,image/jpeg,image/webp,image/gif"
               onChange={(e) => upload("cover", e.target.files)}
               disabled={busy.cover}
-              className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-(--accent) file:px-4 file:py-2 file:text-sm file:font-medium file:text-(--accent-foreground) hover:file:brightness-[1.05]"
+              className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-medium file:text-accent-foreground hover:file:brightness-[1.05]"
             />
           </label>
         </div>
@@ -241,7 +241,7 @@ export function BusinessMediaManager({
               accept="image/png,image/jpeg,image/webp,image/gif"
               onChange={(e) => upload("logo", e.target.files)}
               disabled={busy.logo}
-              className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-(--accent) file:px-4 file:py-2 file:text-sm file:font-medium file:text-(--accent-foreground) hover:file:brightness-[1.05]"
+              className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-medium file:text-accent-foreground hover:file:brightness-[1.05]"
             />
           </label>
         </div>
@@ -297,7 +297,7 @@ export function BusinessMediaManager({
               accept="image/png,image/jpeg,image/webp,image/gif"
               onChange={(e) => upload("banner", e.target.files)}
               disabled={busy.banner}
-              className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-(--accent) file:px-4 file:py-2 file:text-sm file:font-medium file:text-(--accent-foreground) hover:file:brightness-[1.05]"
+              className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-medium file:text-accent-foreground hover:file:brightness-[1.05]"
             />
           </label>
         </div>
@@ -346,7 +346,7 @@ export function BusinessMediaManager({
               accept="image/png,image/jpeg,image/webp,image/gif"
               onChange={(e) => upload("gallery", e.target.files)}
               disabled={busy.gallery}
-              className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-(--accent) file:px-4 file:py-2 file:text-sm file:font-medium file:text-(--accent-foreground) hover:file:brightness-[1.05]"
+              className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-medium file:text-accent-foreground hover:file:brightness-[1.05]"
             />
           </label>
         </div>
@@ -405,7 +405,7 @@ export function BusinessMediaManager({
               accept="video/mp4,video/webm,video/quicktime"
               onChange={(e) => upload("video", e.target.files)}
               disabled={busy.video}
-              className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-(--accent) file:px-4 file:py-2 file:text-sm file:font-medium file:text-(--accent-foreground) hover:file:brightness-[1.05]"
+              className="block w-full text-sm file:mr-3 file:rounded-xl file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-medium file:text-accent-foreground hover:file:brightness-[1.05]"
             />
           </label>
         </div>

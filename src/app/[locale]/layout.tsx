@@ -51,9 +51,10 @@ export default async function LocaleLayout({
               locale={locale as Locale}
               dict={dict}
               user={{
-                username: user.email.split("@")[0],
+                displayName: user.displayName ?? user.email.split("@")[0],
                 role: user.role,
                 email: user.email,
+                avatarUrl: user.avatarUrl ?? null,
               }}
             />
             <div

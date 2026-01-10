@@ -55,7 +55,7 @@ export function BusinessCard({ business, locale }: BusinessCardProps) {
         }}
       >
         {/* Cover Image */}
-        <div className="relative h-48 w-full overflow-hidden bg-gradient-to-br from-accent/10 to-accent-2/10">
+        <div className="relative h-48 w-full overflow-hidden bg-linear-to-br from-accent/10 to-accent-2/10">
           {coverImage ? (
             <Image
               src={coverImage}
@@ -66,14 +66,14 @@ export function BusinessCard({ business, locale }: BusinessCardProps) {
             />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-6xl font-bold bg-gradient-to-br from-accent to-accent-2 bg-clip-text text-transparent opacity-20">
+              <div className="text-6xl font-bold bg-linear-to-br from-accent to-accent-2 bg-clip-text text-transparent opacity-20">
                 {name.charAt(0)}
               </div>
             </div>
           )}
           
           {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent" />
         </div>
 
         {/* Content */}

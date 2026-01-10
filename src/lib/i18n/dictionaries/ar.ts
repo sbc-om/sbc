@@ -11,6 +11,7 @@ export const ar = {
     register: "إنشاء حساب",
     dashboard: "لوحة التحكم",
     admin: "المدير",
+    users: "المستخدمون",
     profile: "الملف الشخصي",
     settings: "الإعدادات",
     logout: "تسجيل الخروج",

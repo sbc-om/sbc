@@ -11,6 +11,7 @@ export const en = {
     register: "Create account",
     dashboard: "Dashboard",
     admin: "Admin",
+    users: "Users",
     profile: "Profile",
     settings: "Settings",
     logout: "Logout",
