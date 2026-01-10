@@ -4,6 +4,7 @@ import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getBusinessById } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
+import { getUserById, listUsers } from "@/lib/db/users";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { EditBusinessForm } from "./EditBusinessForm";
@@ -25,6 +26,9 @@ export default async function AdminEditBusinessPage({
   const business = getBusinessById(id);
   if (!business) notFound();
 
+  const ownerEmail = business.ownerId ? getUserById(business.ownerId)?.email : undefined;
+  const users = listUsers();
+
   const title = locale === "ar" ? "تعديل النشاط التجاري" : "Edit Business";
 
   return (
@@ -45,6 +49,8 @@ export default async function AdminEditBusinessPage({
         business={business}
         categories={categories}
         emailLabel={dict.auth.email}
+        ownerEmail={ownerEmail}
+        users={users}
       />
     </AppPage>
   );

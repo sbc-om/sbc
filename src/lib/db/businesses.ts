@@ -17,6 +17,7 @@ const localizedStringSchema = z.object({
 
 export const businessInputSchema = z.object({
   slug: slugSchema,
+  ownerId: z.string().trim().min(1).optional(),
   name: localizedStringSchema,
   description: localizedStringSchema.optional(),
   // Legacy free-text category (kept for backward compatibility + search)
@@ -99,6 +100,7 @@ export function createBusiness(input: BusinessInput): Business {
   const business: Business = {
     id: nanoid(),
     slug: data.slug,
+    ownerId: data.ownerId,
     name: data.name as LocalizedString,
     description: data.description as LocalizedString | undefined,
     category: data.category,

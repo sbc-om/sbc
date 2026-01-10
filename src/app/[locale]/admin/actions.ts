@@ -7,6 +7,30 @@ import type { Locale } from "@/lib/i18n/locales";
 import { createBusiness, deleteBusiness, updateBusiness } from "@/lib/db/businesses";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getCategoryById } from "@/lib/db/categories";
+import { getUserByEmail, getUserById } from "@/lib/db/users";
+
+function resolveOwnerFromFormData(formData: FormData): { ownerId: string | undefined } {
+  const ownerIdRaw = String(formData.get("ownerId") || "").trim();
+  if (ownerIdRaw) {
+    const user = getUserById(ownerIdRaw);
+    if (!user) throw new Error("OWNER_NOT_FOUND");
+    return { ownerId: user.id };
+  }
+
+  // Backward compatibility (and manual entry fallback).
+  const ownerEmail = String(formData.get("ownerEmail") || "").trim();
+  if (ownerEmail) {
+    const user = getUserByEmail(ownerEmail);
+    if (!user) {
+      const looksValid = ownerEmail.includes("@");
+      throw new Error(looksValid ? "OWNER_NOT_FOUND" : "OWNER_EMAIL_INVALID");
+    }
+    return { ownerId: user.id };
+  }
+
+  // Empty means: clear owner.
+  return { ownerId: undefined };
+}
 
 function deriveLegacyCategoryText(categoryId: string | null) {
   if (!categoryId) return { categoryId: undefined, category: undefined };
@@ -39,8 +63,11 @@ export async function createBusinessDraftAction(
     const categoryId = categoryIdRaw || null;
     const categoryPatch = deriveLegacyCategoryText(categoryId);
 
+    const { ownerId } = resolveOwnerFromFormData(formData);
+
     const business = createBusiness({
       slug: String(formData.get("slug") || ""),
+      ownerId,
       name: {
         en: String(formData.get("name_en") || ""),
         ar: String(formData.get("name_ar") || ""),
@@ -80,8 +107,11 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
   const categoryId = categoryIdRaw || null;
   const categoryPatch = deriveLegacyCategoryText(categoryId);
 
+  const { ownerId } = resolveOwnerFromFormData(formData);
+
   const business = createBusiness({
     slug: String(formData.get("slug") || ""),
+    ownerId,
     name: {
       en: String(formData.get("name_en") || ""),
       ar: String(formData.get("name_ar") || ""),
@@ -116,8 +146,11 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   const categoryId = categoryIdRaw || null;
   const categoryPatch = deriveLegacyCategoryText(categoryId);
 
+  const { ownerId } = resolveOwnerFromFormData(formData);
+
   const next = updateBusiness(id, {
     slug: String(formData.get("slug") || "") || undefined,
+    ownerId,
     name: {
       en: String(formData.get("name_en") || ""),
       ar: String(formData.get("name_ar") || ""),

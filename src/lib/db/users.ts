@@ -114,6 +114,20 @@ export async function verifyUserPassword(input: {
   return ok ? user : null;
 }
 
+export function updateUserRole(id: string, newRole: Role): User {
+  const { users } = getLmdb();
+  const current = ensureUser(id);
+
+  const next: User = {
+    ...current,
+    role: newRole,
+    updatedAt: new Date().toISOString(),
+  };
+
+  users.put(id, next);
+  return next;
+}
+
 export function listUsers(): UserListItem[] {
   const { users } = getLmdb();
   const out: UserListItem[] = [];

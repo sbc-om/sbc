@@ -17,6 +17,8 @@ export type Category = {
 export type Business = {
   id: string;
   slug: string;
+  /** Optional owner user id (set by admin by linking a user email). */
+  ownerId?: string;
   name: LocalizedString;
   description?: LocalizedString;
   /** Legacy free-text category (kept for backward-compat + search). Prefer categoryId. */

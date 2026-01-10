@@ -7,11 +7,11 @@ import Image from "next/image";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Category } from "@/lib/db/types";
 import { createBusinessDraftAction, type CreateBusinessDraftResult } from "@/app/[locale]/admin/actions";
-import { BusinessMediaManager } from "@/components/admin/BusinessMediaManager";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { CategorySelect } from "@/components/ui/CategorySelect";
+import { UserSelect } from "@/components/ui/UserSelect";
 
 function Field({
   label,
@@ -89,7 +89,7 @@ function MediaUploadBox({
           onChange={(e) => onChange(e.target.files)}
           className="sr-only"
         />
-        <div className="flex items-center justify-center h-32 rounded-xl border-2 border-dashed border-(--surface-border) bg-(--chip-bg) transition hover:border-(--accent) hover:bg-(--surface)">
+        <div className="flex items-center justify-center h-32 rounded-xl border-2 border-dashed border-(--surface-border) bg-(--chip-bg) transition hover:border-accent hover:bg-(--surface)">
           <div className="text-center">
             <svg className="mx-auto h-8 w-8 text-(--muted-foreground)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -131,28 +131,20 @@ function MediaUploadBox({
   );
 }
 
-function CategorySkeleton() {
-  return (
-    <div className="grid gap-3">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="h-11 rounded-xl bg-(--chip-bg) animate-pulse" />
-      ))}
-    </div>
-  );
-}
-
 export function NewBusinessWizard({
   locale,
   emailLabel,
   categories,
+  users,
 }: {
   locale: Locale;
   emailLabel: string;
   categories: Category[];
+  users: Array<{ id: string; email: string; role: "admin" | "user" }>;
 }) {
   const ar = locale === "ar";
-  const [loadingCategories, setLoadingCategories] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedOwner, setSelectedOwner] = useState("");
   
   // Media states
   const [coverPreview, setCoverPreview] = useState<string[]>([]);
@@ -344,6 +336,27 @@ export function NewBusinessWizard({
               <Field label={ar ? "الموقع الإلكتروني" : "Website"} name="website" placeholder="https://example.com" />
               <Field label={emailLabel} name="email" placeholder="info@example.com" />
             </div>
+
+            <label className="group grid gap-2">
+              <span className="text-sm font-semibold text-foreground">
+                {ar ? "صاحب النشاط التجاري" : "Business Owner"}
+              </span>
+              <UserSelect
+                users={users}
+                value={selectedOwner}
+                onChange={setSelectedOwner}
+                placeholder={ar ? "اختر صاحب النشاط" : "Select business owner"}
+                searchPlaceholder={ar ? "ابحث بالبريد الإلكتروني..." : "Search by email..."}
+                locale={locale}
+                allowEmpty
+                emptyLabel={ar ? "بدون صاحب (اختياري)" : "No owner (optional)"}
+              />
+              <p className="text-xs text-(--muted-foreground)">
+                {ar
+                  ? "اختياري: اربط هذا النشاط بمستخدم موجود."
+                  : "Optional: link this business to an existing user."}
+              </p>
+            </label>
           </div>
         </div>
 

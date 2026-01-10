@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CategorySelect } from "@/components/ui/CategorySelect";
+import { UserSelect } from "@/components/ui/UserSelect";
 
 function Field({
   label,
@@ -141,16 +142,21 @@ export function EditBusinessForm({
   business,
   categories,
   emailLabel,
+  ownerEmail,
+  users,
 }: {
   locale: Locale;
   business: Business;
   categories: Category[];
   emailLabel: string;
+  ownerEmail?: string;
+  users: Array<{ id: string; email: string; role: "admin" | "user" }>;
 }) {
   const ar = locale === "ar";
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(business.categoryId || "");
+  const [selectedOwner, setSelectedOwner] = useState(business.ownerId || "");
   
   // Media states
   const [coverPreview, setCoverPreview] = useState<string[]>(
@@ -299,6 +305,27 @@ export function EditBusinessForm({
               <Field label={ar ? "الموقع" : "Website"} name="website" defaultValue={business.website} />
               <Field label={emailLabel} name="email" defaultValue={business.email} />
             </div>
+
+            <label className="group grid gap-2">
+              <span className="text-sm font-semibold text-foreground">
+                {ar ? "صاحب النشاط التجاري" : "Business Owner"}
+              </span>
+              <UserSelect
+                users={users}
+                value={selectedOwner}
+                onChange={setSelectedOwner}
+                placeholder={ar ? "اختر صاحب النشاط" : "Select business owner"}
+                searchPlaceholder={ar ? "ابحث بالبريد الإلكتروني..." : "Search by email..."}
+                locale={locale}
+                allowEmpty
+                emptyLabel={ar ? "بدون صاحب (اختياري)" : "No owner (optional)"}
+              />
+              <p className="text-xs text-(--muted-foreground)">
+                {ar
+                  ? "اتركه فارغاً لإزالة ربط المالك."
+                  : "Leave empty to clear the owner."}
+              </p>
+            </label>
           </div>
         </div>
 

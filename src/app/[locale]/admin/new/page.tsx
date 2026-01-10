@@ -6,6 +6,7 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { NewBusinessWizard } from "@/app/[locale]/admin/new/NewBusinessWizard";
 import { listCategories } from "@/lib/db/categories";
+import { listUsers } from "@/lib/db/users";
 
 export const runtime = "nodejs";
 
@@ -20,6 +21,7 @@ export default async function AdminNewBusinessPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
   const categories = listCategories();
+  const users = listUsers();
 
   const title = locale === "ar" ? "إضافة عمل" : "Add business";
 
@@ -36,6 +38,7 @@ export default async function AdminNewBusinessPage({
         locale={locale as Locale}
         emailLabel={dict.auth.email}
         categories={categories}
+        users={users}
       />
     </AppPage>
   );
