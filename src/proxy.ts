@@ -19,7 +19,7 @@ function detectLocaleFromAcceptLanguage(header: string | null): Locale {
   return "en";
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Skip Next internals and static files.
@@ -40,9 +40,10 @@ export async function middleware(req: NextRequest) {
   // If no locale prefix, redirect to the best locale.
   if (!first || !isLocale(first)) {
     const cookieLocale = req.cookies.get("locale")?.value;
-    const preferred: Locale = cookieLocale && isLocale(cookieLocale)
-      ? cookieLocale
-      : detectLocaleFromAcceptLanguage(req.headers.get("accept-language"));
+    const preferred: Locale =
+      cookieLocale && isLocale(cookieLocale)
+        ? cookieLocale
+        : detectLocaleFromAcceptLanguage(req.headers.get("accept-language"));
 
     const url = req.nextUrl.clone();
     url.pathname = `/${preferred}${pathname}`;
@@ -61,7 +62,7 @@ export async function middleware(req: NextRequest) {
   const locale = first;
 
   // Auth protection (JWT cookie) for protected areas.
-  // Note: middleware runs on Edge, so we must NOT touch LMDB here.
+  // Note: Proxy runs before routing; keep it fast and avoid doing heavy DB work here.
   const restSegments = segments.slice(1);
   const section = restSegments[0];
 
@@ -85,7 +86,10 @@ export async function middleware(req: NextRequest) {
     }
 
     try {
-      const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+      const { payload } = await jwtVerify(
+        token,
+        new TextEncoder().encode(secret)
+      );
       const role = payload.role;
 
       if (isAdmin && role !== "admin") {

@@ -37,7 +37,12 @@ export function ScrollLottie() {
         
         if (lottieRef.current) {
           const animation = lottieRef.current;
-          const totalFrames = animation.getDuration(true);
+          const totalFrames = animation.getDuration(true) ?? 0;
+          if (totalFrames <= 0) {
+            lastScrollY = currentScrollY;
+            ticking = false;
+            return;
+          }
           
           // Calculate scroll progress (0 to 1) based on viewport height
           const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
