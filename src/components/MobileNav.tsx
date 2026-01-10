@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
@@ -12,14 +13,15 @@ import {
   HiOutlineCollection,
   HiChat,
   HiOutlineChat,
-  HiLogout,
-  HiOutlineLogout,
   HiViewGrid,
   HiOutlineViewGrid,
   HiSearch,
   HiOutlineSearch,
   HiUser,
   HiOutlineUser,
+  HiCog,
+  HiOutlineCog,
+  HiOutlineLogout,
 } from "react-icons/hi";
 
 interface MobileNavProps {
@@ -29,8 +31,44 @@ interface MobileNavProps {
 
 export function MobileNav({ locale, dict }: MobileNavProps) {
   const pathname = usePathname();
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const isActive = (path: string) => pathname.startsWith(`/${locale}${path}`);
+
+  // Close profile menu on navigation changes
+  useEffect(() => {
+    setProfileMenuOpen(false);
+  }, [pathname]);
+
+  // Close profile menu when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (!profileMenuRef.current) return;
+      if (!profileMenuRef.current.contains(target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown, { passive: true });
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [profileMenuOpen]);
 
   const navItems = [
     {
@@ -61,13 +99,6 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
       Icon: HiChat,
       IconOutline: HiOutlineChat,
     },
-    {
-      key: "profile",
-      label: locale === "ar" ? "حسابي" : "Profile",
-      path: "/dashboard",
-      Icon: HiUser,
-      IconOutline: HiOutlineUser,
-    },
   ];
 
   return (
@@ -97,17 +128,70 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
           );
         })}
 
-        <form action={logoutAction.bind(null, locale)} className="flex-1">
+        {/* Profile dropdown */}
+        <div ref={profileMenuRef} className="relative flex-1">
           <button
-            type="submit"
+            type="button"
+            onClick={() => setProfileMenuOpen((v) => !v)}
             className="flex w-full flex-col items-center gap-1 px-4 py-2 min-w-0"
+            aria-haspopup="menu"
+            aria-expanded={profileMenuOpen}
           >
-            <HiOutlineLogout className="h-6 w-6 text-(--muted-foreground)" />
-            <span className="text-xs truncate font-normal text-(--muted-foreground)">
-              {dict.nav.logout}
+            {(isActive("/dashboard") ? HiUser : HiOutlineUser)({
+              className: `h-6 w-6 ${isActive("/dashboard") ? "text-foreground" : "text-(--muted-foreground)"}`,
+            })}
+            <span
+              className={`text-xs truncate ${isActive("/dashboard") ? "font-semibold" : "font-normal text-(--muted-foreground)"}`}
+            >
+              {dict.nav.profile}
             </span>
           </button>
-        </form>
+
+          {profileMenuOpen && (
+            <div
+              role="menu"
+              aria-label="Profile menu"
+              className="absolute bottom-full mb-2 w-56 max-w-[calc(100vw-16px)] rounded-xl border bg-background shadow-xl p-2"
+              style={{
+                borderColor: "var(--surface-border)",
+                ...(locale === "ar" ? { left: 8 } : { right: 8 }),
+              }}
+            >
+              <Link
+                role="menuitem"
+                href={`/${locale}/dashboard`}
+                onClick={() => setProfileMenuOpen(false)}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              >
+                {(HiOutlineUser as any)({ className: "h-5 w-5 shrink-0" })}
+                <span className="min-w-0 truncate">{dict.nav.profile}</span>
+              </Link>
+
+              <Link
+                role="menuitem"
+                href={`/${locale}/settings`}
+                onClick={() => setProfileMenuOpen(false)}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              >
+                {(isActive("/settings") ? HiCog : HiOutlineCog)({ className: "h-5 w-5 shrink-0" })}
+                <span className="min-w-0 truncate">{dict.nav.settings}</span>
+              </Link>
+
+              <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
+
+              <form action={logoutAction.bind(null, locale)}>
+                <button
+                  type="submit"
+                  onClick={() => setProfileMenuOpen(false)}
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+                >
+                  {(HiOutlineLogout as any)({ className: "h-5 w-5 shrink-0" })}
+                  <span className="min-w-0 truncate">{dict.nav.logout}</span>
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
       </div>
     </nav>
   );

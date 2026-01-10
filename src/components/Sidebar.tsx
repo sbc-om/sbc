@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -28,6 +28,8 @@ import {
   HiOutlineLogout,
   HiChevronLeft,
   HiChevronRight,
+  HiUser,
+  HiOutlineUser,
   HiMenu,
   HiX
 } from "react-icons/hi";
@@ -50,12 +52,50 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   const pathname = usePathname();
   const { collapsed, setCollapsed, isMobile } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  const iconOnly = collapsed && !isMobile;
 
   const toggleCollapsed = () => {
     setCollapsed(!collapsed);
   };
 
   const isActive = (path: string) => pathname.startsWith(`/${locale}${path}`);
+
+  // Close profile menu on navigation changes
+  useEffect(() => {
+    setProfileMenuOpen(false);
+  }, [pathname]);
+
+  // Close profile menu when clicking outside or pressing Escape
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (!profileMenuRef.current) return;
+      if (!profileMenuRef.current.contains(target)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown, { passive: true });
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [profileMenuOpen]);
 
   const baseNavItems: NavItem[] = [
     {
@@ -120,7 +160,11 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     <>
       {/* Logo */}
       <div className={`px-3 pt-4 transition-all duration-300 ${collapsed ? "mb-4" : "mb-8"}`}>
-        <Link href={`/${locale}`} className="flex items-center gap-3 group">
+        <Link
+          href={`/${locale}`}
+          className={`flex items-center gap-3 group ${iconOnly ? "justify-center" : "justify-start"}`}
+          title={iconOnly ? "SBC" : undefined}
+        >
           <Image
             src="/images/sbc.svg"
             alt="SBC"
@@ -147,11 +191,11 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               key={item.key}
               href={`/${locale}${item.path}`}
               onClick={() => isMobile && setMobileOpen(false)}
-              className={`flex items-center gap-4 rounded-xl px-3 py-3 text-base transition-all ${
+              className={`flex items-center rounded-xl py-3 text-base transition-all ${
                 active
                   ? "bg-linear-to-r from-accent/10 to-accent-2/10 font-bold text-accent"
                   : "hover:bg-(--surface) font-normal"
-              }`}
+              } ${iconOnly ? "justify-center px-2" : "justify-start gap-4 px-3"}`}
               title={collapsed && !isMobile ? item.label : undefined}
             >
               <IconComponent className="h-7 w-7 shrink-0" />
@@ -162,12 +206,20 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       </nav>
 
       {/* User Profile */}
-      <div className="mt-auto border-t pt-4 px-2" style={{ borderColor: "var(--surface-border)" }}>
-        <Link
-          href={`/${locale}/dashboard`}
-          onClick={() => isMobile && setMobileOpen(false)}
-          className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-(--surface) transition-colors"
+      <div
+        ref={profileMenuRef}
+        className="mt-auto border-t pt-4 px-2 relative"
+        style={{ borderColor: "var(--surface-border)" }}
+      >
+        <button
+          type="button"
+          onClick={() => setProfileMenuOpen((v) => !v)}
+          className={`w-full flex items-center rounded-xl py-2 hover:bg-(--surface) transition-colors text-left ${
+            iconOnly ? "justify-center px-2" : "justify-start gap-3 px-3"
+          }`}
           title={collapsed && !isMobile ? user.username : undefined}
+          aria-haspopup="menu"
+          aria-expanded={profileMenuOpen}
         >
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-linear-to-br from-accent to-accent-2 shrink-0 ring-2 ring-accent/20">
             <span className="text-sm font-bold text-white">
@@ -180,37 +232,65 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               <p className="text-xs text-(--muted-foreground) truncate">{user.email}</p>
             </div>
           )}
-        </Link>
+        </button>
 
-        {/* Profile actions */}
-        <div className="mt-2 space-y-1">
-          <Link
-            href={`/${locale}/settings`}
-            onClick={() => isMobile && setMobileOpen(false)}
-            className="flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
-            title={collapsed && !isMobile ? (dict.nav.settings ?? (locale === "ar" ? "الإعدادات" : "Settings")) : undefined}
+        {profileMenuOpen && (
+          <div
+            role="menu"
+            aria-label="Profile menu"
+            className="absolute bottom-full mb-2 w-64 rounded-xl border bg-background shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150"
+            style={{
+              borderColor: "var(--surface-border)",
+              ...(locale === "ar" ? { right: 0 } : { left: 0 }),
+            }}
           >
-            {(isActive("/settings") ? HiCog : HiOutlineCog)({ className: "h-5 w-5 shrink-0" })}
-            {(!collapsed || isMobile) && (
-              <span className="min-w-0 truncate">
-                {dict.nav.settings ?? (locale === "ar" ? "الإعدادات" : "Settings")}
-              </span>
-            )}
-          </Link>
+            <div className="px-2 py-2">
+              <p className="text-xs text-(--muted-foreground)">{dict.nav.profile}</p>
+            </div>
 
-          <form action={logoutAction.bind(null, locale)}>
-            <button
-              type="submit"
-              className="w-full flex items-center gap-3 rounded-xl px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
-              title={collapsed && !isMobile ? dict.nav.logout : undefined}
+            <Link
+              role="menuitem"
+              href={`/${locale}/dashboard`}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                if (isMobile) setMobileOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
             >
-              {(HiOutlineLogout as any)({ className: "h-5 w-5 shrink-0" })}
-              {(!collapsed || isMobile) && (
+              {(isActive("/dashboard") ? HiUser : HiOutlineUser)({ className: "h-5 w-5 shrink-0" })}
+              <span className="min-w-0 truncate">{dict.nav.profile}</span>
+            </Link>
+
+            <Link
+              role="menuitem"
+              href={`/${locale}/settings`}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                if (isMobile) setMobileOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+            >
+              {(isActive("/settings") ? HiCog : HiOutlineCog)({ className: "h-5 w-5 shrink-0" })}
+              <span className="min-w-0 truncate">{dict.nav.settings}</span>
+            </Link>
+
+            <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
+
+            <form action={logoutAction.bind(null, locale)}>
+              <button
+                type="submit"
+                onClick={() => {
+                  setProfileMenuOpen(false);
+                  if (isMobile) setMobileOpen(false);
+                }}
+                className="w-full flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              >
+                {(HiOutlineLogout as any)({ className: "h-5 w-5 shrink-0" })}
                 <span className="min-w-0 truncate">{dict.nav.logout}</span>
-              )}
-            </button>
-          </form>
-        </div>
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
       {/* Toggle Button - Desktop Only */}
