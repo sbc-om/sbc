@@ -341,7 +341,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`fixed top-0 bottom-0 z-40 border-e hidden lg:flex flex-col transition-all duration-300 ${
+        className={`fixed top-0 bottom-0 z-40 border-e shadow-none hidden lg:flex flex-col transition-all duration-300 ${
           collapsed ? "w-20" : "w-64"
         }`}
         style={{
@@ -369,7 +369,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           
           {/* Mobile sidebar */}
           <aside
-            className={`fixed top-0 bottom-0 z-50 w-72 border-e lg:hidden flex flex-col transition-transform duration-300 ease-in-out shadow-2xl ${
+            className={`fixed top-0 bottom-0 z-50 w-72 border-e shadow-none lg:hidden flex flex-col transition-transform duration-300 ease-in-out ${
               mobileOpen ? "translate-x-0" : (locale === "ar" ? "translate-x-full" : "-translate-x-full")
             }`}
             style={{

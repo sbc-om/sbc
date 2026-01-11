@@ -30,6 +30,16 @@
   --sidebar-width: 16rem;
 }
 
+/*
+  Prevent layout shift on initial load (before hydration):
+  On mobile/tablet we don't reserve space for the sidebar.
+*/
+@media (max-width: 1023px) {
+  :root {
+    --sidebar-width: 0rem;
+  }
+}
+
 .dark {
   --background: #070a10;
   --foreground: #e5e7eb;
