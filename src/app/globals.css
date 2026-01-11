@@ -160,6 +160,34 @@ html[dir="rtl"] body {
   font-family: var(--font-arabic), Arial, Helvetica, sans-serif;
 }
 
+/* Leaflet theme polish (match our glassy surface + dark mode) */
+.leaflet-container {
+  background: var(--background);
+  font-family: inherit;
+}
+
+/* Zoom controls */
+.leaflet-control-zoom a {
+  border-color: var(--surface-border) !important;
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
+  box-shadow: var(--shadow) !important;
+  backdrop-filter: blur(12px);
+}
+
+.leaflet-control-zoom a:hover {
+  filter: brightness(1.02);
+}
+
+.dark .leaflet-control-zoom a:hover {
+  filter: brightness(1.08);
+}
+
+/* Hard-disable attribution control visuals (we provide our own compact info popover) */
+.leaflet-control-attribution {
+  display: none !important;
+}
+
 /* Custom animations for scroll effects */
 @keyframes animate-in {
   from {

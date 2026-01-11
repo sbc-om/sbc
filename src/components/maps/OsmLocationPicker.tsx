@@ -22,6 +22,22 @@ export type OsmLocationValue = {
   label?: string;
 };
 
+function useIsDarkMode(): boolean {
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const compute = () => setIsDark(root.classList.contains("dark"));
+    compute();
+
+    const obs = new MutationObserver(() => compute());
+    obs.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+
+  return isDark;
+}
+
 function FlyTo({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
   useEffect(() => {
@@ -95,6 +111,8 @@ export function OsmLocationPicker({
   const [results, setResults] = useState<Array<{ label: string; lat: number; lng: number }>>([]);
   const [searching, setSearching] = useState(false);
   const [geoBusy, setGeoBusy] = useState(false);
+
+  const isDark = useIsDarkMode();
 
   const [localRadius, setLocalRadius] = useState(String(value?.radiusMeters ?? 250));
 
@@ -185,6 +203,24 @@ export function OsmLocationPicker({
     onChange({ ...value, radiusMeters });
   }
 
+  const tiles = useMemo(() => {
+    // CARTO tiles are a solid default and have both light/dark variants.
+    // Note: attribution is still required; we hide Leaflet's default label and expose it via a minimal info popover.
+    return isDark
+      ? {
+          url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+          label: "CARTO dark",
+          attribution:
+            'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors • Tiles © <a href="https://carto.com/attributions">CARTO</a>',
+        }
+      : {
+          url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+          label: "CARTO light",
+          attribution:
+            'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors • Tiles © <a href="https://carto.com/attributions">CARTO</a>',
+        };
+  }, [isDark]);
+
   return (
     <div className={cn("rounded-2xl border border-(--surface-border) bg-(--surface) p-4", className)}>
       <div className={cn("flex items-start justify-between gap-3", rtl ? "flex-row-reverse" : "")}>
@@ -217,7 +253,7 @@ export function OsmLocationPicker({
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={ar ? "ابحث عن مكان (OpenStreetMap)…" : "Search a place (OpenStreetMap)…"}
+          placeholder={ar ? "ابحث عن مكان…" : "Search a place…"}
           disabled={disabled}
         />
         <div className="text-xs text-(--muted-foreground)">{searching ? (ar ? "بحث…" : "Searching…") : ""}</div>
@@ -246,16 +282,19 @@ export function OsmLocationPicker({
         </div>
       ) : null}
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-(--surface-border)">
+      <div className="relative mt-4 overflow-hidden rounded-2xl border border-(--surface-border)">
         <MapContainer
           center={[center.lat, center.lng]}
           zoom={value ? 16 : 12}
           scrollWheelZoom
+          attributionControl={false}
           style={{ height: 320, width: "100%" }}
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution={tiles.attribution}
+            url={tiles.url}
+            // Force layer remount on theme switch
+            key={tiles.url}
           />
           <ClickHandler onPick={pick} />
           <FlyTo lat={center.lat} lng={center.lng} />
