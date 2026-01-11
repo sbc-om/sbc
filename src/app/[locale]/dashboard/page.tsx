@@ -52,7 +52,7 @@ export default async function DashboardPage({
     },
     loyalty: {
       title: ar ? "نظام الولاء" : "Loyalty System",
-      href: `/${locale}/loyalty`,
+      href: `/${locale}/loyalty/manage`,
       storeHref: `/${locale}/store?q=loyalty`,
       subtitle: ar ? "اشتراك لإدارة العملاء والنقاط" : "Subscription for customers & points",
     },

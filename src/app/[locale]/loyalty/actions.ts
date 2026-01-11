@@ -21,8 +21,8 @@ export async function purchaseLoyaltySubscriptionAction(locale: Locale, formData
     plan: plan as any,
   });
 
-  revalidatePath(`/${locale}/loyalty`);
-  redirect(`/${locale}/loyalty?success=1`);
+  revalidatePath(`/${locale}/loyalty/manage`);
+  redirect(`/${locale}/loyalty/manage?success=1`);
 }
 
 export async function addLoyaltyCustomerAction(locale: Locale, formData: FormData) {
@@ -43,8 +43,8 @@ export async function addLoyaltyCustomerAction(locale: Locale, formData: FormDat
     },
   });
 
-  revalidatePath(`/${locale}/loyalty`);
-  redirect(`/${locale}/loyalty`);
+  revalidatePath(`/${locale}/loyalty/manage`);
+  redirect(`/${locale}/loyalty/manage`);
 }
 
 export async function adjustLoyaltyCustomerPointsAction(locale: Locale, formData: FormData) {
@@ -55,7 +55,7 @@ export async function adjustLoyaltyCustomerPointsAction(locale: Locale, formData
   const delta = Number(deltaRaw);
 
   if (!Number.isFinite(delta)) {
-    redirect(`/${locale}/loyalty`);
+    redirect(`/${locale}/loyalty/manage`);
   }
 
   adjustLoyaltyCustomerPoints({
@@ -64,6 +64,6 @@ export async function adjustLoyaltyCustomerPointsAction(locale: Locale, formData
     delta: Math.trunc(delta),
   });
 
-  revalidatePath(`/${locale}/loyalty`);
-  redirect(`/${locale}/loyalty`);
+  revalidatePath(`/${locale}/loyalty/manage`);
+  redirect(`/${locale}/loyalty/manage`);
 }

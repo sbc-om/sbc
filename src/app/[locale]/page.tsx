@@ -163,7 +163,7 @@ export default async function LocaleHome({
               </p>
               <div className="mt-4">
                 <Link
-                  href={`/${locale}/loyalty/about`}
+                  href={`/${locale}/loyalty`}
                   className="inline-flex items-center text-sm font-medium text-accent hover:underline"
                 >
                   {locale === "ar" ? "فتح" : "Open"}
