@@ -19,7 +19,7 @@ export function PublicPage({
   containerClassName?: string;
 }) {
   return (
-    <PageContainer withPadding={false} className={cn("pt-28 pb-10", className)}>
+    <PageContainer withPadding={false} className={cn("pt-10 pb-10", className)}>
       <Container size="lg" className={containerClassName}>
         {children}
       </Container>

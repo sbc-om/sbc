@@ -21,9 +21,11 @@ type LoyaltyProfileDTO = {
 export function LoyaltyProfileClient({
   locale,
   initialProfile,
+  baseUrl,
 }: {
   locale: Locale;
   initialProfile: LoyaltyProfileDTO | null;
+  baseUrl: string | null;
 }) {
   const rtl = localeDir(locale) === "rtl";
   const ar = locale === "ar";
@@ -75,9 +77,9 @@ export function LoyaltyProfileClient({
 
   const joinUrl = useMemo(() => {
     if (!joinCode) return null;
-    if (typeof window === "undefined") return null;
-    return `${window.location.origin}/${locale}/loyalty/join/${joinCode}`;
-  }, [joinCode, locale]);
+    if (!baseUrl) return null;
+    return `${baseUrl}/${locale}/loyalty/join/${joinCode}`;
+  }, [joinCode, locale, baseUrl]);
 
   React.useEffect(() => {
     let cancelled = false;

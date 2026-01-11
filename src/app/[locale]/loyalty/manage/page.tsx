@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 
 import { PublicPage } from "@/components/PublicPage";
 import { buttonVariants } from "@/components/ui/Button";
@@ -29,6 +30,13 @@ export default async function LoyaltyManagePage({
 
   const ar = locale === "ar";
   const user = await getCurrentUser();
+
+  // Build an absolute origin for shareable URLs (used by a Client Component).
+  // Doing this on the server avoids hydration mismatches from `window.location`.
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const baseUrl = host ? `${proto}://${host}` : null;
 
   const programSub = user ? getProgramSubscriptionByUser(user.id, "loyalty") : null;
   const isActive = isProgramSubscriptionActive(programSub);
@@ -108,7 +116,7 @@ export default async function LoyaltyManagePage({
       {/* Management */}
       {user && isActive ? (
         <>
-          <LoyaltyProfileClient locale={locale as Locale} initialProfile={profile} />
+          <LoyaltyProfileClient locale={locale as Locale} initialProfile={profile} baseUrl={baseUrl} />
 
           <div className="mt-8 sbc-card rounded-2xl p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
