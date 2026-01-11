@@ -267,3 +267,24 @@ export function getLoyaltyCustomerById(id: string): LoyaltyCustomer | null {
   if (!cid.success) return null;
   return (loyaltyCustomers.get(cid.data) as LoyaltyCustomer | undefined) ?? null;
 }
+
+export function getLoyaltyCustomerByPhone(input: {
+  userId: string;
+  phone: string;
+}): LoyaltyCustomer | null {
+  const { loyaltyCustomers } = getLmdb();
+  const uid = userIdSchema.safeParse(input.userId);
+  if (!uid.success) return null;
+  
+  const phoneNormalized = input.phone.trim().replace(/\s+/g, "");
+  if (!phoneNormalized) return null;
+
+  for (const { value } of loyaltyCustomers.getRange()) {
+    const c = value as LoyaltyCustomer;
+    if (c.userId !== uid.data) continue;
+    const customerPhone = (c.phone ?? "").trim().replace(/\s+/g, "");
+    if (customerPhone === phoneNormalized) return c;
+  }
+  
+  return null;
+}

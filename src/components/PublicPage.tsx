@@ -19,7 +19,16 @@ export function PublicPage({
   containerClassName?: string;
 }) {
   return (
-    <PageContainer withPadding={false} className={cn("pt-10 pb-10", className)}>
+    <PageContainer
+      withPadding={false}
+      className={cn(
+        // Header is fixed (and slightly taller on mobile). Give enough top space so
+        // public pages (e.g. loyalty, business pages, customer card) never render
+        // underneath the header/menu when logged out.
+        "pt-24 pb-10 sm:pt-28",
+        className,
+      )}
+    >
       <Container size="lg" className={containerClassName}>
         {children}
       </Container>

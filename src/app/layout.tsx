@@ -40,12 +40,15 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/site.webmanifest',
-  themeColor: '#0877FB',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'SBC',
   },
+};
+
+export const viewport = {
+  themeColor: '#0877FB',
 };
 
 async function getRequestLocale() {

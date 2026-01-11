@@ -151,6 +151,27 @@ export default async function LoyaltyManagePage({
                 <div className="mt-1 font-mono text-sm">{profile?.joinCode ?? (ar ? "—" : "—")}</div>
               </div>
             </div>
+
+            {profile?.joinCode && (
+              <div className="mt-4 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+                <div className="text-sm font-semibold mb-2">
+                  {ar ? "صفحة البحث العامة" : "Public Lookup Page"}
+                </div>
+                <p className="text-xs text-(--muted-foreground) mb-3">
+                  {ar
+                    ? "شارك هذا الرابط مع موظفيك للبحث السريع عن العملاء بالهاتف وعرض QR والباركود."
+                    : "Share this link with your staff for quick customer phone lookup with QR and barcode display."}
+                </p>
+                <Link
+                  href={`/${locale}/loyalty/lookup/${profile.joinCode}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                >
+                  {ar ? "فتح صفحة البحث" : "Open Lookup Page"} →
+                </Link>
+              </div>
+            )}
           </div>
         </>
       ) : null}

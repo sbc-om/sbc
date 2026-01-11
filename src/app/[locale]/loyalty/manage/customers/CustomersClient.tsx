@@ -3,12 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import React, { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { localeDir } from "@/lib/i18n/locales";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
+import { QrScanner } from "@/components/QrScanner";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -43,6 +45,7 @@ export function CustomersClient({
   const [qrForCustomerId, setQrForCustomerId] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [qrBusy, setQrBusy] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
   const filtered = useMemo(() => {
@@ -140,6 +143,30 @@ export function CustomersClient({
     setQrBusy(false);
   }
 
+  const router = useRouter();
+
+  function handleScan(data: string) {
+    // Extract customer ID from URL
+    // Expected format: http://domain/locale/loyalty/manage/customers/{customerId}
+    try {
+      const url = new URL(data);
+      const pathParts = url.pathname.split("/");
+      const customersIndex = pathParts.indexOf("customers");
+      
+      if (customersIndex !== -1 && pathParts[customersIndex + 1]) {
+        const customerId = pathParts[customersIndex + 1];
+        setShowScanner(false);
+        router.push(`/${locale}/loyalty/manage/customers/${customerId}`);
+      } else {
+        alert(ar ? "رمز QR غير صالح" : "Invalid QR code");
+        setShowScanner(false);
+      }
+    } catch (e) {
+      alert(ar ? "رمز QR غير صالح" : "Invalid QR code");
+      setShowScanner(false);
+    }
+  }
+
   return (
     <div className="grid gap-4">
       <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between", rtl ? "sm:flex-row-reverse" : "")}>
@@ -151,14 +178,32 @@ export function CustomersClient({
               : "Search by name, phone, or code."}
           </div>
         </div>
-        <div className="w-full sm:max-w-md">
+        <div className="flex w-full gap-2 sm:max-w-md">
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder={ar ? "ابحث…" : "Search…"}
+            className="flex-1"
           />
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={() => setShowScanner(true)}
+            className="shrink-0"
+          >
+            {ar ? "مسح QR" : "Scan QR"}
+          </Button>
         </div>
       </div>
+
+      {showScanner && (
+        <QrScanner
+          onScan={handleScan}
+          onClose={() => setShowScanner(false)}
+          locale={locale}
+        />
+      )}
 
       {filtered.length === 0 ? (
         <div className={cn("sbc-card rounded-2xl p-6 text-sm text-(--muted-foreground)", rtl ? "text-right" : "text-left")}>
@@ -242,21 +287,21 @@ export function CustomersClient({
                       <div className={cn("grid grid-cols-4 gap-1.5", rtl ? "[direction:ltr]" : "")}>
                         <Button 
                           type="button" 
-                          variant="ghost" 
+                          variant="secondary" 
                           size="sm" 
                           disabled={!!busyById[c.id]} 
                           onClick={() => adjustPoints(c.id, -5)}
-                          className="h-8"
+                          className="h-8 hover:bg-red-50 hover:text-red-700 hover:border-red-200 dark:hover:bg-red-950/30 dark:hover:text-red-400 dark:hover:border-red-900/50"
                         >
                           -5
                         </Button>
                         <Button 
                           type="button" 
-                          variant="ghost" 
+                          variant="secondary" 
                           size="sm" 
                           disabled={!!busyById[c.id]} 
                           onClick={() => adjustPoints(c.id, -1)}
-                          className="h-8"
+                          className="h-8 hover:bg-red-50 hover:text-red-600 hover:border-red-100 dark:hover:bg-red-950/20 dark:hover:text-red-300 dark:hover:border-red-900/30"
                         >
                           -1
                         </Button>
@@ -266,7 +311,7 @@ export function CustomersClient({
                           size="sm" 
                           disabled={!!busyById[c.id]} 
                           onClick={() => adjustPoints(c.id, +1)}
-                          className="h-8"
+                          className="h-8 hover:bg-green-50 hover:text-green-600 hover:border-green-100 dark:hover:bg-green-950/20 dark:hover:text-green-300 dark:hover:border-green-900/30"
                         >
                           +1
                         </Button>
@@ -276,7 +321,7 @@ export function CustomersClient({
                           size="sm" 
                           disabled={!!busyById[c.id]} 
                           onClick={() => adjustPoints(c.id, +5)}
-                          className="h-8"
+                          className="h-8 hover:bg-green-50 hover:text-green-700 hover:border-green-200 dark:hover:bg-green-950/30 dark:hover:text-green-400 dark:hover:border-green-900/50"
                         >
                           +5
                         </Button>

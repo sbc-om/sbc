@@ -82,21 +82,21 @@ export default async function LoyaltyManageCustomerDetailPage({
               <input type="hidden" name="returnTo" value={returnTo} />
               <input type="hidden" name="customerId" value={customer.id} />
               <input type="hidden" name="delta" value="1" />
-              <Button type="submit" variant="primary">{ar ? "+1" : "+1"}</Button>
+              <Button type="submit" variant="primary" className="hover:bg-green-50 hover:text-green-600 hover:border-green-100 dark:hover:bg-green-950/20 dark:hover:text-green-300 dark:hover:border-green-900/30">{ar ? "+1" : "+1"}</Button>
             </form>
 
             <form action={adjustLoyaltyCustomerPointsAction.bind(null, locale as Locale)}>
               <input type="hidden" name="returnTo" value={returnTo} />
               <input type="hidden" name="customerId" value={customer.id} />
               <input type="hidden" name="delta" value="5" />
-              <Button type="submit" variant="secondary">{ar ? "+5" : "+5"}</Button>
+              <Button type="submit" variant="secondary" className="hover:bg-green-50 hover:text-green-700 hover:border-green-200 dark:hover:bg-green-950/30 dark:hover:text-green-400 dark:hover:border-green-900/50">{ar ? "+5" : "+5"}</Button>
             </form>
 
             <form action={adjustLoyaltyCustomerPointsAction.bind(null, locale as Locale)}>
               <input type="hidden" name="returnTo" value={returnTo} />
               <input type="hidden" name="customerId" value={customer.id} />
               <input type="hidden" name="delta" value="-1" />
-              <Button type="submit" variant="ghost">{ar ? "-1" : "-1"}</Button>
+              <Button type="submit" variant="secondary" className="hover:bg-red-50 hover:text-red-600 hover:border-red-100 dark:hover:bg-red-950/20 dark:hover:text-red-300 dark:hover:border-red-900/30">{ar ? "-1" : "-1"}</Button>
             </form>
           </div>
 
