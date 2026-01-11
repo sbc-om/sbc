@@ -69,10 +69,27 @@ export type LoyaltySubscription = {
   updatedAt: string;
 };
 
+/**
+ * Loyalty profile is what gets encoded into a QR/join link.
+ * One profile per business owner (user) for now.
+ */
+export type LoyaltyProfile = {
+  userId: string;
+  businessName: string;
+  /** Optional logo URL (usually a /media/... url). */
+  logoUrl?: string;
+  /** Public join code (unique) used in /loyalty/join/[code]. */
+  joinCode: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type LoyaltyCustomer = {
   id: string;
   /** Business owner (our user id). */
   userId: string;
+  /** Optional: future-proof for multi-business owners. */
+  businessId?: string;
   fullName: string;
   phone?: string;
   email?: string;
@@ -90,6 +107,8 @@ export type LoyaltyCard = {
   id: string;
   userId: string;
   customerId: string;
+  /** Optional: future-proof for multi-business owners. */
+  businessId?: string;
   status: "active" | "revoked";
   points: number;
   createdAt: string;

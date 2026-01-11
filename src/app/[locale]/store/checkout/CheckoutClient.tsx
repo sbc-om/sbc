@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React from "react";
 import { HiCreditCard, HiArrowRight, HiCheckCircle, HiXCircle, HiTrash } from "react-icons/hi";
 
@@ -16,8 +16,6 @@ import {
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { useCart } from "@/components/store/CartProvider";
 
-import { finalizeCheckoutAction } from "./actions";
-
 function cartTotalOMR(locale: Locale, slugs: string[]) {
   let total = 0;
   for (const slug of slugs) {
@@ -29,10 +27,10 @@ function cartTotalOMR(locale: Locale, slugs: string[]) {
 }
 
 export function CheckoutClient({ locale }: { locale: Locale }) {
+  const router = useRouter();
   const { state, clear, remove } = useCart();
   const searchParams = useSearchParams();
-  const status = searchParams.get("status");
-  const processedRef = React.useRef(false);
+  const payment = searchParams.get("payment");
 
   const rtl = localeDir(locale) === "rtl";
   const ar = locale === "ar";
@@ -54,28 +52,52 @@ export function CheckoutClient({ locale }: { locale: Locale }) {
 
   // Finalize purchase on successful return (fake gateway) and then clear cart.
   React.useEffect(() => {
-    if (status !== "success") return;
-    if (processedRef.current) return;
-    if (slugs.length === 0) return;
+    let cancelled = false;
 
-    processedRef.current = true;
-    (async () => {
-      try {
-        await finalizeCheckoutAction(locale, slugs);
-      } finally {
-        // Clear once so items don't remain after "purchase".
-        clear();
+    async function finalizeIfNeeded() {
+      if (payment !== "success") return;
+      if (state.items.length === 0) {
+        router.replace(`/${locale}/store/checkout`);
+        return;
       }
-    })();
+
+      try {
+        const res = await fetch("/api/store/checkout/finalize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ slugs: state.items.map((i) => i.slug) }),
+        });
+
+        if (!res.ok) {
+          // keep cart so user can retry; just strip params
+          if (!cancelled) router.replace(`/${locale}/store/checkout`);
+          return;
+        }
+
+        if (!cancelled) {
+          clear();
+          // remove query params after success so refresh doesn't re-trigger.
+          router.replace(`/${locale}/store/checkout`);
+        }
+      } catch {
+        // keep cart so user can retry
+        if (!cancelled) router.replace(`/${locale}/store/checkout`);
+      }
+    }
+
+    void finalizeIfNeeded();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
+  }, [payment]);
 
   const returnUrl = `/${locale}/store/checkout`;
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2 sbc-card rounded-2xl p-6">
-        {status === "success" ? (
+        {payment === "success" ? (
           <div className="flex items-start gap-3 rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
             <HiCheckCircle className="h-6 w-6 text-emerald-500" />
             <div>
@@ -97,7 +119,7 @@ export function CheckoutClient({ locale }: { locale: Locale }) {
           </div>
         ) : null}
 
-        {status === "cancel" ? (
+        {payment === "cancel" ? (
           <div className="flex items-start gap-3 rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
             <HiXCircle className="h-6 w-6 text-red-500" />
             <div>

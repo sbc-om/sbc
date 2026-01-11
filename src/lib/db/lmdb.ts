@@ -17,6 +17,8 @@ export type LmdbHandles = {
   /** Purchased program packages / entitlements keyed per-user & program. */
   programSubscriptions: ReturnType<ReturnType<typeof open>["openDB"]>;
   loyaltySubscriptions: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** Loyalty business profile (join code, display name, logo) keyed by owner userId. */
+  loyaltyProfiles: ReturnType<ReturnType<typeof open>["openDB"]>;
   loyaltyCustomers: ReturnType<ReturnType<typeof open>["openDB"]>;
   loyaltyCards: ReturnType<ReturnType<typeof open>["openDB"]>;
 };
@@ -52,6 +54,7 @@ export function getLmdb(): LmdbHandles {
 
     // Loyalty / CRM
     existing.loyaltySubscriptions ??= existing.root.openDB({ name: "loyaltySubscriptions" });
+    existing.loyaltyProfiles ??= existing.root.openDB({ name: "loyaltyProfiles" });
     existing.loyaltyCustomers ??= existing.root.openDB({ name: "loyaltyCustomers" });
     existing.loyaltyCards ??= existing.root.openDB({ name: "loyaltyCards" });
 
@@ -85,6 +88,7 @@ export function getLmdb(): LmdbHandles {
 
   // Loyalty / CRM
   const loyaltySubscriptions = root.openDB({ name: "loyaltySubscriptions" });
+  const loyaltyProfiles = root.openDB({ name: "loyaltyProfiles" });
   const loyaltyCustomers = root.openDB({ name: "loyaltyCustomers" });
   const loyaltyCards = root.openDB({ name: "loyaltyCards" });
 
@@ -102,6 +106,7 @@ export function getLmdb(): LmdbHandles {
     businessRequests,
     programSubscriptions,
     loyaltySubscriptions,
+    loyaltyProfiles,
     loyaltyCustomers,
     loyaltyCards,
   };

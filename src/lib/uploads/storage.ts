@@ -8,7 +8,7 @@ import { nanoid } from "nanoid";
 
 export type UploadKind = "cover" | "logo" | "banner" | "gallery" | "video";
 
-export type UserUploadKind = "avatar";
+export type UserUploadKind = "avatar" | "loyalty-logo";
 
 const MEDIA_URL_PREFIX = "/media/";
 
@@ -212,7 +212,7 @@ export function validateUserImageUpload(params: {
 }) {
   const { kind, file } = params;
 
-  if (kind !== "avatar") throw new Error("INVALID_KIND");
+  if (kind !== "avatar" && kind !== "loyalty-logo") throw new Error("INVALID_KIND");
 
   const mime = file.type;
   const size = file.size;
@@ -220,7 +220,8 @@ export function validateUserImageUpload(params: {
   const imageMimes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
   if (!imageMimes.includes(mime)) throw new Error("UNSUPPORTED_IMAGE_TYPE");
   // Slightly stricter for avatars
-  if (size > 5 * 1024 * 1024) throw new Error("IMAGE_TOO_LARGE");
+  const max = kind === "avatar" ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
+  if (size > max) throw new Error("IMAGE_TOO_LARGE");
 }
 
 export async function storeUserUpload(params: {

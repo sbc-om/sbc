@@ -11,6 +11,14 @@ import {
   adjustLoyaltyCustomerPoints,
 } from "@/lib/db/loyalty";
 
+function safeReturnTo(locale: Locale, value: unknown): string | null {
+  const v = String(value || "").trim();
+  if (!v) return null;
+  // Prevent open redirects. Only allow loyalty manage paths.
+  if (!v.startsWith(`/${locale}/loyalty/manage`)) return null;
+  return v;
+}
+
 export async function purchaseLoyaltySubscriptionAction(locale: Locale, formData: FormData) {
   const user = await requireUser(locale);
   const plan = String(formData.get("plan") || "").trim();
@@ -28,34 +36,43 @@ export async function purchaseLoyaltySubscriptionAction(locale: Locale, formData
 export async function addLoyaltyCustomerAction(locale: Locale, formData: FormData) {
   const user = await requireUser(locale);
 
+  const returnTo = safeReturnTo(locale, formData.get("returnTo"));
+
   const fullName = String(formData.get("fullName") || "").trim();
   const phone = String(formData.get("phone") || "").trim();
   const email = String(formData.get("email") || "").trim();
   const notes = String(formData.get("notes") || "").trim();
 
+  if (!phone) {
+    redirect(returnTo ? `${returnTo}?error=PHONE_REQUIRED` : `/${locale}/loyalty/manage?error=PHONE_REQUIRED`);
+  }
+
   createLoyaltyCustomer({
     userId: user.id,
     customer: {
       fullName,
-      phone: phone || undefined,
+      phone,
       email: email || undefined,
       notes: notes || undefined,
     },
   });
 
-  revalidatePath(`/${locale}/loyalty/manage`);
-  redirect(`/${locale}/loyalty/manage`);
+  const target = returnTo ?? `/${locale}/loyalty/manage`;
+  revalidatePath(target);
+  redirect(target);
 }
 
 export async function adjustLoyaltyCustomerPointsAction(locale: Locale, formData: FormData) {
   const user = await requireUser(locale);
+
+  const returnTo = safeReturnTo(locale, formData.get("returnTo"));
 
   const customerId = String(formData.get("customerId") || "").trim();
   const deltaRaw = String(formData.get("delta") || "").trim();
   const delta = Number(deltaRaw);
 
   if (!Number.isFinite(delta)) {
-    redirect(`/${locale}/loyalty/manage`);
+    redirect(returnTo ?? `/${locale}/loyalty/manage`);
   }
 
   adjustLoyaltyCustomerPoints({
@@ -64,6 +81,7 @@ export async function adjustLoyaltyCustomerPointsAction(locale: Locale, formData
     delta: Math.trunc(delta),
   });
 
-  revalidatePath(`/${locale}/loyalty/manage`);
-  redirect(`/${locale}/loyalty/manage`);
+  const target = returnTo ?? `/${locale}/loyalty/manage`;
+  revalidatePath(target);
+  redirect(target);
 }

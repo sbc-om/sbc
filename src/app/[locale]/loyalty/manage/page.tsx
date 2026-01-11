@@ -2,18 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PublicPage } from "@/components/PublicPage";
-import { Button, buttonVariants } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
+import { buttonVariants } from "@/components/ui/Button";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { listLoyaltyCustomersByUser } from "@/lib/db/loyalty";
+import { getLoyaltyProfileByUserId, listLoyaltyCustomersByUser } from "@/lib/db/loyalty";
 import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
-import {
-  addLoyaltyCustomerAction,
-  adjustLoyaltyCustomerPointsAction,
-} from "../actions";
+
+import { LoyaltyProfileClient } from "./LoyaltyProfileClient";
 
 export const runtime = "nodejs";
 
@@ -37,6 +33,7 @@ export default async function LoyaltyManagePage({
   const programSub = user ? getProgramSubscriptionByUser(user.id, "loyalty") : null;
   const isActive = isProgramSubscriptionActive(programSub);
   const customers = user && isActive ? listLoyaltyCustomersByUser(user.id) : [];
+  const profile = user && isActive ? getLoyaltyProfileByUserId(user.id) : null;
 
   return (
     <PublicPage>
@@ -110,88 +107,44 @@ export default async function LoyaltyManagePage({
 
       {/* Management */}
       {user && isActive ? (
-        <div className="mt-8 sbc-card rounded-2xl p-6">
-          <h3 className="text-lg font-semibold">{ar ? "إدارة العملاء" : "Customer management"}</h3>
-          <p className="mt-2 text-sm text-(--muted-foreground)">
-            {ar
-              ? "أضف عملاءك. سيتم إنشاء بطاقة ولاء لكل عميل، ويتم حفظ بياناتهم في قاعدة بياناتنا."
-              : "Add your customers. A loyalty card will be issued per customer and stored in our database."}
-          </p>
+        <>
+          <LoyaltyProfileClient locale={locale as Locale} initialProfile={profile} />
 
-          <form action={addLoyaltyCustomerAction.bind(null, locale as Locale)} className="mt-6 grid gap-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input name="fullName" placeholder={ar ? "اسم العميل" : "Customer full name"} required />
-              <Input name="phone" placeholder={ar ? "الهاتف (اختياري)" : "Phone (optional)"} />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input name="email" placeholder={ar ? "البريد (اختياري)" : "Email (optional)"} />
-              <Input name="tags" placeholder={ar ? "وسوم (قريباً)" : "Tags (soon)"} disabled />
-            </div>
-            <Textarea name="notes" placeholder={ar ? "ملاحظات (اختياري)" : "Notes (optional)"} />
-
-            <div className="flex justify-end">
-              <Button type="submit">{ar ? "إضافة" : "Add customer"}</Button>
-            </div>
-          </form>
-
-          <div className="mt-8">
-            <div className="font-semibold">{ar ? "العملاء" : "Customers"}</div>
-
-            {customers.length === 0 ? (
-              <div className="mt-3 text-sm text-(--muted-foreground)">{ar ? "لا يوجد عملاء بعد." : "No customers yet."}</div>
-            ) : (
-              <div className="mt-4 grid gap-3">
-                {customers.map((c) => (
-                  <div key={c.id} className="sbc-card rounded-2xl p-5">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
-                        <div className="font-semibold">{c.fullName}</div>
-                        <div className="mt-1 text-xs text-(--muted-foreground)">
-                          {c.email ? c.email : null}
-                          {c.email && c.phone ? " • " : null}
-                          {c.phone ? c.phone : null}
-                        </div>
-                        <div className="mt-2 text-sm">
-                          <span className="text-(--muted-foreground)">{ar ? "النقاط" : "Points"}: </span>
-                          <span className="font-semibold">{c.points}</span>
-                        </div>
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <Link
-                            className={buttonVariants({ variant: "secondary", size: "sm" })}
-                            href={`/${locale}/loyalty/card/${c.cardId}`}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {ar ? "عرض البطاقة" : "View card"}
-                          </Link>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2">
-                        <form action={adjustLoyaltyCustomerPointsAction.bind(null, locale as Locale)}>
-                          <input type="hidden" name="customerId" value={c.id} />
-                          <input type="hidden" name="delta" value="1" />
-                          <Button type="submit" size="sm" variant="secondary">
-                            {ar ? "+1" : "+1"}
-                          </Button>
-                        </form>
-                        <form action={adjustLoyaltyCustomerPointsAction.bind(null, locale as Locale)}>
-                          <input type="hidden" name="customerId" value={c.id} />
-                          <input type="hidden" name="delta" value="-1" />
-                          <Button type="submit" size="sm" variant="ghost">
-                            {ar ? "-1" : "-1"}
-                          </Button>
-                        </form>
-                      </div>
-                    </div>
-
-                    {c.notes ? <div className="mt-3 text-sm text-(--muted-foreground)">{c.notes}</div> : null}
-                  </div>
-                ))}
+          <div className="mt-8 sbc-card rounded-2xl p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">{ar ? "العملاء" : "Customers"}</h3>
+                <p className="mt-1 text-sm text-(--muted-foreground)">
+                  {ar
+                    ? "اعرض العملاء، ابحث برقم الهاتف، وامسح QR لإيجاد العميل بسرعة."
+                    : "View customers, search by phone, and scan QR codes for fast lookup."}
+                </p>
               </div>
-            )}
+
+              <Link
+                href={`/${locale}/loyalty/manage/customers`}
+                className={buttonVariants({ variant: "primary", size: "md" })}
+              >
+                {ar ? "إدارة العملاء" : "Manage customers"}
+              </Link>
+            </div>
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+                <div className="text-xs text-(--muted-foreground)">{ar ? "الإجمالي" : "Total"}</div>
+                <div className="mt-1 text-2xl font-semibold">{customers.length}</div>
+              </div>
+              <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+                <div className="text-xs text-(--muted-foreground)">{ar ? "الاسم" : "Business name"}</div>
+                <div className="mt-1 truncate text-sm font-semibold">{profile?.businessName ?? (ar ? "—" : "—")}</div>
+              </div>
+              <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+                <div className="text-xs text-(--muted-foreground)">{ar ? "الكود" : "Join code"}</div>
+                <div className="mt-1 font-mono text-sm">{profile?.joinCode ?? (ar ? "—" : "—")}</div>
+              </div>
+            </div>
           </div>
-        </div>
+        </>
       ) : null}
 
       {user && !isActive ? (

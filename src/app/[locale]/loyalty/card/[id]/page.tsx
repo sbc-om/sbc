@@ -1,11 +1,14 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { PublicPage } from "@/components/PublicPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
-import { getLoyaltyCardById, getLoyaltyCustomerById } from "@/lib/db/loyalty";
+import { getLoyaltyCardById, getLoyaltyCustomerById, getLoyaltyProfileByUserId } from "@/lib/db/loyalty";
+
+import { CardQrClient } from "./CardQrClient";
 
 export const runtime = "nodejs";
 
@@ -24,6 +27,7 @@ export default async function LoyaltyCardPublicPage({
   if (!card || card.status !== "active") notFound();
 
   const customer = getLoyaltyCustomerById(card.customerId);
+  const profile = getLoyaltyProfileByUserId(card.userId);
 
   return (
     <PublicPage>
@@ -47,6 +51,31 @@ export default async function LoyaltyCardPublicPage({
       </div>
 
       <div className="mt-8 sbc-card rounded-2xl p-8 text-center">
+        {profile ? (
+          <div
+            className={
+              "mx-auto mb-6 flex max-w-md items-center gap-3 rounded-2xl border border-(--surface-border) bg-(--surface) p-3 " +
+              (ar ? "flex-row-reverse text-right" : "text-left")
+            }
+          >
+            {profile.logoUrl ? (
+              <Image
+                src={profile.logoUrl}
+                alt={profile.businessName}
+                width={48}
+                height={48}
+                className="h-12 w-12 shrink-0 rounded-xl border border-(--surface-border) bg-(--surface) object-cover"
+              />
+            ) : (
+              <div className="h-12 w-12 shrink-0 rounded-xl border border-(--surface-border) bg-(--surface)" />
+            )}
+            <div className="min-w-0">
+              <div className="text-xs text-(--muted-foreground)">{ar ? "النشاط" : "Business"}</div>
+              <div className="truncate text-sm font-semibold">{profile.businessName}</div>
+            </div>
+          </div>
+        ) : null}
+
         <div className="text-sm text-(--muted-foreground)">
           {customer?.fullName ? (ar ? "العميل" : "Customer") : (ar ? "بطاقة" : "Card")}
         </div>
@@ -64,6 +93,8 @@ export default async function LoyaltyCardPublicPage({
             ? "ملاحظة: إضافة البطاقة إلى Apple Wallet/Google Wallet ستكون في مرحلة لاحقة." 
             : "Note: Adding to Apple Wallet/Google Wallet will be implemented in a later phase."}
         </div>
+
+        <CardQrClient locale={locale as Locale} customerId={card.customerId} />
       </div>
     </PublicPage>
   );

@@ -31,7 +31,7 @@ export function FakeGatewayClient({
 
   const goBack = (status: "success" | "cancel") => {
     const ref = Math.random().toString(16).slice(2);
-    router.replace(`${returnTo}?status=${status}&ref=${ref}`);
+    router.replace(`${returnTo}?payment=${status}&ref=${ref}`);
   };
 
   return (

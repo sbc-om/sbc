@@ -1,15 +1,39 @@
-import { nanoid } from "nanoid";
+import { customAlphabet, nanoid } from "nanoid";
 import { z } from "zod";
 
 import { getLmdb } from "./lmdb";
-import type { LoyaltyCard, LoyaltyCustomer, LoyaltyPlan, LoyaltySubscription } from "./types";
+import type {
+  LoyaltyCard,
+  LoyaltyCustomer,
+  LoyaltyPlan,
+  LoyaltyProfile,
+  LoyaltySubscription,
+} from "./types";
+import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "./subscriptions";
 
 const userIdSchema = z.string().trim().min(1);
 const planSchema = z.enum(["starter", "pro"]);
 
+const joinCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z0-9]{4,16}$/, "INVALID_JOIN_CODE");
+
+const profileInputSchema = z.object({
+  businessName: z.string().trim().min(2).max(120),
+  logoUrl: z.string().trim().min(1).max(2048).optional(),
+  joinCode: joinCodeSchema.optional(),
+});
+
+export type LoyaltyProfileInput = z.infer<typeof profileInputSchema>;
+
+const genJoinCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 8);
+
 const customerInputSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
-  phone: z.string().trim().min(3).max(40).optional(),
+  // Phone is required (used for quick lookup in-store).
+  phone: z.string().trim().min(6).max(40),
   email: z.string().trim().email().optional(),
   notes: z.string().trim().max(2000).optional(),
   tags: z.array(z.string().trim().min(1).max(40)).optional(),
@@ -25,11 +49,89 @@ export function getLoyaltySubscriptionByUserId(userId: string): LoyaltySubscript
 }
 
 export function ensureActiveLoyaltySubscription(userId: string): LoyaltySubscription {
-  const sub = getLoyaltySubscriptionByUserId(userId);
-  if (!sub || sub.status !== "active") {
-    throw new Error("LOYALTY_NOT_ACTIVE");
+  // New source of truth: store program subscription.
+  const storeSub = getProgramSubscriptionByUser(userId, "loyalty");
+  if (isProgramSubscriptionActive(storeSub)) {
+    // Return a compatible shape for callers that expect a LoyaltySubscription.
+    const now = new Date().toISOString();
+    return {
+      userId,
+      plan: "starter",
+      status: "active",
+      createdAt: storeSub!.startedAt,
+      updatedAt: now,
+    } satisfies LoyaltySubscription;
   }
-  return sub;
+
+  // Backward compatibility: legacy loyaltySubscriptions table.
+  const legacy = getLoyaltySubscriptionByUserId(userId);
+  if (legacy && legacy.status === "active") return legacy;
+
+  throw new Error("LOYALTY_NOT_ACTIVE");
+}
+
+export function getLoyaltyProfileByUserId(userId: string): LoyaltyProfile | null {
+  const { loyaltyProfiles } = getLmdb();
+  const uid = userIdSchema.safeParse(userId);
+  if (!uid.success) return null;
+  return (loyaltyProfiles.get(uid.data) as LoyaltyProfile | undefined) ?? null;
+}
+
+export function getLoyaltyProfileByJoinCode(code: string): LoyaltyProfile | null {
+  const { loyaltyProfiles } = getLmdb();
+  const parsed = joinCodeSchema.safeParse(code);
+  if (!parsed.success) return null;
+  const target = parsed.data;
+
+  for (const { value } of loyaltyProfiles.getRange()) {
+    const p = value as LoyaltyProfile;
+    if ((p.joinCode ?? "").toUpperCase() === target) return p;
+  }
+  return null;
+}
+
+function ensureJoinCodeUnique(input: { code: string; excludeUserId?: string }) {
+  const { loyaltyProfiles } = getLmdb();
+  const code = joinCodeSchema.parse(input.code);
+  for (const { value } of loyaltyProfiles.getRange()) {
+    const p = value as LoyaltyProfile;
+    if ((p.joinCode ?? "").toUpperCase() !== code) continue;
+    if (input.excludeUserId && p.userId === input.excludeUserId) continue;
+    throw new Error("JOIN_CODE_TAKEN");
+  }
+}
+
+export function upsertLoyaltyProfile(input: {
+  userId: string;
+  profile: LoyaltyProfileInput;
+}): LoyaltyProfile {
+  // Only owners with an active subscription should be able to create a join link.
+  ensureActiveLoyaltySubscription(input.userId);
+
+  const { loyaltyProfiles } = getLmdb();
+  const uid = userIdSchema.parse(input.userId);
+  const data = profileInputSchema.parse(input.profile);
+
+  const existing = loyaltyProfiles.get(uid) as LoyaltyProfile | undefined;
+  const now = new Date().toISOString();
+
+  const joinCode = data.joinCode
+    ? joinCodeSchema.parse(data.joinCode)
+    : existing?.joinCode ?? genJoinCode();
+
+  ensureJoinCodeUnique({ code: joinCode, excludeUserId: uid });
+
+  const next: LoyaltyProfile = {
+    userId: uid,
+    businessName: data.businessName,
+    logoUrl: data.logoUrl || undefined,
+    joinCode,
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  loyaltyProfiles.put(uid, next);
+  return next;
 }
 
 export function purchaseLoyaltySubscription(input: {
