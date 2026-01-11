@@ -95,3 +95,20 @@ export type LoyaltyCard = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type ProgramId = "directory" | "loyalty" | "marketing";
+
+export type ProgramSubscription = {
+  /** The owner user id. */
+  userId: string;
+  program: ProgramId;
+  /** Selected package/plan id within the program (e.g. "yearly", "6mo", "home-top"). */
+  plan: string;
+  status: "active" | "inactive";
+  /** Start time for the current active period (resets when expired and re-purchased). */
+  startedAt: string;
+  /** Expiry time for the current active period. */
+  expiresAt: string;
+  /** Updated whenever the user purchases again (also extends expiresAt). */
+  updatedAt: string;
+};

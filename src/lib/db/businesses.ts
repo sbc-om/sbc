@@ -86,6 +86,22 @@ export function listBusinesses(input?: {
   return results;
 }
 
+export function listBusinessesByOwner(userId: string): Business[] {
+  const { businesses } = getLmdb();
+  const uid = z.string().trim().min(1).safeParse(userId);
+  if (!uid.success) return [];
+
+  const results: Business[] = [];
+  for (const { value } of businesses.getRange()) {
+    const b = value as Business;
+    if (b.ownerId !== uid.data) continue;
+    results.push(b);
+  }
+
+  results.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+  return results;
+}
+
 export function createBusiness(input: BusinessInput): Business {
   const data = businessInputSchema.parse(input);
   const { businesses, businessSlugs } = getLmdb();

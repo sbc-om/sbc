@@ -32,6 +32,16 @@ export function BusinessFeedCard({ business, locale, categoryName }: BusinessFee
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   
+  // Deterministic "likes" value for UI (avoids Math.random during render).
+  const likesCount = (() => {
+    const s = String(business.id || business.slug || "");
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    }
+    return (h % 951) + 50; // 50..1000
+  })();
+  
   const name = locale === "ar" ? business.name.ar : business.name.en;
   const description = business.description
     ? locale === "ar"
@@ -192,7 +202,7 @@ export function BusinessFeedCard({ business, locale, categoryName }: BusinessFee
 
         {/* Likes */}
         <div className="text-sm font-semibold mb-2">
-          {Math.floor(Math.random() * 1000) + 50}{" "}
+          {likesCount}{" "}
           {locale === "ar" ? "إعجاب" : "likes"}
         </div>
 

@@ -8,11 +8,11 @@ import { Textarea } from "@/components/ui/Textarea";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { getLoyaltySubscriptionByUserId, listLoyaltyCustomersByUser } from "@/lib/db/loyalty";
+import { listLoyaltyCustomersByUser } from "@/lib/db/loyalty";
+import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 import {
   addLoyaltyCustomerAction,
   adjustLoyaltyCustomerPointsAction,
-  purchaseLoyaltySubscriptionAction,
 } from "./actions";
 
 export const runtime = "nodejs";
@@ -34,8 +34,8 @@ export default async function LoyaltyPage({
   const ar = locale === "ar";
   const user = await getCurrentUser();
 
-  const sub = user ? getLoyaltySubscriptionByUserId(user.id) : null;
-  const isActive = sub?.status === "active";
+  const programSub = user ? getProgramSubscriptionByUser(user.id, "loyalty") : null;
+  const isActive = isProgramSubscriptionActive(programSub);
   const customers = user && isActive ? listLoyaltyCustomersByUser(user.id) : [];
 
   return (
@@ -50,6 +50,14 @@ export default async function LoyaltyPage({
               ? "بطاقة ولاء رقمية لعملائك—يمكن إضافتها إلى Apple Wallet وGoogle Wallet—مع إدارة العملاء ونقاط الولاء داخل منصتنا." 
               : "A digital loyalty card your customers can add to Apple Wallet / Google Wallet, with customer CRM and points tracking."}
           </p>
+          <div className="mt-3">
+            <Link
+              href={`/${locale}/loyalty/about`}
+              className="text-sm font-medium text-accent hover:underline"
+            >
+              {ar ? "صفحة التعريف بالمنتج" : "Public product page"}
+            </Link>
+          </div>
         </div>
         <Link href={`/${locale}`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
           {ar ? "العودة للرئيسية" : "Back to home"}
@@ -69,52 +77,20 @@ export default async function LoyaltyPage({
         </div>
       ) : null}
 
-      {/* Product explanation */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <div className="sbc-card rounded-2xl p-6">
-          <h2 className="text-lg font-semibold">{ar ? "Apple Wallet / Google Wallet" : "Apple Wallet / Google Wallet"}</h2>
-          <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
+      {!user ? (
+        <div className="mt-8 sbc-card rounded-2xl p-6">
+          <div className="font-semibold">{ar ? "إدارة الولاء" : "Manage loyalty"}</div>
+          <p className="mt-2 text-sm text-(--muted-foreground)">
             {ar
-              ? "ننشئ بطاقة رقمية لكل عميل (QR/Code) يمكن حفظها في المحفظة. (المرحلة الأولى: عرض البطاقة من خلال رابط داخل المنصة)." 
-              : "We issue one digital card per customer (QR/Code) that can be saved to wallet apps. (Phase 1: card is viewable via a shareable link)."}
+              ? "سجّل الدخول لإدارة العملاء والنقاط."
+              : "Login to manage customers and points."}
           </p>
-        </div>
-
-        <div className="sbc-card rounded-2xl p-6">
-          <h2 className="text-lg font-semibold">{ar ? "CRM للعملاء" : "Customer CRM"}</h2>
-          <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
-            {ar
-              ? "تخزين معلومات عملائك في قاعدة بياناتنا (اسم، هاتف، بريد، ملاحظات) وربطها بالبطاقة." 
-              : "Store your customers in our database (name, phone, email, notes) and link each one to a card."}
-          </p>
-        </div>
-
-        <div className="sbc-card rounded-2xl p-6">
-          <h2 className="text-lg font-semibold">{ar ? "نظام النقاط" : "Points system"}</h2>
-          <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
-            {ar
-              ? "من داخل لوحة Loyalty يمكنك إضافة/خصم النقاط لكل عميل (المرحلة الأولى)." 
-              : "From the Loyalty dashboard you can add/remove points per customer (phase 1)."}
-          </p>
-        </div>
-      </div>
-
-      {/* Pricing / purchase */}
-      <div className="mt-8 sbc-card rounded-2xl p-6">
-        <h3 className="text-lg font-semibold">{ar ? "الشراء والتفعيل" : "Purchase & activate"}</h3>
-        <p className="mt-2 text-sm text-(--muted-foreground)">
-          {ar
-            ? "للبدء، اختر خطة وفعّل الاشتراك. (الدفع الحقيقي سيتم ربطه لاحقاً)" 
-            : "To start, pick a plan and activate your subscription. (Real payment will be integrated later)"}
-        </p>
-
-        {!user ? (
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Link
               href={`/${locale}/login?next=${encodeURIComponent(`/${locale}/loyalty`)}`}
               className={buttonVariants({ variant: "primary", size: "md" })}
             >
-              {ar ? "سجّل الدخول للشراء" : "Login to buy"}
+              {ar ? "تسجيل الدخول" : "Login"}
             </Link>
             <Link
               href={`/${locale}/register?next=${encodeURIComponent(`/${locale}/loyalty`)}`}
@@ -123,36 +99,8 @@ export default async function LoyaltyPage({
               {ar ? "إنشاء حساب" : "Create account"}
             </Link>
           </div>
-        ) : (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <form action={purchaseLoyaltySubscriptionAction.bind(null, locale as Locale)} className="sbc-card rounded-2xl p-5">
-              <input type="hidden" name="plan" value="starter" />
-              <div className="font-semibold">{ar ? "Starter" : "Starter"}</div>
-              <p className="mt-1 text-sm text-(--muted-foreground)">
-                {ar ? "أساسيات إدارة العملاء + بطاقات" : "Basics: customers + cards"}
-              </p>
-              <div className="mt-4">
-                <Button type="submit" disabled={isActive}>
-                  {isActive ? (ar ? "مفعل" : "Active") : (ar ? "تفعيل" : "Activate")}
-                </Button>
-              </div>
-            </form>
-
-            <form action={purchaseLoyaltySubscriptionAction.bind(null, locale as Locale)} className="sbc-card rounded-2xl p-5">
-              <input type="hidden" name="plan" value="pro" />
-              <div className="font-semibold">{ar ? "Pro" : "Pro"}</div>
-              <p className="mt-1 text-sm text-(--muted-foreground)">
-                {ar ? "مزايا إضافية (قريباً): حملات، تقسيم، تقارير" : "Extra features (soon): campaigns, segmentation, reporting"}
-              </p>
-              <div className="mt-4">
-                <Button type="submit" disabled={isActive}>
-                  {isActive ? (ar ? "مفعل" : "Active") : (ar ? "تفعيل" : "Activate")}
-                </Button>
-              </div>
-            </form>
-          </div>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       {/* Management */}
       {user && isActive ? (
@@ -245,10 +193,21 @@ export default async function LoyaltyPage({
       ) : null}
 
       {user && !isActive ? (
-        <div className="mt-8 text-xs text-(--muted-foreground)">
-          {ar
-            ? "بعد تفعيل الاشتراك ستظهر لك أدوات إدارة العملاء وإصدار بطاقات الولاء." 
-            : "After activation, you will see customer management and card issuing tools."}
+        <div className="mt-8 sbc-card rounded-2xl p-6">
+          <div className="font-semibold">{ar ? "الاشتراك غير مفعل" : "Subscription not active"}</div>
+          <p className="mt-2 text-sm text-(--muted-foreground)">
+            {ar
+              ? "تفعيل الاشتراك يتم من خلال المتجر. بعد التفعيل ستظهر أدوات إدارة العملاء وإصدار البطاقات هنا." 
+              : "Activation is handled in the Store. After activation, customer management tools will appear here."}
+          </p>
+          <div className="mt-4">
+            <Link
+              href={`/${locale}/store`}
+              className={buttonVariants({ variant: "primary", size: "md" })}
+            >
+              {ar ? "فتح المتجر" : "Open store"}
+            </Link>
+          </div>
         </div>
       ) : null}
     </PublicPage>

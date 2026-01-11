@@ -3,8 +3,12 @@ import { notFound } from "next/navigation";
 
 import { PublicPage } from "@/components/PublicPage";
 import { buttonVariants } from "@/components/ui/Button";
+import { AddToCartButton } from "@/components/store/AddToCartButton";
+import { getCurrentUser } from "@/lib/auth/currentUser";
+import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
+import { formatStorePrice, getStoreProductText, listStoreProducts } from "@/lib/store/products";
 
 export const runtime = "nodejs";
 
@@ -19,6 +23,11 @@ export default async function MarketingPlatformPage({
   await getDictionary(locale as Locale);
 
   const ar = locale === "ar";
+  const user = await getCurrentUser();
+  const sub = user ? getProgramSubscriptionByUser(user.id, "marketing") : null;
+  const isActive = isProgramSubscriptionActive(sub);
+
+  const marketingProducts = listStoreProducts().filter((p) => p.program === "marketing");
 
   return (
     <PublicPage>
@@ -81,6 +90,21 @@ export default async function MarketingPlatformPage({
         </ul>
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
+          {user && isActive ? (
+            <Link
+              href={`/${locale}/marketing-platform/app`}
+              className={buttonVariants({ variant: "primary", size: "md" })}
+            >
+              {ar ? "الدخول إلى اللوحة" : "Enter dashboard"}
+            </Link>
+          ) : (
+            <Link
+              href={`/${locale}/store?q=marketing`}
+              className={buttonVariants({ variant: "primary", size: "md" })}
+            >
+              {ar ? "شراء اشتراك" : "Buy subscription"}
+            </Link>
+          )}
           <Link
             href={`/${locale}/contact`}
             className={buttonVariants({ variant: "primary", size: "md" })}
@@ -94,6 +118,51 @@ export default async function MarketingPlatformPage({
             {ar ? "استكشف الدليل" : "Explore directory"}
           </Link>
         </div>
+      </div>
+
+      {/* Pricing / packages */}
+      <div className="mt-8 sbc-card rounded-2xl p-6">
+        <h3 className="text-lg font-semibold">{ar ? "الباقات" : "Packages"}</h3>
+        <p className="mt-2 text-sm text-(--muted-foreground)">
+          {ar
+            ? "اختر باقة شهرية/6 أشهر/سنوية. يمكنك الشراء مرة أخرى للتمديد أو تغيير الباقة." 
+            : "Choose monthly / 6 months / yearly. Buy again to extend or switch package."}
+        </p>
+
+        {!user ? (
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Link
+              href={`/${locale}/login?next=${encodeURIComponent(`/${locale}/marketing-platform`)}`}
+              className={buttonVariants({ variant: "primary", size: "md" })}
+            >
+              {ar ? "سجّل الدخول للشراء" : "Login to buy"}
+            </Link>
+            <Link
+              href={`/${locale}/register?next=${encodeURIComponent(`/${locale}/marketing-platform`)}`}
+              className={buttonVariants({ variant: "secondary", size: "md" })}
+            >
+              {ar ? "إنشاء حساب" : "Create account"}
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {marketingProducts.map((p) => {
+              const t = getStoreProductText(p, locale as Locale);
+              return (
+                <div key={p.slug} className="sbc-card rounded-2xl p-5">
+                  <div className="font-semibold">{t.name}</div>
+                  <div className="mt-1 text-sm text-(--muted-foreground)">
+                    {formatStorePrice(p.price, locale as Locale)}
+                  </div>
+                  <p className="mt-3 text-sm text-(--muted-foreground)">{t.description}</p>
+                  <div className="mt-4">
+                    <AddToCartButton productSlug={p.slug} locale={locale as Locale} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <div className="mt-8 text-xs text-(--muted-foreground)">

@@ -14,6 +14,8 @@ export type LmdbHandles = {
   chatConversations: ReturnType<ReturnType<typeof open>["openDB"]>;
   chatMessages: ReturnType<ReturnType<typeof open>["openDB"]>;
   businessRequests: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** Purchased program packages / entitlements keyed per-user & program. */
+  programSubscriptions: ReturnType<ReturnType<typeof open>["openDB"]>;
   loyaltySubscriptions: ReturnType<ReturnType<typeof open>["openDB"]>;
   loyaltyCustomers: ReturnType<ReturnType<typeof open>["openDB"]>;
   loyaltyCards: ReturnType<ReturnType<typeof open>["openDB"]>;
@@ -44,6 +46,9 @@ export function getLmdb(): LmdbHandles {
     existing.chatConversations ??= existing.root.openDB({ name: "chatConversations" });
     existing.chatMessages ??= existing.root.openDB({ name: "chatMessages" });
     existing.businessRequests ??= existing.root.openDB({ name: "businessRequests" });
+
+    // Program subscriptions (store purchases)
+    existing.programSubscriptions ??= existing.root.openDB({ name: "programSubscriptions" });
 
     // Loyalty / CRM
     existing.loyaltySubscriptions ??= existing.root.openDB({ name: "loyaltySubscriptions" });
@@ -76,6 +81,8 @@ export function getLmdb(): LmdbHandles {
   const chatMessages = root.openDB({ name: "chatMessages" });
   const businessRequests = root.openDB({ name: "businessRequests" });
 
+  const programSubscriptions = root.openDB({ name: "programSubscriptions" });
+
   // Loyalty / CRM
   const loyaltySubscriptions = root.openDB({ name: "loyaltySubscriptions" });
   const loyaltyCustomers = root.openDB({ name: "loyaltyCustomers" });
@@ -93,6 +100,7 @@ export function getLmdb(): LmdbHandles {
     chatConversations,
     chatMessages,
     businessRequests,
+    programSubscriptions,
     loyaltySubscriptions,
     loyaltyCustomers,
     loyaltyCards,

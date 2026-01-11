@@ -25,20 +25,17 @@ export function RoleSelect({
   disabled,
 }: RoleSelectProps) {
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const canPortal = typeof document !== "undefined";
+
   const selected = ROLES.find((r) => r.value === value);
   const displayText = selected 
     ? (locale === "ar" ? selected.labelAr : selected.labelEn)
     : placeholder;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open || disabled) return;
@@ -123,7 +120,7 @@ export function RoleSelect({
       document.removeEventListener("mousedown", handlePointerDownOutside);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, [open]);
+  }, [open, disabled]);
 
   const handleSelect = (roleValue: Role) => {
     onChange(roleValue);
@@ -158,7 +155,7 @@ export function RoleSelect({
       </button>
 
       {/* Dropdown Panel (portaled to <body> to avoid clipping/stacking issues) */}
-      {open && !disabled && mounted &&
+      {open && !disabled && canPortal &&
         createPortal(
           <div
             ref={panelRef}

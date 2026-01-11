@@ -34,12 +34,13 @@ export function UserSelect({
 }: UserSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [mounted, setMounted] = useState(false);
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const canPortal = typeof document !== "undefined";
 
   const selected = users.find((u) => u.id === value);
   const displayText = selected 
@@ -58,10 +59,6 @@ export function UserSelect({
       );
     });
   }, [users, search]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -198,7 +195,7 @@ export function UserSelect({
       </button>
 
       {/* Dropdown Panel (portaled to <body> to avoid clipping/stacking issues) */}
-      {open && mounted &&
+      {open && canPortal &&
         createPortal(
           <div
             ref={panelRef}

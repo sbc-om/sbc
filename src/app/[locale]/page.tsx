@@ -11,6 +11,7 @@ import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { listBusinesses } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { getCurrentUser } from "@/lib/auth/currentUser";
+import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
@@ -28,7 +29,31 @@ export default async function LocaleHome({
   
   // Get latest businesses
   const allBusinesses = listBusinesses({ locale: locale as Locale });
-  const latestBusinesses = allBusinesses.slice(0, user ? 20 : 10);
+  // Homepage featured placements (paid directory plans)
+  const ownerIds = Array.from(
+    new Set(allBusinesses.map((b) => b.ownerId).filter(Boolean) as string[]),
+  );
+
+  const ownerDirectoryPlan = new Map<string, string>();
+  for (const ownerId of ownerIds) {
+    const sub = getProgramSubscriptionByUser(ownerId, "directory");
+    if (!isProgramSubscriptionActive(sub)) continue;
+    ownerDirectoryPlan.set(ownerId, sub!.plan);
+  }
+
+  const topRowBusinesses = allBusinesses
+    .filter((b) => !!b.ownerId && ownerDirectoryPlan.get(b.ownerId!) === "homepage-top-yearly")
+    .slice(0, 6);
+
+  const featuredBusinesses = allBusinesses
+    .filter((b) => !!b.ownerId && ownerDirectoryPlan.get(b.ownerId!) === "homepage-yearly")
+    .filter((b) => !topRowBusinesses.some((t) => t.id === b.id))
+    .slice(0, 9);
+
+  const featuredIds = new Set([...topRowBusinesses, ...featuredBusinesses].map((b) => b.id));
+  const latestBusinesses = allBusinesses
+    .filter((b) => !featuredIds.has(b.id))
+    .slice(0, 10);
 
   // Logged in users land on the followed feed.
   if (user) {
@@ -138,7 +163,7 @@ export default async function LocaleHome({
               </p>
               <div className="mt-4">
                 <Link
-                  href={`/${locale}/loyalty`}
+                  href={`/${locale}/loyalty/about`}
                   className="inline-flex items-center text-sm font-medium text-accent hover:underline"
                 >
                   {locale === "ar" ? "فتح" : "Open"}
@@ -169,7 +194,61 @@ export default async function LocaleHome({
       </section>
 
       {/* Latest Businesses Section */}
-      {latestBusinesses.length > 0 && (
+      {topRowBusinesses.length > 0 ? (
+        <section className="py-16">
+          <Container size="lg">
+            <div className="mb-10">
+              <h2 className="text-3xl font-bold text-foreground mb-3">
+                {locale === "ar" ? "الصف الأول في الرئيسية" : "Top row on homepage"}
+              </h2>
+              <p className="text-base text-foreground opacity-70">
+                {locale === "ar"
+                  ? "هذه الأنشطة ضمن باقة الصف الأول." 
+                  : "Businesses featured with the Top Row package."}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {topRowBusinesses.map((business) => (
+                <BusinessCard
+                  key={business.id}
+                  business={business}
+                  locale={locale as Locale}
+                />
+              ))}
+            </div>
+          </Container>
+        </section>
+      ) : null}
+
+      {featuredBusinesses.length > 0 ? (
+        <section className="py-6">
+          <Container size="lg">
+            <div className="mb-10">
+              <h2 className="text-3xl font-bold text-foreground mb-3">
+                {locale === "ar" ? "مميّز في الرئيسية" : "Featured on homepage"}
+              </h2>
+              <p className="text-base text-foreground opacity-70">
+                {locale === "ar"
+                  ? "أنشطة ضمن باقة العرض في الصفحة الرئيسية." 
+                  : "Businesses featured with the Homepage Display package."}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featuredBusinesses.map((business) => (
+                <BusinessCard
+                  key={business.id}
+                  business={business}
+                  locale={locale as Locale}
+                />
+              ))}
+            </div>
+          </Container>
+        </section>
+      ) : null}
+
+      {latestBusinesses.length > 0 ? (
         <section className="py-16">
           <Container size="lg">
             <div className="mb-10">
@@ -194,7 +273,7 @@ export default async function LocaleHome({
             </div>
           </Container>
         </section>
-      )}
+      ) : null}
     </div>
     </PublicPage>
   );

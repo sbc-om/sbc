@@ -39,7 +39,7 @@ export default async function LoyaltyCardPublicPage({
           </p>
         </div>
         <Link
-          href={`/${locale}/loyalty`}
+          href={`/${locale}/loyalty/about`}
           className={buttonVariants({ variant: "ghost", size: "sm" })}
         >
           {ar ? "صفحة المنتج" : "Product page"}

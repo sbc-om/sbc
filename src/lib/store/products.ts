@@ -6,11 +6,19 @@ export type StoreProductPrice = {
   /** ISO currency code */
   currency: "USD" | "OMR";
   /** If set, displayed as recurring */
-  interval?: "month" | "year";
+  interval?: "month" | "year" | "6mo";
 };
+
+export type StoreProgramId = "directory" | "loyalty" | "marketing";
 
 export type StoreProduct = {
   slug: string;
+  /** Program this product grants access to. */
+  program: StoreProgramId;
+  /** Plan id within the program. */
+  plan: string;
+  /** Access duration in days (used for entitlements). */
+  durationDays: number;
   name: { en: string; ar: string };
   description: { en: string; ar: string };
   price: StoreProductPrice;
@@ -20,142 +28,177 @@ export type StoreProduct = {
 
 const PRODUCTS: StoreProduct[] = [
   {
-    slug: "business-listing-pro",
+    slug: "directory-membership-yearly",
+    program: "directory",
+    plan: "directory-yearly",
+    durationDays: 365,
     name: {
-      en: "Business Listing Pro",
-      ar: "إدراج الأعمال (Pro)",
+      en: "Business Directory — Membership",
+      ar: "دليل الأعمال — عضوية",
     },
     description: {
-      en: "Boost your directory presence with featured placement, rich media, and analytics.",
-      ar: "عزّز ظهور نشاطك في الدليل عبر تمييز الإدراج، وإضافة وسائط، وإحصائيات.",
+      en: "Annual membership in the business directory.",
+      ar: "عضوية سنوية في دليل الأعمال.",
     },
-    price: { amount: 9, currency: "OMR", interval: "month" },
-    badges: ["Popular"],
+    price: { amount: 50, currency: "OMR", interval: "year" },
     features: {
-      en: [
-        "Featured placement in search",
-        "Logo + cover media",
-        "Basic analytics (views & clicks)",
-        "Priority review for updates",
-      ],
-      ar: [
-        "تمييز في نتائج البحث",
-        "شعار + غلاف",
-        "إحصائيات أساسية (مشاهدات ونقرات)",
-        "مراجعة أسرع للتحديثات",
-      ],
+      en: ["Directory membership", "Standard listing visibility"],
+      ar: ["عضوية في الدليل", "ظهور قياسي للإدراج"],
     },
   },
   {
-    slug: "loyalty-starter",
+    slug: "directory-homepage-yearly",
+    program: "directory",
+    plan: "homepage-yearly",
+    durationDays: 365,
     name: {
-      en: "Loyalty Card Starter",
-      ar: "بطاقة الولاء (Starter)",
+      en: "Business Directory — Homepage display",
+      ar: "دليل الأعمال — عرض في الصفحة الرئيسية",
     },
     description: {
-      en: "Issue digital loyalty cards and manage customers and points.",
-      ar: "أصدر بطاقات ولاء رقمية وادِر العملاء والنقاط.",
+      en: "Show your business on the homepage (annual).",
+      ar: "عرض نشاطك في الصفحة الرئيسية (سنوي).",
     },
-    price: { amount: 12, currency: "OMR", interval: "month" },
-    badges: ["New"],
+    price: { amount: 100, currency: "OMR", interval: "year" },
     features: {
-      en: [
-        "Customer CRM",
-        "Digital card link per customer",
-        "Points add/remove",
-        "Export-ready customer list",
-      ],
-      ar: [
-        "CRM للعملاء",
-        "رابط بطاقة لكل عميل",
-        "إضافة/خصم نقاط",
-        "قائمة عملاء جاهزة للتصدير",
-      ],
+      en: ["Homepage placement", "Higher visibility"],
+      ar: ["ظهور في الصفحة الرئيسية", "وضوح أعلى"],
     },
   },
   {
-    slug: "marketing-starter",
+    slug: "directory-homepage-top-yearly",
+    program: "directory",
+    plan: "homepage-top-yearly",
+    durationDays: 365,
     name: {
-      en: "Marketing Platform Starter",
-      ar: "منصة التسويق (Starter)",
+      en: "Business Directory — Top row on homepage",
+      ar: "دليل الأعمال — الصف الأول في الرئيسية",
     },
     description: {
-      en: "Start automating WhatsApp & Telegram outreach with templates and webhooks.",
-      ar: "ابدأ أتمتة رسائل واتساب وتلغرام مع قوالب وWebhooks.",
+      en: "Top row placement on homepage (annual).",
+      ar: "عرض في الصف الأول بالصفحة الرئيسية (سنوي).",
     },
-    price: { amount: 39, currency: "OMR", interval: "month" },
+    price: { amount: 200, currency: "OMR", interval: "year" },
+    badges: ["Best"],
     features: {
-      en: [
-        "Template library",
-        "Webhook events",
-        "Basic segmentation (soon)",
-        "API keys (phase 2)",
-      ],
-      ar: [
-        "مكتبة قوالب",
-        "أحداث Webhook",
-        "تقسيم أساسي (قريباً)",
-        "مفاتيح API (المرحلة 2)",
-      ],
+      en: ["Top row on homepage", "Maximum visibility"],
+      ar: ["الصف الأول في الرئيسية", "أعلى وضوح"],
     },
   },
   {
-    slug: "team-chat",
+    slug: "loyalty-monthly",
+    program: "loyalty",
+    plan: "monthly",
+    durationDays: 30,
     name: {
-      en: "Team Chat Inbox",
-      ar: "صندوق الوارد للدردشة (Team)",
+      en: "Loyalty System — Monthly",
+      ar: "نظام الولاء — شهري",
     },
     description: {
-      en: "A shared inbox for customer chat, notes, and internal assignment.",
-      ar: "صندوق وارد مشترك لدردشة العملاء مع ملاحظات وتوزيع داخلي.",
+      en: "Loyalty system subscription (monthly).",
+      ar: "اشتراك نظام الولاء (شهري).",
     },
-    price: { amount: 19, currency: "OMR", interval: "month" },
+    price: { amount: 15, currency: "OMR", interval: "month" },
     features: {
-      en: [
-        "Shared conversation inbox",
-        "Internal notes",
-        "Basic assignment (soon)",
-        "Conversation search (soon)",
-      ],
-      ar: [
-        "صندوق وارد مشترك",
-        "ملاحظات داخلية",
-        "توزيع أساسي (قريباً)",
-        "بحث داخل المحادثات (قريباً)",
-      ],
+      en: ["Customer CRM", "Digital loyalty cards", "Points management"],
+      ar: ["إدارة العملاء", "بطاقات ولاء رقمية", "إدارة النقاط"],
     },
   },
   {
-    slug: "media-storage",
+    slug: "loyalty-6mo",
+    program: "loyalty",
+    plan: "6mo",
+    durationDays: 180,
     name: {
-      en: "Media Storage Add‑on",
-      ar: "إضافة التخزين للوسائط",
+      en: "Loyalty System — 6 months",
+      ar: "نظام الولاء — 6 أشهر",
     },
     description: {
-      en: "More storage for business media (logo, cover, gallery) and faster delivery.",
-      ar: "مساحة أكبر لوسائط النشاط (شعار، غلاف، معرض) مع تسليم أسرع.",
+      en: "Loyalty system subscription (6 months).",
+      ar: "اشتراك نظام الولاء (6 أشهر).",
     },
-    price: { amount: 5, currency: "OMR", interval: "month" },
+    price: { amount: 60, currency: "OMR", interval: "6mo" },
+    badges: ["Save"],
     features: {
-      en: ["+5GB storage", "CDN delivery", "Upload manager"],
-      ar: ["+5GB مساحة", "تسليم عبر CDN", "مدير رفع الملفات"],
+      en: ["Customer CRM", "Digital loyalty cards", "Points management"],
+      ar: ["إدارة العملاء", "بطاقات ولاء رقمية", "إدارة النقاط"],
     },
   },
   {
-    slug: "custom-integration",
+    slug: "loyalty-yearly",
+    program: "loyalty",
+    plan: "yearly",
+    durationDays: 365,
     name: {
-      en: "Custom Integration",
-      ar: "تكامل مخصص",
+      en: "Loyalty System — Yearly",
+      ar: "نظام الولاء — سنوي",
     },
     description: {
-      en: "Need SBC to integrate with your CRM or website? We'll build it.",
-      ar: "هل تريد ربط SBC مع CRM أو موقعك؟ سنبني التكامل.",
+      en: "Loyalty system subscription (annual).",
+      ar: "اشتراك نظام الولاء (سنوي).",
     },
-    price: { amount: 299, currency: "OMR" },
-    badges: ["Service"],
+    price: { amount: 90, currency: "OMR", interval: "year" },
     features: {
-      en: ["Discovery call", "Implementation", "Basic documentation"],
-      ar: ["جلسة تحديد المتطلبات", "تنفيذ التكامل", "توثيق أساسي"],
+      en: ["Customer CRM", "Digital loyalty cards", "Points management"],
+      ar: ["إدارة العملاء", "بطاقات ولاء رقمية", "إدارة النقاط"],
+    },
+  },
+  {
+    slug: "marketing-monthly",
+    program: "marketing",
+    plan: "monthly",
+    durationDays: 30,
+    name: {
+      en: "Marketing Platform — Monthly",
+      ar: "منصة التسويق — شهري",
+    },
+    description: {
+      en: "Marketing platform subscription (monthly).",
+      ar: "اشتراك منصة التسويق (شهري).",
+    },
+    price: { amount: 15, currency: "OMR", interval: "month" },
+    features: {
+      en: ["Messaging tools", "Templates", "Basic automations"],
+      ar: ["أدوات الرسائل", "قوالب", "أتمتة أساسية"],
+    },
+  },
+  {
+    slug: "marketing-6mo",
+    program: "marketing",
+    plan: "6mo",
+    durationDays: 180,
+    name: {
+      en: "Marketing Platform — 6 months",
+      ar: "منصة التسويق — 6 أشهر",
+    },
+    description: {
+      en: "Marketing platform subscription (6 months).",
+      ar: "اشتراك منصة التسويق (6 أشهر).",
+    },
+    price: { amount: 60, currency: "OMR", interval: "6mo" },
+    badges: ["Save"],
+    features: {
+      en: ["Messaging tools", "Templates", "Basic automations"],
+      ar: ["أدوات الرسائل", "قوالب", "أتمتة أساسية"],
+    },
+  },
+  {
+    slug: "marketing-yearly",
+    program: "marketing",
+    plan: "yearly",
+    durationDays: 365,
+    name: {
+      en: "Marketing Platform — Yearly",
+      ar: "منصة التسويق — سنوي",
+    },
+    description: {
+      en: "Marketing platform subscription (annual).",
+      ar: "اشتراك منصة التسويق (سنوي).",
+    },
+    price: { amount: 90, currency: "OMR", interval: "year" },
+    features: {
+      en: ["Messaging tools", "Templates", "Basic automations"],
+      ar: ["أدوات الرسائل", "قوالب", "أتمتة أساسية"],
     },
   },
 ];
@@ -194,10 +237,14 @@ export function formatStorePrice(price: StoreProductPrice, locale: Locale): stri
     locale === "ar"
       ? price.interval === "month"
         ? " / شهر"
-        : " / سنة"
+        : price.interval === "6mo"
+          ? " / 6 أشهر"
+          : " / سنة"
       : price.interval === "month"
         ? " / mo"
-        : " / yr";
+        : price.interval === "6mo"
+          ? " / 6 mo"
+          : " / yr";
 
   return base + suffix;
 }

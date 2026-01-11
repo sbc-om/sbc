@@ -5,10 +5,15 @@ import { redirect } from "next/navigation";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
+import { ensureActiveProgramSubscription } from "@/lib/db/subscriptions";
 import { createBusinessRequest } from "@/lib/db/businessRequests";
 
 export async function submitBusinessRequestAction(locale: Locale, formData: FormData) {
   const user = await requireUser(locale);
+
+  // Must have an active Directory subscription to request a listing.
+  // (UI also blocks submission, but enforce server-side as well.)
+  ensureActiveProgramSubscription(user.id, "directory");
 
   const name = String(formData.get("name") || "").trim();
   const description = String(formData.get("description") || "").trim();

@@ -16,6 +16,8 @@ import {
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { useCart } from "@/components/store/CartProvider";
 
+import { finalizeCheckoutAction } from "./actions";
+
 function cartTotalOMR(locale: Locale, slugs: string[]) {
   let total = 0;
   for (const slug of slugs) {
@@ -30,6 +32,7 @@ export function CheckoutClient({ locale }: { locale: Locale }) {
   const { state, clear, remove } = useCart();
   const searchParams = useSearchParams();
   const status = searchParams.get("status");
+  const processedRef = React.useRef(false);
 
   const rtl = localeDir(locale) === "rtl";
   const ar = locale === "ar";
@@ -49,12 +52,21 @@ export function CheckoutClient({ locale }: { locale: Locale }) {
     clear: ar ? "مسح السلة" : "Clear cart",
   };
 
-  // Optional: clear cart after a successful return.
+  // Finalize purchase on successful return (fake gateway) and then clear cart.
   React.useEffect(() => {
-    if (status === "success") {
-      // Clear once on success so items don't remain after "purchase".
-      clear();
-    }
+    if (status !== "success") return;
+    if (processedRef.current) return;
+    if (slugs.length === 0) return;
+
+    processedRef.current = true;
+    (async () => {
+      try {
+        await finalizeCheckoutAction(locale, slugs);
+      } finally {
+        // Clear once so items don't remain after "purchase".
+        clear();
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
@@ -70,8 +82,16 @@ export function CheckoutClient({ locale }: { locale: Locale }) {
               <div className="text-sm font-semibold">{copy.success}</div>
               <div className="mt-1 text-sm text-(--muted-foreground)">
                 {ar
-                  ? "تمت محاكاة عملية الدفع بنجاح."
-                  : "This is a simulated payment flow."}
+                  ? "تمت محاكاة عملية الدفع بنجاح. تم تفعيل حزمك الآن."
+                  : "This is a simulated payment flow. Your packages are now active."}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/${locale}/dashboard`}
+                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                >
+                  {ar ? "لوحة التحكم" : "Go to dashboard"}
+                </Link>
               </div>
             </div>
           </div>
