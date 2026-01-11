@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "overlayscrollbars/overlayscrollbars.css";
+@import "leaflet/dist/leaflet.css";
 
 /* Tailwind v4: make `dark:` respond to a `.dark` class (so we can toggle theme). */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -38,6 +39,24 @@
   :root {
     --sidebar-width: 0rem;
   }
+}
+
+/*
+  Pre-hydration sidebar collapse (prevents expand->collapse flash on refresh).
+  We set html[data-sidebar-collapsed] and --sidebar-width via an early head script.
+  These rules ensure the *visual* collapsed state applies immediately.
+*/
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-label,
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-brand,
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-collapse-text {
+  display: none !important;
+}
+
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
+  justify-content: center !important;
+  gap: 0 !important;
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
 }
 
 .dark {

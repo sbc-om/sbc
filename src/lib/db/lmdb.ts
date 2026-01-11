@@ -19,8 +19,11 @@ export type LmdbHandles = {
   loyaltySubscriptions: ReturnType<ReturnType<typeof open>["openDB"]>;
   /** Loyalty business profile (join code, display name, logo) keyed by owner userId. */
   loyaltyProfiles: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** Loyalty settings keyed by owner userId. */
+  loyaltySettings: ReturnType<ReturnType<typeof open>["openDB"]>;
   loyaltyCustomers: ReturnType<ReturnType<typeof open>["openDB"]>;
   loyaltyCards: ReturnType<ReturnType<typeof open>["openDB"]>;
+  loyaltyMessages: ReturnType<ReturnType<typeof open>["openDB"]>;
 };
 
 declare global {
@@ -55,8 +58,10 @@ export function getLmdb(): LmdbHandles {
     // Loyalty / CRM
     existing.loyaltySubscriptions ??= existing.root.openDB({ name: "loyaltySubscriptions" });
     existing.loyaltyProfiles ??= existing.root.openDB({ name: "loyaltyProfiles" });
+    existing.loyaltySettings ??= existing.root.openDB({ name: "loyaltySettings" });
     existing.loyaltyCustomers ??= existing.root.openDB({ name: "loyaltyCustomers" });
     existing.loyaltyCards ??= existing.root.openDB({ name: "loyaltyCards" });
+    existing.loyaltyMessages ??= existing.root.openDB({ name: "loyaltyMessages" });
 
     globalThis.__sbcLmdb = existing as LmdbHandles;
     return globalThis.__sbcLmdb;
@@ -89,8 +94,10 @@ export function getLmdb(): LmdbHandles {
   // Loyalty / CRM
   const loyaltySubscriptions = root.openDB({ name: "loyaltySubscriptions" });
   const loyaltyProfiles = root.openDB({ name: "loyaltyProfiles" });
+  const loyaltySettings = root.openDB({ name: "loyaltySettings" });
   const loyaltyCustomers = root.openDB({ name: "loyaltyCustomers" });
   const loyaltyCards = root.openDB({ name: "loyaltyCards" });
+  const loyaltyMessages = root.openDB({ name: "loyaltyMessages" });
 
   globalThis.__sbcLmdb = {
     root,
@@ -107,8 +114,10 @@ export function getLmdb(): LmdbHandles {
     programSubscriptions,
     loyaltySubscriptions,
     loyaltyProfiles,
+    loyaltySettings,
     loyaltyCustomers,
     loyaltyCards,
+    loyaltyMessages,
   };
 
   return globalThis.__sbcLmdb;

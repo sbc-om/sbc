@@ -60,7 +60,10 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
       width = "16rem"; // Desktop expanded
     }
     
-    document.documentElement.style.setProperty("--sidebar-width", width);
+    const root = document.documentElement;
+    root.style.setProperty("--sidebar-width", width);
+    // Keep a dataset flag so CSS can match the collapsed state (useful for avoiding flashes).
+    root.dataset.sidebarCollapsed = collapsed ? "true" : "false";
   }, [collapsed, isMobile, mounted]);
 
   // Save to localStorage when changed (only for desktop)

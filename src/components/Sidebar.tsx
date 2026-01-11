@@ -186,7 +186,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
             priority
           />
           {!collapsed && (
-            <span className="font-bold text-xl bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent overflow-hidden">
+            <span className="sbc-sidebar-brand font-bold text-xl bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent overflow-hidden">
               SBC
             </span>
           )}
@@ -203,7 +203,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               key={item.key}
               href={`/${locale}${item.path}`}
               onClick={() => isMobile && setMobileOpen(false)}
-              className={`flex items-center rounded-xl py-3 text-base transition-all ${
+              className={`sbc-sidebar-navlink flex items-center rounded-xl py-3 text-base transition-all ${
                 active
                   ? "bg-linear-to-r from-accent/10 to-accent-2/10 font-bold text-accent"
                   : "hover:bg-(--surface) font-normal"
@@ -211,7 +211,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               title={collapsed && !isMobile ? item.label : undefined}
             >
               <IconComponent className="h-7 w-7 shrink-0" />
-              {(!collapsed || isMobile) && <span>{item.label}</span>}
+              {(!collapsed || isMobile) && <span className="sbc-sidebar-label">{item.label}</span>}
             </Link>
           );
         })}
@@ -231,7 +231,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               collapsed ? <HiChevronRight className="h-5 w-5" /> : <HiChevronLeft className="h-5 w-5" />
             )}
             {!collapsed && (
-              <span className="text-sm font-medium">{locale === "ar" ? "إخفاء" : "Collapse"}</span>
+              <span className="sbc-sidebar-collapse-text text-sm font-medium">{locale === "ar" ? "إخفاء" : "Collapse"}</span>
             )}
           </button>
         </div>
@@ -341,11 +341,10 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`fixed top-0 bottom-0 z-40 border-e shadow-none hidden lg:flex flex-col transition-all duration-300 ${
-          collapsed ? "w-20" : "w-64"
-        }`}
+        className="sbc-sidebar fixed top-0 bottom-0 z-40 border-e shadow-none hidden lg:flex flex-col transition-[width] duration-300"
         style={{
           [locale === "ar" ? "right" : "left"]: 0,
+          width: "var(--sidebar-width, 16rem)",
           borderColor: "var(--surface-border)",
           backgroundColor: "var(--background)",
         }}

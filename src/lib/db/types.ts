@@ -80,6 +80,36 @@ export type LoyaltyProfile = {
   logoUrl?: string;
   /** Public join code (unique) used in /loyalty/join/[code]. */
   joinCode: string;
+  /** Optional: business location for map display / wallet location notifications. */
+  location?: {
+    /** Latitude in WGS84 */
+    lat: number;
+    /** Longitude in WGS84 */
+    lng: number;
+    /** Notification radius around the business in meters. */
+    radiusMeters: number;
+    /** Optional human-friendly label (address/place name). */
+    label?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Per-business loyalty settings.
+ * These control how points are redeemed and how points are rendered on the customer card.
+ */
+export type LoyaltySettings = {
+  /** Business owner (our user id). */
+  userId: string;
+  /** Minimum points required to allow a redemption. */
+  pointsRequiredPerRedemption: number;
+  /** Points deducted each time a redemption happens. */
+  pointsDeductPerRedemption: number;
+  /** Which icon source to use when rendering points as icons. */
+  pointsIconMode: "logo" | "custom";
+  /** Custom icon URL (usually a /media/... url). Only used when pointsIconMode === "custom". */
+  pointsIconUrl?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -113,6 +143,22 @@ export type LoyaltyCard = {
   points: number;
   createdAt: string;
   updatedAt: string;
+};
+
+/**
+ * A broadcast message from the business to customers.
+ * - If customerId is missing, message is for all customers of that business.
+ * - If customerId is set, message is targeted.
+ */
+export type LoyaltyMessage = {
+  id: string;
+  /** Business owner (our user id). */
+  userId: string;
+  /** Optional targeted customer (loyalty customer id). */
+  customerId?: string;
+  title: string;
+  body: string;
+  createdAt: string;
 };
 
 export type ProgramId = "directory" | "loyalty" | "marketing";

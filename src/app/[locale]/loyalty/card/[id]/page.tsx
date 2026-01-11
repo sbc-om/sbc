@@ -6,7 +6,15 @@ import { PublicPage } from "@/components/PublicPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
-import { getLoyaltyCardById, getLoyaltyCustomerById, getLoyaltyProfileByUserId } from "@/lib/db/loyalty";
+import {
+  defaultLoyaltySettings,
+  getLoyaltyCardById,
+  getLoyaltyCustomerById,
+  getLoyaltyProfileByUserId,
+  getLoyaltySettingsByUserId,
+} from "@/lib/db/loyalty";
+import { LoyaltyPointsIcons } from "@/components/loyalty/LoyaltyPointsIcons";
+import { GeoProximityNotifier } from "@/components/loyalty/GeoProximityNotifier";
 
 import { CardQrClient } from "./CardQrClient";
 
@@ -28,6 +36,10 @@ export default async function LoyaltyCardPublicPage({
 
   const customer = getLoyaltyCustomerById(card.customerId);
   const profile = getLoyaltyProfileByUserId(card.userId);
+  const settings = getLoyaltySettingsByUserId(card.userId) ?? defaultLoyaltySettings(card.userId);
+
+  const pointsIconUrl =
+    settings.pointsIconMode === "custom" ? settings.pointsIconUrl : profile?.logoUrl;
 
   return (
     <PublicPage>
@@ -51,6 +63,15 @@ export default async function LoyaltyCardPublicPage({
       </div>
 
       <div className="mt-8 sbc-card rounded-2xl p-8 text-center">
+        {profile?.location ? (
+          <GeoProximityNotifier
+            enabled
+            businessName={profile.businessName}
+            business={{ lat: profile.location.lat, lng: profile.location.lng }}
+            radiusMeters={profile.location.radiusMeters}
+          />
+        ) : null}
+
         {profile ? (
           <div
             className={
@@ -88,11 +109,44 @@ export default async function LoyaltyCardPublicPage({
           {card.points}
         </div>
 
-        <div className="mt-6 text-xs text-(--muted-foreground)">
-          {ar
-            ? "ملاحظة: إضافة البطاقة إلى Apple Wallet/Google Wallet ستكون في مرحلة لاحقة." 
-            : "Note: Adding to Apple Wallet/Google Wallet will be implemented in a later phase."}
+        <div className="mt-5">
+          <LoyaltyPointsIcons points={card.points} iconUrl={pointsIconUrl} maxIcons={80} />
         </div>
+
+        <div className="mt-4 text-xs text-(--muted-foreground)">
+          {ar
+            ? `الاستخدام: الحد الأدنى ${settings.pointsRequiredPerRedemption} نقطة (يتم خصم ${settings.pointsDeductPerRedemption} نقطة لكل مرة).`
+            : `Redemption: min ${settings.pointsRequiredPerRedemption} points (deduct ${settings.pointsDeductPerRedemption} per use).`}
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          <a
+            href={`/api/loyalty/wallet/apple/${encodeURIComponent(card.id)}`}
+            className={buttonVariants({ variant: "primary", size: "md" })}
+          >
+            {ar ? "إضافة إلى Apple Wallet" : "Add to Apple Wallet"}
+          </a>
+          <a
+            href={`/api/loyalty/wallet/google/${encodeURIComponent(card.id)}`}
+            className={buttonVariants({ variant: "secondary", size: "md" })}
+          >
+            {ar ? "إضافة إلى Google Wallet" : "Add to Google Wallet"}
+          </a>
+        </div>
+
+        {profile?.location ? (
+          <div className="mt-4 text-xs text-(--muted-foreground)">
+            {ar
+              ? "معلومة: تم إعداد موقع النشاط. عند تفعيل Wallet، يمكن تنبيه العميل تلقائياً عند الاقتراب من المتجر."
+              : "Tip: This business has a configured location. With Wallet enabled, customers can get an automatic alert when near the store."}
+          </div>
+        ) : (
+          <div className="mt-4 text-xs text-(--muted-foreground)">
+            {ar
+              ? "معلومة: صاحب النشاط يمكنه إضافة موقع المتجر لتفعيل تنبيهات قرب الموقع داخل Wallet." 
+              : "Tip: The business can set a store location to enable location-based Wallet alerts."}
+          </div>
+        )}
 
         <CardQrClient locale={locale as Locale} customerId={card.customerId} />
       </div>

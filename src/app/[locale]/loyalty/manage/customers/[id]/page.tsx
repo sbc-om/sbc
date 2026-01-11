@@ -6,17 +6,25 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
-import { getLoyaltyCustomerById, getLoyaltyProfileByUserId } from "@/lib/db/loyalty";
+import {
+  defaultLoyaltySettings,
+  getLoyaltyCustomerById,
+  getLoyaltyProfileByUserId,
+  getLoyaltySettingsByUserId,
+} from "@/lib/db/loyalty";
+import { LoyaltyPointsIcons } from "@/components/loyalty/LoyaltyPointsIcons";
 
-import { adjustLoyaltyCustomerPointsAction } from "../../../actions";
+import { adjustLoyaltyCustomerPointsAction, redeemLoyaltyCustomerPointsAction } from "../../../actions";
 import { CustomerDetailClient } from "./CustomerDetailClient";
 
 export const runtime = "nodejs";
 
 export default async function LoyaltyManageCustomerDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; id: string }>;
+  searchParams?: Promise<{ error?: string }>;
 }) {
   const { locale, id } = await params;
   if (!isLocale(locale)) notFound();
@@ -26,9 +34,14 @@ export default async function LoyaltyManageCustomerDetailPage({
 
   const user = await requireUser(locale as Locale);
   const profile = getLoyaltyProfileByUserId(user.id);
+  const settings = getLoyaltySettingsByUserId(user.id) ?? defaultLoyaltySettings(user.id);
 
   const customer = getLoyaltyCustomerById(id);
   if (!customer || customer.userId !== user.id) notFound();
+
+  const sp = searchParams ? await searchParams : null;
+  const error = sp?.error ? String(sp.error) : null;
+  const pointsIconUrl = settings.pointsIconMode === "custom" ? settings.pointsIconUrl : profile?.logoUrl;
 
   const returnTo = `/${locale}/loyalty/manage/customers/${customer.id}`;
 
@@ -77,6 +90,20 @@ export default async function LoyaltyManageCustomerDetailPage({
             {customer.points}
           </div>
 
+          <div className="mt-4">
+            <LoyaltyPointsIcons points={customer.points} iconUrl={pointsIconUrl} maxIcons={80} />
+          </div>
+
+          {error ? (
+            <div className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-400">
+              {error === "INSUFFICIENT_POINTS"
+                ? ar
+                  ? "لا توجد نقاط كافية للاستخدام."
+                  : "Not enough points to redeem."
+                : error}
+            </div>
+          ) : null}
+
           <div className="mt-6 flex flex-wrap items-center gap-2">
             <form action={adjustLoyaltyCustomerPointsAction.bind(null, locale as Locale)}>
               <input type="hidden" name="returnTo" value={returnTo} />
@@ -98,6 +125,22 @@ export default async function LoyaltyManageCustomerDetailPage({
               <input type="hidden" name="delta" value="-1" />
               <Button type="submit" variant="secondary" className="hover:bg-red-50 hover:text-red-600 hover:border-red-100 dark:hover:bg-red-950/20 dark:hover:text-red-300 dark:hover:border-red-900/30">{ar ? "-1" : "-1"}</Button>
             </form>
+
+            <form action={redeemLoyaltyCustomerPointsAction.bind(null, locale as Locale)}>
+              <input type="hidden" name="returnTo" value={returnTo} />
+              <input type="hidden" name="customerId" value={customer.id} />
+              <Button type="submit" variant="primary">
+                {ar
+                  ? `استخدام (-${settings.pointsDeductPerRedemption})`
+                  : `Redeem (-${settings.pointsDeductPerRedemption})`}
+              </Button>
+            </form>
+          </div>
+
+          <div className="mt-3 text-xs text-(--muted-foreground)">
+            {ar
+              ? `الحد الأدنى للاستخدام: ${settings.pointsRequiredPerRedemption} نقطة.`
+              : `Min required: ${settings.pointsRequiredPerRedemption} points.`}
           </div>
 
           <div className="mt-6 rounded-2xl border border-(--surface-border) bg-(--surface) p-4">

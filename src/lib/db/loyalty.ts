@@ -5,8 +5,10 @@ import { getLmdb } from "./lmdb";
 import type {
   LoyaltyCard,
   LoyaltyCustomer,
+  LoyaltyMessage,
   LoyaltyPlan,
   LoyaltyProfile,
+  LoyaltySettings,
   LoyaltySubscription,
 } from "./types";
 import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "./subscriptions";
@@ -24,9 +26,28 @@ const profileInputSchema = z.object({
   businessName: z.string().trim().min(2).max(120),
   logoUrl: z.string().trim().min(1).max(2048).optional(),
   joinCode: joinCodeSchema.optional(),
+  location: z
+    .object({
+      lat: z.number().finite().min(-90).max(90),
+      lng: z.number().finite().min(-180).max(180),
+      radiusMeters: z.number().int().min(25).max(20000),
+      label: z.string().trim().min(1).max(200).optional(),
+    })
+    .optional(),
 });
 
 export type LoyaltyProfileInput = z.infer<typeof profileInputSchema>;
+
+const settingsInputSchema = z
+  .object({
+    pointsRequiredPerRedemption: z.number().int().min(1).max(100000).optional(),
+    pointsDeductPerRedemption: z.number().int().min(1).max(100000).optional(),
+    pointsIconMode: z.enum(["logo", "custom"]).optional(),
+    pointsIconUrl: z.string().trim().min(1).max(2048).optional(),
+  })
+  .strict();
+
+export type LoyaltySettingsInput = z.infer<typeof settingsInputSchema>;
 
 const genJoinCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 8);
 
@@ -40,6 +61,16 @@ const customerInputSchema = z.object({
 });
 
 export type LoyaltyCustomerInput = z.infer<typeof customerInputSchema>;
+
+const messageInputSchema = z
+  .object({
+    customerId: z.string().trim().min(1).optional(),
+    title: z.string().trim().min(2).max(120),
+    body: z.string().trim().min(2).max(1200),
+  })
+  .strict();
+
+export type LoyaltyMessageInput = z.infer<typeof messageInputSchema>;
 
 export function getLoyaltySubscriptionByUserId(userId: string): LoyaltySubscription | null {
   const { loyaltySubscriptions } = getLmdb();
@@ -75,6 +106,65 @@ export function getLoyaltyProfileByUserId(userId: string): LoyaltyProfile | null
   const uid = userIdSchema.safeParse(userId);
   if (!uid.success) return null;
   return (loyaltyProfiles.get(uid.data) as LoyaltyProfile | undefined) ?? null;
+}
+
+export function defaultLoyaltySettings(userId: string): LoyaltySettings {
+  const uid = userIdSchema.parse(userId);
+  const now = new Date().toISOString();
+  return {
+    userId: uid,
+    pointsRequiredPerRedemption: 10,
+    pointsDeductPerRedemption: 10,
+    pointsIconMode: "logo",
+    pointsIconUrl: undefined,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+export function getLoyaltySettingsByUserId(userId: string): LoyaltySettings | null {
+  const { loyaltySettings } = getLmdb();
+  const uid = userIdSchema.safeParse(userId);
+  if (!uid.success) return null;
+  return (loyaltySettings.get(uid.data) as LoyaltySettings | undefined) ?? null;
+}
+
+export function upsertLoyaltySettings(input: {
+  userId: string;
+  settings: LoyaltySettingsInput;
+}): LoyaltySettings {
+  ensureActiveLoyaltySubscription(input.userId);
+
+  const { loyaltySettings } = getLmdb();
+  const uid = userIdSchema.parse(input.userId);
+  const data = settingsInputSchema.parse(input.settings);
+
+  const existing = loyaltySettings.get(uid) as LoyaltySettings | undefined;
+  const now = new Date().toISOString();
+  const base = existing ?? defaultLoyaltySettings(uid);
+
+  // If mode is custom but url is missing, keep existing url (if any).
+  // If mode is logo, we clear custom url.
+  const nextMode = data.pointsIconMode ?? base.pointsIconMode;
+  const nextUrl =
+    nextMode === "logo"
+      ? undefined
+      : (data.pointsIconUrl ?? base.pointsIconUrl ?? undefined);
+
+  const next: LoyaltySettings = {
+    ...base,
+    pointsRequiredPerRedemption:
+      data.pointsRequiredPerRedemption ?? base.pointsRequiredPerRedemption,
+    pointsDeductPerRedemption:
+      data.pointsDeductPerRedemption ?? base.pointsDeductPerRedemption,
+    pointsIconMode: nextMode,
+    pointsIconUrl: nextUrl,
+    createdAt: base.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  loyaltySettings.put(uid, next);
+  return next;
 }
 
 export function getLoyaltyProfileByJoinCode(code: string): LoyaltyProfile | null {
@@ -126,6 +216,7 @@ export function upsertLoyaltyProfile(input: {
     businessName: data.businessName,
     logoUrl: data.logoUrl || undefined,
     joinCode,
+    location: data.location ?? existing?.location,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
   };
@@ -155,6 +246,60 @@ export function purchaseLoyaltySubscription(input: {
 
   loyaltySubscriptions.put(uid, next);
   return next;
+}
+
+export function createLoyaltyMessage(input: {
+  userId: string;
+  message: LoyaltyMessageInput;
+}): LoyaltyMessage {
+  ensureActiveLoyaltySubscription(input.userId);
+
+  const { loyaltyMessages, loyaltyCustomers } = getLmdb();
+  const uid = userIdSchema.parse(input.userId);
+  const data = messageInputSchema.parse(input.message);
+
+  // If targeted, validate the customer belongs to this business.
+  if (data.customerId) {
+    const c = loyaltyCustomers.get(data.customerId) as LoyaltyCustomer | undefined;
+    if (!c || c.userId !== uid) throw new Error("CUSTOMER_NOT_FOUND");
+  }
+
+  const now = new Date().toISOString();
+  // Prefix with timestamp so lexicographic order roughly matches creation time.
+  const id = `${Date.now()}_${nanoid(10)}`;
+
+  const msg: LoyaltyMessage = {
+    id,
+    userId: uid,
+    customerId: data.customerId || undefined,
+    title: data.title,
+    body: data.body,
+    createdAt: now,
+  };
+
+  loyaltyMessages.put(id, msg);
+  return msg;
+}
+
+export function listLoyaltyMessagesForCustomer(input: {
+  userId: string;
+  customerId: string;
+  limit?: number;
+}): LoyaltyMessage[] {
+  const { loyaltyMessages } = getLmdb();
+  const uid = userIdSchema.parse(input.userId);
+  const customerId = z.string().trim().min(1).parse(input.customerId);
+  const limit = Math.min(50, Math.max(1, Math.trunc(input.limit ?? 10)));
+
+  const all: LoyaltyMessage[] = [];
+  for (const { value } of loyaltyMessages.getRange({ reverse: true })) {
+    const m = value as LoyaltyMessage;
+    if (m.userId !== uid) continue;
+    if (m.customerId && m.customerId !== customerId) continue;
+    all.push(m);
+    if (all.length >= limit) break;
+  }
+  return all;
 }
 
 export function createLoyaltyCustomer(input: {
@@ -252,6 +397,49 @@ export function adjustLoyaltyCustomerPoints(input: {
   }
 
   return next;
+}
+
+export function redeemLoyaltyCustomerPoints(input: {
+  userId: string;
+  customerId: string;
+}): { customer: LoyaltyCustomer; settings: LoyaltySettings } {
+  ensureActiveLoyaltySubscription(input.userId);
+
+  const uid = userIdSchema.parse(input.userId);
+  const customerId = z.string().trim().min(1).parse(input.customerId);
+
+  const settings = getLoyaltySettingsByUserId(uid) ?? defaultLoyaltySettings(uid);
+
+  const { loyaltyCustomers, loyaltyCards } = getLmdb();
+  const existing = loyaltyCustomers.get(customerId) as LoyaltyCustomer | undefined;
+  if (!existing || existing.userId !== uid) throw new Error("NOT_FOUND");
+
+  const points = existing.points ?? 0;
+  if (points < settings.pointsRequiredPerRedemption) {
+    throw new Error("INSUFFICIENT_POINTS");
+  }
+
+  const nextPoints = Math.max(0, points - settings.pointsDeductPerRedemption);
+  const now = new Date().toISOString();
+
+  const next: LoyaltyCustomer = {
+    ...existing,
+    points: nextPoints,
+    updatedAt: now,
+  };
+
+  loyaltyCustomers.put(customerId, next);
+
+  const card = loyaltyCards.get(existing.cardId) as LoyaltyCard | undefined;
+  if (card) {
+    loyaltyCards.put(existing.cardId, {
+      ...card,
+      points: nextPoints,
+      updatedAt: now,
+    } satisfies LoyaltyCard);
+  }
+
+  return { customer: next, settings };
 }
 
 export function getLoyaltyCardById(id: string): LoyaltyCard | null {

@@ -7,10 +7,16 @@ import { buttonVariants } from "@/components/ui/Button";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { getLoyaltyProfileByUserId, listLoyaltyCustomersByUser } from "@/lib/db/loyalty";
+import {
+  defaultLoyaltySettings,
+  getLoyaltyProfileByUserId,
+  getLoyaltySettingsByUserId,
+  listLoyaltyCustomersByUser,
+} from "@/lib/db/loyalty";
 import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 
 import { LoyaltyProfileClient } from "./LoyaltyProfileClient";
+import { LoyaltySettingsClient } from "./LoyaltySettingsClient";
 
 export const runtime = "nodejs";
 
@@ -42,6 +48,9 @@ export default async function LoyaltyManagePage({
   const isActive = isProgramSubscriptionActive(programSub);
   const customers = user && isActive ? listLoyaltyCustomersByUser(user.id) : [];
   const profile = user && isActive ? getLoyaltyProfileByUserId(user.id) : null;
+  const settings = user && isActive
+    ? (getLoyaltySettingsByUserId(user.id) ?? defaultLoyaltySettings(user.id))
+    : null;
 
   return (
     <PublicPage>
@@ -117,6 +126,14 @@ export default async function LoyaltyManagePage({
       {user && isActive ? (
         <>
           <LoyaltyProfileClient locale={locale as Locale} initialProfile={profile} baseUrl={baseUrl} />
+
+          {settings ? (
+            <LoyaltySettingsClient
+              locale={locale as Locale}
+              initialSettings={settings}
+              profile={profile ? { businessName: profile.businessName, logoUrl: profile.logoUrl, joinCode: profile.joinCode } : null}
+            />
+          ) : null}
 
           <div className="mt-8 sbc-card rounded-2xl p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

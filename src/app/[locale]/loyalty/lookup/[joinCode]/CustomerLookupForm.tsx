@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
 import type { Locale } from "@/lib/i18n/locales";
+import { LoyaltyPointsIcons } from "@/components/loyalty/LoyaltyPointsIcons";
 
 type CustomerData = {
   id: string;
@@ -21,6 +22,7 @@ type ProfileData = {
   businessName: string;
   logoUrl?: string;
   joinCode: string;
+  pointsIconUrl?: string;
 };
 
 export function CustomerLookupForm({
@@ -124,21 +126,57 @@ export function CustomerLookupForm({
         <div className="animate-in fade-in slide-in-from-bottom-4 space-y-6">
           {/* Customer Info Card */}
           <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-6">
-            <div className={cn("mb-4 flex items-start justify-between", rtl ? "flex-row-reverse" : "")}>
-              <div className={cn(rtl ? "text-right" : "text-left")}>
-                <h3 className="text-lg font-semibold">{customer.fullName}</h3>
-                {customer.phone && (
-                  <p className="mt-1 text-sm text-(--muted-foreground)" dir="ltr">
-                    {customer.phone}
-                  </p>
-                )}
-                {customer.email && (
-                  <p className="mt-1 text-sm text-(--muted-foreground)">{customer.email}</p>
-                )}
+            <div className={cn("flex items-center justify-between gap-4", rtl ? "flex-row-reverse" : "")}>
+              <div className={cn("flex items-center gap-3", rtl ? "flex-row-reverse" : "")}>
+                <div className="relative h-11 w-11 overflow-hidden rounded-xl border border-(--surface-border) bg-(--surface)">
+                  {profile.logoUrl ? (
+                    <Image src={profile.logoUrl} alt={profile.businessName} fill className="object-cover" />
+                  ) : (
+                    <div
+                      className="h-full w-full"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, rgba(124,58,237,0.25), rgba(14,165,233,0.22))",
+                      }}
+                    />
+                  )}
+                </div>
+                <div className={cn(rtl ? "text-right" : "text-left")}>
+                  <div className="text-xs text-(--muted-foreground)">{ar ? "النشاط" : "Business"}</div>
+                  <div className="text-sm font-semibold leading-tight">{profile.businessName}</div>
+                </div>
               </div>
+
               <div className={cn("rounded-xl bg-linear-to-br from-accent to-accent-2 px-4 py-2 text-center", rtl ? "ml-4" : "mr-4")}>
                 <div className="text-xs font-medium text-white/80">{ar ? "النقاط" : "Points"}</div>
                 <div className="text-2xl font-bold text-white">{customer.points}</div>
+              </div>
+            </div>
+
+            <div className={cn("mt-5 flex items-start justify-between gap-6", rtl ? "flex-row-reverse" : "")}>
+              <div className={cn("min-w-0", rtl ? "text-right" : "text-left")}>
+                <div className="text-xs text-(--muted-foreground)">{ar ? "العميل" : "Customer"}</div>
+                <h3 className="mt-1 truncate text-lg font-semibold">{customer.fullName}</h3>
+                {customer.phone ? (
+                  <p className="mt-1 text-sm text-(--muted-foreground)" dir="ltr">
+                    {customer.phone}
+                  </p>
+                ) : null}
+                {customer.email ? (
+                  <p className="mt-1 truncate text-sm text-(--muted-foreground)">{customer.email}</p>
+                ) : null}
+              </div>
+
+              <div className={cn("shrink-0", rtl ? "text-left" : "text-right")}>
+                <div className="text-xs text-(--muted-foreground)">{ar ? "عرض الأيقونات" : "Icon view"}</div>
+                <div className="mt-2">
+                  <LoyaltyPointsIcons
+                    points={customer.points}
+                    iconUrl={profile.pointsIconUrl ?? profile.logoUrl}
+                    maxIcons={80}
+                    className={cn(rtl ? "justify-end" : "justify-start")}
+                  />
+                </div>
               </div>
             </div>
           </div>

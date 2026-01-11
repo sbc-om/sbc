@@ -12,6 +12,14 @@ const patchSchema = z.object({
   businessName: z.string().trim().min(2).max(120),
   joinCode: z.string().trim().optional(),
   logoUrl: z.string().trim().optional(),
+  location: z
+    .object({
+      lat: z.number().finite().min(-90).max(90),
+      lng: z.number().finite().min(-180).max(180),
+      radiusMeters: z.number().int().min(25).max(20000),
+      label: z.string().trim().min(1).max(200).optional(),
+    })
+    .optional(),
 });
 
 export async function GET() {
@@ -36,6 +44,7 @@ export async function PATCH(req: Request) {
         businessName: data.businessName,
         joinCode: data.joinCode ? data.joinCode : undefined,
         logoUrl: data.logoUrl ? data.logoUrl : undefined,
+        location: data.location,
       },
     });
 

@@ -8,7 +8,7 @@ import { nanoid } from "nanoid";
 
 export type UploadKind = "cover" | "logo" | "banner" | "gallery" | "video";
 
-export type UserUploadKind = "avatar" | "loyalty-logo";
+export type UserUploadKind = "avatar" | "loyalty-logo" | "loyalty-point-icon";
 
 const MEDIA_URL_PREFIX = "/media/";
 
@@ -212,7 +212,9 @@ export function validateUserImageUpload(params: {
 }) {
   const { kind, file } = params;
 
-  if (kind !== "avatar" && kind !== "loyalty-logo") throw new Error("INVALID_KIND");
+  if (kind !== "avatar" && kind !== "loyalty-logo" && kind !== "loyalty-point-icon") {
+    throw new Error("INVALID_KIND");
+  }
 
   const mime = file.type;
   const size = file.size;

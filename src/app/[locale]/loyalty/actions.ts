@@ -9,6 +9,7 @@ import {
   purchaseLoyaltySubscription,
   createLoyaltyCustomer,
   adjustLoyaltyCustomerPoints,
+  redeemLoyaltyCustomerPoints,
 } from "@/lib/db/loyalty";
 
 function safeReturnTo(locale: Locale, value: unknown): string | null {
@@ -80,6 +81,29 @@ export async function adjustLoyaltyCustomerPointsAction(locale: Locale, formData
     customerId,
     delta: Math.trunc(delta),
   });
+
+  const target = returnTo ?? `/${locale}/loyalty/manage`;
+  revalidatePath(target);
+  redirect(target);
+}
+
+export async function redeemLoyaltyCustomerPointsAction(locale: Locale, formData: FormData) {
+  const user = await requireUser(locale);
+
+  const returnTo = safeReturnTo(locale, formData.get("returnTo"));
+  const customerId = String(formData.get("customerId") || "").trim();
+
+  try {
+    redeemLoyaltyCustomerPoints({
+      userId: user.id,
+      customerId,
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "REDEEM_FAILED";
+    const target = returnTo ?? `/${locale}/loyalty/manage`;
+    revalidatePath(target);
+    redirect(`${target}?error=${encodeURIComponent(message)}`);
+  }
 
   const target = returnTo ?? `/${locale}/loyalty/manage`;
   revalidatePath(target);

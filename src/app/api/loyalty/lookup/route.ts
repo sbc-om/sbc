@@ -1,7 +1,9 @@
 import { z } from "zod";
 import {
+  defaultLoyaltySettings,
   getLoyaltyProfileByJoinCode,
   getLoyaltyCustomerByPhone,
+  getLoyaltySettingsByUserId,
 } from "@/lib/db/loyalty";
 
 export const runtime = "nodejs";
@@ -30,6 +32,9 @@ export async function POST(req: Request) {
       );
     }
 
+    const settings = getLoyaltySettingsByUserId(profile.userId) ?? defaultLoyaltySettings(profile.userId);
+    const pointsIconUrl = settings.pointsIconMode === "custom" ? settings.pointsIconUrl : profile.logoUrl;
+
     // If phone is provided, search for customer
     let customer = null;
     if (data.phone) {
@@ -45,6 +50,7 @@ export async function POST(req: Request) {
         businessName: profile.businessName,
         logoUrl: profile.logoUrl,
         joinCode: profile.joinCode,
+        pointsIconUrl,
       },
       customer: customer
         ? {

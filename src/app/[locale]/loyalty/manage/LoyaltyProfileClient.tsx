@@ -8,12 +8,19 @@ import { localeDir } from "@/lib/i18n/locales";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
+import { OsmLocationPicker, type OsmLocationValue } from "@/components/maps/OsmLocationPicker";
 
 type LoyaltyProfileDTO = {
   userId: string;
   businessName: string;
   logoUrl?: string;
   joinCode: string;
+  location?: {
+    lat: number;
+    lng: number;
+    radiusMeters: number;
+    label?: string;
+  };
   createdAt: string;
   updatedAt: string;
 };
@@ -33,6 +40,7 @@ export function LoyaltyProfileClient({
   const [businessName, setBusinessName] = useState(initialProfile?.businessName ?? "");
   const [joinCode, setJoinCode] = useState(initialProfile?.joinCode ?? "");
   const [logoUrl, setLogoUrl] = useState<string | null>(initialProfile?.logoUrl ?? null);
+  const [location, setLocation] = useState<OsmLocationValue | null>(initialProfile?.location ?? null);
 
   const [busy, setBusy] = useState(false);
   const [busyLogo, setBusyLogo] = useState(false);
@@ -54,6 +62,10 @@ export function LoyaltyProfileClient({
         ? "أحرف/أرقام فقط (4-16). اتركه فارغاً لتوليده تلقائياً."
         : "Letters/numbers only (4–16). Leave empty to auto-generate.",
       logo: ar ? "شعار النشاط" : "Business logo",
+      locationTitle: ar ? "موقع النشاط" : "Business location",
+      locationHint: ar
+        ? "اختر الموقع الدقيق وحدد نطاق الإشعار (يستخدمه Wallet للتنبيه حسب الموقع)."
+        : "Pick the exact location and set the notification range (used by Wallet location alerts).",
       changeLogo: ar ? "رفع شعار" : "Upload logo",
       removeLogo: ar ? "حذف الشعار" : "Remove logo",
       save: ar ? "حفظ" : "Save",
@@ -120,6 +132,7 @@ export function LoyaltyProfileClient({
           businessName,
           joinCode: joinCode || undefined,
           logoUrl: logoUrl || undefined,
+          location: location ?? undefined,
         }),
       });
 
@@ -133,6 +146,7 @@ export function LoyaltyProfileClient({
       setBusinessName(json.profile.businessName);
       setJoinCode(json.profile.joinCode);
       setLogoUrl(json.profile.logoUrl ?? null);
+      setLocation(json.profile.location ?? null);
       setSuccess(t.saved);
     } catch (e) {
       setError(e instanceof Error ? e.message : "SAVE_FAILED");
@@ -306,6 +320,22 @@ export function LoyaltyProfileClient({
                   {ar ? "لا يوجد شعار بعد." : "No logo yet."}
                 </div>
               )}
+            </div>
+
+            <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+              <div className={cn("flex flex-col gap-1", rtl ? "text-right" : "text-left")}>
+                <div className="text-sm font-medium">{t.locationTitle}</div>
+                <div className="text-xs text-(--muted-foreground)">{t.locationHint}</div>
+              </div>
+
+              <div className="mt-4">
+                <OsmLocationPicker
+                  locale={ar ? "ar" : "en"}
+                  value={location}
+                  onChange={setLocation}
+                  disabled={busy}
+                />
+              </div>
             </div>
 
             {error ? (
