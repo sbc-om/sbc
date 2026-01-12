@@ -32,6 +32,14 @@ export function OverlayScrollbarsInit() {
 
     instanceRef.current = instance;
 
+    // Remove the pre-paint native scrollbar suppression.
+    try {
+      delete document.documentElement.dataset.osPending;
+      document.getElementById("os-pending-style")?.remove();
+    } catch {
+      // ignore
+    }
+
     // Keep theme in sync when `.dark` toggles.
     const observer = new MutationObserver(() => {
       const nextTheme = getScrollbarTheme();

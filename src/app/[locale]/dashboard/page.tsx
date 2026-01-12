@@ -1,5 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  HiArrowUpRight,
+  HiCheckBadge,
+  HiOutlineBuildingOffice2,
+  HiOutlineMegaphone,
+  HiOutlineSparkles,
+  HiOutlineShoppingBag,
+  HiXCircle,
+} from "react-icons/hi2";
 
 import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
@@ -48,19 +57,31 @@ export default async function DashboardPage({
       title: ar ? "دليل الأعمال" : "Business Directory",
       href: `/${locale}/directory`,
       storeHref: `/${locale}/store?q=directory`,
-      subtitle: ar ? "عضوية وإظهار في الرئيسية" : "Membership & homepage visibility",
+      subtitle: ar ? "العضوية والظهور" : "Membership & visibility",
+      Icon: HiOutlineBuildingOffice2,
+      iconClassName: "text-indigo-600 dark:text-indigo-300",
+      iconBgClassName: "bg-indigo-500/12 ring-1 ring-indigo-500/18",
+      borderClassName: "border-indigo-500/25 dark:border-indigo-400/25",
     },
     loyalty: {
       title: ar ? "نظام الولاء" : "Loyalty System",
       href: `/${locale}/loyalty/manage`,
       storeHref: `/${locale}/store?q=loyalty`,
-      subtitle: ar ? "اشتراك لإدارة العملاء والنقاط" : "Subscription for customers & points",
+      subtitle: ar ? "العملاء والنقاط" : "Customers & points",
+      Icon: HiOutlineSparkles,
+      iconClassName: "text-emerald-600 dark:text-emerald-300",
+      iconBgClassName: "bg-emerald-500/12 ring-1 ring-emerald-500/18",
+      borderClassName: "border-emerald-500/25 dark:border-emerald-400/25",
     },
     marketing: {
       title: ar ? "منصة التسويق" : "Marketing Platform",
       href: `/${locale}/marketing-platform/app`,
       storeHref: `/${locale}/store?q=marketing`,
-      subtitle: ar ? "أدوات رسائل وحملات" : "Messaging tools & campaigns",
+      subtitle: ar ? "الرسائل والحملات" : "Messages & campaigns",
+      Icon: HiOutlineMegaphone,
+      iconClassName: "text-fuchsia-600 dark:text-fuchsia-300",
+      iconBgClassName: "bg-fuchsia-500/12 ring-1 ring-fuchsia-500/18",
+      borderClassName: "border-fuchsia-500/25 dark:border-fuchsia-400/25",
     },
   } as const;
 
@@ -79,14 +100,15 @@ export default async function DashboardPage({
         {user.role === "admin" ? (
           <Link
             href={`/${locale}/admin`}
-            className="text-sm font-medium text-(--muted-foreground) hover:text-foreground"
+            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-(--muted-foreground) hover:text-foreground"
           >
+            <HiArrowUpRight className="h-4 w-4" />
             {dict.nav.admin}
           </Link>
         ) : null}
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+      <div className="mt-8 flex flex-col gap-4">
         {(Object.keys(programMeta) as Array<keyof typeof programMeta>).map((programId) => {
           const meta = programMeta[programId];
           const sub = subscriptions.find((s) => s.program === programId) ?? null;
@@ -105,82 +127,115 @@ export default async function DashboardPage({
                 ? "غير مفعل"
                 : "Not active";
 
+          const statusLabel = active
+            ? ar
+              ? "مفعل"
+              : "Active"
+            : ar
+              ? "غير مفعل"
+              : "Inactive";
+
           return (
-            <section key={programId} className="sbc-card rounded-2xl p-6">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-semibold tracking-tight">{meta.title}</h2>
-                  <p className="mt-1 text-sm text-(--muted-foreground)">{meta.subtitle}</p>
-                </div>
-
-                <span
-                  className={
-                    "rounded-full px-2.5 py-1 text-xs font-medium " +
-                    (active
-                      ? "bg-(--chip-bg) text-foreground"
-                      : "bg-(--chip-bg) text-(--muted-foreground)")
-                  }
-                >
-                  {active ? (ar ? "مفعل" : "Active") : (ar ? "غير مفعل" : "Inactive")}
-                </span>
-              </div>
-
-              <div className="mt-5 grid gap-2 text-sm">
-                <div>
-                  <span className="text-(--muted-foreground)">{ar ? "الباقة" : "Plan"}: </span>
-                  <span className="font-medium">{planLabel}</span>
-                </div>
-
-                {sub ? (
-                  <>
-                    <div>
-                      <span className="text-(--muted-foreground)">{ar ? "تاريخ البدء" : "Started"}: </span>
-                      <span className="font-medium">{formatDate(sub.startedAt)}</span>
-                    </div>
-                    <div>
-                      <span className="text-(--muted-foreground)">{ar ? "ينتهي" : "Expires"}: </span>
-                      <span className="font-medium">{formatDate(sub.expiresAt)}</span>
-                    </div>
-                    <div>
-                      <span className="text-(--muted-foreground)">{ar ? "المتبقي" : "Remaining"}: </span>
-                      <span className="font-semibold">
-                        {active
-                          ? ar
-                            ? `${daysLeft} يوم`
-                            : `${daysLeft} day${daysLeft === 1 ? "" : "s"}`
-                          : ar
-                            ? "منتهي"
-                            : "Expired"}
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-(--muted-foreground)">
-                    {ar
-                      ? "لم تقم بشراء أي باقة لهذا البرنامج بعد."
-                      : "You haven't purchased a package for this program yet."}
+            <section
+              key={programId}
+              className={
+                "relative overflow-hidden rounded-2xl border-2 bg-(--surface) p-6 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md " +
+                meta.borderClassName
+              }
+            >
+              <div className="relative flex items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-4">
+                  <div
+                    className={
+                      "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl " +
+                      meta.iconBgClassName +
+                      (active ? "" : " opacity-75")
+                    }
+                    aria-hidden
+                  >
+                    <meta.Icon className={"h-8 w-8 " + meta.iconClassName} />
                   </div>
-                )}
+
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-semibold tracking-tight">{meta.title}</h2>
+                    <p className="mt-1 line-clamp-1 text-sm text-(--muted-foreground)">{meta.subtitle}</p>
+                  </div>
+                </div>
+
+                <div className="shrink-0">
+                  <span
+                    className={
+                      "sbc-chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold " +
+                      (active ? "text-foreground" : "text-(--muted-foreground)")
+                    }
+                  >
+                    {active ? (
+                      <HiCheckBadge className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+                    ) : null}
+                    {statusLabel}
+                  </span>
+                </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="relative mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap items-center gap-3 text-sm">
+                  <span className="sbc-chip rounded-full px-3 py-1">
+                    <span className="text-(--muted-foreground)">{ar ? "الخطة" : "Plan"}: </span>
+                    <span className="font-semibold">{planLabel}</span>
+                  </span>
+
+                  {sub ? (
+                    <>
+                      <span className="sbc-chip rounded-full px-3 py-1">
+                        <span className="text-(--muted-foreground)">{ar ? "الانتهاء" : "Expires"}: </span>
+                        <span className="font-semibold">{formatDate(sub.expiresAt)}</span>
+                      </span>
+                      <span className="sbc-chip rounded-full px-3 py-1">
+                        <span className="text-(--muted-foreground)">{ar ? "المتبقي" : "Remaining"}: </span>
+                        <span className="font-semibold">
+                          {active
+                            ? ar
+                              ? `${daysLeft} يوم`
+                              : `${daysLeft} day${daysLeft === 1 ? "" : "s"}`
+                            : ar
+                              ? "منتهي"
+                              : "Expired"}
+                        </span>
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-(--muted-foreground)">
+                      {ar ? "غير مشتراة" : "Not purchased"}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
                 <Link
                   href={active ? meta.href : meta.storeHref}
                   className={
-                    "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold " +
+                    "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold " +
                     (active
                       ? "bg-accent text-(--accent-foreground)"
                       : "bg-(--chip-bg) text-foreground")
                   }
                 >
-                  {active ? (ar ? "الدخول" : "Enter") : (ar ? "شراء" : "Buy")}
+                  {active ? (ar ? "فتح" : "Open") : (ar ? "اشترك" : "Subscribe")}
+                  {active ? (
+                    <HiArrowUpRight className="h-4 w-4" />
+                  ) : (
+                    <HiOutlineShoppingBag className="h-4 w-4" />
+                  )}
                 </Link>
+
                 <Link
                   href={meta.storeHref}
-                  className="text-sm font-medium text-(--muted-foreground) hover:text-foreground"
+                  className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-(--muted-foreground) hover:text-foreground"
                 >
-                  {ar ? "ترقية/تمديد" : "Upgrade / extend"}
+                  {ar ? "ترقية" : "Upgrade"}
+                  <HiArrowUpRight className="h-4 w-4" />
                 </Link>
+                </div>
               </div>
             </section>
           );
