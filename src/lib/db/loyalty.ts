@@ -276,6 +276,18 @@ export function getLoyaltyProfileByUserId(userId: string): LoyaltyProfile | null
   return (loyaltyProfiles.get(uid.data) as LoyaltyProfile | undefined) ?? null;
 }
 
+export function listLoyaltyProfiles(): LoyaltyProfile[] {
+  const { loyaltyProfiles } = getLmdb();
+  const results: LoyaltyProfile[] = [];
+  
+  for (const { value } of loyaltyProfiles.getRange()) {
+    results.push(value as LoyaltyProfile);
+  }
+  
+  results.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return results;
+}
+
 export function defaultLoyaltySettings(userId: string): LoyaltySettings {
   const uid = userIdSchema.parse(userId);
   const now = new Date().toISOString();

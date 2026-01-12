@@ -13,6 +13,10 @@ export type BusinessRequest = {
   phone?: string;
   email?: string;
   website?: string;
+  status: "pending" | "approved" | "rejected";
+  adminResponse?: string;
+  adminUserId?: string;
+  respondedAt?: string;
   createdAt: string;
 };
 
@@ -43,6 +47,7 @@ export function createBusinessRequest(input: BusinessRequestInput): BusinessRequ
     phone: data.phone,
     email: data.email,
     website: data.website,
+    status: "pending",
     createdAt: new Date().toISOString(),
   };
 
@@ -62,4 +67,48 @@ export function listBusinessRequestsByUser(userId: string): BusinessRequest[] {
 
   results.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   return results;
+}
+
+export function listAllBusinessRequests(): BusinessRequest[] {
+  const { businessRequests } = getLmdb();
+  const results: BusinessRequest[] = [];
+  
+  for (const { value } of businessRequests.getRange()) {
+    results.push(value as BusinessRequest);
+  }
+  
+  results.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return results;
+}
+
+export function getBusinessRequestById(id: string): BusinessRequest | null {
+  const { businessRequests } = getLmdb();
+  return (businessRequests.get(id) as BusinessRequest | undefined) ?? null;
+}
+
+export function updateBusinessRequestStatus(
+  id: string,
+  status: "approved" | "rejected",
+  adminResponse: string,
+  adminUserId: string
+): BusinessRequest {
+  const { businessRequests } = getLmdb();
+  const current = businessRequests.get(id) as BusinessRequest | undefined;
+  if (!current) throw new Error("NOT_FOUND");
+
+  const updated: BusinessRequest = {
+    ...current,
+    status,
+    adminResponse,
+    adminUserId,
+    respondedAt: new Date().toISOString(),
+  };
+
+  businessRequests.put(id, updated);
+  return updated;
+}
+
+export function deleteBusinessRequest(id: string): void {
+  const { businessRequests } = getLmdb();
+  businessRequests.remove(id);
 }
