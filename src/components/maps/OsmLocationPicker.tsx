@@ -249,12 +249,13 @@ export function OsmLocationPicker({
         </div>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+      <div className="mt-4 grid sm:grid-cols-[1fr_auto] sm:items-center">
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={ar ? "ابحث عن مكان…" : "Search a place…"}
           disabled={disabled}
+          className="w-full"
         />
         <div className="text-xs text-(--muted-foreground)">{searching ? (ar ? "بحث…" : "Searching…") : ""}</div>
       </div>
@@ -316,33 +317,49 @@ export function OsmLocationPicker({
         </MapContainer>
       </div>
 
-      <div className={cn("mt-4 grid gap-3 sm:grid-cols-3 sm:items-end", rtl ? "text-right" : "text-left")}>
-        <div className="sm:col-span-2">
-          <div className="text-xs font-medium text-(--muted-foreground)">{ar ? "المنطقة (متر)" : "Range (meters)"}</div>
-          <div className="mt-1 flex items-center gap-2">
-            <Input
-              type="number"
-              inputMode="numeric"
-              min={25}
-              max={20000}
-              value={localRadius}
-              onChange={(e) => setLocalRadius(e.target.value)}
-              disabled={disabled || !value}
-            />
-            <Button type="button" variant="secondary" size="sm" disabled={disabled || !value} onClick={applyRadius}>
-              {ar ? "تطبيق" : "Apply"}
-            </Button>
+      <div className="mt-4 space-y-2">
+        <div className={cn("flex items-center gap-2 flex-wrap", rtl ? "flex-row-reverse" : "")}>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <label className="text-xs font-medium text-(--muted-foreground) shrink-0">
+              {ar ? "المنطقة (متر)" : "Range (meters)"}
+            </label>
+            <div className="flex h-10 flex-1 sm:flex-initial">
+              <Input
+                type="number"
+                inputMode="numeric"
+                min={25}
+                max={20000}
+                value={localRadius}
+                onChange={(e) => setLocalRadius(e.target.value)}
+                disabled={disabled || !value}
+                className={cn("w-20 sm:w-20 flex-1 sm:flex-initial h-full", rtl ? "rounded-l-none border-l-0" : "rounded-r-none border-r-0")}
+              />
+              <Button 
+                type="button" 
+                variant="secondary" 
+                disabled={disabled || !value} 
+                onClick={applyRadius}
+                className={cn("h-full px-3 shrink-0", rtl ? "rounded-r-none" : "rounded-l-none")}
+              >
+                {ar ? "تطبيق" : "Apply"}
+              </Button>
+            </div>
           </div>
-          <div className="mt-1 text-[11px] text-(--muted-foreground)">
-            {ar ? "مقترح: 150–500م للمتجر." : "Tip: 150–500m is a good default for a store."}
+
+          <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+            <label className="text-xs text-(--muted-foreground) shrink-0">
+              {ar ? "الإحداثيات" : "Coordinates"}
+            </label>
+            <div className="flex-1 flex items-center h-10 rounded-lg border border-(--surface-border) bg-(--surface) px-3">
+              <div className="text-xs font-mono" dir="ltr">
+                {value ? `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}` : "—"}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-3">
-          <div className="text-[11px] text-(--muted-foreground)">{ar ? "الإحداثيات" : "Coordinates"}</div>
-          <div className="mt-1 text-xs font-mono" dir="ltr">
-            {value ? `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}` : "—"}
-          </div>
+        <div className={cn("text-[11px] text-(--muted-foreground)", rtl ? "text-right" : "text-left")}>
+          {ar ? "مقترح: 150–500م للمتجر." : "Tip: 150–500m is a good default for a store."}
         </div>
       </div>
 

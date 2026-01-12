@@ -71,8 +71,8 @@ export default async function LoyaltyManagePage({
             </h1>
             <p className="mt-2 text-base text-(--muted-foreground)">
               {ar
-                ? "إدارة العملاء والنقاط من مكان واحد—لوحة إدارة بسيطة وسريعة."
-                : "Customer & points management—streamlined, fast, and purpose-built."}
+                ? "إدارة العملاء والنقاط من مكان واحد. لوحة تحكم بسيطة وسريعة."
+                : "Manage customers and loyalty points with elegance and efficiency."}
             </p>
             <div className="mt-3">
               <Link

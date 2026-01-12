@@ -1,5 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import {
+  HiOutlineBuildingOffice2,
+  HiOutlineMegaphone,
+  HiOutlineSparkles,
+  HiCheckCircle,
+} from "react-icons/hi2";
 
 import { AppPage } from "@/components/AppPage";
 import { PublicPage } from "@/components/PublicPage";
@@ -130,16 +136,28 @@ export default async function StorePage({
                 key: "directory" as const,
                 title: ar ? "عضوية دليل الأعمال" : "Business Directory",
                 subtitle: ar ? "اختر حزمة العضوية والإظهار." : "Pick your membership & visibility package.",
+                Icon: HiOutlineBuildingOffice2,
+                iconClassName: "text-indigo-600 dark:text-indigo-300",
+                iconBgClassName: "bg-indigo-500/12",
+                borderClassName: "border-indigo-500/25 dark:border-indigo-400/25",
               },
               {
                 key: "loyalty" as const,
                 title: ar ? "نظام الولاء" : "Loyalty System",
                 subtitle: ar ? "اشتراكات شهرية/6 أشهر/سنوية." : "Monthly / 6 months / yearly subscriptions.",
+                Icon: HiOutlineSparkles,
+                iconClassName: "text-emerald-600 dark:text-emerald-300",
+                iconBgClassName: "bg-emerald-500/12",
+                borderClassName: "border-emerald-500/25 dark:border-emerald-400/25",
               },
               {
                 key: "marketing" as const,
                 title: ar ? "منصة التسويق" : "Marketing Platform",
                 subtitle: ar ? "اشتراكات شهرية/6 أشهر/سنوية." : "Monthly / 6 months / yearly subscriptions.",
+                Icon: HiOutlineMegaphone,
+                iconClassName: "text-fuchsia-600 dark:text-fuchsia-300",
+                iconBgClassName: "bg-fuchsia-500/12",
+                borderClassName: "border-fuchsia-500/25 dark:border-fuchsia-400/25",
               },
             ] as const
           ).map((section) => {
@@ -147,22 +165,36 @@ export default async function StorePage({
             if (items.length === 0) return null;
             return (
               <section key={section.key}>
-                <div className="flex items-end justify-between gap-4">
-                  <div>
+                <div className="flex items-start gap-4">
+                  <div
+                    className={
+                      "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl " +
+                      section.iconBgClassName
+                    }
+                  >
+                    <section.Icon className={"h-7 w-7 " + section.iconClassName} />
+                  </div>
+                  <div className="min-w-0 flex-1">
                     <h2 className="text-xl font-semibold tracking-tight">{section.title}</h2>
                     <p className="mt-1 text-sm text-(--muted-foreground)">{section.subtitle}</p>
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                   {items.map((p) => {
                     const t = getStoreProductText(p, locale as Locale);
                     return (
-                      <article key={p.slug} className="sbc-card rounded-2xl p-6 flex flex-col">
+                      <article
+                        key={p.slug}
+                        className={
+                          "relative flex flex-col overflow-hidden rounded-2xl border-2 bg-(--surface) p-6 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md " +
+                          section.borderClassName
+                        }
+                      >
                         <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <h3 className="text-base font-semibold leading-snug truncate">{t.name}</h3>
-                            <div className="mt-1 text-sm text-(--muted-foreground)">
+                          <div className="min-w-0 flex-1">
+                            <h3 className="truncate text-base font-semibold leading-snug">{t.name}</h3>
+                            <div className="mt-1 text-lg font-bold text-(--accent)">
                               {formatStorePrice(p.price, locale as Locale)}
                             </div>
                           </div>
@@ -172,7 +204,7 @@ export default async function StorePage({
                               {p.badges.slice(0, 2).map((b) => (
                                 <span
                                   key={b}
-                                  className="rounded-full bg-(--chip-bg) px-2.5 py-1 text-xs text-(--muted-foreground)"
+                                  className="rounded-full bg-(--chip-bg) px-2.5 py-1 text-xs font-semibold text-foreground"
                                 >
                                   {b}
                                 </span>
@@ -181,13 +213,16 @@ export default async function StorePage({
                           ) : null}
                         </div>
 
-                        <p className="mt-3 text-sm leading-7 text-(--muted-foreground)">
+                        <p className="mt-3 text-sm leading-relaxed text-(--muted-foreground)">
                           {t.description}
                         </p>
 
-                        <ul className="mt-4 grid gap-2 text-sm text-(--muted-foreground)">
+                        <ul className="mt-4 grid gap-2 text-sm">
                           {t.features.slice(0, 4).map((f) => (
-                            <li key={f}>• {f}</li>
+                            <li key={f} className="flex items-start gap-2">
+                              <HiCheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                              <span className="text-(--muted-foreground)">{f}</span>
+                            </li>
                           ))}
                         </ul>
 

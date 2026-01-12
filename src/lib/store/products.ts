@@ -33,8 +33,8 @@ const PRODUCTS: StoreProduct[] = [
     plan: "directory-yearly",
     durationDays: 365,
     name: {
-      en: "Business Directory — Membership",
-      ar: "دليل الأعمال — عضوية",
+      en: "Business Directory - Membership",
+      ar: "دليل الأعمال - عضوية",
     },
     description: {
       en: "Annual membership in the business directory.",
@@ -52,8 +52,8 @@ const PRODUCTS: StoreProduct[] = [
     plan: "homepage-yearly",
     durationDays: 365,
     name: {
-      en: "Business Directory — Homepage display",
-      ar: "دليل الأعمال — عرض في الصفحة الرئيسية",
+      en: "Business Directory - Homepage display",
+      ar: "دليل الأعمال - عرض في الصفحة الرئيسية",
     },
     description: {
       en: "Show your business on the homepage (annual).",
@@ -71,8 +71,8 @@ const PRODUCTS: StoreProduct[] = [
     plan: "homepage-top-yearly",
     durationDays: 365,
     name: {
-      en: "Business Directory — Top row on homepage",
-      ar: "دليل الأعمال — الصف الأول في الرئيسية",
+      en: "Business Directory - Top row on homepage",
+      ar: "دليل الأعمال - الصف الأول في الرئيسية",
     },
     description: {
       en: "Top row placement on homepage (annual).",
@@ -91,8 +91,8 @@ const PRODUCTS: StoreProduct[] = [
     plan: "monthly",
     durationDays: 30,
     name: {
-      en: "Loyalty System — Monthly",
-      ar: "نظام الولاء — شهري",
+      en: "Loyalty System - Monthly",
+      ar: "نظام الولاء - شهري",
     },
     description: {
       en: "Loyalty system subscription (monthly).",
@@ -110,8 +110,8 @@ const PRODUCTS: StoreProduct[] = [
     plan: "6mo",
     durationDays: 180,
     name: {
-      en: "Loyalty System — 6 months",
-      ar: "نظام الولاء — 6 أشهر",
+      en: "Loyalty System - 6 months",
+      ar: "نظام الولاء - 6 أشهر",
     },
     description: {
       en: "Loyalty system subscription (6 months).",
@@ -130,8 +130,8 @@ const PRODUCTS: StoreProduct[] = [
     plan: "yearly",
     durationDays: 365,
     name: {
-      en: "Loyalty System — Yearly",
-      ar: "نظام الولاء — سنوي",
+      en: "Loyalty System - Yearly",
+      ar: "نظام الولاء - سنوي",
     },
     description: {
       en: "Loyalty system subscription (annual).",
@@ -149,8 +149,8 @@ const PRODUCTS: StoreProduct[] = [
     plan: "monthly",
     durationDays: 30,
     name: {
-      en: "Marketing Platform — Monthly",
-      ar: "منصة التسويق — شهري",
+      en: "Marketing Platform - Monthly",
+      ar: "منصة التسويق - شهري",
     },
     description: {
       en: "Marketing platform subscription (monthly).",
@@ -168,8 +168,8 @@ const PRODUCTS: StoreProduct[] = [
     plan: "6mo",
     durationDays: 180,
     name: {
-      en: "Marketing Platform — 6 months",
-      ar: "منصة التسويق — 6 أشهر",
+      en: "Marketing Platform - 6 months",
+      ar: "منصة التسويق - 6 أشهر",
     },
     description: {
       en: "Marketing platform subscription (6 months).",
@@ -188,8 +188,8 @@ const PRODUCTS: StoreProduct[] = [
     plan: "yearly",
     durationDays: 365,
     name: {
-      en: "Marketing Platform — Yearly",
-      ar: "منصة التسويق — سنوي",
+      en: "Marketing Platform - Yearly",
+      ar: "منصة التسويق - سنوي",
     },
     description: {
       en: "Marketing platform subscription (annual).",

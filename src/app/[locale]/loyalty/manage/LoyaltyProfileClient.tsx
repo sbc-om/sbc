@@ -237,7 +237,7 @@ export function LoyaltyProfileClient({
           <p className="text-sm text-(--muted-foreground)">{t.subtitle}</p>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] lg:gap-8 lg:items-start">
+        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)] xl:gap-8 xl:items-start">
           <div className="min-w-0 grid gap-4">
             <div>
               <label className={cn("block text-sm font-medium", rtl ? "text-right" : "text-left")}>
@@ -403,7 +403,7 @@ export function LoyaltyProfileClient({
 
               <div className="mt-4 flex items-center justify-center">
                 {qrDataUrl ? (
-                  <div className="h-56 w-56 rounded-2xl border border-(--surface-border) bg-white p-2">
+                  <div className="h-56 w-56 max-w-full rounded-2xl border border-(--surface-border) bg-white p-2 sm:h-64 sm:w-64">
                     <Image
                       src={qrDataUrl}
                       alt="QR"
@@ -414,7 +414,7 @@ export function LoyaltyProfileClient({
                     />
                   </div>
                 ) : (
-                  <div className="flex h-56 w-56 items-center justify-center rounded-2xl border border-(--surface-border) bg-(--surface) text-sm text-(--muted-foreground)">
+                  <div className="flex h-56 w-56 max-w-full items-center justify-center rounded-2xl border border-(--surface-border) bg-(--surface) text-sm text-(--muted-foreground) sm:h-64 sm:w-64">
                     {t.noQr}
                   </div>
                 )}

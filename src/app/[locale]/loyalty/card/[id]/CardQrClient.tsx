@@ -73,11 +73,11 @@ export function CardQrClient({
   }
 
   return (
-    <div className="mt-8 space-y-6">
+    <div className="mt-8 grid gap-6 lg:grid-cols-2">
       {/* QR Code Section */}
       <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-6">
-        <div className={cn("flex items-start justify-between gap-4", rtl ? "flex-row-reverse" : "")}>
-          <div className={cn(rtl ? "text-right" : "text-left")}>
+        <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4", rtl ? "sm:flex-row-reverse" : "")}>
+          <div className={cn("min-w-0", rtl ? "text-right" : "text-left")}>
             <div className="text-sm font-semibold">{ar ? "QR للمتجر" : "Store QR"}</div>
             <div className="mt-1 text-sm text-(--muted-foreground)">
               {ar
@@ -85,14 +85,14 @@ export function CardQrClient({
                 : "Show this QR to the staff to scan and add points quickly."}
             </div>
           </div>
-          <Button type="button" variant="secondary" size="sm" disabled={!qrDataUrl} onClick={downloadQr}>
+          <Button type="button" variant="secondary" size="sm" disabled={!qrDataUrl} onClick={downloadQr} className="shrink-0">
             {ar ? "تحميل" : "Download"}
           </Button>
         </div>
 
         <div className="mt-4 flex items-center justify-center">
           {qrDataUrl ? (
-            <div className="h-64 w-64 rounded-2xl border border-(--surface-border) bg-white p-2">
+            <div className="h-56 w-56 max-w-full rounded-2xl border border-(--surface-border) bg-white p-2 sm:h-64 sm:w-64">
               <Image
                 src={qrDataUrl}
                 alt="QR"
@@ -103,7 +103,7 @@ export function CardQrClient({
               />
             </div>
           ) : (
-            <div className="flex h-64 w-64 items-center justify-center rounded-2xl border border-(--surface-border) bg-(--surface) text-sm text-(--muted-foreground)">
+            <div className="flex h-56 w-56 max-w-full items-center justify-center rounded-2xl border border-(--surface-border) bg-(--surface) text-sm text-(--muted-foreground) sm:h-64 sm:w-64">
               {ar ? "جارٍ التحضير…" : "Generating…"}
             </div>
           )}
@@ -112,7 +112,7 @@ export function CardQrClient({
 
       {/* Barcode Section */}
       <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-6">
-        <div className={cn(rtl ? "text-right" : "text-left")}>
+        <div className={cn("min-w-0", rtl ? "text-right" : "text-left")}>
           <div className="text-sm font-semibold">{ar ? "باركود العميل" : "Customer Barcode"}</div>
           <div className="mt-1 text-sm text-(--muted-foreground)">
             {ar
@@ -121,16 +121,16 @@ export function CardQrClient({
           </div>
         </div>
 
-        <div className="mt-4 flex items-center justify-center">
+        <div className="mt-4 flex items-center justify-center overflow-hidden">
           {barcodeDataUrl ? (
-            <div className="rounded-xl border border-(--surface-border) bg-white p-4">
+            <div className="w-full max-w-sm overflow-hidden rounded-xl border border-(--surface-border) bg-white p-4">
               <Image
                 src={barcodeDataUrl}
                 alt="Barcode"
                 width={300}
                 height={100}
                 unoptimized
-                className="h-auto w-full max-w-sm"
+                className="h-auto w-full"
               />
             </div>
           ) : (
