@@ -19,6 +19,7 @@ export function getCartStorageKey(userKey: string) {
 export function normalizeQuantity(qty: number) {
   // Store items are one-time purchases (no quantities).
   // Keep `quantity` in the persisted shape for backward compatibility, but always normalize to 1.
+  void qty;
   return 1;
 }
 
@@ -64,7 +65,7 @@ export function readCartFromStorage(userKey?: string): CartState {
     if (!raw) return emptyCart();
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== "object") return emptyCart();
-    const items = (parsed as any).items;
+    const items = (parsed as Record<string, unknown>).items;
     if (!Array.isArray(items)) return emptyCart();
 
     const normalized: CartItem[] = [];
@@ -74,7 +75,7 @@ export function readCartFromStorage(userKey?: string): CartState {
         continue;
       }
       if (!it || typeof it !== "object") continue;
-      const slug = (it as any).slug;
+      const slug = (it as Record<string, unknown>).slug;
       if (typeof slug !== "string") continue;
       // Accept legacy persisted quantity but normalize to 1.
       normalized.push({ slug, quantity: 1 });

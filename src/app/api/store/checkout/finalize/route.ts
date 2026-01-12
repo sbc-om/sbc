@@ -6,16 +6,18 @@ import { getStoreProductBySlug } from "@/lib/store/products";
 
 export const runtime = "nodejs";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object";
+}
+
 export async function POST(req: Request) {
   const auth = await getCurrentUser();
   if (!auth) return new Response("Unauthorized", { status: 401 });
 
   try {
     const body = (await req.json()) as unknown;
-    const raw = (body as any)?.slugs;
-    const slugs: string[] = Array.isArray(raw)
-      ? raw.map((s: any) => String(s)).filter(Boolean)
-      : [];
+    const rawSlugs = isRecord(body) ? body.slugs : undefined;
+    const slugs: string[] = Array.isArray(rawSlugs) ? rawSlugs.map((s) => String(s)).filter(Boolean) : [];
 
     const unique = Array.from(new Set(slugs));
     if (unique.length === 0) {

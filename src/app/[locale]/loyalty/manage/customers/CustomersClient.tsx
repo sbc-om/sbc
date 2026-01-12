@@ -161,7 +161,7 @@ export function CustomersClient({
         alert(ar ? "رمز QR غير صالح" : "Invalid QR code");
         setShowScanner(false);
       }
-    } catch (e) {
+    } catch {
       alert(ar ? "رمز QR غير صالح" : "Invalid QR code");
       setShowScanner(false);
     }

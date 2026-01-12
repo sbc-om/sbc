@@ -115,7 +115,6 @@ export default async function LoyaltyManageCustomersPage({
       ) : null}
 
       <AddCustomerPanel
-        locale={locale as Locale}
         ar={ar}
         returnTo={`/${locale}/loyalty/manage/customers`}
         action={addLoyaltyCustomerAction.bind(null, locale as Locale)}

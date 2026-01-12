@@ -88,7 +88,7 @@ export function CustomerLookupForm({
         });
         setQrDataUrl(dataUrl);
       }
-    } catch (err) {
+    } catch {
       setError(
         ar ? "حدث خطأ غير متوقع." : "An unexpected error occurred."
       );

@@ -10,11 +10,12 @@ import {
   defaultLoyaltySettings,
   getLoyaltyCardById,
   getLoyaltyCustomerById,
+  listLoyaltyMessagesForCustomer,
   getLoyaltyProfileByUserId,
   getLoyaltySettingsByUserId,
 } from "@/lib/db/loyalty";
 import { LoyaltyPointsIcons } from "@/components/loyalty/LoyaltyPointsIcons";
-import { GeoProximityNotifier } from "@/components/loyalty/GeoProximityNotifier";
+import { LoyaltyPushOptIn } from "@/components/loyalty/LoyaltyPushOptIn";
 
 import { CardQrClient } from "./CardQrClient";
 
@@ -22,11 +23,16 @@ export const runtime = "nodejs";
 
 export default async function LoyaltyCardPublicPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string; id: string }>;
+  searchParams: Promise<{ joined?: string }>;
 }) {
   const { locale, id } = await params;
   if (!isLocale(locale)) notFound();
+
+  const sp = await searchParams;
+  const joined = String(sp.joined || "") === "1";
 
   await getDictionary(locale as Locale);
   const ar = locale === "ar";
@@ -37,6 +43,12 @@ export default async function LoyaltyCardPublicPage({
   const customer = getLoyaltyCustomerById(card.customerId);
   const profile = getLoyaltyProfileByUserId(card.userId);
   const settings = getLoyaltySettingsByUserId(card.userId) ?? defaultLoyaltySettings(card.userId);
+
+  const messages = listLoyaltyMessagesForCustomer({
+    userId: card.userId,
+    customerId: card.customerId,
+    limit: 10,
+  });
 
   const pointsIconUrl =
     settings.pointsIconMode === "custom" ? settings.pointsIconUrl : profile?.logoUrl;
@@ -63,15 +75,6 @@ export default async function LoyaltyCardPublicPage({
       </div>
 
       <div className="mt-8 sbc-card rounded-2xl p-8 text-center">
-        {profile?.location ? (
-          <GeoProximityNotifier
-            enabled
-            businessName={profile.businessName}
-            business={{ lat: profile.location.lat, lng: profile.location.lng }}
-            radiusMeters={profile.location.radiusMeters}
-          />
-        ) : null}
-
         {profile ? (
           <div
             className={
@@ -134,6 +137,13 @@ export default async function LoyaltyCardPublicPage({
           </a>
         </div>
 
+        <LoyaltyPushOptIn
+          cardId={card.id}
+          businessName={profile?.businessName ?? null}
+          dir={ar ? "rtl" : "ltr"}
+          autoEnableIfGranted={joined}
+        />
+
         {profile?.location ? (
           <div className="mt-4 text-xs text-(--muted-foreground)">
             {ar
@@ -149,6 +159,27 @@ export default async function LoyaltyCardPublicPage({
         )}
 
         <CardQrClient locale={locale as Locale} customerId={card.customerId} />
+
+        {messages.length ? (
+          <div className={"mt-8 rounded-2xl border border-(--surface-border) bg-(--surface) p-5 " + (ar ? "text-right" : "text-left")}
+          >
+            <div className="text-sm font-semibold">{ar ? "الرسائل" : "Messages"}</div>
+            <div className="mt-3 grid gap-3">
+              {messages.map((m) => (
+                <div key={m.id} className="rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+                  <div className={"flex items-start justify-between gap-3 " + (ar ? "flex-row-reverse" : "")}
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold">{m.title}</div>
+                      <div className="mt-1 text-sm text-(--muted-foreground)">{m.body}</div>
+                    </div>
+                    <div className="shrink-0 text-xs text-(--muted-foreground)">{new Date(m.createdAt).toLocaleString()}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </PublicPage>
   );

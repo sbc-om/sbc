@@ -24,6 +24,10 @@ export type LmdbHandles = {
   loyaltyCustomers: ReturnType<ReturnType<typeof open>["openDB"]>;
   loyaltyCards: ReturnType<ReturnType<typeof open>["openDB"]>;
   loyaltyMessages: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** Web push subscriptions keyed by `${customerId}:${hash(endpoint)}`. */
+  loyaltyPushSubscriptions: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** Apple Wallet PassKit registrations keyed by `${passTypeId}:${serial}:${deviceLibId}`. */
+  appleWalletRegistrations: ReturnType<ReturnType<typeof open>["openDB"]>;
 };
 
 declare global {
@@ -62,6 +66,8 @@ export function getLmdb(): LmdbHandles {
     existing.loyaltyCustomers ??= existing.root.openDB({ name: "loyaltyCustomers" });
     existing.loyaltyCards ??= existing.root.openDB({ name: "loyaltyCards" });
     existing.loyaltyMessages ??= existing.root.openDB({ name: "loyaltyMessages" });
+    existing.loyaltyPushSubscriptions ??= existing.root.openDB({ name: "loyaltyPushSubscriptions" });
+    existing.appleWalletRegistrations ??= existing.root.openDB({ name: "appleWalletRegistrations" });
 
     globalThis.__sbcLmdb = existing as LmdbHandles;
     return globalThis.__sbcLmdb;
@@ -98,6 +104,8 @@ export function getLmdb(): LmdbHandles {
   const loyaltyCustomers = root.openDB({ name: "loyaltyCustomers" });
   const loyaltyCards = root.openDB({ name: "loyaltyCards" });
   const loyaltyMessages = root.openDB({ name: "loyaltyMessages" });
+  const loyaltyPushSubscriptions = root.openDB({ name: "loyaltyPushSubscriptions" });
+  const appleWalletRegistrations = root.openDB({ name: "appleWalletRegistrations" });
 
   globalThis.__sbcLmdb = {
     root,
@@ -118,6 +126,8 @@ export function getLmdb(): LmdbHandles {
     loyaltyCustomers,
     loyaltyCards,
     loyaltyMessages,
+    loyaltyPushSubscriptions,
+    appleWalletRegistrations,
   };
 
   return globalThis.__sbcLmdb;

@@ -31,7 +31,6 @@ import {
   HiChevronRight,
   HiUser,
   HiOutlineUser,
-  HiMenu,
   HiX
 } from "react-icons/hi";
 
@@ -54,6 +53,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   const { collapsed, setCollapsed, isMobile } = useSidebar();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [profileMenuOpenedAtPath, setProfileMenuOpenedAtPath] = useState<string | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const iconOnly = collapsed && !isMobile;
@@ -68,14 +68,13 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     .slice(0, 1)
     .toUpperCase();
 
-  // Close profile menu on navigation changes
-  useEffect(() => {
-    setProfileMenuOpen(false);
-  }, [pathname]);
+  // Avoid setState-on-navigation-effect lint by tying visibility to the pathname
+  // at the time the menu was opened.
+  const isProfileMenuVisible = profileMenuOpen && profileMenuOpenedAtPath === pathname;
 
   // Close profile menu when clicking outside or pressing Escape
   useEffect(() => {
-    if (!profileMenuOpen) return;
+    if (!isProfileMenuVisible) return;
 
     const onPointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
@@ -100,7 +99,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       document.removeEventListener("touchstart", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [profileMenuOpen]);
+  }, [isProfileMenuVisible]);
 
   const baseNavItems: NavItem[] = [
     {
@@ -126,7 +125,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     },
     {
       key: "store",
-      label: (dict.nav as any).store ?? (locale === "ar" ? "المتجر" : "Store"),
+      label: (dict.nav as Record<string, string | undefined>).store ?? (locale === "ar" ? "المتجر" : "Store"),
       path: "/store",
       Icon: HiShoppingBag,
       IconOutline: HiOutlineShoppingBag,
@@ -168,7 +167,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
         ]
       : baseNavItems;
 
-  const NavContent = () => (
+  const navContent = (
     <>
       {/* Logo */}
       <div className={`px-3 pt-4 transition-all duration-300 ${collapsed ? "mb-4" : "mb-8"}`}>
@@ -245,13 +244,19 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       >
         <button
           type="button"
-          onClick={() => setProfileMenuOpen((v) => !v)}
+          onClick={() => {
+            setProfileMenuOpen((v) => {
+              const next = !v;
+              if (next) setProfileMenuOpenedAtPath(pathname);
+              return next;
+            });
+          }}
           className={`w-full flex items-center rounded-xl py-2 hover:bg-(--surface) transition-colors text-left ${
             iconOnly ? "justify-center px-2" : "justify-start gap-3 px-3"
           }`}
           title={collapsed && !isMobile ? user.displayName : undefined}
           aria-haspopup="menu"
-          aria-expanded={profileMenuOpen}
+          aria-expanded={isProfileMenuVisible}
         >
           <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-linear-to-br from-accent to-accent-2 shrink-0 ring-2 ring-accent/20">
             {user.avatarUrl ? (
@@ -274,7 +279,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           )}
         </button>
 
-        {profileMenuOpen && (
+        {isProfileMenuVisible && (
           <div
             role="menu"
             aria-label="Profile menu"
@@ -297,7 +302,10 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               }}
               className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
             >
-              {(isActive("/profile") ? HiUser : HiOutlineUser)({ className: "h-5 w-5 shrink-0" })}
+              {(() => {
+                const ProfileIcon = isActive("/profile") ? HiUser : HiOutlineUser;
+                return <ProfileIcon className="h-5 w-5 shrink-0" />;
+              })()}
               <span className="min-w-0 truncate">{dict.nav.profile}</span>
             </Link>
 
@@ -310,7 +318,10 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               }}
               className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
             >
-              {(isActive("/settings") ? HiCog : HiOutlineCog)({ className: "h-5 w-5 shrink-0" })}
+              {(() => {
+                const SettingsIcon = isActive("/settings") ? HiCog : HiOutlineCog;
+                return <SettingsIcon className="h-5 w-5 shrink-0" />;
+              })()}
               <span className="min-w-0 truncate">{dict.nav.settings}</span>
             </Link>
 
@@ -327,7 +338,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 type="submit"
                 className="w-full flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
               >
-                {(HiOutlineLogout as any)({ className: "h-5 w-5 shrink-0" })}
+                <HiOutlineLogout className="h-5 w-5 shrink-0" />
                 <span className="min-w-0 truncate">{dict.nav.logout}</span>
               </button>
             </form>
@@ -350,7 +361,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
         }}
       >
         <div className="flex h-full flex-col px-3 py-4">
-          <NavContent />
+          {navContent}
         </div>
       </aside>
 
@@ -386,7 +397,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               >
                 <HiX className="h-6 w-6" />
               </button>
-              <NavContent />
+              {navContent}
             </div>
           </aside>
         </>

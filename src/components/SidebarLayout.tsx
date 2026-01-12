@@ -19,38 +19,27 @@ export function useSidebar() {
 }
 
 export function SidebarLayout({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("sidebarCollapsed") === "true";
+  });
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 1024;
+  });
 
   // Check if mobile on mount and window resize
   useEffect(() => {
-    setMounted(true);
-    
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 1024;
-      setIsMobile(mobile);
+    const onResize = () => {
+      setIsMobile(window.innerWidth < 1024);
     };
 
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
-
-  // Load collapsed state from localStorage (only for desktop)
-  useEffect(() => {
-    if (!isMobile) {
-      const saved = localStorage.getItem("sidebarCollapsed");
-      if (saved !== null) {
-        setCollapsed(saved === "true");
-      }
-    }
-  }, [isMobile]);
 
   // Update CSS variable for sidebar width
   useEffect(() => {
-    if (!mounted) return;
-    
     let width: string;
     if (isMobile) {
       width = "0rem"; // Mobile: no margin
@@ -64,14 +53,14 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
     root.style.setProperty("--sidebar-width", width);
     // Keep a dataset flag so CSS can match the collapsed state (useful for avoiding flashes).
     root.dataset.sidebarCollapsed = collapsed ? "true" : "false";
-  }, [collapsed, isMobile, mounted]);
+  }, [collapsed, isMobile]);
 
   // Save to localStorage when changed (only for desktop)
   useEffect(() => {
-    if (!isMobile && mounted) {
+    if (!isMobile) {
       localStorage.setItem("sidebarCollapsed", String(collapsed));
     }
-  }, [collapsed, isMobile, mounted]);
+  }, [collapsed, isMobile]);
 
   return (
     <SidebarContext.Provider value={{ collapsed, setCollapsed, isMobile }}>

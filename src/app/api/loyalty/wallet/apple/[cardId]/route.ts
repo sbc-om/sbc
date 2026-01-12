@@ -1,4 +1,9 @@
+import { headers } from "next/headers";
+
 import { getLoyaltyCardById, getLoyaltyProfileByUserId } from "@/lib/db/loyalty";
+import { defaultLocale } from "@/lib/i18n/locales";
+import { isApplePassGenerationConfigured } from "@/lib/wallet/appleConfig";
+import { buildAppleLoyaltyPkpassBuffer } from "@/lib/wallet/applePass";
 
 export const runtime = "nodejs";
 
@@ -19,9 +24,8 @@ export async function GET(
 
   const profile = getLoyaltyProfileByUserId(card.userId);
 
-  // For now, we only expose a safe stub unless PassKit certs are configured.
   // A real .pkpass requires signing keys and WWDR cert.
-  if (!isEnabled()) {
+  if (!isEnabled() || !isApplePassGenerationConfigured()) {
     return Response.json(
       {
         ok: false,
@@ -34,13 +38,23 @@ export async function GET(
     );
   }
 
-  return Response.json(
-    {
-      ok: false,
-      error: "APPLE_WALLET_NOT_IMPLEMENTED_YET",
-      hint:
-        "The API route exists, but pass generation/signing still needs to be wired with your Apple certificates.",
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const baseUrl = host ? `${proto}://${host}` : "";
+  const publicCardUrl = baseUrl
+    ? `${baseUrl}/${defaultLocale}/loyalty/card/${encodeURIComponent(card.id)}`
+    : undefined;
+
+  const pkpass = await buildAppleLoyaltyPkpassBuffer({ cardId: card.id, publicCardUrl });
+  const body = new Uint8Array(pkpass);
+
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/vnd.apple.pkpass",
+      "Content-Disposition": `attachment; filename=loyalty-${encodeURIComponent(card.id)}.pkpass`,
+      "Cache-Control": "no-store",
     },
-    { status: 501 }
-  );
+  });
 }

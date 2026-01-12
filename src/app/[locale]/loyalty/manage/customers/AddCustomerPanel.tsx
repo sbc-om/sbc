@@ -5,15 +5,12 @@ import * as React from "react";
 import { buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
-import type { Locale } from "@/lib/i18n/locales";
 
 export function AddCustomerPanel({
-  locale,
   ar,
   action,
   returnTo,
 }: {
-  locale: Locale;
   ar: boolean;
   action: (formData: FormData) => void | Promise<void>;
   returnTo: string;

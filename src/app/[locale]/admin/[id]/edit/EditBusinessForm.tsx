@@ -142,14 +142,12 @@ export function EditBusinessForm({
   business,
   categories,
   emailLabel,
-  ownerEmail,
   users,
 }: {
   locale: Locale;
   business: Business;
   categories: Category[];
   emailLabel: string;
-  ownerEmail?: string;
   users: Array<{ id: string; email: string; role: "admin" | "user" }>;
 }) {
   const ar = locale === "ar";
@@ -201,7 +199,7 @@ export function EditBusinessForm({
     try {
       await deleteBusinessAction(locale, business.id);
       router.push(`/${locale}/admin`);
-    } catch (e) {
+    } catch {
       setDeleting(false);
       alert(ar ? "فشل الحذف" : "Delete failed");
     }

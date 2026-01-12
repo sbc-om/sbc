@@ -1,4 +1,5 @@
 import { getLoyaltyCardById, getLoyaltyProfileByUserId } from "@/lib/db/loyalty";
+import { createGoogleWalletSaveJwt, getGoogleWalletSaveUrl, isGoogleWalletConfigured } from "@/lib/wallet/googleWallet";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,7 @@ export async function GET(
 
   const profile = getLoyaltyProfileByUserId(card.userId);
 
-  if (!isEnabled()) {
+  if (!isEnabled() || !isGoogleWalletConfigured()) {
     return Response.json(
       {
         ok: false,
@@ -32,13 +33,8 @@ export async function GET(
     );
   }
 
-  return Response.json(
-    {
-      ok: false,
-      error: "GOOGLE_WALLET_NOT_IMPLEMENTED_YET",
-      hint:
-        "The API route exists, but JWT creation + Google Wallet API integration still needs credentials wiring.",
-    },
-    { status: 501 }
-  );
+  const jwt = await createGoogleWalletSaveJwt({ cardId: card.id });
+  const url = getGoogleWalletSaveUrl(jwt);
+
+  return Response.redirect(url, 302);
 }

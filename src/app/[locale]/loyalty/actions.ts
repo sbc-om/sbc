@@ -11,6 +11,7 @@ import {
   adjustLoyaltyCustomerPoints,
   redeemLoyaltyCustomerPoints,
 } from "@/lib/db/loyalty";
+import type { LoyaltyPlan } from "@/lib/db/types";
 
 function safeReturnTo(locale: Locale, value: unknown): string | null {
   const v = String(value || "").trim();
@@ -22,12 +23,18 @@ function safeReturnTo(locale: Locale, value: unknown): string | null {
 
 export async function purchaseLoyaltySubscriptionAction(locale: Locale, formData: FormData) {
   const user = await requireUser(locale);
-  const plan = String(formData.get("plan") || "").trim();
+  const planRaw = String(formData.get("plan") || "").trim();
+
+  if (planRaw !== "starter" && planRaw !== "pro") {
+    redirect(`/${locale}/loyalty/manage?error=INVALID_PLAN`);
+  }
+
+  const plan: LoyaltyPlan = planRaw;
 
   purchaseLoyaltySubscription({
     userId: user.id,
-    // validated in db layer
-    plan: plan as any,
+    // validated again in db layer
+    plan,
   });
 
   revalidatePath(`/${locale}/loyalty/manage`);

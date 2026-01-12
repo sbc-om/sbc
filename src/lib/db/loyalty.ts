@@ -1,13 +1,16 @@
 import { customAlphabet, nanoid } from "nanoid";
 import { z } from "zod";
+import { createHash } from "node:crypto";
 
 import { getLmdb } from "./lmdb";
 import type {
+  AppleWalletRegistration,
   LoyaltyCard,
   LoyaltyCustomer,
   LoyaltyMessage,
   LoyaltyPlan,
   LoyaltyProfile,
+  LoyaltyPushSubscription,
   LoyaltySettings,
   LoyaltySubscription,
 } from "./types";
@@ -71,6 +74,171 @@ const messageInputSchema = z
   .strict();
 
 export type LoyaltyMessageInput = z.infer<typeof messageInputSchema>;
+
+const webPushSubscriptionSchema = z
+  .object({
+    endpoint: z.string().trim().min(1).max(4096),
+    keys: z
+      .object({
+        p256dh: z.string().trim().min(1).max(2048),
+        auth: z.string().trim().min(1).max(2048),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type WebPushSubscriptionInput = z.infer<typeof webPushSubscriptionSchema>;
+
+function hashEndpoint(endpoint: string) {
+  return createHash("sha256").update(endpoint).digest("hex").slice(0, 16);
+}
+
+function pushSubId(customerId: string, endpoint: string) {
+  return `${customerId}:${hashEndpoint(endpoint)}`;
+}
+
+export function upsertLoyaltyPushSubscription(input: {
+  /** Business owner id (validated against the card). */
+  userId: string;
+  customerId: string;
+  subscription: WebPushSubscriptionInput;
+  userAgent?: string;
+}): LoyaltyPushSubscription {
+  const { loyaltyPushSubscriptions, loyaltyCustomers } = getLmdb();
+
+  const uid = userIdSchema.parse(input.userId);
+  const customerId = z.string().trim().min(1).parse(input.customerId);
+  const sub = webPushSubscriptionSchema.parse(input.subscription);
+
+  const customer = loyaltyCustomers.get(customerId) as LoyaltyCustomer | undefined;
+  if (!customer || customer.userId !== uid) throw new Error("CUSTOMER_NOT_FOUND");
+
+  const id = pushSubId(customerId, sub.endpoint);
+  const existing = loyaltyPushSubscriptions.get(id) as LoyaltyPushSubscription | undefined;
+  const now = new Date().toISOString();
+
+  const next: LoyaltyPushSubscription = {
+    id,
+    userId: uid,
+    customerId,
+    endpoint: sub.endpoint,
+    keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
+    userAgent: input.userAgent?.slice(0, 300),
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  loyaltyPushSubscriptions.put(id, next);
+  return next;
+}
+
+export async function removeLoyaltyPushSubscription(input: {
+  userId: string;
+  customerId: string;
+  /** Optional endpoint: remove only that subscription; otherwise remove all for this customer. */
+  endpoint?: string;
+}): Promise<number> {
+  const { loyaltyPushSubscriptions, loyaltyCustomers } = getLmdb();
+
+  const uid = userIdSchema.parse(input.userId);
+  const customerId = z.string().trim().min(1).parse(input.customerId);
+
+  const customer = loyaltyCustomers.get(customerId) as LoyaltyCustomer | undefined;
+  if (!customer || customer.userId !== uid) throw new Error("CUSTOMER_NOT_FOUND");
+
+  let removed = 0;
+  if (input.endpoint) {
+    const id = pushSubId(customerId, String(input.endpoint));
+    if (await loyaltyPushSubscriptions.remove(id)) removed += 1;
+    return removed;
+  }
+
+  for (const { key, value } of loyaltyPushSubscriptions.getRange()) {
+    const s = value as LoyaltyPushSubscription;
+    if (s.userId !== uid) continue;
+    if (s.customerId !== customerId) continue;
+    if (await loyaltyPushSubscriptions.remove(String(key))) removed += 1;
+  }
+  return removed;
+}
+
+export function listLoyaltyPushSubscriptionsByUser(input: {
+  userId: string;
+  customerId?: string;
+}): LoyaltyPushSubscription[] {
+  const { loyaltyPushSubscriptions } = getLmdb();
+  const uid = userIdSchema.parse(input.userId);
+  const customerId = input.customerId ? z.string().trim().min(1).parse(input.customerId) : null;
+
+  const out: LoyaltyPushSubscription[] = [];
+  for (const { value } of loyaltyPushSubscriptions.getRange()) {
+    const s = value as LoyaltyPushSubscription;
+    if (s.userId !== uid) continue;
+    if (customerId && s.customerId !== customerId) continue;
+    out.push(s);
+  }
+  return out;
+}
+
+function appleRegId(passTypeIdentifier: string, serialNumber: string, deviceLibraryIdentifier: string) {
+  return `${passTypeIdentifier}:${serialNumber}:${deviceLibraryIdentifier}`;
+}
+
+export function upsertAppleWalletRegistration(input: {
+  passTypeIdentifier: string;
+  serialNumber: string;
+  deviceLibraryIdentifier: string;
+  pushToken: string;
+}): AppleWalletRegistration {
+  const { appleWalletRegistrations } = getLmdb();
+  const passTypeIdentifier = z.string().trim().min(1).max(200).parse(input.passTypeIdentifier);
+  const serialNumber = z.string().trim().min(1).max(200).parse(input.serialNumber);
+  const deviceLibraryIdentifier = z.string().trim().min(1).max(200).parse(input.deviceLibraryIdentifier);
+  const pushToken = z.string().trim().min(1).max(512).parse(input.pushToken);
+
+  const id = appleRegId(passTypeIdentifier, serialNumber, deviceLibraryIdentifier);
+  const now = new Date().toISOString();
+  const next: AppleWalletRegistration = {
+    id,
+    passTypeIdentifier,
+    serialNumber,
+    deviceLibraryIdentifier,
+    pushToken,
+    updatedAt: now,
+  };
+  appleWalletRegistrations.put(id, next);
+  return next;
+}
+
+export async function removeAppleWalletRegistration(input: {
+  passTypeIdentifier: string;
+  serialNumber: string;
+  deviceLibraryIdentifier: string;
+}): Promise<boolean> {
+  const { appleWalletRegistrations } = getLmdb();
+  const passTypeIdentifier = z.string().trim().min(1).parse(input.passTypeIdentifier);
+  const serialNumber = z.string().trim().min(1).parse(input.serialNumber);
+  const deviceLibraryIdentifier = z.string().trim().min(1).parse(input.deviceLibraryIdentifier);
+  const id = appleRegId(passTypeIdentifier, serialNumber, deviceLibraryIdentifier);
+  return await appleWalletRegistrations.remove(id);
+}
+
+export function listAppleWalletPushTokensForSerial(input: {
+  passTypeIdentifier: string;
+  serialNumber: string;
+}): string[] {
+  const { appleWalletRegistrations } = getLmdb();
+  const passTypeIdentifier = z.string().trim().min(1).parse(input.passTypeIdentifier);
+  const serialNumber = z.string().trim().min(1).parse(input.serialNumber);
+  const out = new Set<string>();
+  for (const { value } of appleWalletRegistrations.getRange()) {
+    const r = value as AppleWalletRegistration;
+    if (r.passTypeIdentifier !== passTypeIdentifier) continue;
+    if (r.serialNumber !== serialNumber) continue;
+    out.add(r.pushToken);
+  }
+  return Array.from(out);
+}
 
 export function getLoyaltySubscriptionByUserId(userId: string): LoyaltySubscription | null {
   const { loyaltySubscriptions } = getLmdb();

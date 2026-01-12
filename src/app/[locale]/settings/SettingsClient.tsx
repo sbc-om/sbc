@@ -73,19 +73,14 @@ export function SettingsClient({
   locale: Locale;
   dict: Dictionary;
 }) {
-  const [settings, setSettings] = useState<LocalSettings>(DEFAULT_SETTINGS);
-  const [hydrated, setHydrated] = useState(false);
+  const [settings, setSettings] = useState<LocalSettings>(() => {
+    if (typeof window === "undefined") return DEFAULT_SETTINGS;
+    return safeParseSettings(window.localStorage.getItem(STORAGE_KEY)) ?? DEFAULT_SETTINGS;
+  });
 
   useEffect(() => {
-    const restored = safeParseSettings(window.localStorage.getItem(STORAGE_KEY));
-    if (restored) setSettings(restored);
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  }, [settings, hydrated]);
+  }, [settings]);
 
   const sectionHint = useMemo(() => {
     // Keep the client component robust if dictionaries are missing keys.

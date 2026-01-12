@@ -161,6 +161,44 @@ export type LoyaltyMessage = {
   createdAt: string;
 };
 
+/**
+ * A stored Web Push subscription for a loyalty customer.
+ * Used for sending push notifications to customers who opted in (PWA/browser push).
+ */
+export type LoyaltyPushSubscription = {
+  /** Unique id (derived from customerId + endpoint hash). */
+  id: string;
+  /** Business owner (our user id). */
+  userId: string;
+  /** Loyalty customer id (within this business). */
+  customerId: string;
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
+  /** Optional user-agent snapshot for debugging. */
+  userAgent?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Apple Wallet device registration (PassKit web service).
+ * This is required to deliver pass updates and Wallet-style alerts via APNs.
+ */
+export type AppleWalletRegistration = {
+  /** Compound id: `${passTypeIdentifier}:${serialNumber}:${deviceLibraryIdentifier}` */
+  id: string;
+  passTypeIdentifier: string;
+  /** Pass serial number (we use loyalty card id). */
+  serialNumber: string;
+  deviceLibraryIdentifier: string;
+  /** APNs push token provided by Wallet on install. */
+  pushToken: string;
+  updatedAt: string;
+};
+
 export type ProgramId = "directory" | "loyalty" | "marketing";
 
 export type ProgramSubscription = {

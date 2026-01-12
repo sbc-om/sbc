@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { redeemLoyaltyCustomerPoints } from "@/lib/db/loyalty";
+import { notifyAppleWalletPassUpdated } from "@/lib/wallet/appleApns";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,11 @@ export async function POST(
       userId: auth.id,
       customerId: id,
     });
+
+    // Best-effort: Wallet update alert.
+    if (customer.cardId) {
+      void notifyAppleWalletPassUpdated({ cardId: customer.cardId });
+    }
 
     return Response.json({ ok: true, customer, settings });
   } catch (e) {

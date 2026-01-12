@@ -17,8 +17,6 @@ import {
   HiOutlineChat,
   HiViewGrid,
   HiOutlineViewGrid,
-  HiSearch,
-  HiOutlineSearch,
   HiUser,
   HiOutlineUser,
   HiCog,
@@ -34,18 +32,18 @@ interface MobileNavProps {
 export function MobileNav({ locale, dict }: MobileNavProps) {
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [profileMenuOpenedAtPath, setProfileMenuOpenedAtPath] = useState<string | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const isActive = (path: string) => pathname.startsWith(`/${locale}${path}`);
 
-  // Close profile menu on navigation changes
-  useEffect(() => {
-    setProfileMenuOpen(false);
-  }, [pathname]);
+  // Avoid setState-on-navigation-effect lint by tying visibility to the pathname
+  // at the time the menu was opened.
+  const isProfileMenuVisible = profileMenuOpen && profileMenuOpenedAtPath === pathname;
 
   // Close profile menu when clicking outside or pressing Escape
   useEffect(() => {
-    if (!profileMenuOpen) return;
+    if (!isProfileMenuVisible) return;
 
     const onPointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
@@ -70,7 +68,7 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
       document.removeEventListener("touchstart", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [profileMenuOpen]);
+  }, [isProfileMenuVisible]);
 
   const navItems = [
     {
@@ -96,7 +94,7 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
     },
     {
       key: "store",
-      label: (dict.nav as any).store ?? (locale === "ar" ? "المتجر" : "Store"),
+      label: (dict.nav as Record<string, string | undefined>).store ?? (locale === "ar" ? "المتجر" : "Store"),
       path: "/store",
       Icon: HiShoppingBag,
       IconOutline: HiOutlineShoppingBag,
@@ -141,14 +139,25 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
         <div ref={profileMenuRef} className="relative flex-1">
           <button
             type="button"
-            onClick={() => setProfileMenuOpen((v) => !v)}
+            onClick={() => {
+              setProfileMenuOpen((v) => {
+                const next = !v;
+                if (next) setProfileMenuOpenedAtPath(pathname);
+                return next;
+              });
+            }}
             className="flex w-full flex-col items-center gap-1 px-4 py-2 min-w-0"
             aria-haspopup="menu"
-            aria-expanded={profileMenuOpen}
+            aria-expanded={isProfileMenuVisible}
           >
-            {(isActive("/profile") ? HiUser : HiOutlineUser)({
-              className: `h-6 w-6 ${isActive("/profile") ? "text-foreground" : "text-(--muted-foreground)"}`,
-            })}
+            {(() => {
+              const ProfileIcon = isActive("/profile") ? HiUser : HiOutlineUser;
+              return (
+                <ProfileIcon
+                  className={`h-6 w-6 ${isActive("/profile") ? "text-foreground" : "text-(--muted-foreground)"}`}
+                />
+              );
+            })()}
             <span
               className={`text-xs truncate ${isActive("/profile") ? "font-semibold" : "font-normal text-(--muted-foreground)"}`}
             >
@@ -156,7 +165,7 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
             </span>
           </button>
 
-          {profileMenuOpen && (
+          {isProfileMenuVisible && (
             <div
               role="menu"
               aria-label="Profile menu"
@@ -172,7 +181,7 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
                 onClick={() => setProfileMenuOpen(false)}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
               >
-                {(HiOutlineUser as any)({ className: "h-5 w-5 shrink-0" })}
+                <HiOutlineUser className="h-5 w-5 shrink-0" />
                 <span className="min-w-0 truncate">{dict.nav.profile}</span>
               </Link>
 
@@ -182,7 +191,10 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
                 onClick={() => setProfileMenuOpen(false)}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
               >
-                {(isActive("/settings") ? HiCog : HiOutlineCog)({ className: "h-5 w-5 shrink-0" })}
+                {(() => {
+                  const SettingsIcon = isActive("/settings") ? HiCog : HiOutlineCog;
+                  return <SettingsIcon className="h-5 w-5 shrink-0" />;
+                })()}
                 <span className="min-w-0 truncate">{dict.nav.settings}</span>
               </Link>
 
@@ -196,7 +208,7 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
                   type="submit"
                   className="w-full flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
                 >
-                  {(HiOutlineLogout as any)({ className: "h-5 w-5 shrink-0" })}
+                  <HiOutlineLogout className="h-5 w-5 shrink-0" />
                   <span className="min-w-0 truncate">{dict.nav.logout}</span>
                 </button>
               </form>

@@ -17,6 +17,7 @@ import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib
 
 import { LoyaltyProfileClient } from "./LoyaltyProfileClient";
 import { LoyaltySettingsClient } from "./LoyaltySettingsClient";
+import { LoyaltyMessagesClient } from "./LoyaltyMessagesClient";
 
 export const runtime = "nodejs";
 
@@ -134,6 +135,8 @@ export default async function LoyaltyManagePage({
               profile={profile ? { businessName: profile.businessName, logoUrl: profile.logoUrl, joinCode: profile.joinCode } : null}
             />
           ) : null}
+
+          <LoyaltyMessagesClient locale={locale as Locale} />
 
           <div className="mt-8 sbc-card rounded-2xl p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

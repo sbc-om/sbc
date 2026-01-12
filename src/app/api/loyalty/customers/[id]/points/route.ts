@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { adjustLoyaltyCustomerPoints } from "@/lib/db/loyalty";
+import { notifyAppleWalletPassUpdated } from "@/lib/wallet/appleApns";
 
 export const runtime = "nodejs";
 
@@ -27,6 +28,11 @@ export async function PATCH(
       customerId: id,
       delta: data.delta,
     });
+
+    // Best-effort: Wallet update alert (if customer added pass to Apple Wallet).
+    if (customer.cardId) {
+      void notifyAppleWalletPassUpdated({ cardId: customer.cardId });
+    }
 
     return Response.json({ ok: true, customer });
   } catch (e) {

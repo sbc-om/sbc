@@ -10,12 +10,30 @@ type QrScannerProps = {
   locale: string;
 };
 
+type QrScanResult = { data: string };
+
+type QrScannerInstance = {
+  start: () => Promise<void>;
+  stop: () => void;
+  destroy: () => void;
+};
+
+type QrScannerConstructor = new (
+  video: HTMLVideoElement,
+  onDecode: (result: QrScanResult) => void,
+  options: {
+    returnDetailedScanResult: true;
+    highlightScanRegion: boolean;
+    highlightCodeOutline: boolean;
+  }
+) => QrScannerInstance;
+
 export function QrScanner({ onScan, onClose, locale }: QrScannerProps) {
   const ar = locale === "ar";
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  const scannerRef = useRef<any>(null);
+  const scannerRef = useRef<QrScannerInstance | null>(null);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -25,6 +43,7 @@ export function QrScanner({ onScan, onClose, locale }: QrScannerProps) {
       try {
         // Dynamically import the QR scanner library
         const { default: QrScanner } = await import("qr-scanner");
+        const QrScannerClass = QrScanner as unknown as QrScannerConstructor;
 
         if (!videoRef.current || !mounted) return;
 
@@ -42,7 +61,7 @@ export function QrScanner({ onScan, onClose, locale }: QrScannerProps) {
         await videoRef.current.play();
 
         // Initialize QR scanner
-        const scanner = new QrScanner(
+        const scanner = new QrScannerClass(
           videoRef.current,
           (result) => {
             if (mounted) {

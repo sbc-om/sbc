@@ -34,7 +34,8 @@ export async function joinLoyaltyByCodeAction(
       },
     });
 
-    redirect(`/${locale}/loyalty/card/${customer.cardId}`);
+    // Flag the first visit so the card page can nudge / auto-enable push if permission is already granted.
+    redirect(`/${locale}/loyalty/card/${customer.cardId}?joined=1`);
   } catch {
     redirect(`/${locale}/loyalty/join/${code}?error=INVALID_INPUT`);
   }

@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listCategories } from "@/lib/db/categories";
 import { getFollowedCategoryIds } from "@/lib/db/follows";
@@ -17,8 +16,6 @@ export default async function CategoriesPage({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-
-  const dict = await getDictionary(locale as Locale);
   const user = await requireUser(locale as Locale);
 
   const categories = listCategories({ locale: locale as Locale });

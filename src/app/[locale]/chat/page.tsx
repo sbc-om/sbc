@@ -6,8 +6,6 @@ import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinesses } from "@/lib/db/businesses";
-import { listConversationsByUser } from "@/lib/db/chats";
-import { getBusinessById } from "@/lib/db/businesses";
 import { AppPage } from "@/components/AppPage";
 
 export default async function ChatIndexPage({

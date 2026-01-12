@@ -28,7 +28,7 @@ export function BusinessCard({
     try {
       await deleteBusinessAction(locale, business.id);
       router.refresh();
-    } catch (e) {
+    } catch {
       setDeleting(false);
       alert(ar ? "فشل الحذف" : "Delete failed");
     }

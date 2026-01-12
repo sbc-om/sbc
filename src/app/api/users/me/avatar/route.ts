@@ -54,6 +54,7 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  void req;
   const auth = await getCurrentUser();
   if (!auth) return new Response("Unauthorized", { status: 401 });
 
