@@ -3,31 +3,32 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
+import type { StoreProduct } from "@/lib/store/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 
-export function NewProductForm({ locale }: { locale: Locale }) {
+export function EditProductForm({ product, locale }: { product: StoreProduct; locale: Locale }) {
   const router = useRouter();
   const ar = locale === "ar";
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    slug: "",
-    program: "directory" as "directory" | "loyalty" | "marketing",
-    plan: "",
-    durationDays: 30,
-    nameEn: "",
-    nameAr: "",
-    descriptionEn: "",
-    descriptionAr: "",
-    priceAmount: 0,
-    priceCurrency: "OMR" as "OMR" | "USD",
-    priceInterval: "" as "" | "month" | "year" | "6mo",
-    featuresEn: "",
-    featuresAr: "",
-    badges: "",
-    active: true,
+    slug: product.slug,
+    program: product.program,
+    plan: product.plan,
+    durationDays: product.durationDays,
+    nameEn: product.name.en,
+    nameAr: product.name.ar,
+    descriptionEn: product.description.en,
+    descriptionAr: product.description.ar,
+    priceAmount: product.price.amount,
+    priceCurrency: product.price.currency,
+    priceInterval: product.price.interval || "",
+    featuresEn: product.features.en.join("\n"),
+    featuresAr: product.features.ar.join("\n"),
+    badges: product.badges?.join(", ") || "",
+    active: product.isActive,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,19 +58,19 @@ export function NewProductForm({ locale }: { locale: Locale }) {
           en: formData.featuresEn.split("\n").filter(Boolean),
           ar: formData.featuresAr.split("\n").filter(Boolean),
         },
-        badges: formData.badges ? formData.badges.split(",").map((b) => b.trim()).filter(Boolean) : [],
-        active: formData.active,
+        badges: formData.badges ? formData.badges.split(",").map((b: string) => b.trim()).filter(Boolean) : [],
+        isActive: formData.active,
       };
 
-      const res = await fetch(`/api/admin/products`, {
-        method: "POST",
+      const res = await fetch(`/api/admin/products/${product.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || "Failed to create product");
+        throw new Error(err.error || "Failed to update product");
       }
 
       router.push(`/${locale}/admin/products`);
@@ -318,7 +319,7 @@ export function NewProductForm({ locale }: { locale: Locale }) {
       {/* Actions */}
       <div className="flex gap-3 pt-4">
         <Button type="submit" disabled={loading} variant="primary">
-          {loading ? (ar ? "جاري الإنشاء..." : "Creating...") : (ar ? "إنشاء محصول" : "Create Product")}
+          {loading ? (ar ? "جاري التحديث..." : "Updating...") : (ar ? "تحديث المحصول" : "Update Product")}
         </Button>
         <Button
           type="button"

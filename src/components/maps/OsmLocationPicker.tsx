@@ -97,12 +97,14 @@ export function OsmLocationPicker({
   className,
   disabled,
   locale,
+  hideRadius,
 }: {
   value: OsmLocationValue | null;
   onChange: (next: OsmLocationValue | null) => void;
   className?: string;
   disabled?: boolean;
   locale?: "en" | "ar";
+  hideRadius?: boolean;
 }) {
   const ar = locale === "ar";
   const rtl = ar;
@@ -227,9 +229,11 @@ export function OsmLocationPicker({
         <div className={cn(rtl ? "text-right" : "text-left")}>
           <div className="text-sm font-semibold">{ar ? "الموقع على الخريطة" : "Location on map"}</div>
           <div className="mt-1 text-xs text-(--muted-foreground)">
-            {ar
-              ? "اضغط على الخريطة لاختيار الموقع. احفظ نصف القطر لتحديد نطاق الإشعار."
-              : "Click the map to choose the exact spot. Set radius to define the notification range."}
+            {hideRadius
+              ? (ar ? "اضغط على الخريطة لاختيار الموقع الدقيق." : "Click the map to choose the exact location.")
+              : (ar
+                ? "اضغط على الخريطة لاختيار الموقع. احفظ نصف القطر لتحديد نطاق الإشعار."
+                : "Click the map to choose the exact spot. Set radius to define the notification range.")}
           </div>
         </div>
 
@@ -307,61 +311,76 @@ export function OsmLocationPicker({
                 radius={8}
                 pathOptions={{ color: "#4f46e5", fillColor: "#4f46e5", fillOpacity: 0.85 }}
               />
-              <Circle
-                center={[value.lat, value.lng]}
-                radius={value.radiusMeters}
-                pathOptions={{ color: "#06b6d4", fillColor: "#06b6d4", fillOpacity: 0.12 }}
-              />
+              {!hideRadius && (
+                <Circle
+                  center={[value.lat, value.lng]}
+                  radius={value.radiusMeters}
+                  pathOptions={{ color: "#06b6d4", fillColor: "#06b6d4", fillOpacity: 0.12 }}
+                />
+              )}
             </>
           ) : null}
         </MapContainer>
       </div>
 
-      <div className="mt-4 space-y-2">
-        <div className={cn("flex items-center gap-2 flex-wrap", rtl ? "flex-row-reverse" : "")}>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <label className="text-xs font-medium text-(--muted-foreground) shrink-0">
-              {ar ? "المنطقة (متر)" : "Range (meters)"}
-            </label>
-            <div className="flex h-10 flex-1 sm:flex-initial">
-              <Input
-                type="number"
-                inputMode="numeric"
-                min={25}
-                max={20000}
-                value={localRadius}
-                onChange={(e) => setLocalRadius(e.target.value)}
-                disabled={disabled || !value}
-                className={cn("w-20 sm:w-20 flex-1 sm:flex-initial h-full", rtl ? "rounded-l-none border-l-0" : "rounded-r-none border-r-0")}
-              />
-              <Button 
-                type="button" 
-                variant="secondary" 
-                disabled={disabled || !value} 
-                onClick={applyRadius}
-                className={cn("h-full px-3 shrink-0", rtl ? "rounded-r-none" : "rounded-l-none")}
-              >
-                {ar ? "تطبيق" : "Apply"}
-              </Button>
+      {!hideRadius ? (
+        <div className="mt-4 space-y-2">
+          <div className={cn("flex items-center gap-2 flex-wrap", rtl ? "flex-row-reverse" : "")}>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <label className="text-xs font-medium text-(--muted-foreground) shrink-0">
+                {ar ? "المنطقة (متر)" : "Range (meters)"}
+              </label>
+              <div className="flex h-10 flex-1 sm:flex-initial">
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  min={25}
+                  max={20000}
+                  value={localRadius}
+                  onChange={(e) => setLocalRadius(e.target.value)}
+                  disabled={disabled || !value}
+                  className={cn("w-20 sm:w-20 flex-1 sm:flex-initial h-full", rtl ? "rounded-l-none border-l-0" : "rounded-r-none border-r-0")}
+                />
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  disabled={disabled || !value} 
+                  onClick={applyRadius}
+                  className={cn("h-full px-3 shrink-0", rtl ? "rounded-r-none" : "rounded-l-none")}
+                >
+                  {ar ? "تطبيق" : "Apply"}
+                </Button>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-            <label className="text-xs text-(--muted-foreground) shrink-0">
-              {ar ? "الإحداثيات" : "Coordinates"}
-            </label>
-            <div className="flex-1 flex items-center h-10 rounded-lg border border-(--surface-border) bg-(--surface) px-3">
-              <div className="text-xs font-mono" dir="ltr">
-                {value ? `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}` : "—"}
+            <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+              <label className="text-xs text-(--muted-foreground) shrink-0">
+                {ar ? "الإحداثيات" : "Coordinates"}
+              </label>
+              <div className="flex-1 flex items-center h-10 rounded-lg border border-(--surface-border) bg-(--surface) px-3">
+                <div className="text-xs font-mono" dir="ltr">
+                  {value ? `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}` : "—"}
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className={cn("text-[11px] text-(--muted-foreground)", rtl ? "text-right" : "text-left")}>
-          {ar ? "مقترح: 150–500م للمتجر." : "Tip: 150–500m is a good default for a store."}
+          <div className={cn("text-[11px] text-(--muted-foreground)", rtl ? "text-right" : "text-left")}>
+            {ar ? "مقترح: 150–500م للمتجر." : "Tip: 150–500m is a good default for a store."}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className={cn("mt-4 flex items-center gap-2", rtl ? "flex-row-reverse" : "")}>
+          <label className="text-xs text-(--muted-foreground) shrink-0">
+            {ar ? "الإحداثيات" : "Coordinates"}
+          </label>
+          <div className="flex-1 flex items-center h-10 rounded-lg border border-(--surface-border) bg-(--surface) px-3">
+            <div className="text-xs font-mono" dir="ltr">
+              {value ? `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}` : "—"}
+            </div>
+          </div>
+        </div>
+      )}
 
       {value?.label ? (
         <div className={cn("mt-3 text-xs text-(--muted-foreground)", rtl ? "text-right" : "text-left")}>

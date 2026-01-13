@@ -4,6 +4,7 @@ import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
+import { listStoreProducts } from "@/lib/store/products";
 
 import { CheckoutClient } from "./CheckoutClient";
 
@@ -19,6 +20,7 @@ export default async function CheckoutPage({
 
   const dict = await getDictionary(locale as Locale);
   await requireUser(locale as Locale);
+  const products = listStoreProducts();
 
   const ar = locale === "ar";
 
@@ -41,7 +43,7 @@ export default async function CheckoutPage({
         </div>
       </div>
 
-      <CheckoutClient locale={locale as Locale} />
+      <CheckoutClient locale={locale as Locale} products={products} />
     </AppPage>
   );
 }

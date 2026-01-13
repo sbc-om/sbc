@@ -1,4 +1,4 @@
-import type { StoreProduct } from "@/lib/store/products";
+import type { StoreProduct } from "@/lib/store/types";
 
 export type CartItem = {
   slug: StoreProduct["slug"];

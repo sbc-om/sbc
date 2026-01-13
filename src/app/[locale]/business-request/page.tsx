@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import dynamic from "next/dynamic";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
@@ -7,11 +8,8 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { listCategories } from "@/lib/db/categories";
 import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 import { AppPage } from "@/components/AppPage";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { Button } from "@/components/ui/Button";
 import { CategorySelectField } from "@/components/CategorySelectField";
-import { submitBusinessRequestAction } from "./actions";
+import { BusinessRequestForm } from "./BusinessRequestForm";
 import Link from "next/link";
 
 export default async function BusinessRequestPage({
@@ -42,8 +40,8 @@ export default async function BusinessRequestPage({
         </h1>
         <p className="mt-1 text-sm text-(--muted-foreground)">
           {locale === "ar"
-            ? "املأ النموذج وسنراجع الطلب."
-            : "Fill the form and we will review your request."}
+            ? "املأ النموذج بالكامل وحدد موقعك على الخريطة."
+            : "Fill the complete form and select your location on the map."}
         </p>
 
         {success ? (
@@ -85,48 +83,7 @@ export default async function BusinessRequestPage({
             </div>
           </div>
         ) : (
-          <form
-            action={submitBusinessRequestAction.bind(null, locale as Locale)}
-            className="mt-6 grid gap-4"
-          >
-          <Input
-            name="name"
-            placeholder={locale === "ar" ? "اسم العمل" : "Business name"}
-            required
-          />
-
-          <Textarea
-            name="description"
-            placeholder={locale === "ar" ? "وصف" : "Description"}
-            rows={5}
-          />
-
-          <CategorySelectField
-            categories={categories}
-            locale={locale as Locale}
-            placeholder={locale === "ar" ? "اختر تصنيفاً" : "Choose a category"}
-            searchPlaceholder={
-              locale === "ar" ? "ابحث عن تصنيف..." : "Search categories..."
-            }
-            required
-          />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input name="city" placeholder={locale === "ar" ? "المدينة" : "City"} />
-            <Input name="phone" placeholder={locale === "ar" ? "الهاتف" : "Phone"} />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input name="email" placeholder={locale === "ar" ? "البريد" : "Email"} />
-            <Input name="website" placeholder={locale === "ar" ? "الموقع" : "Website"} />
-          </div>
-
-          <div className="flex justify-end">
-            <Button type="submit">
-              {locale === "ar" ? "إرسال" : "Submit"}
-            </Button>
-          </div>
-          </form>
+          <BusinessRequestForm locale={locale as Locale} categories={categories} />
         )}
     </AppPage>
   );

@@ -12,20 +12,27 @@ export function CategorySelectField({
   placeholder,
   searchPlaceholder,
   required,
+  value: externalValue,
+  onChange: externalOnChange,
 }: {
   categories: Category[];
   locale: Locale;
   placeholder: string;
   searchPlaceholder: string;
   required?: boolean;
+  value?: string;
+  onChange?: (value: string) => void;
 }) {
-  const [value, setValue] = useState<string>("");
+  const [internalValue, setInternalValue] = useState<string>("");
+  
+  const value = externalValue !== undefined ? externalValue : internalValue;
+  const onChange = externalOnChange || setInternalValue;
 
   return (
     <CategorySelect
       categories={categories}
       value={value}
-      onChange={setValue}
+      onChange={onChange}
       placeholder={placeholder}
       searchPlaceholder={searchPlaceholder}
       locale={locale}

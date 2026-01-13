@@ -3,23 +3,27 @@ import Link from "next/link";
 
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
+import { getProductById } from "@/lib/db/products";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { buttonVariants } from "@/components/ui/Button";
-import { NewProductForm } from "./NewProductForm";
+import { EditProductForm } from "./EditProductForm";
 
 export const runtime = "nodejs";
 
-export default async function NewProductPage({
+export default async function EditProductPage({
   params,
 }: {
-  params: Promise<{ locale: string }>;
+  params: Promise<{ locale: string; id: string }>;
 }) {
-  const { locale } = await params;
+  const { locale, id } = await params;
   if (!isLocale(locale)) notFound();
 
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
+
+  const product = getProductById(id);
+  if (!product) notFound();
 
   const ar = locale === "ar";
 
@@ -28,10 +32,10 @@ export default async function NewProductPage({
       <div className="flex items-end justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {ar ? "إنشاء محصول جديد" : "Create New Product"}
+            {ar ? "تحرير المحصول" : "Edit Product"}
           </h1>
           <p className="mt-1 text-sm text-(--muted-foreground)">
-            {ar ? "أضف محصول جديد إلى المتجر" : "Add a new product to the store"}
+            {ar ? product.name.ar : product.name.en}
           </p>
         </div>
         <Link
@@ -43,7 +47,7 @@ export default async function NewProductPage({
       </div>
 
       <div className="sbc-card p-6">
-        <NewProductForm locale={locale as Locale} />
+        <EditProductForm product={product} locale={locale as Locale} />
       </div>
     </AppPage>
   );

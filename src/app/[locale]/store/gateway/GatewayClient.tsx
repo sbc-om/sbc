@@ -5,23 +5,30 @@ import { useSearchParams } from "next/navigation";
 import { HiLockClosed, HiCreditCard, HiArrowRight, HiX } from "react-icons/hi";
 
 import type { Locale } from "@/lib/i18n/locales";
+import type { StoreProduct } from "@/lib/store/types";
 import { localeDir } from "@/lib/i18n/locales";
 import { cn } from "@/lib/cn";
-import { formatStorePrice, getStoreProductBySlug, getStoreProductText } from "@/lib/store/products";
+import { formatStorePrice, getStoreProductText } from "@/lib/store/utils";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/components/store/CartProvider";
 
-function cartTotalOMR(locale: Locale, slugs: string[]) {
+function cartTotalOMR(locale: Locale, slugs: string[], products: StoreProduct[]) {
   let total = 0;
   for (const slug of slugs) {
-    const p = getStoreProductBySlug(slug);
+    const p = products.find((x) => x.slug === slug);
     if (!p) continue;
     total += p.price.amount;
   }
   return formatStorePrice({ amount: total, currency: "OMR" }, locale);
 }
 
-export function GatewayClient({ locale }: { locale: Locale }) {
+export function GatewayClient({
+  locale,
+  products,
+}: {
+  locale: Locale;
+  products: StoreProduct[];
+}) {
   const { state } = useCart();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get("return") || `/${locale}/store/checkout`;
@@ -30,7 +37,7 @@ export function GatewayClient({ locale }: { locale: Locale }) {
   const rtl = localeDir(locale) === "rtl";
 
   const slugs = state.items.map((it) => it.slug);
-  const total = cartTotalOMR(locale, slugs);
+  const total = cartTotalOMR(locale, slugs, products);
 
   const redirect = (status: "success" | "cancel") => {
     const tx = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now());
@@ -75,7 +82,7 @@ export function GatewayClient({ locale }: { locale: Locale }) {
       {slugs.length ? (
         <div className="mt-4 grid gap-2">
           {slugs.map((slug) => {
-            const p = getStoreProductBySlug(slug);
+            const p = products.find((x) => x.slug === slug);
             if (!p) return null;
             const text = getStoreProductText(p, locale);
             return (

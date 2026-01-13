@@ -6,27 +6,30 @@ import React from "react";
 import { HiCreditCard, HiArrowRight, HiCheckCircle, HiXCircle, HiTrash } from "react-icons/hi";
 
 import type { Locale } from "@/lib/i18n/locales";
+import type { StoreProduct } from "@/lib/store/types";
 import { localeDir } from "@/lib/i18n/locales";
 import { cn } from "@/lib/cn";
-import {
-  formatStorePrice,
-  getStoreProductBySlug,
-  getStoreProductText,
-} from "@/lib/store/products";
+import { formatStorePrice, getStoreProductText } from "@/lib/store/utils";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { useCart } from "@/components/store/CartProvider";
 
-function cartTotalOMR(locale: Locale, slugs: string[]) {
+function cartTotalOMR(locale: Locale, slugs: string[], products: StoreProduct[]) {
   let total = 0;
   for (const slug of slugs) {
-    const p = getStoreProductBySlug(slug);
+    const p = products.find((x) => x.slug === slug);
     if (!p) continue;
     total += p.price.amount;
   }
   return formatStorePrice({ amount: total, currency: "OMR" }, locale);
 }
 
-export function CheckoutClient({ locale }: { locale: Locale }) {
+export function CheckoutClient({
+  locale,
+  products,
+}: {
+  locale: Locale;
+  products: StoreProduct[];
+}) {
   const router = useRouter();
   const { state, clear, remove } = useCart();
   const searchParams = useSearchParams();
@@ -36,7 +39,7 @@ export function CheckoutClient({ locale }: { locale: Locale }) {
   const ar = locale === "ar";
 
   const slugs = state.items.map((it) => it.slug);
-  const total = cartTotalOMR(locale, slugs);
+  const total = cartTotalOMR(locale, slugs, products);
 
   const copy = {
     cartEmpty: ar ? "سلتك فارغة." : "Your cart is empty.",
@@ -148,7 +151,7 @@ export function CheckoutClient({ locale }: { locale: Locale }) {
         ) : (
           <div className="mt-4 grid gap-2">
             {slugs.map((slug) => {
-              const p = getStoreProductBySlug(slug);
+              const p = products.find((x) => x.slug === slug);
               if (!p) return null;
               const text = getStoreProductText(p, locale);
               return (

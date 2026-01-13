@@ -10,9 +10,12 @@ export type BusinessRequest = {
   description?: string;
   categoryId?: string;
   city?: string;
+  address?: string;
   phone?: string;
   email?: string;
   website?: string;
+  latitude?: number;
+  longitude?: number;
   status: "pending" | "approved" | "rejected";
   adminResponse?: string;
   adminUserId?: string;
@@ -26,9 +29,12 @@ const requestSchema = z.object({
   description: z.string().trim().min(2).max(2000).optional(),
   categoryId: z.string().trim().min(1).optional(),
   city: z.string().trim().min(1).optional(),
+  address: z.string().trim().min(3).max(500).optional(),
   phone: z.string().trim().min(3).max(40).optional(),
   email: z.string().trim().email().optional(),
   website: z.string().trim().min(3).max(200).optional(),
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
 });
 
 export type BusinessRequestInput = z.infer<typeof requestSchema>;
@@ -44,9 +50,12 @@ export function createBusinessRequest(input: BusinessRequestInput): BusinessRequ
     description: data.description,
     categoryId: data.categoryId,
     city: data.city,
+    address: data.address,
     phone: data.phone,
     email: data.email,
     website: data.website,
+    latitude: data.latitude,
+    longitude: data.longitude,
     status: "pending",
     createdAt: new Date().toISOString(),
   };

@@ -31,6 +31,9 @@ export type Business = {
   website?: string;
   email?: string;
   tags?: string[];
+  /** Geographic location */
+  latitude?: number;
+  longitude?: number;
   media?: {
     cover?: string;
     logo?: string;

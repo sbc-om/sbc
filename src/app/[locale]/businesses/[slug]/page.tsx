@@ -8,6 +8,7 @@ import { getBusinessBySlug } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { buttonVariants } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
+import { OsmLocationPicker } from "@/components/maps/OsmLocationPickerClient";
 
 export default async function BusinessDetailPage({
   params,
@@ -394,6 +395,25 @@ export default async function BusinessDetailPage({
               </div>
             ) : null}
           </div>
+
+          {business.latitude && business.longitude ? (
+            <div className="mt-6 sbc-card rounded-2xl p-6">
+              <h2 className="text-base font-semibold tracking-tight">
+                {locale === "ar" ? "الموقع على الخريطة" : "Location on Map"}
+              </h2>
+              <div className="mt-4 rounded-lg overflow-hidden border border-(--border)">
+                <OsmLocationPicker
+                  value={{ lat: business.latitude, lng: business.longitude, radiusMeters: 250 }}
+                  onChange={() => {}}
+                  locale={locale}
+                  disabled
+                />
+              </div>
+              <p className="mt-3 text-xs text-(--muted-foreground)">
+                {locale === "ar" ? "الإحداثيات:" : "Coordinates:"} {business.latitude.toFixed(6)}, {business.longitude.toFixed(6)}
+              </p>
+            </div>
+          ) : null}
 
           {business.tags?.length ? (
             <div className="mt-6 sbc-card rounded-2xl p-6">

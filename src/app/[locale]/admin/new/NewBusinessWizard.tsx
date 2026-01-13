@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { Category } from "@/lib/db/types";
@@ -12,6 +13,11 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { UserSelect } from "@/components/ui/UserSelect";
+
+const OsmLocationPicker = dynamic(
+  () => import("@/components/maps/OsmLocationPicker").then((mod) => mod.OsmLocationPicker),
+  { ssr: false }
+);
 
 function Field({
   label,
@@ -151,6 +157,9 @@ export function NewBusinessWizard({
   const [logoPreview, setLogoPreview] = useState<string[]>([]);
   const [bannerPreview, setBannerPreview] = useState<string[]>([]);
   const [galleryPreview, setGalleryPreview] = useState<string[]>([]);
+  
+  // Location state
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const handleFileSelect = (
     files: FileList | null,
@@ -357,6 +366,48 @@ export function NewBusinessWizard({
                   : "Optional: link this business to an existing user."}
               </p>
             </label>
+          </div>
+        </div>
+
+        {/* Location Section */}
+        <div className="sbc-card p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-1">
+            {ar ? "الموقع الجغرافي" : "Geographic Location"}
+          </h2>
+          <p className="text-sm text-(--muted-foreground) mb-6">
+            {ar ? "حدد الموقع الدقيق للنشاط على الخريطة" : "Mark the exact business location on the map"}
+          </p>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                {ar ? "حدد موقعك على الخريطة" : "Select your location on the map"}
+              </label>
+              <p className="text-sm text-(--muted-foreground) mb-3">
+                {ar 
+                  ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك التجاري"
+                  : "Click on the map to mark your exact business location"}
+              </p>
+              <div className="rounded-lg overflow-hidden border border-(--border)">
+                <OsmLocationPicker
+                  value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
+                  onChange={(next) => {
+                    setLocation(next ? { lat: next.lat, lng: next.lng } : null);
+                  }}
+                  locale={locale}
+                  hideRadius
+                />
+              </div>
+              {location && (
+                <>
+                  <p className="mt-2 text-xs text-(--muted-foreground)">
+                    {ar ? "الموقع المحدد:" : "Selected location:"} {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                  </p>
+                  <input type="hidden" name="latitude" value={location.lat} />
+                  <input type="hidden" name="longitude" value={location.lng} />
+                </>
+              )}
+            </div>
           </div>
         </div>
 

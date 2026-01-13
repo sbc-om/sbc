@@ -6,19 +6,14 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { HiCreditCard, HiTrash, HiArrowRight, HiCheckCircle, HiXCircle } from "react-icons/hi";
 
 import type { Locale } from "@/lib/i18n/locales";
+import type { StoreProduct } from "@/lib/store/types";
 import { localeDir } from "@/lib/i18n/locales";
 import { cn } from "@/lib/cn";
-import {
-  formatStorePrice,
-  getStoreProductBySlug,
-  getStoreProductText,
-  listStoreProducts,
-} from "@/lib/store/products";
+import { formatStorePrice, getStoreProductText } from "@/lib/store/utils";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { useCart } from "@/components/store/CartProvider";
 
-function cartTotalOMR(locale: Locale, slugs: string[]) {
-  const products = listStoreProducts();
+function cartTotalOMR(locale: Locale, slugs: string[], products: StoreProduct[]) {
   let total = 0;
   for (const slug of slugs) {
     const p = products.find((x) => x.slug === slug);
@@ -28,13 +23,19 @@ function cartTotalOMR(locale: Locale, slugs: string[]) {
   return formatStorePrice({ amount: total, currency: "OMR" }, locale);
 }
 
-export function CheckoutClient({ locale }: { locale: Locale }) {
+export function CheckoutClient({
+  locale,
+  products,
+}: {
+  locale: Locale;
+  products: StoreProduct[];
+}) {
   const { state, itemCount, remove, clear } = useCart();
   const sp = useSearchParams();
   const router = useRouter();
 
   const rtl = localeDir(locale) === "rtl";
-  const total = cartTotalOMR(locale, state.items.map((i) => i.slug));
+  const total = cartTotalOMR(locale, state.items.map((i) => i.slug), products);
 
   const payment = sp.get("payment");
 
@@ -102,7 +103,7 @@ export function CheckoutClient({ locale }: { locale: Locale }) {
             </div>
           ) : (
             state.items.map((it) => {
-              const p = getStoreProductBySlug(it.slug);
+              const p = products.find((x) => x.slug === it.slug);
               if (!p) return null;
               const text = getStoreProductText(p, locale);
               return (

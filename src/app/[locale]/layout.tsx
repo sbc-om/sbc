@@ -14,6 +14,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { CartProvider } from "@/components/store/CartProvider";
 import { CartFloating } from "@/components/store/CartFloating";
+import { listStoreProducts } from "@/lib/store/products";
 
 export async function generateMetadata({
   params,
@@ -41,13 +42,14 @@ export default async function LocaleLayout({
 
   const dict = await getDictionary(locale as Locale);
   const user = await getCurrentUser();
+  const products = listStoreProducts();
 
   return (
     <DictionaryProvider locale={locale as Locale} dict={dict}>
       <DirectionSync locale={locale as Locale} />
       {user ? (
         <CartProvider userKey={user.id}>
-          <CartFloating locale={locale as Locale} />
+          <CartFloating locale={locale as Locale} products={products} />
 
           {/* Logged in: Show sidebar layout */}
           <SidebarLayout>

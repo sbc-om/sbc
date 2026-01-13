@@ -4,7 +4,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 
 import type { Locale } from "@/lib/i18n/locales";
-import type { StoreProduct } from "@/lib/store/products";
+import type { StoreProduct } from "@/lib/store/types";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/components/store/CartProvider";
 

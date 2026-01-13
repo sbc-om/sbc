@@ -5,20 +5,19 @@ import Link from "next/link";
 import { HiShoppingCart, HiX, HiTrash, HiArrowRight, HiCreditCard } from "react-icons/hi";
 
 import type { Locale } from "@/lib/i18n/locales";
+import type { StoreProduct } from "@/lib/store/types";
 import { cn } from "@/lib/cn";
 import { localeDir } from "@/lib/i18n/locales";
-import {
-  formatStorePrice,
-  getStoreProductBySlug,
-  getStoreProductText,
-  listStoreProducts,
-} from "@/lib/store/products";
+import { formatStorePrice, getStoreProductText } from "@/lib/store/utils";
 import { Button } from "@/components/ui/Button";
 import { useCart } from "@/components/store/CartProvider";
 
-function cartTotalOMR(locale: Locale, items: { slug: string; quantity: number }[]) {
+function cartTotalOMR(
+  locale: Locale,
+  items: { slug: string; quantity: number }[],
+  products: StoreProduct[]
+) {
   // All store prices are expected to be OMR.
-  const products = listStoreProducts();
   let total = 0;
   for (const it of items) {
     const p = products.find((x) => x.slug === it.slug);
@@ -28,7 +27,13 @@ function cartTotalOMR(locale: Locale, items: { slug: string; quantity: number }[
   return formatStorePrice({ amount: total, currency: "OMR" }, locale);
 }
 
-export function CartFloating({ locale }: { locale: Locale }) {
+export function CartFloating({
+  locale,
+  products,
+}: {
+  locale: Locale;
+  products: StoreProduct[];
+}) {
   const { state, itemCount, remove, clear } = useCart();
   const [open, setOpen] = React.useState(false);
   if (itemCount <= 0) return null;
@@ -37,7 +42,7 @@ export function CartFloating({ locale }: { locale: Locale }) {
   const rootPos = rtl ? "left-4" : "right-4";
   const align = rtl ? "items-start" : "items-end";
 
-  const total = cartTotalOMR(locale, state.items);
+  const total = cartTotalOMR(locale, state.items, products);
   const t = {
     title: locale === "ar" ? "السلة" : "Your cart",
     totalLabel: locale === "ar" ? "الإجمالي" : "Total",
@@ -92,7 +97,7 @@ export function CartFloating({ locale }: { locale: Locale }) {
               ) : null}
 
               {state.items.map((it) => {
-                const p = getStoreProductBySlug(it.slug);
+                const p = products.find((x) => x.slug === it.slug);
                 if (!p) return null;
                 const text = getStoreProductText(p, locale);
 

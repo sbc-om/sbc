@@ -30,6 +30,8 @@ export const businessInputSchema = z.object({
   website: z.string().trim().min(1).optional(),
   email: z.string().trim().email().optional(),
   tags: z.array(z.string().trim().min(1)).optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 });
 
 export type BusinessInput = z.infer<typeof businessInputSchema>;
@@ -127,6 +129,8 @@ export function createBusiness(input: BusinessInput): Business {
     website: data.website,
     email: data.email,
     tags: data.tags,
+    latitude: data.latitude,
+    longitude: data.longitude,
     createdAt: now,
     updatedAt: now,
   };

@@ -19,9 +19,15 @@ export async function submitBusinessRequestAction(locale: Locale, formData: Form
   const description = String(formData.get("description") || "").trim();
   const categoryId = String(formData.get("categoryId") || "").trim();
   const city = String(formData.get("city") || "").trim();
+  const address = String(formData.get("address") || "").trim();
   const phone = String(formData.get("phone") || "").trim();
   const email = String(formData.get("email") || "").trim();
   const website = String(formData.get("website") || "").trim();
+  const latitudeStr = String(formData.get("latitude") || "").trim();
+  const longitudeStr = String(formData.get("longitude") || "").trim();
+
+  const latitude = latitudeStr ? parseFloat(latitudeStr) : undefined;
+  const longitude = longitudeStr ? parseFloat(longitudeStr) : undefined;
 
   createBusinessRequest({
     userId: user.id,
@@ -29,9 +35,12 @@ export async function submitBusinessRequestAction(locale: Locale, formData: Form
     description: description || undefined,
     categoryId: categoryId || undefined,
     city: city || undefined,
+    address: address || undefined,
     phone: phone || undefined,
     email: email || undefined,
     website: website || undefined,
+    latitude: latitude && !isNaN(latitude) ? latitude : undefined,
+    longitude: longitude && !isNaN(longitude) ? longitude : undefined,
   });
 
   revalidatePath(`/${locale}/business-request`);
