@@ -250,6 +250,10 @@ export function NewBusinessWizard({
       ) : null}
 
       <form action={formAction} className="grid gap-8">
+        {/* Hidden inputs for state-controlled values */}
+        <input type="hidden" name="categoryId" value={selectedCategory} />
+        <input type="hidden" name="ownerId" value={selectedOwner} />
+        
         {/* Basic Info Section */}
         <div className="sbc-card p-6">
           <h2 className="text-lg font-semibold text-foreground mb-1">
@@ -388,7 +392,7 @@ export function NewBusinessWizard({
                   ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك التجاري"
                   : "Click on the map to mark your exact business location"}
               </p>
-              <div className="rounded-lg overflow-hidden border border-(--border)">
+              <div className="rounded-lg overflow-hidden ">
                 <OsmLocationPicker
                   value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
                   onChange={(next) => {
@@ -403,8 +407,8 @@ export function NewBusinessWizard({
                   <p className="mt-2 text-xs text-(--muted-foreground)">
                     {ar ? "الموقع المحدد:" : "Selected location:"} {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
                   </p>
-                  <input type="hidden" name="latitude" value={location.lat} />
-                  <input type="hidden" name="longitude" value={location.lng} />
+                  <input type="hidden" name="latitude" value={String(location.lat)} />
+                  <input type="hidden" name="longitude" value={String(location.lng)} />
                 </>
               )}
             </div>

@@ -210,9 +210,14 @@ export function BusinessRequestForm({
       </div>
 
       <div className="sbc-card p-6 space-y-4">
-        <h3 className="text-lg font-semibold">
-          {ar ? "الموقع الجغرافي" : "Location"}
-        </h3>
+        <div>
+          <h3 className="text-lg font-semibold">
+            {ar ? "الموقع الجغرافي" : "Geographic Location"}
+          </h3>
+          <p className="text-sm text-(--muted-foreground) mt-1">
+            {ar ? "حدد الموقع الدقيق للنشاط على الخريطة" : "Mark the exact business location on the map"}
+          </p>
+        </div>
 
         <div>
           <label className="block text-sm font-medium mb-2">
@@ -235,7 +240,7 @@ export function BusinessRequestForm({
               ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك"
               : "Click on the map to mark your exact business location"}
           </p>
-          <div className="rounded-lg overflow-hidden border border-(--border)">
+          <div className="rounded-lg overflow-hidden ">
             <OsmLocationPicker
               value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
               onChange={(next) => {
@@ -268,7 +273,7 @@ export function BusinessRequestForm({
           </p>
           <div className="space-y-3">
             {coverPreview.length > 0 && (
-              <div className="relative rounded-lg overflow-hidden border border-(--border)">
+              <div className="relative rounded-lg overflow-hidden ">
                 <Image
                   src={coverPreview[0]}
                   alt="Cover preview"
@@ -286,7 +291,7 @@ export function BusinessRequestForm({
               </div>
             )}
             {coverPreview.length === 0 && (
-              <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-(--border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+              <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
                 <span className="text-sm text-(--muted-foreground)">
                   {ar ? "اختر صورة الغلاف" : "Choose cover image"}
                 </span>
@@ -317,7 +322,7 @@ export function BusinessRequestForm({
                   alt="Logo preview"
                   width={200}
                   height={200}
-                  className="w-32 h-32 object-cover rounded-lg border border-(--border)"
+                  className="w-32 h-32 object-cover rounded-lg "
                 />
                 <button
                   type="button"
@@ -329,7 +334,7 @@ export function BusinessRequestForm({
               </div>
             )}
             {logoPreview.length === 0 && (
-              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-(--border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
                 <span className="text-xs text-(--muted-foreground) text-center px-2">
                   {ar ? "اختر شعار" : "Choose logo"}
                 </span>
@@ -354,7 +359,7 @@ export function BusinessRequestForm({
           </p>
           <div className="space-y-3">
             {bannerPreview.length > 0 && (
-              <div className="relative rounded-lg overflow-hidden border border-(--border)">
+              <div className="relative rounded-lg overflow-hidden ">
                 <Image
                   src={bannerPreview[0]}
                   alt="Banner preview"
@@ -372,7 +377,7 @@ export function BusinessRequestForm({
               </div>
             )}
             {bannerPreview.length === 0 && (
-              <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-(--border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+              <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
                 <span className="text-sm text-(--muted-foreground)">
                   {ar ? "اختر صورة البانر" : "Choose banner image"}
                 </span>
@@ -399,7 +404,7 @@ export function BusinessRequestForm({
             {galleryPreview.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {galleryPreview.map((url, index) => (
-                  <div key={index} className="relative rounded-lg overflow-hidden border border-(--border)">
+                  <div key={index} className="relative rounded-lg overflow-hidden ">
                     <Image
                       src={url}
                       alt={`Gallery ${index + 1}`}
@@ -418,7 +423,7 @@ export function BusinessRequestForm({
                 ))}
               </div>
             )}
-            <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-(--border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+            <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
               <span className="text-sm text-(--muted-foreground)">
                 {ar ? "اختر صور المعرض" : "Choose gallery images"}
               </span>

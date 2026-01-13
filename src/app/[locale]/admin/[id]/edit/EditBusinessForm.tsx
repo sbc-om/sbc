@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { Category, Business } from "@/lib/db/types";
@@ -14,6 +15,11 @@ import { Textarea } from "@/components/ui/Textarea";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { UserSelect } from "@/components/ui/UserSelect";
+
+const OsmLocationPicker = dynamic(
+  () => import("@/components/maps/OsmLocationPicker").then((mod) => mod.OsmLocationPicker),
+  { ssr: false }
+);
 
 function Field({
   label,
@@ -95,7 +101,7 @@ function MediaUploadBox({
           onChange={(e) => onChange(e.target.files)}
           className="sr-only"
         />
-        <div className="flex items-center justify-center h-32 rounded-xl border-2 border-dashed border-(--surface-border) bg-(--chip-bg) transition hover:border-(--accent) hover:bg-(--surface)">
+        <div className="flex items-center justify-center h-32 rounded-xl border-2 border-dashed border-(--surface-border) bg-(--chip-bg) transition hover:border-accent hover:bg-(--surface)">
           <div className="text-center">
             <svg className="mx-auto h-8 w-8 text-(--muted-foreground)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -156,6 +162,13 @@ export function EditBusinessForm({
   const [selectedCategory, setSelectedCategory] = useState(business.categoryId || "");
   const [selectedOwner, setSelectedOwner] = useState(business.ownerId || "");
   
+  // Location state
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+    business.latitude && business.longitude
+      ? { lat: business.latitude, lng: business.longitude }
+      : null
+  );
+  
   // Media states
   const [coverPreview, setCoverPreview] = useState<string[]>(
     business.media?.cover ? [business.media.cover] : []
@@ -208,6 +221,10 @@ export function EditBusinessForm({
   return (
     <div className="mt-8">
       <form action={updateBusinessAction.bind(null, locale, business.id)} className="grid gap-8">
+        {/* Hidden inputs for state-controlled values */}
+        <input type="hidden" name="categoryId" value={selectedCategory} />
+        <input type="hidden" name="ownerId" value={selectedOwner} />
+        
         {/* Basic Info */}
         <div className="sbc-card p-6">
           <h2 className="text-lg font-semibold text-foreground mb-1">
@@ -285,23 +302,23 @@ export function EditBusinessForm({
         {/* Contact */}
         <div className="sbc-card p-6">
           <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "الاتصال" : "Contact"}
+            {ar ? "معلومات الاتصال والموقع" : "Contact & Location"}
           </h2>
           <p className="text-sm text-(--muted-foreground) mb-6">
-            {ar ? "معلومات التواصل" : "Contact information"}
+            {ar ? "ساعد العملاء في العثور عليك والتواصل معك" : "Help customers find and reach you"}
           </p>
           
           <div className="grid gap-6">
             <div className="grid gap-6 sm:grid-cols-2">
-              <Field label={ar ? "المدينة" : "City"} name="city" defaultValue={business.city} />
-              <Field label={ar ? "الهاتف" : "Phone"} name="phone" defaultValue={business.phone} />
+              <Field label={ar ? "المدينة" : "City"} name="city" placeholder="Muscat" defaultValue={business.city} />
+              <Field label={ar ? "الهاتف" : "Phone"} name="phone" placeholder="+968 9123 4567" defaultValue={business.phone} />
             </div>
 
-            <Field label={ar ? "العنوان" : "Address"} name="address" defaultValue={business.address} />
+            <Field label={ar ? "العنوان" : "Address"} name="address" placeholder="Al Qurum Street, Building 123" defaultValue={business.address} />
 
             <div className="grid gap-6 sm:grid-cols-2">
-              <Field label={ar ? "الموقع" : "Website"} name="website" defaultValue={business.website} />
-              <Field label={emailLabel} name="email" defaultValue={business.email} />
+              <Field label={ar ? "الموقع الإلكتروني" : "Website"} name="website" placeholder="https://example.com" defaultValue={business.website} />
+              <Field label={emailLabel} name="email" placeholder="info@example.com" defaultValue={business.email} />
             </div>
 
             <label className="group grid gap-2">
@@ -320,25 +337,68 @@ export function EditBusinessForm({
               />
               <p className="text-xs text-(--muted-foreground)">
                 {ar
-                  ? "اتركه فارغاً لإزالة ربط المالك."
-                  : "Leave empty to clear the owner."}
+                  ? "اختياري: اربط هذا النشاط بمستخدم موجود."
+                  : "Optional: link this business to an existing user."}
               </p>
             </label>
+          </div>
+        </div>
+
+        {/* Location Section */}
+        <div className="sbc-card p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-1">
+            {ar ? "الموقع الجغرافي" : "Geographic Location"}
+          </h2>
+          <p className="text-sm text-(--muted-foreground) mb-6">
+            {ar ? "حدد الموقع الدقيق للنشاط على الخريطة" : "Mark the exact business location on the map"}
+          </p>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                {ar ? "حدد موقعك على الخريطة" : "Select your location on the map"}
+              </label>
+              <p className="text-sm text-(--muted-foreground) mb-3">
+                {ar 
+                  ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك التجاري"
+                  : "Click on the map to mark your exact business location"}
+              </p>
+              <div className="rounded-lg overflow-hidden ">
+                <OsmLocationPicker
+                  value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
+                  onChange={(next) => {
+                    setLocation(next ? { lat: next.lat, lng: next.lng } : null);
+                  }}
+                  locale={locale}
+                  hideRadius
+                />
+              </div>
+              {location && (
+                <>
+                  <p className="mt-2 text-xs text-(--muted-foreground)">
+                    {ar ? "الموقع المحدد:" : "Selected location:"} {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                  </p>
+                  <input type="hidden" name="latitude" value={String(location.lat)} />
+                  <input type="hidden" name="longitude" value={String(location.lng)} />
+                </>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Tags */}
         <div className="sbc-card p-6">
           <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "الوسوم" : "Tags"}
+            {ar ? "معلومات إضافية" : "Additional Details"}
           </h2>
           <p className="text-sm text-(--muted-foreground) mb-6">
-            {ar ? "وسوم البحث" : "Search tags"}
+            {ar ? "أضف وسوماً لمساعدة الزوار في العثور على نشاطك" : "Add tags to help visitors discover your business"}
           </p>
           
           <Field
             label={ar ? "الوسوم (مفصولة بفواصل)" : "Tags (comma-separated)"}
             name="tags"
+            placeholder={ar ? "قهوة، واي فاي، إفطار" : "coffee, wifi, breakfast"}
             defaultValue={business.tags?.join(", ")}
           />
         </div>
@@ -346,16 +406,16 @@ export function EditBusinessForm({
         {/* Media */}
         <div className="sbc-card p-6">
           <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "الصور" : "Images"}
+            {ar ? "الصور والوسائط" : "Images & Media"}
           </h2>
           <p className="text-sm text-(--muted-foreground) mb-6">
-            {ar ? "قم بتحديث الصور" : "Update images"}
+            {ar ? "ارفع صور نشاطك التجاري لجعله أكثر جاذبية" : "Upload images to make your business more appealing"}
           </p>
           
           <div className="grid gap-6">
             <MediaUploadBox
-              label={ar ? "الصورة الرئيسية" : "Cover"}
-              description={ar ? "الصورة الأساسية" : "Main image"}
+              label={ar ? "الصورة الرئيسية" : "Cover Image"}
+              description={ar ? "الصورة الأساسية التي تمثل نشاطك" : "Main image representing your business"}
               accept="image/*"
               onChange={(files) => handleFileSelect(files, setCoverPreview, false)}
               previewUrls={coverPreview}
@@ -365,7 +425,7 @@ export function EditBusinessForm({
             <div className="grid gap-6 sm:grid-cols-2">
               <MediaUploadBox
                 label={ar ? "الشعار" : "Logo"}
-                description={ar ? "شعار النشاط" : "Logo"}
+                description={ar ? "شعار نشاطك التجاري" : "Your business logo"}
                 accept="image/*"
                 onChange={(files) => handleFileSelect(files, setLogoPreview, false)}
                 previewUrls={logoPreview}
@@ -374,7 +434,7 @@ export function EditBusinessForm({
 
               <MediaUploadBox
                 label={ar ? "البنر" : "Banner"}
-                description={ar ? "صورة البنر" : "Banner"}
+                description={ar ? "صورة البنر العريضة" : "Wide banner image"}
                 accept="image/*"
                 onChange={(files) => handleFileSelect(files, setBannerPreview, false)}
                 previewUrls={bannerPreview}
@@ -383,8 +443,8 @@ export function EditBusinessForm({
             </div>
 
             <MediaUploadBox
-              label={ar ? "المعرض" : "Gallery"}
-              description={ar ? "صور إضافية" : "Additional images"}
+              label={ar ? "معرض الصور" : "Gallery"}
+              description={ar ? "صور إضافية لنشاطك (يمكنك اختيار عدة صور)" : "Additional images (you can select multiple)"}
               accept="image/*"
               multiple
               onChange={(files) => handleFileSelect(files, setGalleryPreview, true)}
@@ -394,11 +454,11 @@ export function EditBusinessForm({
           </div>
         </div>
 
-        {/* Actions */}
+        {/* Submit Button */}
         <div className="flex items-center justify-between border-t border-(--surface-border) pt-6">
           <ConfirmDialog
             title={ar ? "تأكيد الحذف" : "Confirm Delete"}
-            message={ar ? "هل تريد حذف هذا النشاط؟" : "Delete this business?"}
+            message={ar ? "هل تريد حذف هذا النشاط؟ لا يمكن التراجع عن هذا الإجراء." : "Delete this business? This action cannot be undone."}
             confirmText={ar ? "حذف" : "Delete"}
             cancelText={ar ? "إلغاء" : "Cancel"}
             onConfirm={handleDelete}
@@ -406,9 +466,20 @@ export function EditBusinessForm({
             trigger={
               <Button variant="destructive" size="sm" disabled={deleting} type="button">
                 {deleting ? (
-                  <>{ar ? "جارٍ الحذف..." : "Deleting..."}</>
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    {ar ? "جارٍ الحذف..." : "Deleting..."}
+                  </>
                 ) : (
-                  <>{ar ? "حذف" : "Delete"}</>
+                  <>
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    {ar ? "حذف النشاط" : "Delete Business"}
+                  </>
                 )}
               </Button>
             }
@@ -419,7 +490,12 @@ export function EditBusinessForm({
               {ar ? "إلغاء" : "Cancel"}
             </Link>
             <Button type="submit" className="min-w-45">
-              {ar ? "حفظ" : "Save"}
+              <>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                {ar ? "حفظ ونشر" : "Save & Publish"}
+              </>
             </Button>
           </div>
         </div>

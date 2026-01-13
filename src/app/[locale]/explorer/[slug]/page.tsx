@@ -9,7 +9,7 @@ import { getBusinessBySlug } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
-import { OsmLocationPicker } from "@/components/maps/OsmLocationPickerClient";
+import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
 
 export default async function ExplorerBusinessDetailPage({
   params,
@@ -183,6 +183,18 @@ export default async function ExplorerBusinessDetailPage({
               <div className="mt-3 text-sm leading-7 text-foreground">{description}</div>
             </section>
           ) : null}
+
+          {business.latitude && business.longitude ? (
+            <section className={description ? "mt-6" : ""}>
+                <div className="mt-4 rounded-lg overflow-hidden">
+                  <StaticLocationMap
+                    latitude={business.latitude}
+                    longitude={business.longitude}
+                    locale={locale}
+                  />
+                </div>
+            </section>
+          ) : null}
         </div>
 
         <aside className="space-y-6">
@@ -213,25 +225,6 @@ export default async function ExplorerBusinessDetailPage({
               ) : null}
             </div>
           </div>
-
-          {business.latitude && business.longitude ? (
-            <div className="sbc-card rounded-2xl p-6">
-              <h3 className="text-lg font-semibold tracking-tight">
-                {locale === "ar" ? "الموقع على الخريطة" : "Location on Map"}
-              </h3>
-              <div className="mt-4 rounded-lg overflow-hidden border border-(--border)">
-                <OsmLocationPicker
-                  value={{ lat: business.latitude, lng: business.longitude, radiusMeters: 250 }}
-                  onChange={() => {}}
-                  locale={locale}
-                  disabled
-                />
-              </div>
-              <p className="mt-3 text-xs text-(--muted-foreground)">
-                {locale === "ar" ? "الإحداثيات:" : "Coordinates:"} {business.latitude.toFixed(6)}, {business.longitude.toFixed(6)}
-              </p>
-            </div>
-          ) : null}
         </aside>
       </div>
     </AppPage>

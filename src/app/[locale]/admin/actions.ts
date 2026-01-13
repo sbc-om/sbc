@@ -65,6 +65,12 @@ export async function createBusinessDraftAction(
 
     const { ownerId } = resolveOwnerFromFormData(formData);
 
+    // Parse location coordinates
+    const latitudeRaw = String(formData.get("latitude") || "").trim();
+    const longitudeRaw = String(formData.get("longitude") || "").trim();
+    const latitude = latitudeRaw ? parseFloat(latitudeRaw) : undefined;
+    const longitude = longitudeRaw ? parseFloat(longitudeRaw) : undefined;
+
     const business = createBusiness({
       slug: String(formData.get("slug") || ""),
       ownerId,
@@ -79,6 +85,8 @@ export async function createBusinessDraftAction(
       phone: String(formData.get("phone") || "") || undefined,
       website: String(formData.get("website") || "") || undefined,
       email: String(formData.get("email") || "") || undefined,
+      latitude,
+      longitude,
       tags,
     });
 
@@ -109,6 +117,12 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
 
   const { ownerId } = resolveOwnerFromFormData(formData);
 
+  // Parse location coordinates
+  const latitudeRaw = String(formData.get("latitude") || "").trim();
+  const longitudeRaw = String(formData.get("longitude") || "").trim();
+  const latitude = latitudeRaw ? parseFloat(latitudeRaw) : undefined;
+  const longitude = longitudeRaw ? parseFloat(longitudeRaw) : undefined;
+
   const business = createBusiness({
     slug: String(formData.get("slug") || ""),
     ownerId,
@@ -123,6 +137,8 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
     phone: String(formData.get("phone") || "") || undefined,
     website: String(formData.get("website") || "") || undefined,
     email: String(formData.get("email") || "") || undefined,
+    latitude,
+    longitude,
     tags,
   });
 
@@ -148,6 +164,12 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
 
   const { ownerId } = resolveOwnerFromFormData(formData);
 
+  // Parse location coordinates
+  const latitudeRaw = String(formData.get("latitude") || "").trim();
+  const longitudeRaw = String(formData.get("longitude") || "").trim();
+  const latitude = latitudeRaw ? parseFloat(latitudeRaw) : undefined;
+  const longitude = longitudeRaw ? parseFloat(longitudeRaw) : undefined;
+
   const next = updateBusiness(id, {
     slug: String(formData.get("slug") || "") || undefined,
     ownerId,
@@ -162,6 +184,8 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
     phone: String(formData.get("phone") || "") || undefined,
     website: String(formData.get("website") || "") || undefined,
     email: String(formData.get("email") || "") || undefined,
+    latitude,
+    longitude,
     tags,
   });
 
