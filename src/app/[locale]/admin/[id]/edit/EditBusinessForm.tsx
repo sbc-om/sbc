@@ -161,6 +161,7 @@ export function EditBusinessForm({
   const [deleting, setDeleting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(business.categoryId || "");
   const [selectedOwner, setSelectedOwner] = useState(business.ownerId || "");
+  const [avatarMode, setAvatarMode] = useState<"icon" | "logo">(business.avatarMode ?? "icon");
   
   // Location state
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
@@ -224,6 +225,7 @@ export function EditBusinessForm({
         {/* Hidden inputs for state-controlled values */}
         <input type="hidden" name="categoryId" value={selectedCategory} />
         <input type="hidden" name="ownerId" value={selectedOwner} />
+        <input type="hidden" name="avatarMode" value={avatarMode} />
         
         {/* Basic Info */}
         <div className="sbc-card p-6">
@@ -411,6 +413,39 @@ export function EditBusinessForm({
           <p className="text-sm text-(--muted-foreground) mb-6">
             {ar ? "ارفع صور نشاطك التجاري لجعله أكثر جاذبية" : "Upload images to make your business more appealing"}
           </p>
+
+          <div className="mb-6 rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4">
+            <div className="text-sm font-semibold text-foreground">
+              {ar ? "صورة الملف / الأيقونة" : "Profile image / icon"}
+            </div>
+            <p className="mt-1 text-xs text-(--muted-foreground)">
+              {ar
+                ? "الافتراضي: أيقونة التصنيف. اختر الشعار إذا تريد عرض صورة (ويتطلب رفع شعار)."
+                : "Default: category icon. Choose logo if you want an image (requires uploading a logo)."}
+            </p>
+
+            <div className="mt-3 flex flex-wrap gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="__avatarMode"
+                  checked={avatarMode === "icon"}
+                  onChange={() => setAvatarMode("icon")}
+                />
+                {ar ? "استخدم أيقونة التصنيف" : "Use category icon"}
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  name="__avatarMode"
+                  checked={avatarMode === "logo"}
+                  onChange={() => setAvatarMode("logo")}
+                  disabled={logoPreview.length === 0}
+                />
+                {ar ? "استخدم الشعار (صورة)" : "Use logo (image)"}
+              </label>
+            </div>
+          </div>
           
           <div className="grid gap-6">
             <MediaUploadBox

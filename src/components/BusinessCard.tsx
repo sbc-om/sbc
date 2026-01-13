@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getCategoryById } from "@/lib/db/categories";
+import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
 
 interface BusinessCardProps {
   business: {
@@ -11,6 +12,7 @@ interface BusinessCardProps {
     city?: string;
     category?: string;
     categoryId?: string;
+    avatarMode?: "icon" | "logo";
     media?: {
       logo?: string;
       cover?: string;
@@ -40,6 +42,9 @@ export function BusinessCard({ business, locale }: BusinessCardProps) {
 
   const coverImage = business.media?.cover || business.media?.banner;
   const logo = business.media?.logo;
+  const avatarMode = business.avatarMode ?? "icon";
+  const showLogo = avatarMode === "logo" && !!logo;
+  const CategoryIcon = getCategoryIconComponent(category?.iconId);
 
   return (
     <Link
@@ -78,27 +83,35 @@ export function BusinessCard({ business, locale }: BusinessCardProps) {
 
         {/* Content */}
         <div className="relative p-5">
-          {/* Logo */}
-          {logo && (
-            <div
-              className="absolute -top-8 left-5 w-16 h-16 rounded-xl overflow-hidden shadow-lg"
-              style={{
-                background: "var(--background)",
-                border: "2px solid",
-                borderColor: "var(--surface-border)",
-              }}
-            >
+          {/* Avatar (default category icon, or logo if selected) */}
+          <div
+            className="absolute -top-8 left-5 w-16 h-16 rounded-xl overflow-hidden shadow-lg flex items-center justify-center"
+            style={{
+              background: "var(--background)",
+              border: "2px solid",
+              borderColor: "var(--surface-border)",
+            }}
+          >
+            {showLogo ? (
               <Image
-                src={logo}
+                src={logo!}
                 alt={`${name} logo`}
                 fill
                 className="object-cover"
                 sizes="64px"
               />
-            </div>
-          )}
+            ) : category ? (
+              <div className="h-10 w-10 rounded-lg bg-(--chip-bg) flex items-center justify-center">
+                <CategoryIcon className="h-6 w-6 text-(--muted-foreground)" />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold bg-linear-to-br from-accent to-accent-2 bg-clip-text text-transparent opacity-80">
+                {name.charAt(0)}
+              </div>
+            )}
+          </div>
 
-          <div className={logo ? "mt-10" : ""}>
+          <div className="mt-10">
             {/* Title */}
             <h3 className="text-xl font-bold text-foreground mb-2 line-clamp-1 group-hover:text-accent transition-colors">
               {name}

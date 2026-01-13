@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { requireAdmin } from "@/lib/auth/requireUser";
-import { createCategory, deleteCategory, updateCategory } from "@/lib/db/categories";
+import { createCategory, deleteCategory, updateCategory, updateCategoryImage } from "@/lib/db/categories";
+import { storeUserUpload, validateUserImageUpload } from "@/lib/uploads/storage";
 
 export async function createCategoryAction(locale: Locale, formData: FormData) {
   await requireAdmin(locale);
@@ -16,7 +17,19 @@ export async function createCategoryAction(locale: Locale, formData: FormData) {
       en: String(formData.get("name_en") || ""),
       ar: String(formData.get("name_ar") || ""),
     },
+    iconId: String(formData.get("iconId") || "") || undefined,
   });
+
+  const file = formData.get("image");
+  if (file && file instanceof File && file.size > 0) {
+    validateUserImageUpload({ kind: "avatar", file });
+    const stored = await storeUserUpload({
+      userId: `categories/${category.id}`,
+      kind: "avatar",
+      file,
+    });
+    updateCategoryImage(category.id, stored.url);
+  }
 
   revalidatePath(`/${locale}/admin/categories`);
   redirect(`/${locale}/admin/categories/${category.id}/edit`);
@@ -31,6 +44,7 @@ export async function updateCategoryAction(locale: Locale, id: string, formData:
       en: String(formData.get("name_en") || ""),
       ar: String(formData.get("name_ar") || ""),
     },
+    iconId: String(formData.get("iconId") || "") || undefined,
   });
 
   revalidatePath(`/${locale}/admin/categories`);

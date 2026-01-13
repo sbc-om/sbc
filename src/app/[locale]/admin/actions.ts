@@ -71,6 +71,9 @@ export async function createBusinessDraftAction(
     const latitude = latitudeRaw ? parseFloat(latitudeRaw) : undefined;
     const longitude = longitudeRaw ? parseFloat(longitudeRaw) : undefined;
 
+    const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
+    const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
+
     const business = createBusiness({
       slug: String(formData.get("slug") || ""),
       ownerId,
@@ -88,6 +91,7 @@ export async function createBusinessDraftAction(
       latitude,
       longitude,
       tags,
+      avatarMode,
     });
 
     revalidatePath(`/${locale}/businesses`);
@@ -123,6 +127,9 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
   const latitude = latitudeRaw ? parseFloat(latitudeRaw) : undefined;
   const longitude = longitudeRaw ? parseFloat(longitudeRaw) : undefined;
 
+  const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
+  const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
+
   const business = createBusiness({
     slug: String(formData.get("slug") || ""),
     ownerId,
@@ -140,6 +147,7 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
     latitude,
     longitude,
     tags,
+    avatarMode,
   });
 
   revalidatePath(`/${locale}/businesses`);
@@ -170,6 +178,9 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   const latitude = latitudeRaw ? parseFloat(latitudeRaw) : undefined;
   const longitude = longitudeRaw ? parseFloat(longitudeRaw) : undefined;
 
+  const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
+  const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
+
   const next = updateBusiness(id, {
     slug: String(formData.get("slug") || "") || undefined,
     ownerId,
@@ -187,6 +198,7 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
     latitude,
     longitude,
     tags,
+    avatarMode,
   });
 
   revalidatePath(`/${locale}/businesses`);

@@ -120,6 +120,7 @@ export function BusinessMediaManager({
       video: ar ? "الفيديو" : "Videos",
       upload: ar ? "رفع" : "Upload",
       remove: ar ? "حذف" : "Remove",
+      open: ar ? "عرض" : "Open",
       hintImg: ar ? "PNG/JPG/WebP/GIF حتى 10MB" : "PNG/JPG/WebP/GIF up to 10MB",
       hintVid: ar ? "MP4/WebM/MOV حتى 200MB" : "MP4/WebM/MOV up to 200MB",
     };
@@ -172,7 +173,7 @@ export function BusinessMediaManager({
                 rel="noreferrer"
                 className="truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
               >
-                {media.cover}
+                {t.open}
               </a>
             </div>
           ) : (
@@ -226,7 +227,7 @@ export function BusinessMediaManager({
                 rel="noreferrer"
                 className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
               >
-                {media.logo}
+                {t.open}
               </a>
             </div>
           ) : (
@@ -282,7 +283,7 @@ export function BusinessMediaManager({
                 rel="noreferrer"
                 className="truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
               >
-                {media.banner}
+                {t.open}
               </a>
             </div>
           ) : (
@@ -378,7 +379,7 @@ export function BusinessMediaManager({
                       rel="noreferrer"
                       className="truncate text-sm font-medium text-foreground underline-offset-4 hover:underline"
                     >
-                      {url}
+                      {t.open}
                     </a>
                     <Button
                       variant="secondary"

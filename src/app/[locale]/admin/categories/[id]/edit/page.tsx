@@ -7,6 +7,8 @@ import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { updateCategoryAction } from "@/app/[locale]/admin/categories/actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { CategoryImageManager } from "@/components/admin/CategoryImageManager";
+import { CategoryIconSelect } from "@/components/ui/CategoryIconSelect";
 
 export const runtime = "nodejs";
 
@@ -49,17 +51,40 @@ export default async function AdminEditCategoryPage({
         {locale === "ar" ? "قم بتحديث البيانات ثم احفظ." : "Update fields and save."}
       </p>
 
-      <form action={updateCategoryAction.bind(null, locale as Locale, id)} className="mt-8 grid gap-4">
+      <form
+        id="category-edit-form"
+        action={updateCategoryAction.bind(null, locale as Locale, id)}
+        className="mt-8 grid gap-4"
+      >
         <Field label="Slug" name="slug" defaultValue={category.slug} />
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Name (EN)" name="name_en" defaultValue={category.name.en} />
           <Field label="Name (AR)" name="name_ar" defaultValue={category.name.ar} />
         </div>
 
-        <Button type="submit" className="mt-2">
+        <div className="grid gap-2">
+          <span className="text-sm font-medium text-(--muted-foreground)">
+            {locale === "ar" ? "أيقونة التصنيف" : "Category icon"}
+          </span>
+          <CategoryIconSelect
+            locale={locale as "en" | "ar"}
+            name="iconId"
+            defaultValue={category.iconId}
+          />
+        </div>
+      </form>
+
+      <CategoryImageManager
+        categoryId={id}
+        locale={locale as "en" | "ar"}
+        initialImage={category.image}
+      />
+
+      <div className="mt-6">
+        <Button type="submit" form="category-edit-form" className="w-full sm:w-auto">
           {locale === "ar" ? "حفظ" : "Save"}
         </Button>
-      </form>
+      </div>
     </AppPage>
   );
 }

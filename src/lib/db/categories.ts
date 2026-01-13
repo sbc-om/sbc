@@ -18,6 +18,8 @@ const localizedStringSchema = z.object({
 export const categoryInputSchema = z.object({
   slug: slugSchema,
   name: localizedStringSchema,
+  iconId: z.string().trim().min(1).optional(),
+  parentId: z.string().trim().min(1).optional(),
 });
 
 export type CategoryInput = z.infer<typeof categoryInputSchema>;
@@ -79,6 +81,8 @@ export function createCategory(input: CategoryInput): Category {
     id: nanoid(),
     slug: data.slug,
     name: data.name as LocalizedString,
+    iconId: data.iconId,
+    parentId: data.parentId,
     createdAt: now,
     updatedAt: now,
   };
@@ -105,6 +109,8 @@ export function updateCategory(id: string, patch: Partial<CategoryInput>): Categ
     ...patch,
     slug: nextSlug,
     name: (patch.name ?? current.name) as LocalizedString,
+    iconId: patch.iconId ?? current.iconId,
+    parentId: patch.parentId ?? current.parentId,
     updatedAt: new Date().toISOString(),
   };
 
@@ -131,4 +137,19 @@ export function deleteCategory(id: string) {
 
   categories.remove(id);
   categorySlugs.remove(current.slug);
+}
+
+export function updateCategoryImage(id: string, image: string | undefined): Category {
+  const { categories } = getLmdb();
+  const current = categories.get(id) as Category | undefined;
+  if (!current) throw new Error("NOT_FOUND");
+
+  const next: Category = {
+    ...current,
+    image: image || undefined,
+    updatedAt: new Date().toISOString(),
+  };
+
+  categories.put(id, next);
+  return next;
 }

@@ -32,6 +32,7 @@ export const businessInputSchema = z.object({
   tags: z.array(z.string().trim().min(1)).optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
+  avatarMode: z.enum(["icon", "logo"]).optional(),
 });
 
 export type BusinessInput = z.infer<typeof businessInputSchema>;
@@ -131,6 +132,7 @@ export function createBusiness(input: BusinessInput): Business {
     tags: data.tags,
     latitude: data.latitude,
     longitude: data.longitude,
+    avatarMode: data.avatarMode ?? "icon",
     createdAt: now,
     updatedAt: now,
   };
@@ -156,6 +158,7 @@ export function updateBusiness(id: string, patch: Partial<BusinessInput>): Busin
     ...current,
     ...patch,
     slug: nextSlug,
+    avatarMode: patch.avatarMode ?? current.avatarMode ?? "icon",
     updatedAt: new Date().toISOString(),
   };
 

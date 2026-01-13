@@ -28,22 +28,25 @@ function requireBusinessScopedUrl(businessId: string, url: string) {
 
 async function requireAdminApi() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "admin") {
-    return null;
-  }
-  return user;
+  return user ?? null;
+}
+
+function canEditBusiness(user: Awaited<ReturnType<typeof requireAdminApi>>, business: ReturnType<typeof getBusinessById>): boolean {
+  if (!user || !business) return false;
+  if (user.role === "admin") return true;
+  return !!business.ownerId && business.ownerId === user.id;
 }
 
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await requireAdminApi();
-  if (!user) return new Response("Unauthorized", { status: 401 });
-
   const { id } = await params;
   const business = getBusinessById(id);
   if (!business) return new Response("Not found", { status: 404 });
+
+  const user = await requireAdminApi();
+  if (!canEditBusiness(user, business)) return new Response("Unauthorized", { status: 401 });
 
   return Response.json({ ok: true, media: business.media ?? {} });
 }
@@ -52,10 +55,13 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await requireAdminApi();
-  if (!user) return new Response("Unauthorized", { status: 401 });
-
   const { id } = await params;
+
+  const business = getBusinessById(id);
+  if (!business) return new Response("Not found", { status: 404 });
+
+  const user = await requireAdminApi();
+  if (!canEditBusiness(user, business)) return new Response("Unauthorized", { status: 401 });
 
   try {
     const formData = await req.formData();
@@ -106,10 +112,13 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const user = await requireAdminApi();
-  if (!user) return new Response("Unauthorized", { status: 401 });
-
   const { id } = await params;
+
+  const business = getBusinessById(id);
+  if (!business) return new Response("Not found", { status: 404 });
+
+  const user = await requireAdminApi();
+  if (!canEditBusiness(user, business)) return new Response("Unauthorized", { status: 401 });
 
   try {
     const body = (await req.json()) as { kind?: BusinessMediaKind; url?: string };

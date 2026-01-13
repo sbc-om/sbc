@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { AppPage } from "@/components/AppPage";
@@ -7,6 +8,7 @@ import { listCategories } from "@/lib/db/categories";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { buttonVariants, Button } from "@/components/ui/Button";
 import { deleteCategoryAction } from "@/app/[locale]/admin/categories/actions";
+import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
 
 export const runtime = "nodejs";
 
@@ -65,16 +67,36 @@ export default async function AdminCategoriesPage({
         {cats.map((c) => (
           <div
             key={c.id}
-            className="sbc-card rounded-2xl p-5 sm:flex sm:flex-row sm:items-center sm:justify-between"
+            className="sbc-card rounded-2xl p-5 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4"
           >
-            <div className="min-w-0">
-              <div className="truncate text-sm font-semibold">
-                {locale === "ar" ? c.name.ar : c.name.en}
-              </div>
-              <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-(--muted-foreground)">
-                <span className="font-mono">{c.slug}</span>
-                <span className="truncate">EN: {c.name.en}</span>
-                <span className="truncate">AR: {c.name.ar}</span>
+            <div className="flex items-center gap-4 min-w-0">
+              {c.image ? (
+                <div className="relative h-12 w-12 shrink-0 rounded-lg overflow-hidden border border-(--surface-border)">
+                  <Image
+                    src={c.image}
+                    alt={locale === "ar" ? c.name.ar : c.name.en}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="h-12 w-12 shrink-0 rounded-lg border border-(--surface-border) bg-(--chip-bg) flex items-center justify-center">
+                  {(() => {
+                    const Icon = getCategoryIconComponent(c.iconId);
+                    return <Icon className="h-5 w-5 text-(--muted-foreground)" />;
+                  })()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold">
+                  {locale === "ar" ? c.name.ar : c.name.en}
+                </div>
+                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-(--muted-foreground)">
+                  <span className="font-mono">{c.slug}</span>
+                  <span className="truncate">EN: {c.name.en}</span>
+                  <span className="truncate">AR: {c.name.ar}</span>
+                </div>
               </div>
             </div>
 

@@ -9,6 +9,7 @@ import { getCategoryById } from "@/lib/db/categories";
 import { buttonVariants } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
+import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
 
 export default async function BusinessDetailPage({
   params,
@@ -29,6 +30,9 @@ export default async function BusinessDetailPage({
   const logo = business.media?.logo;
   const category = business.categoryId ? getCategoryById(business.categoryId) : null;
   const categoryLabel = category ? (locale === "ar" ? category.name.ar : category.name.en) : business.category;
+  const avatarMode = business.avatarMode ?? "icon";
+  const showLogo = avatarMode === "logo" && !!logo;
+  const CategoryIcon = getCategoryIconComponent(category?.iconId);
 
   const name = locale === "ar" ? business.name.ar : business.name.en;
   const description = business.description
@@ -98,24 +102,32 @@ export default async function BusinessDetailPage({
             <div className="flex items-end justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-3">
-                  {logo ? (
-                    <div
-                      className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl shadow-lg"
-                      style={{
-                        background: "var(--background)",
-                        border: "2px solid",
-                        borderColor: "rgba(255,255,255,0.25)",
-                      }}
-                    >
+                  <div
+                    className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl shadow-lg flex items-center justify-center"
+                    style={{
+                      background: "var(--background)",
+                      border: "2px solid",
+                      borderColor: "rgba(255,255,255,0.25)",
+                    }}
+                  >
+                    {showLogo ? (
                       <Image
-                        src={logo}
+                        src={logo!}
                         alt={locale === "ar" ? "شعار" : "Logo"}
                         fill
                         sizes="56px"
                         className="object-cover"
                       />
-                    </div>
-                  ) : null}
+                    ) : category ? (
+                      <div className="h-10 w-10 rounded-xl bg-(--chip-bg) flex items-center justify-center">
+                        <CategoryIcon className="h-6 w-6 text-(--muted-foreground)" />
+                      </div>
+                    ) : (
+                      <div className="text-xl font-bold bg-linear-to-br from-accent to-accent-2 bg-clip-text text-transparent opacity-80">
+                        {name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="min-w-0">
                     <div className="truncate text-xl font-semibold text-white drop-shadow sm:text-2xl">

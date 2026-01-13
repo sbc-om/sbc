@@ -11,6 +11,11 @@ export type Category = {
   id: string;
   slug: string;
   name: LocalizedString;
+  image?: string;
+  /** Category icon id (used as default visual when no image is provided). */
+  iconId?: string;
+  /** Optional hierarchy (for sub-categories). */
+  parentId?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -41,6 +46,8 @@ export type Business = {
     gallery?: string[];
     videos?: string[];
   };
+  /** Which avatar to display in listings/profile: category icon (default) or uploaded logo. */
+  avatarMode?: "icon" | "logo";
   createdAt: string;
   updatedAt: string;
 };

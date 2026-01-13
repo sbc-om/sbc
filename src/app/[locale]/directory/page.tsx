@@ -136,6 +136,12 @@ export default async function DirectoryManagePage({
                         >
                           {ar ? "عرض" : "View"}
                         </Link>
+                        <Link
+                          href={`/${locale}/directory/businesses/${b.id}/edit`}
+                          className={buttonVariants({ variant: "secondary", size: "sm" })}
+                        >
+                          {ar ? "إدارة" : "Manage"}
+                        </Link>
                       </div>
                     </div>
                   </div>
