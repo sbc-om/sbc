@@ -74,8 +74,8 @@ export function CategoryIconSelect({
         className="h-11 w-full rounded-xl border border-(--surface-border) bg-(--surface) px-3 text-sm text-foreground shadow-(--shadow) outline-none backdrop-blur transition focus:border-(--accent) flex items-center justify-between cursor-pointer hover:bg-(--chip-bg) gap-2"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <div className="h-6 w-6 shrink-0 rounded-md bg-(--chip-bg) flex items-center justify-center">
-            <Icon className="h-4 w-4 text-(--muted-foreground)" />
+          <div className="h-7 w-7 shrink-0 rounded-md bg-(--chip-bg) flex items-center justify-center">
+            <Icon className="h-5 w-5 text-(--muted-foreground)" />
           </div>
           <span className="truncate">{label}</span>
         </div>
@@ -122,11 +122,11 @@ export function CategoryIconSelect({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className={cn(
-                        "h-6 w-6 shrink-0 rounded-md flex items-center justify-center",
-                        isSelected ? "bg-white/15" : "bg-(--chip-bg)",
-                      )}>
-                        <OptIcon className={cn("h-4 w-4", isSelected ? "text-(--accent-foreground)" : "text-(--muted-foreground)")} />
+                        <div className={cn(
+                          "h-7 w-7 shrink-0 rounded-md flex items-center justify-center",
+                          isSelected ? "bg-white/15" : "bg-(--chip-bg)",
+                        )}>
+                          <OptIcon className={cn("h-5 w-5", isSelected ? "text-(--accent-foreground)" : "text-(--muted-foreground)")} />
                       </div>
                       <span className="truncate">{optLabel}</span>
                     </div>

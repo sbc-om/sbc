@@ -101,8 +101,8 @@ export function BusinessCard({ business, locale }: BusinessCardProps) {
                 sizes="64px"
               />
             ) : category ? (
-              <div className="h-10 w-10 rounded-lg bg-(--chip-bg) flex items-center justify-center">
-                <CategoryIcon className="h-6 w-6 text-(--muted-foreground)" />
+              <div className="h-11 w-11 rounded-lg bg-(--chip-bg) flex items-center justify-center">
+                <CategoryIcon className="h-7 w-7 text-(--muted-foreground)" />
               </div>
             ) : (
               <div className="text-2xl font-bold bg-linear-to-br from-accent to-accent-2 bg-clip-text text-transparent opacity-80">

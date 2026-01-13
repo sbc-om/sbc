@@ -84,8 +84,8 @@ export function CategorySelect({
               />
             </div>
           ) : selected ? (
-            <div className="h-6 w-6 shrink-0 rounded-md bg-(--chip-bg) flex items-center justify-center">
-              <SelectedIcon className="h-4 w-4 text-(--muted-foreground)" />
+            <div className="h-7 w-7 shrink-0 rounded-md bg-(--chip-bg) flex items-center justify-center">
+              <SelectedIcon className="h-5 w-5 text-(--muted-foreground)" />
             </div>
           ) : null}
           <span className={!selected ? "text-(--muted-foreground)" : "truncate"}>
@@ -164,9 +164,9 @@ export function CategorySelect({
                           </div>
                         ) : (
                           <div className={
-                            `h-6 w-6 shrink-0 rounded-md flex items-center justify-center ${isSelected ? "bg-white/15" : "bg-(--chip-bg)"}`
+                            `h-7 w-7 shrink-0 rounded-md flex items-center justify-center ${isSelected ? "bg-white/15" : "bg-(--chip-bg)"}`
                           }>
-                            <OptIcon className={`h-4 w-4 ${isSelected ? "text-(--accent-foreground)" : "text-(--muted-foreground)"}`} />
+                            <OptIcon className={`h-5 w-5 ${isSelected ? "text-(--accent-foreground)" : "text-(--muted-foreground)"}`} />
                           </div>
                         )}
                         <span className="truncate">{name}</span>

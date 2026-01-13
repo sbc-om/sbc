@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
 
 interface BusinessFeedCardProps {
   business: {
@@ -13,6 +14,7 @@ interface BusinessFeedCardProps {
     city?: string;
     category?: string;
     categoryId?: string;
+    avatarMode?: "icon" | "logo";
     media?: {
       logo?: string;
       cover?: string;
@@ -26,9 +28,11 @@ interface BusinessFeedCardProps {
   };
   locale: "en" | "ar";
   categoryName?: string;
+  /** Provide this from the parent (server) when available. */
+  categoryIconId?: string;
 }
 
-export function BusinessFeedCard({ business, locale, categoryName }: BusinessFeedCardProps) {
+export function BusinessFeedCard({ business, locale, categoryName, categoryIconId }: BusinessFeedCardProps) {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   
@@ -51,6 +55,9 @@ export function BusinessFeedCard({ business, locale, categoryName }: BusinessFee
 
   const mainImage = business.media?.cover || business.media?.banner;
   const logo = business.media?.logo;
+  const avatarMode = business.avatarMode ?? "icon";
+  const showLogo = avatarMode === "logo" && !!logo;
+  const CategoryIcon = getCategoryIconComponent(categoryIconId);
 
   return (
     <article
@@ -66,21 +73,17 @@ export function BusinessFeedCard({ business, locale, categoryName }: BusinessFee
           href={`/${locale}/businesses/${business.slug}`}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
-          {logo ? (
-            <div className="relative w-8 h-8 rounded-full overflow-hidden ring-2 ring-accent/20">
-              <Image
-                src={logo}
-                alt={name}
-                fill
-                className="object-cover"
-                sizes="32px"
-              />
+          {showLogo ? (
+            <div className="relative w-9 h-9 rounded-full overflow-hidden ring-2 ring-accent/20">
+              <Image src={logo!} alt={name} fill className="object-cover" sizes="36px" />
+            </div>
+          ) : categoryIconId ? (
+            <div className="w-9 h-9 rounded-full bg-(--chip-bg) border border-(--surface-border) flex items-center justify-center">
+              <CategoryIcon className="h-5 w-5 text-(--muted-foreground)" />
             </div>
           ) : (
-            <div className="w-8 h-8 rounded-full bg-linear-to-br from-accent to-accent-2 flex items-center justify-center">
-              <span className="text-xs font-bold text-white">
-                {name.charAt(0).toUpperCase()}
-              </span>
+            <div className="w-9 h-9 rounded-full bg-linear-to-br from-accent to-accent-2 flex items-center justify-center">
+              <span className="text-xs font-bold text-white">{name.charAt(0).toUpperCase()}</span>
             </div>
           )}
           <div>

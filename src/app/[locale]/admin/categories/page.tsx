@@ -84,7 +84,7 @@ export default async function AdminCategoriesPage({
                 <div className="h-12 w-12 shrink-0 rounded-lg border border-(--surface-border) bg-(--chip-bg) flex items-center justify-center">
                   {(() => {
                     const Icon = getCategoryIconComponent(c.iconId);
-                    return <Icon className="h-5 w-5 text-(--muted-foreground)" />;
+                    return <Icon className="h-6 w-6 text-(--muted-foreground)" />;
                   })()}
                 </div>
               )}
