@@ -134,6 +134,18 @@ export type LoyaltySettings = {
   pointsIconMode: "logo" | "custom";
   /** Custom icon URL (usually a /media/... url). Only used when pointsIconMode === "custom". */
   pointsIconUrl?: string;
+  /** Card design customization for wallet passes */
+  cardDesign?: {
+    primaryColor: string;
+    secondaryColor: string;
+    textColor: string;
+    backgroundColor: string;
+    backgroundStyle: "solid" | "gradient" | "pattern";
+    logoPosition: "top" | "center" | "corner";
+    showBusinessName: boolean;
+    showCustomerName: boolean;
+    cornerRadius: number;
+  };
   createdAt: string;
   updatedAt: string;
 };

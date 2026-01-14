@@ -41,12 +41,25 @@ const profileInputSchema = z.object({
 
 export type LoyaltyProfileInput = z.infer<typeof profileInputSchema>;
 
+const cardDesignSchema = z.object({
+  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  textColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  backgroundStyle: z.enum(["solid", "gradient", "pattern"]),
+  logoPosition: z.enum(["top", "center", "corner"]),
+  showBusinessName: z.boolean(),
+  showCustomerName: z.boolean(),
+  cornerRadius: z.number().int().min(0).max(32),
+});
+
 const settingsInputSchema = z
   .object({
     pointsRequiredPerRedemption: z.number().int().min(1).max(100000).optional(),
     pointsDeductPerRedemption: z.number().int().min(1).max(100000).optional(),
     pointsIconMode: z.enum(["logo", "custom"]).optional(),
     pointsIconUrl: z.string().trim().min(1).max(2048).optional(),
+    cardDesign: cardDesignSchema.optional(),
   })
   .strict();
 
@@ -339,6 +352,7 @@ export function upsertLoyaltySettings(input: {
       data.pointsDeductPerRedemption ?? base.pointsDeductPerRedemption,
     pointsIconMode: nextMode,
     pointsIconUrl: nextUrl,
+    cardDesign: data.cardDesign ?? base.cardDesign,
     createdAt: base.createdAt ?? now,
     updatedAt: now,
   };

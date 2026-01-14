@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { IoGridOutline, IoPeopleOutline, IoHeartOutline } from "react-icons/io5";
 import type { Locale } from "@/lib/i18n/locales";
 
 interface FeedProfileHeaderProps {
@@ -69,10 +68,7 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
             href={`/${locale}/profile/businesses`}
             className="hover:opacity-70 transition-opacity"
           >
-            <div className="flex items-center gap-1.5 justify-center mb-1">
-              <IoGridOutline className="w-4 h-4 text-(--muted-foreground)" />
-              <div className="text-xl font-bold">{user.stats?.businesses ?? 0}</div>
-            </div>
+            <div className="text-xl font-bold">{user.stats?.businesses ?? 0}</div>
             <div className="text-xs text-(--muted-foreground)">
               {locale === "ar" ? "بیزینس‌ها" : "Businesses"}
             </div>
@@ -81,10 +77,7 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
             href={`/${locale}/profile/followers`}
             className="hover:opacity-70 transition-opacity"
           >
-            <div className="flex items-center gap-1.5 justify-center mb-1">
-              <IoHeartOutline className="w-4 h-4 text-(--muted-foreground)" />
-              <div className="text-xl font-bold">{user.stats?.followers ?? 0}</div>
-            </div>
+            <div className="text-xl font-bold">{user.stats?.followers ?? 0}</div>
             <div className="text-xs text-(--muted-foreground)">
               {locale === "ar" ? "فالوورها" : "Followers"}
             </div>
@@ -93,10 +86,7 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
             href={`/${locale}/profile/following`}
             className="hover:opacity-70 transition-opacity"
           >
-            <div className="flex items-center gap-1.5 justify-center mb-1">
-              <IoPeopleOutline className="w-4 h-4 text-(--muted-foreground)" />
-              <div className="text-xl font-bold">{user.stats?.followedCategories ?? 0}</div>
-            </div>
+            <div className="text-xl font-bold">{user.stats?.followedCategories ?? 0}</div>
             <div className="text-xs text-(--muted-foreground)">
               {locale === "ar" ? "فالووینگ" : "Following"}
             </div>
