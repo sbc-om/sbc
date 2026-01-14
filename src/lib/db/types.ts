@@ -146,6 +146,22 @@ export type LoyaltySettings = {
     showCustomerName: boolean;
     cornerRadius: number;
   };
+
+  /** Optional pass details shown in wallet UIs (e.g., iOS back fields / Android text modules). */
+  walletPassDescription?: string;
+  walletPassTerms?: string;
+  walletWebsiteUrl?: string;
+  walletSupportEmail?: string;
+  walletSupportPhone?: string;
+  walletAddress?: string;
+
+  /** Barcode configuration used on the pass (preview + pass generation). */
+  walletBarcodeFormat?: "qr" | "code128";
+  walletBarcodeMessage?: string;
+
+  /** Default notification template used for sample previews / messaging. */
+  walletNotificationTitle?: string;
+  walletNotificationBody?: string;
   createdAt: string;
   updatedAt: string;
 };

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import Barcode from "react-barcode";
 import { Button } from "@/components/ui/Button";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -17,6 +18,21 @@ interface CardDesign {
   cornerRadius: number;
 }
 
+type WalletBarcodeFormat = "qr" | "code128";
+
+type WalletContent = {
+  walletPassDescription: string;
+  walletPassTerms: string;
+  walletWebsiteUrl: string;
+  walletSupportEmail: string;
+  walletSupportPhone: string;
+  walletAddress: string;
+  walletBarcodeFormat: WalletBarcodeFormat;
+  walletBarcodeMessage: string;
+  walletNotificationTitle: string;
+  walletNotificationBody: string;
+};
+
 const defaultDesign: CardDesign = {
   primaryColor: "#7c3aed",
   secondaryColor: "#0ea5e9",
@@ -29,12 +45,26 @@ const defaultDesign: CardDesign = {
   cornerRadius: 16,
 };
 
+const defaultWalletContent: WalletContent = {
+  walletPassDescription: "Show this card at checkout to earn points.",
+  walletPassTerms: "Terms: Points are non-transferable. Subject to change without notice.",
+  walletWebsiteUrl: "",
+  walletSupportEmail: "",
+  walletSupportPhone: "",
+  walletAddress: "",
+  walletBarcodeFormat: "qr",
+  walletBarcodeMessage: "SBC-LOYALTY-000123",
+  walletNotificationTitle: "Loyalty update",
+  walletNotificationBody: "Your loyalty points balance has been updated.",
+};
+
 interface Props {
   locale: Locale;
   businessName: string;
   logoUrl?: string | null;
   onSave?: (design: CardDesign) => Promise<void>;
   initialDesign?: Partial<CardDesign>;
+  initialWallet?: Partial<WalletContent>;
 }
 
 export function LoyaltyCardDesigner({
@@ -43,35 +73,115 @@ export function LoyaltyCardDesigner({
   logoUrl,
   onSave,
   initialDesign,
+  initialWallet,
 }: Props) {
   const ar = locale === "ar";
-  const [design, setDesign] = useState<CardDesign>({
-    ...defaultDesign,
-    ...initialDesign,
+  const [design, setDesign] = useState<CardDesign>(() => {
+    const defined = Object.fromEntries(
+      Object.entries(initialDesign ?? {}).filter(([, v]) => v !== undefined)
+    ) as Partial<CardDesign>;
+    return { ...defaultDesign, ...defined };
   });
-  const [activePreview, setActivePreview] = useState<"ios" | "android">("ios");
+  const [wallet, setWallet] = useState<WalletContent>(() => {
+    const defined = Object.fromEntries(
+      Object.entries(initialWallet ?? {}).filter(([, v]) => v !== undefined)
+    ) as Partial<WalletContent>;
+    return { ...defaultWalletContent, ...defined } as WalletContent;
+  });
+  const [activePreview, setActivePreview] = useState<"ios" | "android" | "notification">("ios");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   const updateDesign = (updates: Partial<CardDesign>) => {
     setDesign((prev) => ({ ...prev, ...updates }));
   };
+
+  const updateWallet = (updates: Partial<WalletContent>) => {
+    setWallet((prev) => ({ ...prev, ...updates }));
+  };
+
+  useEffect(() => {
+    let canceled = false;
+
+    async function run() {
+      if (wallet.walletBarcodeFormat !== "qr") {
+        setQrDataUrl(null);
+        return;
+      }
+
+      const message = (wallet.walletBarcodeMessage ?? "").trim();
+      if (!message) {
+        setQrDataUrl(null);
+        return;
+      }
+
+      try {
+        const qr = await import("qrcode");
+        const dataUrl = await qr.toDataURL(message, {
+          errorCorrectionLevel: "M",
+          margin: 1,
+          width: 260,
+          color: { dark: "#111111", light: "#ffffff" },
+        });
+        if (!canceled) setQrDataUrl(dataUrl);
+      } catch (e) {
+        console.error("Failed to generate QR:", e);
+        if (!canceled) setQrDataUrl(null);
+      }
+    }
+
+    run();
+    return () => {
+      canceled = true;
+    };
+  }, [wallet.walletBarcodeFormat, wallet.walletBarcodeMessage]);
 
   const handleSave = async () => {
     setSaving(true);
     setMessage(null);
     
     try {
-      const response = await fetch("/api/loyalty/card-design", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(design),
-      });
+      const walletPatch: Record<string, unknown> = {};
+      const setIfNonEmpty = (key: keyof WalletContent) => {
+        const value = String(wallet[key] ?? "").trim();
+        if (value) walletPatch[key] = value;
+      };
 
-      const data = await response.json();
+      setIfNonEmpty("walletPassDescription");
+      setIfNonEmpty("walletPassTerms");
+      setIfNonEmpty("walletWebsiteUrl");
+      setIfNonEmpty("walletSupportEmail");
+      setIfNonEmpty("walletSupportPhone");
+      setIfNonEmpty("walletAddress");
+      setIfNonEmpty("walletBarcodeMessage");
+      setIfNonEmpty("walletNotificationTitle");
+      setIfNonEmpty("walletNotificationBody");
+      walletPatch.walletBarcodeFormat = wallet.walletBarcodeFormat;
 
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to save");
+      const [designRes, settingsRes] = await Promise.all([
+        fetch("/api/loyalty/card-design", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(design),
+        }),
+        fetch("/api/loyalty/settings", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(walletPatch),
+        }),
+      ]);
+
+      const designJson = await designRes.json().catch(() => null);
+      const settingsJson = await settingsRes.json().catch(() => null);
+
+      if (!designRes.ok) {
+        const msg = designJson?.error || "Failed to save design";
+        throw new Error(msg);
+      }
+      if (!settingsRes.ok || settingsJson?.ok === false) {
+        const msg = settingsJson?.error || "Failed to save wallet fields";
+        throw new Error(msg);
       }
 
       setMessage({
@@ -384,6 +494,182 @@ export function LoyaltyCardDesigner({
             </div>
           </div>
 
+          {/* Pass Details */}
+          <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-5">
+            <h4 className="text-sm font-semibold mb-4">{ar ? "معلومات البطاقة" : "Pass details"}</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-(--muted-foreground) mb-2">
+                  {ar ? "الوصف" : "Description"}
+                </label>
+                <textarea
+                  value={wallet.walletPassDescription}
+                  onChange={(e) => updateWallet({ walletPassDescription: e.target.value })}
+                  rows={3}
+                  className="w-full rounded-lg border border-(--surface-border) bg-(--surface) px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-(--muted-foreground) mb-2">
+                  {ar ? "الشروط" : "Terms"}
+                </label>
+                <textarea
+                  value={wallet.walletPassTerms}
+                  onChange={(e) => updateWallet({ walletPassTerms: e.target.value })}
+                  rows={4}
+                  className="w-full rounded-lg border border-(--surface-border) bg-(--surface) px-3 py-2 text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs text-(--muted-foreground) mb-2">
+                    {ar ? "الموقع الإلكتروني" : "Website"}
+                  </label>
+                  <input
+                    type="url"
+                    value={wallet.walletWebsiteUrl}
+                    onChange={(e) => updateWallet({ walletWebsiteUrl: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-(--muted-foreground) mb-2">
+                    {ar ? "هاتف الدعم" : "Support phone"}
+                  </label>
+                  <input
+                    type="tel"
+                    value={wallet.walletSupportPhone}
+                    onChange={(e) => updateWallet({ walletSupportPhone: e.target.value })}
+                    placeholder={ar ? "+966..." : "+1..."}
+                    className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-(--muted-foreground) mb-2">
+                    {ar ? "بريد الدعم" : "Support email"}
+                  </label>
+                  <input
+                    type="email"
+                    value={wallet.walletSupportEmail}
+                    onChange={(e) => updateWallet({ walletSupportEmail: e.target.value })}
+                    placeholder="support@..."
+                    className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-(--muted-foreground) mb-2">
+                    {ar ? "العنوان" : "Address"}
+                  </label>
+                  <input
+                    type="text"
+                    value={wallet.walletAddress}
+                    onChange={(e) => updateWallet({ walletAddress: e.target.value })}
+                    placeholder={ar ? "المدينة، الشارع..." : "City, street..."}
+                    className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Barcode */}
+          <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-5">
+            <h4 className="text-sm font-semibold mb-4">{ar ? "الباركود / QR" : "Barcode / QR"}</h4>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => updateWallet({ walletBarcodeFormat: "qr" })}
+                  className={`h-10 rounded-lg border text-xs font-medium transition ${
+                    wallet.walletBarcodeFormat === "qr"
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-(--surface-border) hover:border-accent/50"
+                  }`}
+                >
+                  QR
+                </button>
+                <button
+                  onClick={() => updateWallet({ walletBarcodeFormat: "code128" })}
+                  className={`h-10 rounded-lg border text-xs font-medium transition ${
+                    wallet.walletBarcodeFormat === "code128"
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-(--surface-border) hover:border-accent/50"
+                  }`}
+                >
+                  CODE128
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs text-(--muted-foreground) mb-2">
+                  {ar ? "محتوى الباركود" : "Barcode value"}
+                </label>
+                <input
+                  type="text"
+                  value={wallet.walletBarcodeMessage}
+                  onChange={(e) => updateWallet({ walletBarcodeMessage: e.target.value })}
+                  className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
+                />
+              </div>
+
+              <div className="rounded-xl border border-(--surface-border) bg-white p-3 flex items-center justify-center overflow-hidden">
+                {wallet.walletBarcodeFormat === "qr" ? (
+                  qrDataUrl ? (
+                    <Image src={qrDataUrl} alt="QR" width={170} height={170} unoptimized />
+                  ) : (
+                    <div className="text-xs text-gray-600">{ar ? "جارٍ إنشاء QR..." : "Generating QR..."}</div>
+                  )
+                ) : (
+                  <Barcode
+                    value={(wallet.walletBarcodeMessage || "SBC-LOYALTY-000123").slice(0, 80)}
+                    format="CODE128"
+                    width={2}
+                    height={70}
+                    displayValue={true}
+                    fontSize={12}
+                    margin={10}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Notification Template */}
+          <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-5">
+            <h4 className="text-sm font-semibold mb-4">{ar ? "نموذج الإشعار" : "Notification template"}</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-(--muted-foreground) mb-2">
+                  {ar ? "عنوان الإشعار" : "Title"}
+                </label>
+                <input
+                  type="text"
+                  value={wallet.walletNotificationTitle}
+                  onChange={(e) => updateWallet({ walletNotificationTitle: e.target.value })}
+                  className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-(--muted-foreground) mb-2">
+                  {ar ? "نص الإشعار" : "Body"}
+                </label>
+                <textarea
+                  value={wallet.walletNotificationBody}
+                  onChange={(e) => updateWallet({ walletNotificationBody: e.target.value })}
+                  rows={3}
+                  className="w-full rounded-lg border border-(--surface-border) bg-(--surface) px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="text-xs text-(--muted-foreground)">
+                {ar
+                  ? "تظهر المعاينة في تب الإشعار."
+                  : "Preview it in the Notification tab."}
+              </div>
+            </div>
+          </div>
+
           <Button
             onClick={handleSave}
             disabled={saving}
@@ -440,6 +726,22 @@ export function LoyaltyCardDesigner({
                 {ar ? "أندرويد" : "Android"}
               </span>
             </button>
+
+            <button
+              onClick={() => setActivePreview("notification")}
+              className={`flex-1 h-9 rounded-lg text-sm font-medium transition ${
+                activePreview === "notification"
+                  ? "bg-accent text-accent-foreground shadow-sm"
+                  : "text-(--muted-foreground) hover:text-foreground"
+              }`}
+            >
+              <span className="inline-flex items-center gap-2">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 22a2 2 0 0 0 2-2h-4a2 2 0 0 0 2 2zm6-6V11a6 6 0 1 0-12 0v5L4 18v1h16v-1l-2-2z" />
+                </svg>
+                {ar ? "إشعار" : "Notification"}
+              </span>
+            </button>
           </div>
 
           {/* Card Preview */}
@@ -459,8 +761,10 @@ export function LoyaltyCardDesigner({
                 points={samplePoints}
                 customerName={sampleCustomerName}
                 ar={ar}
+                wallet={wallet}
+                qrDataUrl={qrDataUrl}
               />
-            ) : (
+            ) : activePreview === "android" ? (
               <AndroidCardPreview
                 design={design}
                 businessName={businessName}
@@ -468,7 +772,11 @@ export function LoyaltyCardDesigner({
                 points={samplePoints}
                 customerName={sampleCustomerName}
                 ar={ar}
+                wallet={wallet}
+                qrDataUrl={qrDataUrl}
               />
+            ) : (
+              <NotificationPreview businessName={businessName} logoUrl={logoUrl} wallet={wallet} />
             )}
           </div>
 
@@ -484,6 +792,54 @@ export function LoyaltyCardDesigner({
 }
 
 // iOS Wallet Card Preview Component
+function DetailRow({ label, value }: { label: string; value: string }) {
+  const v = value.trim();
+  if (!v) return null;
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="text-[10px] font-medium text-gray-500 shrink-0">{label}</div>
+      <div className="text-[11px] font-semibold text-gray-800 text-right break-all">{v}</div>
+    </div>
+  );
+}
+
+function PassBarcode({
+  format,
+  message,
+  qrDataUrl,
+}: {
+  format: WalletBarcodeFormat;
+  message: string;
+  qrDataUrl: string | null;
+}) {
+  const msg = (message ?? "").trim();
+  if (!msg) return null;
+
+  return (
+    <div className="rounded-xl bg-white/12 border border-white/20 p-3">
+      <div className="flex items-center justify-center overflow-hidden rounded-lg bg-white p-2">
+        {format === "qr" ? (
+          qrDataUrl ? (
+            <Image src={qrDataUrl} alt="QR" width={120} height={120} unoptimized />
+          ) : (
+            <div className="text-xs text-gray-600">Generating QR…</div>
+          )
+        ) : (
+          <Barcode
+            value={msg.slice(0, 80)}
+            format="CODE128"
+            width={2}
+            height={52}
+            displayValue={false}
+            margin={0}
+          />
+        )}
+      </div>
+      <div className="mt-2 text-[10px] opacity-70 text-center break-all">{msg}</div>
+    </div>
+  );
+}
+
 function IOSCardPreview({
   design,
   businessName,
@@ -491,6 +847,8 @@ function IOSCardPreview({
   points,
   customerName,
   ar,
+  wallet,
+  qrDataUrl,
 }: {
   design: CardDesign;
   businessName: string;
@@ -498,6 +856,8 @@ function IOSCardPreview({
   points: number;
   customerName: string;
   ar: boolean;
+  wallet: WalletContent;
+  qrDataUrl: string | null;
 }) {
   const getBackground = () => {
     if (design.backgroundStyle === "gradient") {
@@ -512,7 +872,7 @@ function IOSCardPreview({
   return (
     <div className="w-full max-w-85">
       {/* iOS Device Frame */}
-      <div className="relative mx-auto" style={{ width: "340px", height: "560px" }}>
+      <div className="relative mx-auto" style={{ width: "340px", height: "640px" }}>
         {/* Device */}
         <div className="absolute inset-0 rounded-[40px] bg-black shadow-2xl border-8 border-gray-900">
           {/* Notch */}
@@ -541,7 +901,7 @@ function IOSCardPreview({
                   background: getBackground(),
                   borderRadius: `${design.cornerRadius}px`,
                   color: design.textColor,
-                  height: "420px",
+                  height: "480px",
                 }}
               >
                 {/* Card Content */}
@@ -606,6 +966,15 @@ function IOSCardPreview({
                     </div>
                   </div>
 
+                  {/* Barcode */}
+                  <div className="mt-4">
+                    <PassBarcode
+                      format={wallet.walletBarcodeFormat}
+                      message={wallet.walletBarcodeMessage}
+                      qrDataUrl={qrDataUrl}
+                    />
+                  </div>
+
                   {/* Customer Name */}
                   {design.showCustomerName && (
                     <div className="mt-auto pt-4 border-t border-white/20">
@@ -617,6 +986,21 @@ function IOSCardPreview({
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* Pass Details (iOS back fields) */}
+              <div className="mt-3 rounded-xl border border-gray-200 bg-white p-3">
+                <div className="text-xs font-semibold text-gray-800 mb-2">
+                  {ar ? "التفاصيل" : "Details"}
+                </div>
+                <div className="space-y-1">
+                  <DetailRow label={ar ? "الوصف" : "Description"} value={wallet.walletPassDescription} />
+                  <DetailRow label={ar ? "الشروط" : "Terms"} value={wallet.walletPassTerms} />
+                  <DetailRow label={ar ? "الموقع" : "Website"} value={wallet.walletWebsiteUrl} />
+                  <DetailRow label={ar ? "الهاتف" : "Phone"} value={wallet.walletSupportPhone} />
+                  <DetailRow label={ar ? "البريد" : "Email"} value={wallet.walletSupportEmail} />
+                  <DetailRow label={ar ? "العنوان" : "Address"} value={wallet.walletAddress} />
                 </div>
               </div>
             </div>
@@ -635,6 +1019,8 @@ function AndroidCardPreview({
   points,
   customerName,
   ar,
+  wallet,
+  qrDataUrl,
 }: {
   design: CardDesign;
   businessName: string;
@@ -642,6 +1028,8 @@ function AndroidCardPreview({
   points: number;
   customerName: string;
   ar: boolean;
+  wallet: WalletContent;
+  qrDataUrl: string | null;
 }) {
   const getBackground = () => {
     if (design.backgroundStyle === "gradient") {
@@ -656,7 +1044,7 @@ function AndroidCardPreview({
   return (
     <div className="w-full max-w-85">
       {/* Android Device Frame */}
-      <div className="relative mx-auto" style={{ width: "340px", height: "560px" }}>
+      <div className="relative mx-auto" style={{ width: "340px", height: "640px" }}>
         {/* Device */}
         <div className="absolute inset-0 rounded-4xl bg-black shadow-2xl border-4 border-gray-800">
           {/* Screen */}
@@ -764,6 +1152,15 @@ function AndroidCardPreview({
                     </div>
                   </div>
 
+                  {/* Barcode */}
+                  <div className="mt-2">
+                    <PassBarcode
+                      format={wallet.walletBarcodeFormat}
+                      message={wallet.walletBarcodeMessage}
+                      qrDataUrl={qrDataUrl}
+                    />
+                  </div>
+
                   {/* Customer Info */}
                   {design.showCustomerName && (
                     <div className="mt-auto pt-4 border-t" style={{ borderColor: `${design.textColor}33` }}>
@@ -785,6 +1182,21 @@ function AndroidCardPreview({
                 </div>
               </div>
 
+              {/* Pass Details (Android text modules) */}
+              <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3">
+                <div className="text-xs font-semibold text-gray-800 mb-2">
+                  {ar ? "التفاصيل" : "Details"}
+                </div>
+                <div className="space-y-1">
+                  <DetailRow label={ar ? "الوصف" : "Description"} value={wallet.walletPassDescription} />
+                  <DetailRow label={ar ? "الشروط" : "Terms"} value={wallet.walletPassTerms} />
+                  <DetailRow label={ar ? "الموقع" : "Website"} value={wallet.walletWebsiteUrl} />
+                  <DetailRow label={ar ? "الهاتف" : "Phone"} value={wallet.walletSupportPhone} />
+                  <DetailRow label={ar ? "البريد" : "Email"} value={wallet.walletSupportEmail} />
+                  <DetailRow label={ar ? "العنوان" : "Address"} value={wallet.walletAddress} />
+                </div>
+              </div>
+
               {/* Quick Actions (Android style) */}
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <button className="h-10 rounded-lg bg-white border border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 transition">
@@ -794,6 +1206,67 @@ function AndroidCardPreview({
                   {ar ? "مشاركة" : "Share"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotificationPreview({
+  businessName,
+  logoUrl,
+  wallet,
+}: {
+  businessName: string;
+  logoUrl?: string | null;
+  wallet: WalletContent;
+}) {
+  return (
+    <div className="w-full max-w-85">
+      <div className="relative mx-auto" style={{ width: "340px", height: "640px" }}>
+        <div className="absolute inset-0 rounded-[40px] bg-black shadow-2xl border-8 border-gray-900" />
+        <div className="absolute inset-2 rounded-4xl bg-gray-100 overflow-hidden">
+          <div className="h-12 bg-white/95 backdrop-blur flex items-center justify-between px-6 pt-2">
+            <span className="text-xs font-semibold">9:41</span>
+            <div className="flex items-center gap-1">
+              <div className="w-4 h-4 rounded-full bg-gray-800" />
+              <div className="w-4 h-4 rounded bg-gray-800" />
+            </div>
+          </div>
+
+          <div className="p-5">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+                <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                  {logoUrl ? (
+                    <Image src={logoUrl} alt={businessName} fill className="object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-500">
+                      {businessName.slice(0, 1).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-semibold text-gray-700 truncate">{businessName}</div>
+                  <div className="text-[10px] text-gray-500">Wallet</div>
+                </div>
+                <div className="ml-auto text-[10px] text-gray-400">now</div>
+              </div>
+
+              <div className="px-4 py-3">
+                <div className="text-sm font-semibold text-gray-900">
+                  {wallet.walletNotificationTitle.trim() || "Notification"}
+                </div>
+                <div className="mt-1 text-[13px] leading-snug text-gray-700 whitespace-pre-wrap">
+                  {wallet.walletNotificationBody.trim() || ""}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 text-xs text-gray-500">
+              Tip: you can use this message for wallet updates.
             </div>
           </div>
         </div>

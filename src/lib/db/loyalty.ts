@@ -60,6 +60,18 @@ const settingsInputSchema = z
     pointsIconMode: z.enum(["logo", "custom"]).optional(),
     pointsIconUrl: z.string().trim().min(1).max(2048).optional(),
     cardDesign: cardDesignSchema.optional(),
+
+    // Wallet pass content (used in previews and pass generation)
+    walletPassDescription: z.string().trim().min(1).max(2000).optional(),
+    walletPassTerms: z.string().trim().min(1).max(4000).optional(),
+    walletWebsiteUrl: z.string().trim().min(1).max(2048).optional(),
+    walletSupportEmail: z.string().trim().min(1).max(320).optional(),
+    walletSupportPhone: z.string().trim().min(1).max(80).optional(),
+    walletAddress: z.string().trim().min(1).max(400).optional(),
+    walletBarcodeFormat: z.enum(["qr", "code128"]).optional(),
+    walletBarcodeMessage: z.string().trim().min(1).max(2048).optional(),
+    walletNotificationTitle: z.string().trim().min(1).max(140).optional(),
+    walletNotificationBody: z.string().trim().min(1).max(1200).optional(),
   })
   .strict();
 
@@ -310,6 +322,7 @@ export function defaultLoyaltySettings(userId: string): LoyaltySettings {
     pointsDeductPerRedemption: 10,
     pointsIconMode: "logo",
     pointsIconUrl: undefined,
+    walletBarcodeFormat: "qr",
     createdAt: now,
     updatedAt: now,
   };
@@ -353,6 +366,16 @@ export function upsertLoyaltySettings(input: {
     pointsIconMode: nextMode,
     pointsIconUrl: nextUrl,
     cardDesign: data.cardDesign ?? base.cardDesign,
+    walletPassDescription: data.walletPassDescription ?? base.walletPassDescription,
+    walletPassTerms: data.walletPassTerms ?? base.walletPassTerms,
+    walletWebsiteUrl: data.walletWebsiteUrl ?? base.walletWebsiteUrl,
+    walletSupportEmail: data.walletSupportEmail ?? base.walletSupportEmail,
+    walletSupportPhone: data.walletSupportPhone ?? base.walletSupportPhone,
+    walletAddress: data.walletAddress ?? base.walletAddress,
+    walletBarcodeFormat: data.walletBarcodeFormat ?? base.walletBarcodeFormat,
+    walletBarcodeMessage: data.walletBarcodeMessage ?? base.walletBarcodeMessage,
+    walletNotificationTitle: data.walletNotificationTitle ?? base.walletNotificationTitle,
+    walletNotificationBody: data.walletNotificationBody ?? base.walletNotificationBody,
     createdAt: base.createdAt ?? now,
     updatedAt: now,
   };

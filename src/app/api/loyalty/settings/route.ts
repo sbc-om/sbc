@@ -15,6 +15,17 @@ const patchSchema = z
     pointsDeductPerRedemption: z.number().int().min(1).max(100000).optional(),
     pointsIconMode: z.enum(["logo", "custom"]).optional(),
     pointsIconUrl: z.string().trim().min(1).max(2048).optional(),
+
+    walletPassDescription: z.string().trim().min(1).max(2000).optional(),
+    walletPassTerms: z.string().trim().min(1).max(4000).optional(),
+    walletWebsiteUrl: z.string().trim().min(1).max(2048).optional(),
+    walletSupportEmail: z.string().trim().min(1).max(320).optional(),
+    walletSupportPhone: z.string().trim().min(1).max(80).optional(),
+    walletAddress: z.string().trim().min(1).max(400).optional(),
+    walletBarcodeFormat: z.enum(["qr", "code128"]).optional(),
+    walletBarcodeMessage: z.string().trim().min(1).max(2048).optional(),
+    walletNotificationTitle: z.string().trim().min(1).max(140).optional(),
+    walletNotificationBody: z.string().trim().min(1).max(1200).optional(),
   })
   .strict();
 

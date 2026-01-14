@@ -144,6 +144,18 @@ export default async function LoyaltyManagePage({
             businessName={profile?.businessName ?? ""}
             logoUrl={profile?.logoUrl}
             initialDesign={settings?.cardDesign}
+            initialWallet={{
+              walletPassDescription: settings?.walletPassDescription,
+              walletPassTerms: settings?.walletPassTerms,
+              walletWebsiteUrl: settings?.walletWebsiteUrl,
+              walletSupportEmail: settings?.walletSupportEmail,
+              walletSupportPhone: settings?.walletSupportPhone,
+              walletAddress: settings?.walletAddress,
+              walletBarcodeFormat: settings?.walletBarcodeFormat,
+              walletBarcodeMessage: settings?.walletBarcodeMessage,
+              walletNotificationTitle: settings?.walletNotificationTitle,
+              walletNotificationBody: settings?.walletNotificationBody,
+            }}
           />
 
           <div className="mt-8 sbc-card rounded-2xl p-6">
