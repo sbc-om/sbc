@@ -1,5 +1,7 @@
 import { importPKCS8, SignJWT } from "jose";
 
+import { LoyaltyClient } from "google-wallet/lib/esm/loyalty";
+
 import {
   defaultLoyaltySettings,
   getLoyaltyCardById,
@@ -51,6 +53,9 @@ function getGoogleWalletCredentialsFromEnv(): GoogleWalletCredentials {
   const privateKey = env("GOOGLE_WALLET_PRIVATE_KEY") ?? json.private_key;
 
   if (!issuerId) throw new Error("MISSING_ENV_GOOGLE_WALLET_ISSUER_ID");
+  if (!/^\d+$/.test(issuerId)) {
+    throw new Error("INVALID_ENV_GOOGLE_WALLET_ISSUER_ID_FORMAT");
+  }
   if (!serviceAccountEmail) throw new Error("MISSING_ENV_GOOGLE_WALLET_SERVICE_ACCOUNT_EMAIL");
   if (!privateKey) throw new Error("MISSING_ENV_GOOGLE_WALLET_PRIVATE_KEY");
 
@@ -125,6 +130,40 @@ function sanitizeWalletIdSuffix(input: string): string {
   return trimmed || "id";
 }
 
+function resolvePublicBaseUrl(origins: string[] | undefined): string | null {
+  const candidates = [
+    ...(origins ?? []),
+    env("NEXT_PUBLIC_SITE_URL"),
+    env("NEXT_PUBLIC_APP_URL"),
+    env("SITE_URL"),
+  ].filter(Boolean) as string[];
+
+  for (const c of candidates) {
+    try {
+      const u = new URL(c);
+      if (u.protocol === "https:") return u.toString();
+    } catch {
+      // ignore
+    }
+  }
+  return null;
+}
+
+function requireHttpsUrl(input: string, baseUrl: string | null): string {
+  let url: URL;
+  try {
+    url = baseUrl ? new URL(input, baseUrl) : new URL(input);
+  } catch {
+    throw new Error("INVALID_GOOGLE_WALLET_LOGO_URL");
+  }
+
+  if (url.protocol !== "https:") {
+    throw new Error("GOOGLE_WALLET_REQUIRES_HTTPS_URLS");
+  }
+
+  return url.toString();
+}
+
 export async function createGoogleWalletSaveJwt(input: { cardId: string; origins?: string[] }): Promise<string> {
   const { issuerId, serviceAccountEmail: saEmail, privateKey } = await getGoogleWalletCredentials();
 
@@ -138,27 +177,45 @@ export async function createGoogleWalletSaveJwt(input: { cardId: string; origins
 
   const businessName = profile?.businessName ?? "SBC";
 
-  // IDs must be issuerId.suffix (no spaces). We keep suffix stable.
-  const classId = `${issuerId}.sbc_loyalty`;
-  const objectId = `${issuerId}.${sanitizeWalletIdSuffix(card.id)}`;
+  const publicBaseUrl = resolvePublicBaseUrl(input.origins);
+  const defaultLogo = "/images/sbc.svg";
+  const logoUrlRaw = profile?.logoUrl || defaultLogo;
+  if (!publicBaseUrl && !/^https:\/\//i.test(logoUrlRaw)) {
+    throw new Error("MISSING_PUBLIC_BASE_URL_FOR_GOOGLE_WALLET");
+  }
+  const logoUrl = requireHttpsUrl(logoUrlRaw, publicBaseUrl);
 
-  const loyaltyClass: Record<string, unknown> = {
-    id: classId,
-    issuerName: businessName,
-    programName: businessName,
-    programLogo: profile?.logoUrl
-      ? { sourceUri: { uri: profile.logoUrl } }
-      : undefined,
-    // Location-based suggestions (Google Wallet decides when to surface the card).
-    locations: profile?.location
-      ? [
-          {
-            latitude: profile.location.lat,
-            longitude: profile.location.lng,
-          },
-        ]
-      : undefined,
+  // IDs must be issuerId.suffix (no spaces). Keep suffix stable.
+  const classSuffix = `loyalty_${sanitizeWalletIdSuffix(card.userId)}`;
+  const objectSuffix = sanitizeWalletIdSuffix(card.id);
+  const classId = `${issuerId}.${classSuffix}`;
+  const objectId = `${issuerId}.${objectSuffix}`;
+
+  const credentials = {
+    client_email: saEmail,
+    private_key: privateKey,
   };
+
+  const loyalty = new LoyaltyClient(credentials as any);
+
+  // Create/patch LoyaltyClass via google-wallet.
+  const classData: any = {
+    id: classId,
+    issuerName: businessName.slice(0, 20),
+    programName: businessName.slice(0, 120),
+    reviewStatus: "underReview",
+    programLogo: {
+      sourceUri: { uri: logoUrl },
+      contentDescription: {
+        defaultValue: { language: "en-US", value: `${businessName} logo`.slice(0, 200) },
+      },
+    },
+  };
+
+  const existingClass = await loyalty.getClass(issuerId, classSuffix);
+  const loyaltyClass = existingClass
+    ? await loyalty.patchClass(classData)
+    : await loyalty.createClass(classData);
 
   const textModulesData: Array<Record<string, unknown>> = [
     {
@@ -176,10 +233,11 @@ export async function createGoogleWalletSaveJwt(input: { cardId: string; origins
     });
   }
 
-  const loyaltyObject: Record<string, unknown> = {
+  // Create/patch LoyaltyObject via google-wallet.
+  const objectData: any = {
     id: objectId,
     classId,
-    state: "active",
+    state: "ACTIVE",
     accountId: customer?.id ?? card.customerId,
     accountName: customer?.fullName ?? "Customer",
     barcode: {
@@ -192,7 +250,6 @@ export async function createGoogleWalletSaveJwt(input: { cardId: string; origins
       balance: { int: card.points },
     },
     textModulesData,
-    // A hint for redemption rules (optional).
     infoModuleData: {
       labelValueRows: [
         {
@@ -205,9 +262,10 @@ export async function createGoogleWalletSaveJwt(input: { cardId: string; origins
     },
   };
 
-  // Clean undefined fields.
-  if (!loyaltyClass.programLogo) delete loyaltyClass.programLogo;
-  if (!loyaltyClass.locations) delete loyaltyClass.locations;
+  const existingObject = await loyalty.getObject(issuerId, objectSuffix);
+  const loyaltyObject = existingObject
+    ? await loyalty.patchObject(objectData)
+    : await loyalty.createObject(objectData);
 
   const now = Math.floor(Date.now() / 1000);
   let key: Awaited<ReturnType<typeof importPKCS8>>;
@@ -224,6 +282,7 @@ export async function createGoogleWalletSaveJwt(input: { cardId: string; origins
     typ: "savetowallet",
     origins: input.origins ?? [],
     payload: {
+      // The listed classes and objects will be created/updated.
       loyaltyClasses: [loyaltyClass],
       loyaltyObjects: [loyaltyObject],
     },
