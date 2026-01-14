@@ -7,8 +7,15 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinesses } from "@/lib/db/businesses";
 import { getFollowedCategoryIds } from "@/lib/db/follows";
 import { getCategoryById } from "@/lib/db/categories";
+import {
+  getBusinessLikeCount,
+  hasUserLikedBusiness,
+  hasUserSavedBusiness,
+  listBusinessComments,
+} from "@/lib/db/businessEngagement";
+import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "./actions";
 import { AppPage } from "@/components/AppPage";
-import { BusinessCard } from "@/components/BusinessCard";
+import { BusinessFeedCard } from "@/components/BusinessFeedCard";
 import { FeedProfileHeader } from "@/components/FeedProfileHeader";
 
 export default async function HomeFollowedPage({
@@ -35,6 +42,23 @@ export default async function HomeFollowedPage({
   const businesses = allBusinesses.filter((b) =>
     b.categoryId ? followedCategoryIds.has(b.categoryId) : false,
   );
+
+  // Prepare engagement data for each business
+  const businessesWithEngagement = businesses.map((b) => {
+    const category = b.categoryId ? getCategoryById(b.categoryId) : null;
+    const comments = listBusinessComments(b.id);
+    const approvedComments = comments.filter((c) => c.status === "approved");
+    
+    return {
+      business: b,
+      categoryName: category ? (locale === "ar" ? category.name.ar : category.name.en) : undefined,
+      categoryIconId: category?.iconId,
+      initialLikeCount: getBusinessLikeCount(b.id),
+      initialLiked: hasUserLikedBusiness(user.id, b.id),
+      initialSaved: hasUserSavedBusiness(user.id, b.id),
+      commentCount: approvedComments.length,
+    };
+  });
 
   return (
     <AppPage>
@@ -67,12 +91,24 @@ export default async function HomeFollowedPage({
         ) : null}
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {businesses.map((b) => (
-            <BusinessCard key={b.id} business={b} locale={locale as Locale} />
+          {businessesWithEngagement.map((item) => (
+            <BusinessFeedCard
+              key={item.business.id}
+              business={item.business}
+              locale={locale}
+              categoryName={item.categoryName}
+              categoryIconId={item.categoryIconId}
+              initialLikeCount={item.initialLikeCount}
+              initialLiked={item.initialLiked}
+              initialSaved={item.initialSaved}
+              commentCount={item.commentCount}
+              onToggleLike={toggleBusinessLikeAction.bind(null, locale)}
+              onToggleSave={toggleBusinessSaveAction.bind(null, locale)}
+            />
           ))}
         </div>
 
-        {followedCategoryIds.size > 0 && businesses.length === 0 ? (
+        {followedCategoryIds.size > 0 && businessesWithEngagement.length === 0 ? (
           <div className="mt-10 text-center text-(--muted-foreground)">
             {locale === "ar"
               ? "لا توجد أعمال في التصنيفات التي تتابعها حالياً."

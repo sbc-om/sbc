@@ -7,10 +7,17 @@ import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getBusinessBySlug } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
+import { getUserById } from "@/lib/db/users";
+import {
+  getBusinessLikeCount,
+  hasUserLikedBusiness,
+  listBusinessComments,
+} from "@/lib/db/businessEngagement";
 import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
 import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
+import { BusinessEngagement } from "@/components/business/BusinessEngagement";
 
 export default async function ExplorerBusinessDetailPage({
   params,
@@ -20,7 +27,7 @@ export default async function ExplorerBusinessDetailPage({
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
 
-  await requireUser(locale as Locale);
+  const user = await requireUser(locale as Locale);
 
   const business = getBusinessBySlug(slug);
   if (!business) notFound();
@@ -48,6 +55,26 @@ export default async function ExplorerBusinessDetailPage({
   const mapsHref = mapQuery
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
     : null;
+
+  const likeCount = getBusinessLikeCount(business.id);
+  const liked = hasUserLikedBusiness(user.id, business.id);
+
+  const allComments = listBusinessComments(business.id);
+  const approvedComments = allComments.filter((c) => c.status === "approved");
+  const myPendingComments = allComments.filter((c) => c.status === "pending" && c.userId === user.id);
+  const canModerate = user.role === "admin" || (!!business.ownerId && business.ownerId === user.id);
+  const pendingForModeration = canModerate ? allComments.filter((c) => c.status === "pending") : [];
+
+  const needUserIds = new Set<string>();
+  for (const c of approvedComments) needUserIds.add(c.userId);
+  for (const c of myPendingComments) needUserIds.add(c.userId);
+  for (const c of pendingForModeration) needUserIds.add(c.userId);
+
+  const usersById: Record<string, { displayName?: string; email?: string } | undefined> = {};
+  for (const id of needUserIds) {
+    const u = getUserById(id);
+    usersById[id] = u ? { displayName: u.displayName, email: u.email } : undefined;
+  }
 
   return (
     <AppPage>
@@ -185,6 +212,22 @@ export default async function ExplorerBusinessDetailPage({
                 </div>
             </section>
           ) : null}
+
+          <section className={(description || (business.latitude && business.longitude)) ? "mt-6" : ""}>
+            <BusinessEngagement
+              locale={locale as Locale}
+              businessId={business.id}
+              businessSlug={business.slug}
+              currentUserId={user.id}
+              canModerate={canModerate}
+              initialLikeCount={likeCount}
+              initialLiked={liked}
+              approvedComments={approvedComments}
+              myPendingComments={myPendingComments}
+              pendingForModeration={pendingForModeration}
+              usersById={usersById}
+            />
+          </section>
         </div>
 
         <aside className="space-y-6">

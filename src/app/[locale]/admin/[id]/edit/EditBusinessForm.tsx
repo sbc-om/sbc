@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -163,6 +163,12 @@ export function EditBusinessForm({
   const [selectedOwner, setSelectedOwner] = useState(business.ownerId || "");
   const [avatarMode, setAvatarMode] = useState<"icon" | "logo">(business.avatarMode ?? "icon");
   
+  // File input refs to store actual files for upload
+  const coverFileRef = useRef<File | null>(null);
+  const logoFileRef = useRef<File | null>(null);
+  const bannerFileRef = useRef<File | null>(null);
+  const galleryFilesRef = useRef<File[]>([]);
+  
   // Location state
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
     business.latitude && business.longitude
@@ -187,25 +193,46 @@ export function EditBusinessForm({
   const handleFileSelect = (
     files: FileList | null,
     setter: React.Dispatch<React.SetStateAction<string[]>>,
+    fileRef: React.MutableRefObject<File | File[] | null>,
     multiple: boolean = false
   ) => {
-    if (!files) return;
-    const urls = Array.from(files).map(file => URL.createObjectURL(file));
+    if (!files || files.length === 0) return;
+    const filesArray = Array.from(files);
+    const urls = filesArray.map(file => URL.createObjectURL(file));
+    
+    // Store actual files for upload
     if (multiple) {
+      const currentFiles = Array.isArray(fileRef.current) ? fileRef.current : [];
+      fileRef.current = [...currentFiles, ...filesArray];
       setter(prev => [...prev, ...urls]);
     } else {
-      setter([urls[0]]);
+      fileRef.current = filesArray[0] || null;
+      setter(urls);
     }
   };
 
   const handleRemovePreview = (
     url: string,
-    setter: React.Dispatch<React.SetStateAction<string[]>>
+    setter: React.Dispatch<React.SetStateAction<string[]>>,
+    fileRef: React.MutableRefObject<File | File[] | null>
   ) => {
     if (url.startsWith('blob:')) {
       URL.revokeObjectURL(url);
     }
-    setter(prev => prev.filter(u => u !== url));
+    
+    setter(prev => {
+      const newUrls = prev.filter(u => u !== url);
+      const index = prev.indexOf(url);
+      
+      // Also remove from file ref
+      if (Array.isArray(fileRef.current)) {
+        fileRef.current = fileRef.current.filter((_, i) => i !== index);
+      } else if (index === 0) {
+        fileRef.current = null;
+      }
+      
+      return newUrls;
+    });
   };
 
   const handleDelete = async () => {
@@ -219,9 +246,34 @@ export function EditBusinessForm({
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    
+    // Append files to FormData
+    if (coverFileRef.current) {
+      formData.append('coverImage', coverFileRef.current);
+    }
+    if (logoFileRef.current) {
+      formData.append('logoImage', logoFileRef.current);
+    }
+    if (bannerFileRef.current) {
+      formData.append('bannerImage', bannerFileRef.current);
+    }
+    if (galleryFilesRef.current.length > 0) {
+      galleryFilesRef.current.forEach(file => {
+        formData.append('galleryImages', file);
+      });
+    }
+    
+    // Call the action
+    await updateBusinessAction(locale, business.id, formData);
+  };
+
   return (
     <div className="mt-8">
-      <form action={updateBusinessAction.bind(null, locale, business.id)} className="grid gap-8">
+      <form onSubmit={handleSubmit} className="grid gap-8">
         {/* Hidden inputs for state-controlled values */}
         <input type="hidden" name="categoryId" value={selectedCategory} />
         <input type="hidden" name="ownerId" value={selectedOwner} />
@@ -452,9 +504,9 @@ export function EditBusinessForm({
               label={ar ? "الصورة الرئيسية" : "Cover Image"}
               description={ar ? "الصورة الأساسية التي تمثل نشاطك" : "Main image representing your business"}
               accept="image/*"
-              onChange={(files) => handleFileSelect(files, setCoverPreview, false)}
+              onChange={(files) => handleFileSelect(files, setCoverPreview, coverFileRef, false)}
               previewUrls={coverPreview}
-              onRemove={(url) => handleRemovePreview(url, setCoverPreview)}
+              onRemove={(url) => handleRemovePreview(url, setCoverPreview, coverFileRef)}
             />
 
             <div className="grid gap-6 sm:grid-cols-2">
@@ -462,18 +514,18 @@ export function EditBusinessForm({
                 label={ar ? "الشعار" : "Logo"}
                 description={ar ? "شعار نشاطك التجاري" : "Your business logo"}
                 accept="image/*"
-                onChange={(files) => handleFileSelect(files, setLogoPreview, false)}
+                onChange={(files) => handleFileSelect(files, setLogoPreview, logoFileRef, false)}
                 previewUrls={logoPreview}
-                onRemove={(url) => handleRemovePreview(url, setLogoPreview)}
+                onRemove={(url) => handleRemovePreview(url, setLogoPreview, logoFileRef)}
               />
 
               <MediaUploadBox
                 label={ar ? "البنر" : "Banner"}
                 description={ar ? "صورة البنر العريضة" : "Wide banner image"}
                 accept="image/*"
-                onChange={(files) => handleFileSelect(files, setBannerPreview, false)}
+                onChange={(files) => handleFileSelect(files, setBannerPreview, bannerFileRef, false)}
                 previewUrls={bannerPreview}
-                onRemove={(url) => handleRemovePreview(url, setBannerPreview)}
+                onRemove={(url) => handleRemovePreview(url, setBannerPreview, bannerFileRef)}
               />
             </div>
 
@@ -482,9 +534,9 @@ export function EditBusinessForm({
               description={ar ? "صور إضافية لنشاطك (يمكنك اختيار عدة صور)" : "Additional images (you can select multiple)"}
               accept="image/*"
               multiple
-              onChange={(files) => handleFileSelect(files, setGalleryPreview, true)}
+              onChange={(files) => handleFileSelect(files, setGalleryPreview, galleryFilesRef, true)}
               previewUrls={galleryPreview}
-              onRemove={(url) => handleRemovePreview(url, setGalleryPreview)}
+              onRemove={(url) => handleRemovePreview(url, setGalleryPreview, galleryFilesRef)}
             />
           </div>
         </div>

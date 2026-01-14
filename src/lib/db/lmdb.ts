@@ -11,6 +11,14 @@ export type LmdbHandles = {
   users: ReturnType<ReturnType<typeof open>["openDB"]>;
   userEmails: ReturnType<ReturnType<typeof open>["openDB"]>;
   userCategoryFollows: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** User-business likes keyed by `${userId}:${businessId}`. Value is ISO timestamp. */
+  userBusinessLikes: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** User-business saves keyed by `${userId}:${businessId}`. Value is ISO timestamp. */
+  userBusinessSaves: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** Like counts keyed by businessId. Value is number. */
+  businessLikeCounts: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** Comments keyed by businessId. Value is BusinessComment[]. */
+  businessComments: ReturnType<ReturnType<typeof open>["openDB"]>;
   chatConversations: ReturnType<ReturnType<typeof open>["openDB"]>;
   chatMessages: ReturnType<ReturnType<typeof open>["openDB"]>;
   businessRequests: ReturnType<ReturnType<typeof open>["openDB"]>;
@@ -55,6 +63,10 @@ export function getLmdb(): LmdbHandles {
     existing.users ??= existing.root.openDB({ name: "users" });
     existing.userEmails ??= existing.root.openDB({ name: "userEmails" });
     existing.userCategoryFollows ??= existing.root.openDB({ name: "userCategoryFollows" });
+    existing.userBusinessLikes ??= existing.root.openDB({ name: "userBusinessLikes" });
+    existing.userBusinessSaves ??= existing.root.openDB({ name: "userBusinessSaves" });
+    existing.businessLikeCounts ??= existing.root.openDB({ name: "businessLikeCounts" });
+    existing.businessComments ??= existing.root.openDB({ name: "businessComments" });
     existing.chatConversations ??= existing.root.openDB({ name: "chatConversations" });
     existing.chatMessages ??= existing.root.openDB({ name: "chatMessages" });
     existing.businessRequests ??= existing.root.openDB({ name: "businessRequests" });
@@ -98,6 +110,10 @@ export function getLmdb(): LmdbHandles {
   const users = root.openDB({ name: "users" });
   const userEmails = root.openDB({ name: "userEmails" });
   const userCategoryFollows = root.openDB({ name: "userCategoryFollows" });
+  const userBusinessLikes = root.openDB({ name: "userBusinessLikes" });
+  const userBusinessSaves = root.openDB({ name: "userBusinessSaves" });
+  const businessLikeCounts = root.openDB({ name: "businessLikeCounts" });
+  const businessComments = root.openDB({ name: "businessComments" });
   const chatConversations = root.openDB({ name: "chatConversations" });
   const chatMessages = root.openDB({ name: "chatMessages" });
   const businessRequests = root.openDB({ name: "businessRequests" });
@@ -126,6 +142,10 @@ export function getLmdb(): LmdbHandles {
     users,
     userEmails,
     userCategoryFollows,
+    userBusinessLikes,
+    userBusinessSaves,
+    businessLikeCounts,
+    businessComments,
     chatConversations,
     chatMessages,
     businessRequests,

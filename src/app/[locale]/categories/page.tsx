@@ -58,9 +58,11 @@ export default async function CategoriesPage({
 
   // Fetch all categories for correct parent grouping; apply search filter here.
   const categories = listCategories({ locale: locale as Locale });
-  // Defensive: avoid duplicate/missing keys if DB contains legacy/duplicate records.
+  
+  // Defensive: Filter out categories without id and remove duplicates
+  const validCategories = categories.filter(c => c.id);
   const uniqueCategories = Array.from(
-    new Map(categories.map((c) => [String(c.id || c.slug), c] as const)).values(),
+    new Map(validCategories.map((c) => [c.id, c] as const)).values(),
   );
 
   // Parent/child ordering: show parent then its children.
@@ -229,7 +231,7 @@ export default async function CategoriesPage({
 
                       return (
                         <div
-                          key={`${c.id}:${c.slug}`}
+                          key={c.id}
                           className="sbc-card rounded-2xl p-5 flex items-center justify-between gap-3"
                         >
                           <div className="flex items-center gap-4 min-w-0 flex-1">

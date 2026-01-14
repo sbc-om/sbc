@@ -4,10 +4,18 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import type { Locale } from "@/lib/i18n/locales";
-import { createBusiness, deleteBusiness, updateBusiness } from "@/lib/db/businesses";
+import { 
+  createBusiness, 
+  deleteBusiness, 
+  updateBusiness, 
+  getBusinessById,
+  setBusinessSingleMedia,
+  addBusinessMedia
+} from "@/lib/db/businesses";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getCategoryById } from "@/lib/db/categories";
 import { getUserByEmail, getUserById } from "@/lib/db/users";
+import { storeUpload } from "@/lib/uploads/storage";
 
 function resolveOwnerFromFormData(formData: FormData): { ownerId: string | undefined } {
   const ownerIdRaw = String(formData.get("ownerId") || "").trim();
@@ -181,7 +189,8 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
   const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
 
-  const next = updateBusiness(id, {
+  // First update the business basic info
+  let next = updateBusiness(id, {
     slug: String(formData.get("slug") || "") || undefined,
     ownerId,
     name: {
@@ -200,6 +209,36 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
     tags,
     avatarMode,
   });
+
+  // Process and upload images
+  const coverFile = formData.get("coverImage") as File | null;
+  if (coverFile && coverFile.size > 0) {
+    const result = await storeUpload({ businessId: id, kind: "cover", file: coverFile });
+    next = setBusinessSingleMedia(id, "cover", result.url);
+  }
+
+  const logoFile = formData.get("logoImage") as File | null;
+  if (logoFile && logoFile.size > 0) {
+    const result = await storeUpload({ businessId: id, kind: "logo", file: logoFile });
+    next = setBusinessSingleMedia(id, "logo", result.url);
+  }
+
+  const bannerFile = formData.get("bannerImage") as File | null;
+  if (bannerFile && bannerFile.size > 0) {
+    const result = await storeUpload({ businessId: id, kind: "banner", file: bannerFile });
+    next = setBusinessSingleMedia(id, "banner", result.url);
+  }
+
+  // Process gallery images (multiple files)
+  const galleryFiles = formData.getAll("galleryImages") as File[];
+  if (galleryFiles.length > 0) {
+    const galleryUrls = await Promise.all(
+      galleryFiles
+        .filter(file => file.size > 0)
+        .map(file => storeUpload({ businessId: id, kind: "gallery", file }))
+    );
+    next = addBusinessMedia(id, "gallery", galleryUrls.map(r => r.url));
+  }
 
   revalidatePath(`/${locale}/businesses`);
   revalidatePath(`/${locale}/businesses/${next.slug}`);

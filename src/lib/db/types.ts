@@ -68,6 +68,20 @@ export type User = {
   updatedAt?: string;
 };
 
+export type BusinessCommentStatus = "pending" | "approved" | "rejected";
+
+export type BusinessComment = {
+  id: string;
+  businessId: string;
+  userId: string;
+  text: string;
+  status: BusinessCommentStatus;
+  moderatedByUserId?: string;
+  moderatedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type LoyaltyPlan = "starter" | "pro";
 
 export type LoyaltySubscription = {

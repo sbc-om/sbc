@@ -1,9 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { 
+  IoHeartOutline, 
+  IoHeart, 
+  IoChatbubbleOutline, 
+  IoShareSocialOutline,
+  IoBookmarkOutline,
+  IoBookmark,
+  IoLocationSharp,
+  IoEllipsisHorizontal
+} from "react-icons/io5";
 import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
+import type { Locale } from "@/lib/i18n/locales";
 
 interface BusinessFeedCardProps {
   business: {
@@ -26,25 +37,39 @@ interface BusinessFeedCardProps {
       website?: string;
     };
   };
-  locale: "en" | "ar";
+  locale: Locale;
   categoryName?: string;
   /** Provide this from the parent (server) when available. */
   categoryIconId?: string;
+  /** Real like count from database */
+  initialLikeCount: number;
+  /** User has liked this business */
+  initialLiked: boolean;
+  /** User has saved this business */
+  initialSaved: boolean;
+  /** Real approved comment count from database */
+  commentCount: number;
+  /** Actions for like and save */
+  onToggleLike: (businessId: string) => Promise<{ liked: boolean; count: number }>;
+  onToggleSave: (businessId: string) => Promise<{ saved: boolean }>;
 }
 
-export function BusinessFeedCard({ business, locale, categoryName, categoryIconId }: BusinessFeedCardProps) {
-  const [liked, setLiked] = useState(false);
-  const [saved, setSaved] = useState(false);
-  
-  // Deterministic "likes" value for UI (avoids Math.random during render).
-  const likesCount = (() => {
-    const s = String(business.id || business.slug || "");
-    let h = 0;
-    for (let i = 0; i < s.length; i++) {
-      h = (h * 31 + s.charCodeAt(i)) >>> 0;
-    }
-    return (h % 951) + 50; // 50..1000
-  })();
+export function BusinessFeedCard({
+  business,
+  locale,
+  categoryName,
+  categoryIconId,
+  initialLikeCount,
+  initialLiked,
+  initialSaved,
+  commentCount,
+  onToggleLike,
+  onToggleSave,
+}: BusinessFeedCardProps) {
+  const [isPending, startTransition] = useTransition();
+  const [liked, setLiked] = useState(initialLiked);
+  const [likeCount, setLikeCount] = useState(initialLikeCount);
+  const [saved, setSaved] = useState(initialSaved);
   
   const name = locale === "ar" ? business.name.ar : business.name.en;
   const description = business.description
@@ -58,6 +83,54 @@ export function BusinessFeedCard({ business, locale, categoryName, categoryIconI
   const avatarMode = business.avatarMode ?? "icon";
   const showLogo = avatarMode === "logo" && !!logo;
   const CategoryIcon = getCategoryIconComponent(categoryIconId);
+
+  const handleLikeClick = () => {
+    startTransition(async () => {
+      try {
+        const result = await onToggleLike(business.id);
+        setLiked(result.liked);
+        setLikeCount(result.count);
+      } catch (err) {
+        console.error("Failed to toggle like:", err);
+      }
+    });
+  };
+
+  const handleSaveClick = () => {
+    startTransition(async () => {
+      try {
+        const result = await onToggleSave(business.id);
+        setSaved(result.saved);
+      } catch (err) {
+        console.error("Failed to toggle save:", err);
+      }
+    });
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/${locale}/businesses/${business.slug}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: name,
+          text: description || name,
+          url,
+        });
+      } catch (err) {
+        // User cancelled share or error occurred
+        console.log("Share cancelled or failed", err);
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(url);
+        // Could show a toast notification here
+        alert(locale === "ar" ? "تم نسخ الرابط" : "Link copied!");
+      } catch (err) {
+        console.error("Failed to copy:", err);
+      }
+    }
+  };
 
   return (
     <article
@@ -99,15 +172,11 @@ export function BusinessFeedCard({ business, locale, categoryName, categoryIconI
           className="text-(--muted-foreground) hover:text-foreground transition-colors p-1"
           aria-label="More options"
         >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <circle cx="12" cy="5" r="1.5" />
-            <circle cx="12" cy="12" r="1.5" />
-            <circle cx="12" cy="19" r="1.5" />
-          </svg>
+          <IoEllipsisHorizontal className="w-6 h-6" />
         </button>
       </div>
 
-      {/* Image */}
+      {/* Image - Square Instagram-style (1080x1080) */}
       {mainImage && (
         <Link href={`/${locale}/businesses/${business.slug}`}>
           <div className="relative w-full aspect-square bg-linear-to-br from-accent/5 to-accent-2/5">
@@ -116,7 +185,8 @@ export function BusinessFeedCard({ business, locale, categoryName, categoryIconI
               alt={name}
               fill
               className="object-cover"
-              sizes="(max-width: 640px) 100vw, 600px"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              quality={90}
               priority={false}
             />
           </div>
@@ -128,89 +198,68 @@ export function BusinessFeedCard({ business, locale, categoryName, categoryIconI
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setLiked(!liked)}
-              className="transition-transform hover:scale-110 active:scale-95"
+              onClick={handleLikeClick}
+              disabled={isPending}
+              className="transition-all hover:scale-110 active:scale-95 disabled:opacity-50"
               aria-label={liked ? "Unlike" : "Like"}
             >
-              <svg
-                className={`w-7 h-7 ${liked ? "fill-red-500 text-red-500" : "fill-none"}`}
-                stroke="currentColor"
-                strokeWidth={liked ? 0 : 2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
+              {liked ? (
+                <IoHeart className="w-7 h-7 text-red-500" />
+              ) : (
+                <IoHeartOutline className="w-7 h-7" strokeWidth={0.5} />
+              )}
             </button>
             <Link
               href={`/${locale}/businesses/${business.slug}`}
-              className="transition-transform hover:scale-110 active:scale-95"
+              className="transition-all hover:scale-110 active:scale-95"
               aria-label="Comment"
             >
-              <svg
-                className="w-7 h-7"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
+              <IoChatbubbleOutline className="w-7 h-7" strokeWidth={0.5} />
             </Link>
             <button
-              className="transition-transform hover:scale-110 active:scale-95"
+              onClick={handleShare}
+              className="transition-all hover:scale-110 active:scale-95"
               aria-label="Share"
             >
-              <svg
-                className="w-7 h-7"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                />
-              </svg>
+              <IoShareSocialOutline className="w-7 h-7" strokeWidth={0.5} />
             </button>
           </div>
           <button
-            onClick={() => setSaved(!saved)}
-            className="transition-transform hover:scale-110 active:scale-95"
+            onClick={handleSaveClick}
+            disabled={isPending}
+            className="transition-all hover:scale-110 active:scale-95 disabled:opacity-50"
             aria-label={saved ? "Unsave" : "Save"}
           >
-            <svg
-              className={`w-6 h-6 ${saved ? "fill-current" : "fill-none"}`}
-              stroke="currentColor"
-              strokeWidth={saved ? 0 : 2}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-              />
-            </svg>
+            {saved ? (
+              <IoBookmark className="w-6 h-6" />
+            ) : (
+              <IoBookmarkOutline className="w-6 h-6" strokeWidth={0.5} />
+            )}
           </button>
         </div>
 
-        {/* Likes */}
-        <div className="text-sm font-semibold mb-2">
-          {likesCount}{" "}
-          {locale === "ar" ? "إعجاب" : "likes"}
+        {/* Likes and Comments Count */}
+        <div className="space-y-1 mb-2">
+          {likeCount > 0 && (
+            <div className="text-sm font-semibold">
+              {likeCount.toLocaleString()}{" "}
+              {locale === "ar" ? "إعجاب" : likeCount === 1 ? "like" : "likes"}
+            </div>
+          )}
+          {commentCount > 0 && (
+            <Link
+              href={`/${locale}/businesses/${business.slug}`}
+              className="text-sm text-(--muted-foreground) hover:text-foreground transition-colors block"
+            >
+              {locale === "ar"
+                ? `عرض جميع التعليقات (${commentCount})`
+                : `View all ${commentCount} comment${commentCount === 1 ? "" : "s"}`}
+            </Link>
+          )}
         </div>
 
-        {/* Caption */}
-        <div className="text-sm">
+        {/* Caption - Single line with ellipsis */}
+        <div className="text-sm line-clamp-1">
           <Link
             href={`/${locale}/businesses/${business.slug}`}
             className="font-semibold hover:opacity-80 transition-opacity"
@@ -218,52 +267,27 @@ export function BusinessFeedCard({ business, locale, categoryName, categoryIconI
             {name}
           </Link>
           {description && (
-            <span className="ml-2 text-foreground">
-              {description.length > 100
-                ? `${description.substring(0, 100)}...`
-                : description}
+            <span className={`${locale === "ar" ? "mr-2" : "ml-2"} text-foreground`}>
+              {description}
             </span>
           )}
         </div>
 
-        {/* Meta Info */}
-        {(business.city || business.contact?.phone) && (
-          <div className="flex items-center gap-3 mt-2 text-xs text-(--muted-foreground)">
-            {business.city && (
-              <span className="flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
+        {/* Meta Info with Timestamp */}
+        <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-(--muted-foreground)">
+          {business.city && (
+            <>
+              <span className="flex items-center gap-0.5">
+                <IoLocationSharp className="w-3 h-3" />
                 {business.city}
               </span>
-            )}
-            {business.contact?.phone && (
-              <span className="flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                </svg>
-                {business.contact.phone}
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* View all comments link */}
-        <Link
-          href={`/${locale}/businesses/${business.slug}`}
-          className="text-xs text-(--muted-foreground) hover:text-foreground transition-colors mt-2 block"
-        >
-          {locale === "ar" ? "عرض جميع التفاصيل" : "View all details"}
-        </Link>
-
-        {/* Timestamp */}
-        <time className="text-xs text-(--muted-foreground) uppercase block mt-1">
-          {locale === "ar" ? "منذ يومين" : "2 days ago"}
-        </time>
+              <span className="text-[9px]">•</span>
+            </>
+          )}
+          <time className="text-[10px] uppercase opacity-70">
+            {locale === "ar" ? "منذ يومين" : "2d ago"}
+          </time>
+        </div>
       </div>
     </article>
   );
