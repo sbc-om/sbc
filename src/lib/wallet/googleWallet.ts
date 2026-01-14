@@ -164,10 +164,10 @@ export async function createGoogleWalletSaveJwt(input: { cardId: string; origins
     id: classId,
     issuerName: businessName,
     programName: businessName,
-    reviewStatus: ReviewStatusEnum.UNDER_REVIEW,
+    reviewStatus: ReviewStatusEnum.DRAFT,
     programLogo: profile?.logoUrl
       ? { sourceUri: { uri: profile.logoUrl } }
-      : { sourceUri: { uri: "https://via.placeholder.com/100" } }, // Placeholder if no logo
+      : { sourceUri: { uri: "" } }, // Empty URI if no logo is available
     // Location-based suggestions (Google Wallet decides when to surface the card).
     ...(profile?.location && {
       locations: [
