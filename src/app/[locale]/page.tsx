@@ -50,7 +50,7 @@ export default async function LocaleHome({
   const featuredIds = new Set([...topRowBusinesses, ...featuredBusinesses].map((b) => b.id));
   const latestBusinesses = allBusinesses
     .filter((b) => !featuredIds.has(b.id))
-    .slice(0, 10);
+    .slice(0, 12);
 
   // Logged in users land on the followed feed.
   if (user) {
