@@ -1,4 +1,6 @@
 import { importPKCS8, SignJWT } from "jose";
+import type { LoyaltyClass, LoyaltyObject } from "google-wallet/lib/esm/loyalty";
+import { StateEnum, BarcodeTypeEnum, ReviewStatusEnum } from "google-wallet/lib/esm/loyalty";
 
 import {
   defaultLoyaltySettings,
@@ -142,25 +144,7 @@ export async function createGoogleWalletSaveJwt(input: { cardId: string; origins
   const classId = `${issuerId}.sbc_loyalty`;
   const objectId = `${issuerId}.${sanitizeWalletIdSuffix(card.id)}`;
 
-  const loyaltyClass: Record<string, unknown> = {
-    id: classId,
-    issuerName: businessName,
-    programName: businessName,
-    programLogo: profile?.logoUrl
-      ? { sourceUri: { uri: profile.logoUrl } }
-      : undefined,
-    // Location-based suggestions (Google Wallet decides when to surface the card).
-    locations: profile?.location
-      ? [
-          {
-            latitude: profile.location.lat,
-            longitude: profile.location.lng,
-          },
-        ]
-      : undefined,
-  };
-
-  const textModulesData: Array<Record<string, unknown>> = [
+  const textModulesData = [
     {
       id: "points",
       header: "Points",
@@ -176,14 +160,33 @@ export async function createGoogleWalletSaveJwt(input: { cardId: string; origins
     });
   }
 
-  const loyaltyObject: Record<string, unknown> = {
+  const loyaltyClass: LoyaltyClass = {
+    id: classId,
+    issuerName: businessName,
+    programName: businessName,
+    reviewStatus: ReviewStatusEnum.UNDER_REVIEW,
+    programLogo: profile?.logoUrl
+      ? { sourceUri: { uri: profile.logoUrl } }
+      : { sourceUri: { uri: "https://via.placeholder.com/100" } }, // Placeholder if no logo
+    // Location-based suggestions (Google Wallet decides when to surface the card).
+    ...(profile?.location && {
+      locations: [
+        {
+          latitude: profile.location.lat,
+          longitude: profile.location.lng,
+        },
+      ],
+    }),
+  };
+
+  const loyaltyObject: LoyaltyObject = {
     id: objectId,
     classId,
-    state: "active",
+    state: StateEnum.ACTIVE,
     accountId: customer?.id ?? card.customerId,
     accountName: customer?.fullName ?? "Customer",
     barcode: {
-      type: "QR_CODE",
+      type: BarcodeTypeEnum.QR_CODE,
       value: card.id,
       alternateText: card.id,
     },
@@ -204,10 +207,6 @@ export async function createGoogleWalletSaveJwt(input: { cardId: string; origins
       ],
     },
   };
-
-  // Clean undefined fields.
-  if (!loyaltyClass.programLogo) delete loyaltyClass.programLogo;
-  if (!loyaltyClass.locations) delete loyaltyClass.locations;
 
   const now = Math.floor(Date.now() / 1000);
   let key: Awaited<ReturnType<typeof importPKCS8>>;
