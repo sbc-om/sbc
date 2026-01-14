@@ -33,6 +33,7 @@ import {
   HiOutlineUser,
   HiX
 } from "react-icons/hi";
+import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
 
 interface SidebarProps {
   locale: Locale;
@@ -323,6 +324,24 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 return <SettingsIcon className="h-5 w-5 shrink-0" />;
               })()}
               <span className="min-w-0 truncate">{dict.nav.settings}</span>
+            </Link>
+
+            <Link
+              role="menuitem"
+              href={`/${locale}/saved`}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                if (isMobile) setMobileOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+            >
+              {(() => {
+                const SavedIcon = isActive("/saved") ? IoBookmark : IoBookmarkOutline;
+                return <SavedIcon className="h-5 w-5 shrink-0" />;
+              })()}
+              <span className="min-w-0 truncate">
+                {locale === "ar" ? "المحفوظات" : "Saved"}
+              </span>
             </Link>
 
             <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />

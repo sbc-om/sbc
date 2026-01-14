@@ -1,9 +1,20 @@
 import Link from "next/link";
 import Image from "next/image";
+import { IoGridOutline, IoPeopleOutline, IoHeartOutline } from "react-icons/io5";
 import type { Locale } from "@/lib/i18n/locales";
 
 interface FeedProfileHeaderProps {
-  user: { displayName: string; email: string; role: string; avatarUrl: string | null };
+  user: {
+    displayName: string;
+    email: string;
+    role: string;
+    avatarUrl: string | null;
+    stats?: {
+      businesses: number;
+      followers: number;
+      followedCategories: number;
+    };
+  };
   locale: Locale;
 }
 
@@ -54,24 +65,42 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
 
         {/* Quick Stats */}
         <div className="hidden sm:flex items-center gap-6 text-center">
-          <div>
-            <div className="text-xl font-bold">0</div>
-            <div className="text-xs text-(--muted-foreground)">
-              {locale === "ar" ? "المنشورات" : "Posts"}
+          <Link
+            href={`/${locale}/profile/businesses`}
+            className="hover:opacity-70 transition-opacity"
+          >
+            <div className="flex items-center gap-1.5 justify-center mb-1">
+              <IoGridOutline className="w-4 h-4 text-(--muted-foreground)" />
+              <div className="text-xl font-bold">{user.stats?.businesses ?? 0}</div>
             </div>
-          </div>
-          <div>
-            <div className="text-xl font-bold">0</div>
             <div className="text-xs text-(--muted-foreground)">
-              {locale === "ar" ? "المتابعون" : "Followers"}
+              {locale === "ar" ? "بیزینس‌ها" : "Businesses"}
             </div>
-          </div>
-          <div>
-            <div className="text-xl font-bold">0</div>
+          </Link>
+          <Link
+            href={`/${locale}/profile/followers`}
+            className="hover:opacity-70 transition-opacity"
+          >
+            <div className="flex items-center gap-1.5 justify-center mb-1">
+              <IoHeartOutline className="w-4 h-4 text-(--muted-foreground)" />
+              <div className="text-xl font-bold">{user.stats?.followers ?? 0}</div>
+            </div>
             <div className="text-xs text-(--muted-foreground)">
-              {locale === "ar" ? "المتابَعون" : "Following"}
+              {locale === "ar" ? "فالوورها" : "Followers"}
             </div>
-          </div>
+          </Link>
+          <Link
+            href={`/${locale}/profile/following`}
+            className="hover:opacity-70 transition-opacity"
+          >
+            <div className="flex items-center gap-1.5 justify-center mb-1">
+              <IoPeopleOutline className="w-4 h-4 text-(--muted-foreground)" />
+              <div className="text-xl font-bold">{user.stats?.followedCategories ?? 0}</div>
+            </div>
+            <div className="text-xs text-(--muted-foreground)">
+              {locale === "ar" ? "فالووینگ" : "Following"}
+            </div>
+          </Link>
         </div>
       </div>
 
@@ -79,13 +108,13 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
       <div className="flex items-center gap-3 mt-4">
         <Link
           href={`/${locale}/profile`}
-          className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-center bg-(--surface) hover:bg-(--muted-foreground)/10 transition-colors"
+          className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-center bg-(--muted-foreground)/10 hover:bg-(--muted-foreground)/20 transition-colors"
         >
           {locale === "ar" ? "تعديل الملف الشخصي" : "Edit Profile"}
         </Link>
         <Link
           href={`/${locale}/businesses`}
-          className="flex-1 px-4 py-2 rounded-xl text-sm font-semibold text-center bg-(--surface) hover:bg-(--muted-foreground)/10 transition-colors"
+          className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-center bg-(--muted-foreground)/10 hover:bg-(--muted-foreground)/20 transition-colors"
         >
           {locale === "ar" ? "تصفح الأعمال" : "Browse Businesses"}
         </Link>

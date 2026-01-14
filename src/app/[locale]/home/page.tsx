@@ -4,7 +4,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
-import { listBusinesses } from "@/lib/db/businesses";
+import { listBusinesses, listBusinessesByOwner } from "@/lib/db/businesses";
 import { getFollowedCategoryIds } from "@/lib/db/follows";
 import { getCategoryById } from "@/lib/db/categories";
 import {
@@ -12,6 +12,7 @@ import {
   hasUserLikedBusiness,
   hasUserSavedBusiness,
   listBusinessComments,
+  getBusinessesFollowersCount,
 } from "@/lib/db/businessEngagement";
 import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "./actions";
 import { AppPage } from "@/components/AppPage";
@@ -29,11 +30,22 @@ export default async function HomeFollowedPage({
   const dict = await getDictionary(locale as Locale);
   const user = await requireUser(locale as Locale);
 
+  // Calculate user stats
+  const followedCategories = getFollowedCategoryIds(user.id);
+  const ownedBusinesses = listBusinessesByOwner(user.id);
+  const businessIds = ownedBusinesses.map(b => b.id);
+  const followersCount = businessIds.length > 0 ? getBusinessesFollowersCount(businessIds) : 0;
+
   const viewUser = {
     displayName: user.displayName ?? user.email.split("@")[0],
     email: user.email,
     role: user.role,
     avatarUrl: user.avatarUrl ?? null,
+    stats: {
+      businesses: ownedBusinesses.length,
+      followers: followersCount,
+      followedCategories: followedCategories.length,
+    },
   };
 
   const followedCategoryIds = new Set(getFollowedCategoryIds(user.id));

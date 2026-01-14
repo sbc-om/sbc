@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getUserById } from "@/lib/db/users";
+import { getFollowedCategoryIds } from "@/lib/db/follows";
+import { listBusinessesByOwner } from "@/lib/db/businesses";
+import { getBusinessesFollowersCount } from "@/lib/db/businessEngagement";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { ProfileClient } from "./ProfileClient";
 
@@ -20,12 +23,23 @@ export default async function ProfilePage({
   const user = getUserById(auth.id);
   if (!user) notFound();
 
+  // Calculate stats
+  const followedCategories = getFollowedCategoryIds(auth.id);
+  const ownedBusinesses = listBusinessesByOwner(auth.id);
+  const businessIds = ownedBusinesses.map(b => b.id);
+  const followersCount = businessIds.length > 0 ? getBusinessesFollowersCount(businessIds) : 0;
+
   const initial = {
     email: user.email,
     role: user.role,
     displayName: user.displayName ?? user.email.split("@")[0],
     bio: user.bio ?? "",
     avatarUrl: user.avatarUrl ?? null,
+    stats: {
+      followedCategories: followedCategories.length,
+      followers: followersCount,
+      businesses: ownedBusinesses.length,
+    },
   };
 
   return (

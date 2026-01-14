@@ -232,3 +232,85 @@ export function getUserSavedBusinessIds(userId: string): string[] {
 
   return savedIds;
 }
+
+// =====================
+// Business Follower Functions
+// =====================
+
+export function getBusinessFollowersCount(businessId: string): number {
+  const { userBusinessLikes, userBusinessSaves } = getLmdb();
+  const bid = businessIdSchema.parse(businessId);
+  const followers = new Set<string>();
+
+  // Count users who liked
+  for (const { key } of userBusinessLikes.getRange({})) {
+    const keyStr = String(key);
+    const [userId, bId] = keyStr.split(":");
+    if (bId === bid && userId) {
+      followers.add(userId);
+    }
+  }
+
+  // Count users who saved (union)
+  for (const { key } of userBusinessSaves.getRange({})) {
+    const keyStr = String(key);
+    const [userId, bId] = keyStr.split(":");
+    if (bId === bid && userId) {
+      followers.add(userId);
+    }
+  }
+
+  return followers.size;
+}
+
+export function getBusinessesFollowersCount(businessIds: string[]): number {
+  const { userBusinessLikes, userBusinessSaves } = getLmdb();
+  const followers = new Set<string>();
+  const bidSet = new Set(businessIds.map(id => businessIdSchema.parse(id)));
+
+  // Count users who liked any business
+  for (const { key } of userBusinessLikes.getRange({})) {
+    const keyStr = String(key);
+    const [userId, bId] = keyStr.split(":");
+    if (bId && bidSet.has(bId) && userId) {
+      followers.add(userId);
+    }
+  }
+
+  // Count users who saved any business (union)
+  for (const { key } of userBusinessSaves.getRange({})) {
+    const keyStr = String(key);
+    const [userId, bId] = keyStr.split(":");
+    if (bId && bidSet.has(bId) && userId) {
+      followers.add(userId);
+    }
+  }
+
+  return followers.size;
+}
+
+export function getBusinessFollowers(businessId: string): string[] {
+  const { userBusinessLikes, userBusinessSaves } = getLmdb();
+  const bid = businessIdSchema.parse(businessId);
+  const followers = new Set<string>();
+
+  // Get users who liked
+  for (const { key } of userBusinessLikes.getRange({})) {
+    const keyStr = String(key);
+    const [userId, bId] = keyStr.split(":");
+    if (bId === bid && userId) {
+      followers.add(userId);
+    }
+  }
+
+  // Get users who saved
+  for (const { key } of userBusinessSaves.getRange({})) {
+    const keyStr = String(key);
+    const [userId, bId] = keyStr.split(":");
+    if (bId === bid && userId) {
+      followers.add(userId);
+    }
+  }
+
+  return Array.from(followers);
+}

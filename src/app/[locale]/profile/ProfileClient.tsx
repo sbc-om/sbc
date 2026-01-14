@@ -15,6 +15,11 @@ type ProfileDTO = {
   displayName: string;
   bio: string;
   avatarUrl: string | null;
+  stats?: {
+    followedCategories: number;
+    followers: number;
+    businesses: number;
+  };
 };
 
 function initials(email: string) {
@@ -62,6 +67,9 @@ export function ProfileClient({
       removePhoto: ar ? "حذف الصورة" : "Remove photo",
       uploading: ar ? "جارٍ الرفع…" : "Uploading…",
       updated: ar ? "تم التحديث" : "Updated",
+      businesses: ar ? "بیزینس‌ها" : "Businesses",
+      followers: ar ? "فالوورها" : "Followers",
+      following: ar ? "فالووینگ" : "Following",
     };
   }, [locale]);
 
@@ -157,6 +165,7 @@ export function ProfileClient({
   return (
     <div className="mt-6 grid gap-6">
       <div className="sbc-card rounded-2xl p-6">
+        <h3 className="text-lg font-semibold mb-4">{locale === "ar" ? "تحرير الملف الشخصي" : "Edit Profile"}</h3>
         <div className="flex items-start gap-5">
           <div className="shrink-0">
             <div className="relative h-24 w-24">
@@ -179,9 +188,8 @@ export function ProfileClient({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold truncate">{t.title}</h2>
-                <p className="mt-1 text-sm text-(--muted-foreground)">{t.subtitle}</p>
-                <p className="mt-3 text-sm font-medium truncate">{initial.email}</p>
+                <h2 className="text-lg font-semibold truncate">{initial.displayName}</h2>
+                <p className="mt-1 text-sm text-(--muted-foreground)">{initial.email}</p>
               </div>
 
               {initial.role === "admin" ? (
