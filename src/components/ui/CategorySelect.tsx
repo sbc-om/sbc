@@ -104,7 +104,7 @@ export function CategorySelect({
 
       {/* Dropdown Panel */}
       {open && (
-        <div className="absolute z-[9999] mt-2 w-full rounded-xl border border-(--surface-border) bg-(--surface) shadow-lg backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute z-[9999] mt-2 w-full rounded-xl border border-(--surface-border) bg-[rgba(var(--surface-rgb),0.88)] shadow-xl backdrop-blur-2xl backdrop-saturate-150 animate-in fade-in slide-in-from-top-2 duration-200">
           {/* Search Input */}
           <div className="p-3 border-b border-(--surface-border)">
             <div className="relative">

@@ -90,7 +90,7 @@ export function BusinessesExplorer({
 
   return (
     <div>
-      <div className="sbc-card rounded-2xl p-5">
+      <div className="sbc-card rounded-2xl p-5 relative z-10">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Input
             value={q}
