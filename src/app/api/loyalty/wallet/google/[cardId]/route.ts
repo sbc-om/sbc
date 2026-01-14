@@ -41,17 +41,23 @@ export async function GET(
     const message = e instanceof Error ? e.message : String(e);
     const isConfigError =
       message.startsWith("MISSING_ENV_GOOGLE_WALLET_") ||
-      message.startsWith("INVALID_ENV_GOOGLE_WALLET_");
+      message.startsWith("INVALID_ENV_GOOGLE_WALLET_") ||
+      message.startsWith("MISSING_PUBLIC_BASE_URL_FOR_GOOGLE_WALLET");
     const status = isConfigError ? 501 : 500;
+
+    let hint: string | undefined;
+    if (message.startsWith("MISSING_PUBLIC_BASE_URL_FOR_GOOGLE_WALLET")) {
+      hint = "Set NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_APP_URL, or SITE_URL environment variable to your public HTTPS URL";
+    } else if (isConfigError) {
+      hint = "Provide a PKCS#8 PEM private key (-----BEGIN PRIVATE KEY----- ...) or set GOOGLE_WALLET_SERVICE_ACCOUNT_JSON";
+    }
 
     return Response.json(
       {
         ok: false,
         error: isConfigError ? "GOOGLE_WALLET_NOT_CONFIGURED" : "GOOGLE_WALLET_ERROR",
         message,
-        hint: isConfigError
-          ? "Provide a PKCS#8 PEM private key (-----BEGIN PRIVATE KEY----- ...) or set GOOGLE_WALLET_SERVICE_ACCOUNT_JSON"
-          : undefined,
+        hint,
       },
       { status }
     );

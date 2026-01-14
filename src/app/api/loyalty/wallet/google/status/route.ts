@@ -19,10 +19,16 @@ export async function GET() {
   const jsonPath = hasEnv("GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_PATH");
   const applicationCreds = hasEnv("GOOGLE_APPLICATION_CREDENTIALS");
 
+  const publicSiteUrl = hasEnv("NEXT_PUBLIC_SITE_URL");
+  const publicAppUrl = hasEnv("NEXT_PUBLIC_APP_URL");
+  const siteUrl = hasEnv("SITE_URL");
+  const hasPublicUrl = publicSiteUrl || publicAppUrl || siteUrl;
+
   const configured =
     enabled &&
     issuerId &&
-    (inlineJson || jsonPath || applicationCreds || (email && privateKey));
+    (inlineJson || jsonPath || applicationCreds || (email && privateKey)) &&
+    hasPublicUrl;
 
   return Response.json({
     ok: true,
@@ -35,6 +41,9 @@ export async function GET() {
       GOOGLE_WALLET_SERVICE_ACCOUNT_JSON: inlineJson,
       GOOGLE_WALLET_SERVICE_ACCOUNT_JSON_PATH: jsonPath,
       GOOGLE_APPLICATION_CREDENTIALS: applicationCreds,
+      NEXT_PUBLIC_SITE_URL: publicSiteUrl,
+      NEXT_PUBLIC_APP_URL: publicAppUrl,
+      SITE_URL: siteUrl,
     },
   });
 }

@@ -181,7 +181,7 @@ export async function createGoogleWalletSaveJwt(input: { cardId: string; origins
   const defaultLogo = "/images/sbc.svg";
   const logoUrlRaw = profile?.logoUrl || defaultLogo;
   if (!publicBaseUrl && !/^https:\/\//i.test(logoUrlRaw)) {
-    throw new Error("MISSING_PUBLIC_BASE_URL_FOR_GOOGLE_WALLET");
+    throw new Error("MISSING_PUBLIC_BASE_URL_FOR_GOOGLE_WALLET: Set NEXT_PUBLIC_SITE_URL, NEXT_PUBLIC_APP_URL, or SITE_URL to your public HTTPS URL (e.g., https://yourdomain.com)");
   }
   const logoUrl = requireHttpsUrl(logoUrlRaw, publicBaseUrl);
 
