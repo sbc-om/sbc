@@ -18,7 +18,6 @@ import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib
 import { LoyaltyProfileClient } from "./LoyaltyProfileClient";
 import { LoyaltySettingsClient } from "./LoyaltySettingsClient";
 import { LoyaltyMessagesClient } from "./LoyaltyMessagesClient";
-import { LoyaltyCardDesigner } from "@/components/loyalty/LoyaltyCardDesigner";
 
 export const runtime = "nodejs";
 
@@ -139,24 +138,25 @@ export default async function LoyaltyManagePage({
 
           <LoyaltyMessagesClient locale={locale as Locale} />
 
-          <LoyaltyCardDesigner
-            locale={locale as Locale}
-            businessName={profile?.businessName ?? ""}
-            logoUrl={profile?.logoUrl}
-            initialDesign={settings?.cardDesign}
-            initialWallet={{
-              walletPassDescription: settings?.walletPassDescription,
-              walletPassTerms: settings?.walletPassTerms,
-              walletWebsiteUrl: settings?.walletWebsiteUrl,
-              walletSupportEmail: settings?.walletSupportEmail,
-              walletSupportPhone: settings?.walletSupportPhone,
-              walletAddress: settings?.walletAddress,
-              walletBarcodeFormat: settings?.walletBarcodeFormat,
-              walletBarcodeMessage: settings?.walletBarcodeMessage,
-              walletNotificationTitle: settings?.walletNotificationTitle,
-              walletNotificationBody: settings?.walletNotificationBody,
-            }}
-          />
+          <div className="mt-8 sbc-card rounded-2xl p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">{ar ? "تصميم البطاقة" : "Card Design"}</h3>
+                <p className="mt-1 text-sm text-(--muted-foreground)">
+                  {ar
+                    ? "خصص شكل وألوان بطاقة الولاء الخاصة بك."
+                    : "Customize the look and colors of your loyalty card."}
+                </p>
+              </div>
+
+              <Link
+                href={`/${locale}/loyalty/manage/design`}
+                className={buttonVariants({ variant: "primary", size: "md" })}
+              >
+                {ar ? "تعديل التصميم" : "Edit Design"}
+              </Link>
+            </div>
+          </div>
 
           <div className="mt-8 sbc-card rounded-2xl p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import React, { useMemo, useRef, useState } from "react";
 
 import type { Locale } from "@/lib/i18n/locales";
@@ -8,7 +9,12 @@ import { localeDir } from "@/lib/i18n/locales";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
-import { OsmLocationPicker, type OsmLocationValue } from "@/components/maps/OsmLocationPicker";
+import type { OsmLocationValue } from "@/components/maps/OsmLocationPicker";
+
+const OsmLocationPicker = dynamic(
+  () => import("@/components/maps/OsmLocationPicker").then((mod) => ({ default: mod.OsmLocationPicker })),
+  { ssr: false }
+);
 
 type LoyaltyProfileDTO = {
   userId: string;
