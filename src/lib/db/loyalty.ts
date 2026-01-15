@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 
 import { getLmdb } from "./lmdb";
+import { triggerWalletUpdate } from "@/lib/wallet/walletUpdates";
 import type {
   AppleWalletRegistration,
   LoyaltyCard,
@@ -616,6 +617,13 @@ export function adjustLoyaltyCustomerPoints(input: {
       points: nextPoints,
       updatedAt: now,
     } satisfies LoyaltyCard);
+
+    // Trigger wallet updates (Apple & Google Wallet) - fire and forget
+    triggerWalletUpdate({
+      cardId: existing.cardId,
+      points: nextPoints,
+      delta,
+    });
   }
 
   return next;
@@ -659,6 +667,13 @@ export function redeemLoyaltyCustomerPoints(input: {
       points: nextPoints,
       updatedAt: now,
     } satisfies LoyaltyCard);
+
+    // Trigger wallet updates (Apple & Google Wallet) - fire and forget
+    triggerWalletUpdate({
+      cardId: existing.cardId,
+      points: nextPoints,
+      delta: -(settings.pointsDeductPerRedemption),
+    });
   }
 
   return { customer: next, settings };
