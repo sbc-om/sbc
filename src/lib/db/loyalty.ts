@@ -86,6 +86,7 @@ const customerInputSchema = z.object({
   email: z.string().trim().email().optional(),
   notes: z.string().trim().max(2000).optional(),
   tags: z.array(z.string().trim().min(1).max(40)).optional(),
+  memberId: z.string().trim().min(3).max(40).optional(),
 });
 
 export type LoyaltyCustomerInput = z.infer<typeof customerInputSchema>;
@@ -533,6 +534,9 @@ export function createLoyaltyCustomer(input: {
   const customerId = nanoid();
   const cardId = nanoid();
 
+  // Generate stable memberId (shown in wallet QR/barcode)
+  const memberId = data.memberId || `M${customerId.slice(0, 8).toUpperCase()}`;
+
   const card: LoyaltyCard = {
     id: cardId,
     userId: uid,
@@ -547,6 +551,7 @@ export function createLoyaltyCustomer(input: {
     id: customerId,
     userId: uid,
     fullName: data.fullName,
+    memberId,
     phone: data.phone,
     email: data.email,
     notes: data.notes,

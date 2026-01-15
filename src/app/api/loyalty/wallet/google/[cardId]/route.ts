@@ -1,10 +1,13 @@
 import { getLoyaltyCardById, getLoyaltyProfileByUserId } from "@/lib/db/loyalty";
-import { createGoogleWalletSaveJwt, getGoogleWalletSaveUrl } from "@/lib/wallet/googleWallet";
+import { defaultLocale } from "@/lib/i18n/locales";
+import { getSbcwalletGoogleSaveUrlForLoyaltyCard, isSbcwalletGoogleConfigured } from "@/lib/wallet/sbcwallet";
 
 export const runtime = "nodejs";
 
 function isEnabled() {
-  return String(process.env.GOOGLE_WALLET_ENABLED || "").toLowerCase() === "true";
+  const raw = String(process.env.GOOGLE_WALLET_ENABLED || "").trim().toLowerCase();
+  if (!raw) return isSbcwalletGoogleConfigured();
+  return ["1", "true", "yes", "on"].includes(raw);
 }
 
 export async function GET(
@@ -32,28 +35,36 @@ export async function GET(
     );
   }
 
-  try {
-    const origin = new URL(req.url).origin;
-    const jwt = await createGoogleWalletSaveJwt({ cardId: card.id, origins: [origin] });
-    const url = getGoogleWalletSaveUrl(jwt);
-    return Response.redirect(url, 302);
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    const isConfigError =
-      message.startsWith("MISSING_ENV_GOOGLE_WALLET_") ||
-      message.startsWith("INVALID_ENV_GOOGLE_WALLET_");
-    const status = isConfigError ? 501 : 500;
-
+  if (!isSbcwalletGoogleConfigured()) {
     return Response.json(
       {
         ok: false,
-        error: isConfigError ? "GOOGLE_WALLET_NOT_CONFIGURED" : "GOOGLE_WALLET_ERROR",
-        message,
-        hint: isConfigError
-          ? "Provide a PKCS#8 PEM private key (-----BEGIN PRIVATE KEY----- ...) or set GOOGLE_WALLET_SERVICE_ACCOUNT_JSON"
-          : undefined,
+        error: "GOOGLE_WALLET_NOT_CONFIGURED",
+        hint: "Provide GOOGLE_ISSUER_ID and GOOGLE_SA_JSON (path to service account JSON) in .env",
       },
-      { status }
+      { status: 501 }
+    );
+  }
+
+  try {
+    const origin = new URL(req.url).origin;
+    const publicCardUrl = `${origin}/${defaultLocale}/loyalty/card/${encodeURIComponent(card.id)}`;
+
+    const { saveUrl } = await getSbcwalletGoogleSaveUrlForLoyaltyCard({
+      cardId: card.id,
+      origin,
+      publicCardUrl,
+    });
+    return Response.redirect(saveUrl, 302);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    return Response.json(
+      {
+        ok: false,
+        error: "GOOGLE_WALLET_ERROR",
+        message,
+      },
+      { status: 500 }
     );
   }
 }

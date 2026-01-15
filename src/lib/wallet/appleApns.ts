@@ -4,11 +4,20 @@ import http2 from "node:http2";
 import { importPKCS8, SignJWT } from "jose";
 
 import { listAppleWalletPushTokensForSerial } from "@/lib/db/loyalty";
-import { getApplePassTypeIdentifier, isAppleWalletEnabled } from "./appleConfig";
 
 function env(name: string): string | undefined {
   const v = process.env[name];
   return v && v.trim() ? v.trim() : undefined;
+}
+
+function isAppleWalletEnabled(): boolean {
+  return String(process.env.APPLE_WALLET_ENABLED || "").toLowerCase() === "true";
+}
+
+function getApplePassTypeIdentifier(): string {
+  const v = env("APPLE_PASS_TYPE_ID");
+  if (!v) throw new Error("MISSING_ENV_APPLE_PASS_TYPE_ID");
+  return v;
 }
 
 function isSandbox(): boolean {
@@ -19,7 +28,7 @@ export function isAppleApnsConfigured(): boolean {
   if (!isAppleWalletEnabled()) return false;
   const p8Path = env("APPLE_APNS_AUTH_KEY_P8_PATH");
   const kid = env("APPLE_APNS_KEY_ID");
-  const teamId = env("APPLE_TEAM_IDENTIFIER");
+  const teamId = env("APPLE_TEAM_ID");
   return Boolean(p8Path && kid && teamId && fs.existsSync(p8Path));
 }
 
@@ -31,11 +40,11 @@ async function getApnsJwt(): Promise<string> {
 
   const p8Path = env("APPLE_APNS_AUTH_KEY_P8_PATH");
   const kid = env("APPLE_APNS_KEY_ID");
-  const teamId = env("APPLE_TEAM_IDENTIFIER");
+  const teamId = env("APPLE_TEAM_ID");
 
   if (!p8Path) throw new Error("MISSING_ENV_APPLE_APNS_AUTH_KEY_P8_PATH");
   if (!kid) throw new Error("MISSING_ENV_APPLE_APNS_KEY_ID");
-  if (!teamId) throw new Error("MISSING_ENV_APPLE_TEAM_IDENTIFIER");
+  if (!teamId) throw new Error("MISSING_ENV_APPLE_TEAM_ID");
 
   const keyPem = fs.readFileSync(p8Path, "utf8");
   const key = await importPKCS8(keyPem, "ES256");

@@ -2,8 +2,7 @@ import { headers } from "next/headers";
 
 import { getLoyaltyCardById, getLoyaltyProfileByUserId } from "@/lib/db/loyalty";
 import { defaultLocale } from "@/lib/i18n/locales";
-import { isApplePassGenerationConfigured } from "@/lib/wallet/appleConfig";
-import { buildAppleLoyaltyPkpassBuffer } from "@/lib/wallet/applePass";
+import { getSbcwalletApplePkpassForLoyaltyCard, isSbcwalletAppleConfigured } from "@/lib/wallet/sbcwallet";
 
 export const runtime = "nodejs";
 
@@ -24,14 +23,14 @@ export async function GET(
 
   const profile = getLoyaltyProfileByUserId(card.userId);
 
-  // A real .pkpass requires signing keys and WWDR cert.
-  if (!isEnabled() || !isApplePassGenerationConfigured()) {
+  // Uses sbcwallet-style env vars (APPLE_TEAM_ID/APPLE_PASS_TYPE_ID/APPLE_CERT_PATH/APPLE_WWDR_PATH).
+  if (!isEnabled() || !isSbcwalletAppleConfigured()) {
     return Response.json(
       {
         ok: false,
         error: "APPLE_WALLET_NOT_CONFIGURED",
         hint:
-          "Set APPLE_WALLET_ENABLED=true and provide PassKit signing cert/key + WWDR cert in .env",
+          "Set APPLE_WALLET_ENABLED=true and provide APPLE_TEAM_ID/APPLE_PASS_TYPE_ID/APPLE_CERT_PATH/APPLE_WWDR_PATH (and APPLE_CERT_PASSWORD if needed)",
         business: profile?.businessName ?? null,
       },
       { status: 501 }
@@ -46,7 +45,7 @@ export async function GET(
     ? `${baseUrl}/${defaultLocale}/loyalty/card/${encodeURIComponent(card.id)}`
     : undefined;
 
-  const pkpass = await buildAppleLoyaltyPkpassBuffer({ cardId: card.id, publicCardUrl });
+  const pkpass = await getSbcwalletApplePkpassForLoyaltyCard({ cardId: card.id, publicCardUrl });
   const body = new Uint8Array(pkpass);
 
   return new Response(body, {

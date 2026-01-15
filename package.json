@@ -7,6 +7,11 @@
     "onlyBuiltDependencies": [
       "lmdb",
       "msgpackr-extract"
+    ],
+    "ignoredBuiltDependencies": [
+      "canvas",
+      "sharp",
+      "unrs-resolver"
     ]
   },
   "scripts": {
@@ -31,7 +36,6 @@
     "nanoid": "^5.1.6",
     "next": "16.1.1",
     "overlayscrollbars": "^2.13.0",
-    "passkit-generator": "^3.4.0",
     "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
     "react": "19.2.3",
@@ -39,6 +43,7 @@
     "react-dom": "19.2.3",
     "react-icons": "^5.5.0",
     "react-leaflet": "^5.0.0",
+    "sbcwallet": "^0.0.4",
     "slugify": "^1.6.6",
     "tailwind-merge": "^3.4.0",
     "web-push": "^3.6.7",

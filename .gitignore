@@ -43,3 +43,8 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
+
+# credential JSON files (keep templates/*.json tracked)
+google-credentials*.json
+smartbusinesscenter-*.json
+certs/*.json

@@ -173,6 +173,8 @@ export type LoyaltyCustomer = {
   /** Optional: future-proof for multi-business owners. */
   businessId?: string;
   fullName: string;
+  /** Stable member ID shown in wallet passes (QR/barcode value). */
+  memberId: string;
   phone?: string;
   email?: string;
   notes?: string;
