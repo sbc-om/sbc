@@ -9,8 +9,12 @@
       "msgpackr-extract"
     ],
     "ignoredBuiltDependencies": [
-      "canvas",
+      "@scarf/scarf",
+      "@tree-sitter-grammars/tree-sitter-yaml",
+      "core-js-pure",
       "sharp",
+      "tree-sitter",
+      "tree-sitter-json",
       "unrs-resolver"
     ]
   },
@@ -45,6 +49,8 @@
     "react-leaflet": "^5.0.0",
     "sbcwallet": "^0.0.4",
     "slugify": "^1.6.6",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-react": "^5.31.0",
     "tailwind-merge": "^3.4.0",
     "web-push": "^3.6.7",
     "zod": "^4.3.5"
@@ -57,9 +63,12 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/sharp": "^0.32.0",
+    "@types/swagger-ui-react": "^5.18.0",
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "openapi-types": "^12.1.3",
+    "patch-package": "^8.0.1",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"

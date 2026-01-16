@@ -1,0 +1,130 @@
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { z } from 'zod';
+import { createUser } from '@/lib/db/users';
+import { getAuthCookieName, signAuthToken } from '@/lib/auth/jwt';
+
+export const runtime = 'nodejs';
+
+const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     tags:
+ *       - Authentication
+ *     summary: User registration
+ *     description: Create a new user account
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: newuser@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 8
+ *                 example: password123
+ *     responses:
+ *       201:
+ *         description: Registration successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                 token:
+ *                   type: string
+ *                   description: JWT authentication token
+ *       400:
+ *         description: Invalid request data or email already taken
+ *       500:
+ *         description: Server error
+ */
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+    const { email, password } = registerSchema.parse(body);
+
+    let user;
+    try {
+      user = await createUser({ email, password, role: 'user' });
+    } catch (error) {
+      if (error instanceof Error && error.message === 'EMAIL_TAKEN') {
+        return NextResponse.json(
+          { ok: false, error: 'Email already registered' },
+          { status: 400 }
+        );
+      }
+      throw error;
+    }
+
+    const token = await signAuthToken({
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    const cookieName = getAuthCookieName();
+    const secure = process.env.NODE_ENV === 'production';
+
+    (await cookies()).set(cookieName, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure,
+      path: '/',
+    });
+
+    return NextResponse.json(
+      {
+        ok: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          displayName: user.displayName ?? user.email.split('@')[0],
+        },
+        token,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { ok: false, error: 'Invalid request data', details: error.issues },
+        { status: 400 }
+      );
+    }
+
+    console.error('Registration error:', error);
+    return NextResponse.json(
+      { ok: false, error: 'Registration failed' },
+      { status: 500 }
+    );
+  }
+}

@@ -132,20 +132,6 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       IconOutline: HiOutlineShoppingBag,
     },
     {
-      key: "dashboard",
-      label: dict.nav.dashboard,
-      path: "/dashboard",
-      Icon: HiChartSquareBar,
-      IconOutline: HiOutlineChartSquareBar,
-    },
-    {
-      key: "chat",
-      label: dict.nav.chat ?? (locale === "ar" ? "الدردشة" : "Chat"),
-      path: "/chat",
-      Icon: HiChat,
-      IconOutline: HiOutlineChat,
-    },
-    {
       key: "businessRequest",
       label: dict.nav.businessRequest ?? (locale === "ar" ? "طلب إضافة عمل" : "Request Listing"),
       path: "/business-request",
@@ -309,6 +295,40 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               })()}
               <span className="min-w-0 truncate">{dict.nav.profile}</span>
             </Link>
+
+            <Link
+              role="menuitem"
+              href={`/${locale}/dashboard`}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                if (isMobile) setMobileOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+            >
+              {(() => {
+                const DashboardIcon = isActive("/dashboard") ? HiChartSquareBar : HiOutlineChartSquareBar;
+                return <DashboardIcon className="h-5 w-5 shrink-0" />;
+              })()}
+              <span className="min-w-0 truncate">{dict.nav.dashboard}</span>
+            </Link>
+
+            <Link
+              role="menuitem"
+              href={`/${locale}/chat`}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                if (isMobile) setMobileOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+            >
+              {(() => {
+                const ChatIcon = isActive("/chat") ? HiChat : HiOutlineChat;
+                return <ChatIcon className="h-5 w-5 shrink-0" />;
+              })()}
+              <span className="min-w-0 truncate">{dict.nav.chat ?? (locale === "ar" ? "الدردشة" : "Chat")}</span>
+            </Link>
+
+            <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
 
             <Link
               role="menuitem"
