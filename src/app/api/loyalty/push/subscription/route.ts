@@ -15,8 +15,9 @@ const postSchema = z
       .object({
         endpoint: z.string().trim().min(1),
         keys: z.object({ p256dh: z.string().trim().min(1), auth: z.string().trim().min(1) }).strict(),
+        expirationTime: z.number().nullable().optional(),
       })
-      .strict(),
+      .passthrough(),
   })
   .strict();
 
@@ -42,7 +43,10 @@ export async function POST(req: Request) {
     const sub = upsertLoyaltyPushSubscription({
       userId: card.userId,
       customerId: card.customerId,
-      subscription: data.subscription,
+      subscription: {
+        endpoint: data.subscription.endpoint,
+        keys: data.subscription.keys,
+      },
       userAgent: ua,
     });
 
