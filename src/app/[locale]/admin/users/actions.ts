@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { approveUserAccount, updateUserRole } from "@/lib/db/users";
+import { approveUserAccount, setUserVerified, updateUserRole } from "@/lib/db/users";
 import type { Role } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
 import { getCurrentUser } from "@/lib/auth/currentUser";
@@ -35,6 +35,21 @@ export async function approveUserAction(locale: Locale, userId: string) {
   }
 
   approveUserAccount(userId);
+  revalidatePath(`/${locale}/admin/users`);
+  return { success: true };
+}
+
+export async function updateUserVerifiedAction(
+  locale: Locale,
+  userId: string,
+  isVerified: boolean,
+) {
+  const auth = await getCurrentUser();
+  if (!auth || auth.role !== "admin") {
+    throw new Error("UNAUTHORIZED");
+  }
+
+  setUserVerified(userId, isVerified);
   revalidatePath(`/${locale}/admin/users`);
   return { success: true };
 }

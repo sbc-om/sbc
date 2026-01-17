@@ -20,6 +20,7 @@ export async function getCurrentUser() {
       role: user.role,
       displayName: user.displayName ?? user.email.split("@")[0],
       avatarUrl: user.avatarUrl ?? null,
+      isVerified: user.isVerified ?? false,
     };
   } catch {
     return null;

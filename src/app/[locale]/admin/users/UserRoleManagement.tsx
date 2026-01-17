@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { RoleSelect } from "@/components/ui/RoleSelect";
-import { approveUserAction, updateUserRoleAction } from "./actions";
+import { approveUserAction, updateUserRoleAction, updateUserVerifiedAction } from "./actions";
 import type { Role } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
 import type { UserListItem } from "@/lib/db/users";
@@ -27,8 +27,10 @@ function formatDate(iso: string, locale: Locale) {
 }
 
 export function UserRoleManagement({ users, locale, currentUserId }: UserRoleManagementProps) {
-  const [pendingRoles, setPendingRoles] = useState<Record<string, Role>>({});
-  const [savingUserId, setSavingUserId] = useState<string | null>(null);
+  const [roleOverrides, setRoleOverrides] = useState<Record<string, Role>>({});
+  const [verifiedOverrides, setVerifiedOverrides] = useState<Record<string, boolean>>({});
+  const [savingRoleUserId, setSavingRoleUserId] = useState<string | null>(null);
+  const [savingVerifiedUserId, setSavingVerifiedUserId] = useState<string | null>(null);
   const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
 
   const now = Date.now();
@@ -52,26 +54,34 @@ export function UserRoleManagement({ users, locale, currentUserId }: UserRoleMan
     return updated > created && now - updated <= recentMs;
   };
 
-  const handleRoleChange = async (userId: string, newRole: Role) => {
-    setPendingRoles((prev) => ({ ...prev, [userId]: newRole }));
-    
-    // Auto-save after a short delay
-    setSavingUserId(userId);
-    
+  const handleRoleChange = async (userId: string, newRole: Role, previousRole: Role) => {
+    setRoleOverrides((prev) => ({ ...prev, [userId]: newRole }));
+    setSavingRoleUserId(userId);
+
     try {
       const formData = new FormData();
       formData.append("role", newRole);
       await updateUserRoleAction(locale, userId, formData);
     } catch (error) {
       console.error("Failed to update role:", error);
+      setRoleOverrides((prev) => ({ ...prev, [userId]: previousRole }));
     } finally {
-      setSavingUserId(null);
-      // Clear pending state after save
-      setPendingRoles((prev) => {
-        const next = { ...prev };
-        delete next[userId];
-        return next;
-      });
+      setSavingRoleUserId(null);
+    }
+  };
+
+  const handleVerifiedToggle = async (userId: string, currentValue: boolean) => {
+    const nextValue = !currentValue;
+    setVerifiedOverrides((prev) => ({ ...prev, [userId]: nextValue }));
+    setSavingVerifiedUserId(userId);
+
+    try {
+      await updateUserVerifiedAction(locale, userId, nextValue);
+    } catch (error) {
+      console.error("Failed to update verification:", error);
+      setVerifiedOverrides((prev) => ({ ...prev, [userId]: currentValue }));
+    } finally {
+      setSavingVerifiedUserId(null);
     }
   };
 
@@ -197,30 +207,46 @@ export function UserRoleManagement({ users, locale, currentUserId }: UserRoleMan
             </p>
           </div>
 
-          <div className="hidden lg:grid grid-cols-[1.6fr_1.2fr_200px_160px_160px] gap-3 px-5 py-3 text-xs font-semibold text-(--muted-foreground) border-b" style={{ borderColor: "var(--surface-border)" }}>
+          <div className="hidden lg:grid grid-cols-[1.5fr_1.2fr_200px_180px_160px_160px] gap-3 px-5 py-3 text-xs font-semibold text-(--muted-foreground) border-b" style={{ borderColor: "var(--surface-border)" }}>
             <div>{locale === "ar" ? "المستخدم" : "User"}</div>
             <div>{locale === "ar" ? "الاتصال" : "Contact"}</div>
             <div>{locale === "ar" ? "الحالة" : "Status"}</div>
+            <div>{locale === "ar" ? "التوثيق" : "Verified"}</div>
             <div>{locale === "ar" ? "الدور" : "Role"}</div>
             <div>{locale === "ar" ? "الإنشاء" : "Created"}</div>
           </div>
 
           <div className="divide-y" style={{ borderColor: "var(--surface-border)" }}>
             {approvedUsers.map((u) => {
-              const currentRole = pendingRoles[u.id] ?? u.role;
+              const currentRole = roleOverrides[u.id] ?? u.role;
               const isCurrentUser = u.id === currentUserId;
-              const isSaving = savingUserId === u.id;
+              const isSavingRole = savingRoleUserId === u.id;
+              const isVerified = verifiedOverrides[u.id] ?? u.isVerified ?? false;
+              const isSavingVerified = savingVerifiedUserId === u.id;
               const edited = isEditedUser(u.createdAt, u.updatedAt);
               const fresh = isNewUser(u.createdAt);
 
               return (
                 <div
                   key={u.id}
-                  className="px-5 py-4 lg:grid lg:grid-cols-[1.6fr_1.2fr_200px_160px_160px] lg:gap-3 lg:items-center"
+                  className="px-5 py-4 lg:grid lg:grid-cols-[1.5fr_1.2fr_200px_180px_160px_160px] lg:gap-3 lg:items-center"
                 >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="truncate text-sm font-semibold">{u.fullName}</div>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="truncate text-sm font-semibold">{u.fullName}</div>
+                        {isVerified ? (
+                          <span
+                            className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-blue-600"
+                            aria-label={locale === "ar" ? "حساب موثق" : "Verified account"}
+                            title={locale === "ar" ? "حساب موثق" : "Verified account"}
+                          >
+                            <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                              <path d="M10 1.5l2.39 1.25 2.64.32 1.86 1.86.32 2.64L18.5 10l-1.29 2.43-.32 2.64-1.86 1.86-2.64.32L10 18.5l-2.43-1.29-2.64-.32-1.86-1.86-.32-2.64L1.5 10l1.25-2.39.32-2.64 1.86-1.86 2.64-.32L10 1.5zm-1 10.2l-2.2-2.2-1.4 1.4 3.6 3.6 6-6-1.4-1.4-4.6 4.6z" />
+                            </svg>
+                          </span>
+                        ) : null}
+                      </div>
                       {isCurrentUser ? (
                         <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
                           {locale === "ar" ? "أنت" : "You"}
@@ -248,15 +274,35 @@ export function UserRoleManagement({ users, locale, currentUserId }: UserRoleMan
                     ) : null}
                   </div>
 
+                  <div className="mt-3 lg:mt-0">
+                    <label className="inline-flex items-center gap-2 text-xs font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={isVerified}
+                        onChange={() => handleVerifiedToggle(u.id, isVerified)}
+                        disabled={isSavingVerified}
+                        className="h-4 w-4 accent-blue-600"
+                      />
+                      <span className={isVerified ? "text-blue-600" : "text-(--muted-foreground)"}>
+                        {isVerified ? (locale === "ar" ? "موثق" : "Verified") : (locale === "ar" ? "غير موثق" : "Unverified")}
+                      </span>
+                      {isSavingVerified ? (
+                        <span className="inline-flex items-center">
+                          <span className="animate-spin h-3 w-3 border-2 border-blue-500 border-t-transparent rounded-full" />
+                        </span>
+                      ) : null}
+                    </label>
+                  </div>
+
                   <div className="mt-3 lg:mt-0 relative">
                     <RoleSelect
                       value={currentRole}
-                      onChange={(newRole) => handleRoleChange(u.id, newRole)}
+                      onChange={(newRole) => handleRoleChange(u.id, newRole, currentRole)}
                       placeholder={locale === "ar" ? "اختر الدور" : "Select role"}
                       locale={locale}
                       disabled={isCurrentUser}
                     />
-                    {isSaving && (
+                    {isSavingRole && (
                       <div className="absolute top-0 right-0 -mr-6 flex items-center justify-center">
                         <div className="animate-spin h-4 w-4 border-2 border-accent border-t-transparent rounded-full" />
                       </div>

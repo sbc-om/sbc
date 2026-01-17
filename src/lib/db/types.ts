@@ -26,6 +26,14 @@ export type Business = {
   ownerId?: string;
   name: LocalizedString;
   description?: LocalizedString;
+  /** Verified businesses get a blue check. */
+  isVerified?: boolean;
+  /** Special/VIP flag shown across the app. */
+  isSpecial?: boolean;
+  /** Show in homepage top-12 section. */
+  homepageFeatured?: boolean;
+  /** Show in homepage top-3 section. */
+  homepageTop?: boolean;
   /** Legacy free-text category (kept for backward-compat + search). Prefer categoryId. */
   category?: string;
   /** Reference to a managed Category (admin-defined, bilingual). */
@@ -59,6 +67,8 @@ export type User = {
   fullName: string;
   passwordHash: string;
   role: Role;
+  /** Verified/special account (blue check). */
+  isVerified?: boolean;
   createdAt: string;
   /** Approval status for new accounts or contact updates. */
   approvalStatus?: "pending" | "approved";

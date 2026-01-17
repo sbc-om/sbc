@@ -12,6 +12,7 @@ export type UserListItem = Pick<
   | "phone"
   | "fullName"
   | "role"
+  | "isVerified"
   | "createdAt"
   | "updatedAt"
   | "approvalStatus"
@@ -69,6 +70,7 @@ export async function createUser(input: {
     fullName,
     passwordHash,
     role: input.role,
+    isVerified: false,
     createdAt: now,
     updatedAt: now,
     displayName: fullName,
@@ -273,6 +275,20 @@ export function updateUserRole(id: string, newRole: Role): User {
   return next;
 }
 
+export function setUserVerified(id: string, isVerified: boolean): User {
+  const { users } = getLmdb();
+  const current = ensureUser(id);
+
+  const next: User = {
+    ...current,
+    isVerified,
+    updatedAt: new Date().toISOString(),
+  };
+
+  users.put(id, next);
+  return next;
+}
+
 export function listUsers(): UserListItem[] {
   const { users } = getLmdb();
   const out: UserListItem[] = [];
@@ -285,6 +301,7 @@ export function listUsers(): UserListItem[] {
       phone: u.phone ?? "",
       fullName: u.fullName ?? u.displayName ?? u.email.split("@")[0],
       role: u.role,
+      isVerified: u.isVerified,
       createdAt: u.createdAt,
       updatedAt: u.updatedAt,
       approvalStatus: u.approvalStatus,

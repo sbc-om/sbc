@@ -17,6 +17,11 @@ import { getCategoryById } from "@/lib/db/categories";
 import { getUserByEmail, getUserById } from "@/lib/db/users";
 import { storeUpload } from "@/lib/uploads/storage";
 
+function readBoolean(formData: FormData, key: string): boolean {
+  const raw = String(formData.get(key) ?? "").trim().toLowerCase();
+  return raw === "on" || raw === "true" || raw === "1" || raw === "yes";
+}
+
 function resolveOwnerFromFormData(formData: FormData): { ownerId: string | undefined } {
   const ownerIdRaw = String(formData.get("ownerId") || "").trim();
   if (ownerIdRaw) {
@@ -72,6 +77,10 @@ export async function createBusinessDraftAction(
     const categoryPatch = deriveLegacyCategoryText(categoryId);
 
     const { ownerId } = resolveOwnerFromFormData(formData);
+    const homepageTop = readBoolean(formData, "homepageTop");
+    const homepageFeatured = homepageTop || readBoolean(formData, "homepageFeatured");
+    const isVerified = readBoolean(formData, "isVerified");
+    const isSpecial = readBoolean(formData, "isSpecial");
 
     // Parse location coordinates
     const latitudeRaw = String(formData.get("latitude") || "").trim();
@@ -90,6 +99,10 @@ export async function createBusinessDraftAction(
         ar: String(formData.get("name_ar") || ""),
       },
       description,
+      isVerified,
+      isSpecial,
+      homepageFeatured,
+      homepageTop,
       ...categoryPatch,
       city: String(formData.get("city") || "") || undefined,
       address: String(formData.get("address") || "") || undefined,
@@ -128,6 +141,10 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
   const categoryPatch = deriveLegacyCategoryText(categoryId);
 
   const { ownerId } = resolveOwnerFromFormData(formData);
+  const homepageTop = readBoolean(formData, "homepageTop");
+  const homepageFeatured = homepageTop || readBoolean(formData, "homepageFeatured");
+  const isVerified = readBoolean(formData, "isVerified");
+  const isSpecial = readBoolean(formData, "isSpecial");
 
   // Parse location coordinates
   const latitudeRaw = String(formData.get("latitude") || "").trim();
@@ -146,6 +163,10 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
       ar: String(formData.get("name_ar") || ""),
     },
     description,
+    isVerified,
+    isSpecial,
+    homepageFeatured,
+    homepageTop,
     ...categoryPatch,
     city: String(formData.get("city") || "") || undefined,
     address: String(formData.get("address") || "") || undefined,
@@ -179,6 +200,10 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   const categoryPatch = deriveLegacyCategoryText(categoryId);
 
   const { ownerId } = resolveOwnerFromFormData(formData);
+  const homepageTop = readBoolean(formData, "homepageTop");
+  const homepageFeatured = homepageTop || readBoolean(formData, "homepageFeatured");
+  const isVerified = readBoolean(formData, "isVerified");
+  const isSpecial = readBoolean(formData, "isSpecial");
 
   // Parse location coordinates
   const latitudeRaw = String(formData.get("latitude") || "").trim();
@@ -198,6 +223,10 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
       ar: String(formData.get("name_ar") || ""),
     },
     description,
+    isVerified,
+    isSpecial,
+    homepageFeatured,
+    homepageTop,
     ...categoryPatch,
     city: String(formData.get("city") || "") || undefined,
     address: String(formData.get("address") || "") || undefined,

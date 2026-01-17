@@ -20,6 +20,10 @@ export const businessInputSchema = z.object({
   ownerId: z.string().trim().min(1).optional(),
   name: localizedStringSchema,
   description: localizedStringSchema.optional(),
+  isVerified: z.boolean().optional(),
+  isSpecial: z.boolean().optional(),
+  homepageFeatured: z.boolean().optional(),
+  homepageTop: z.boolean().optional(),
   // Legacy free-text category (kept for backward compatibility + search)
   category: z.string().trim().min(1).optional(),
   // Preferred: managed category reference
@@ -122,6 +126,10 @@ export function createBusiness(input: BusinessInput): Business {
     ownerId: data.ownerId,
     name: data.name as LocalizedString,
     description: data.description as LocalizedString | undefined,
+    isVerified: data.isVerified ?? false,
+    isSpecial: data.isSpecial ?? false,
+    homepageFeatured: data.homepageFeatured ?? false,
+    homepageTop: data.homepageTop ?? false,
     category: data.category,
     categoryId: data.categoryId,
     city: data.city,

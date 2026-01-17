@@ -8,6 +8,7 @@ interface FeedProfileHeaderProps {
     email: string;
     role: string;
     avatarUrl: string | null;
+    isVerified?: boolean;
     stats?: {
       businesses: number;
       followers: number;
@@ -46,10 +47,21 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
 
         {/* User Info */}
         <div className="flex-1 min-w-0">
-          <Link href={`/${locale}/profile`}>
-            <h2 className="text-xl font-bold hover:opacity-80 transition-opacity">
+          <Link href={`/${locale}/profile`} className="inline-flex items-center gap-2 min-w-0">
+            <h2 className="text-xl font-bold hover:opacity-80 transition-opacity truncate">
               {user.displayName}
             </h2>
+            {user.isVerified ? (
+              <span
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/15 text-blue-600"
+                aria-label={locale === "ar" ? "حساب موثق" : "Verified account"}
+                title={locale === "ar" ? "حساب موثق" : "Verified account"}
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 1.5l2.39 1.25 2.64.32 1.86 1.86.32 2.64L18.5 10l-1.29 2.43-.32 2.64-1.86 1.86-2.64.32L10 18.5l-2.43-1.29-2.64-.32-1.86-1.86-.32-2.64L1.5 10l1.25-2.39.32-2.64 1.86-1.86 2.64-.32L10 1.5zm-1 10.2l-2.2-2.2-1.4 1.4 3.6 3.6 6-6-1.4-1.4-4.6 4.6z" />
+                </svg>
+              </span>
+            ) : null}
           </Link>
           <p className="text-sm text-(--muted-foreground) truncate">{user.email}</p>
           {user.role === "admin" && (

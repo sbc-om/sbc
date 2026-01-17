@@ -26,6 +26,8 @@ interface BusinessFeedCardProps {
     category?: string;
     categoryId?: string;
     avatarMode?: "icon" | "logo";
+    isVerified?: boolean;
+    isSpecial?: boolean;
     media?: {
       logo?: string;
       cover?: string;
@@ -160,12 +162,32 @@ export function BusinessFeedCard({
             </div>
           )}
           <div>
-            <p className="text-sm font-semibold leading-none">{name}</p>
-            {categoryName && (
-              <p className="text-xs text-(--muted-foreground) mt-0.5">
-                {categoryName}
-              </p>
-            )}
+            <div className="flex items-center gap-1">
+              <p className="text-sm font-semibold leading-none">{name}</p>
+              {business.isVerified ? (
+                <span
+                  className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-blue-500/15 text-blue-600"
+                  aria-label={locale === "ar" ? "نشاط موثق" : "Verified business"}
+                  title={locale === "ar" ? "نشاط موثق" : "Verified business"}
+                >
+                  <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 1.5l2.39 1.25 2.64.32 1.86 1.86.32 2.64L18.5 10l-1.29 2.43-.32 2.64-1.86 1.86-2.64.32L10 18.5l-2.43-1.29-2.64-.32-1.86-1.86-.32-2.64L1.5 10l1.25-2.39.32-2.64 1.86-1.86 2.64-.32L10 1.5zm-1 10.2l-2.2-2.2-1.4 1.4 3.6 3.6 6-6-1.4-1.4-4.6 4.6z" />
+                  </svg>
+                </span>
+              ) : null}
+            </div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-2">
+              {categoryName ? (
+                <span className="text-xs text-(--muted-foreground)">
+                  {categoryName}
+                </span>
+              ) : null}
+              {business.isSpecial ? (
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600">
+                  {locale === "ar" ? "مميز" : "Special"}
+                </span>
+              ) : null}
+            </div>
           </div>
         </Link>
         <button

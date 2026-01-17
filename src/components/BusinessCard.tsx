@@ -13,6 +13,8 @@ interface BusinessCardProps {
     category?: string;
     categoryId?: string;
     avatarMode?: "icon" | "logo";
+    isVerified?: boolean;
+    isSpecial?: boolean;
     media?: {
       logo?: string;
       cover?: string;
@@ -111,16 +113,38 @@ export function BusinessCard({ business, locale }: BusinessCardProps) {
             )}
           </div>
 
-          <div className="mt-10">
-            {/* Title */}
-            <h3 className="text-xl font-bold text-foreground mb-2 line-clamp-1 group-hover:text-accent transition-colors">
+        <div className="mt-10">
+          {/* Title */}
+          <div className="mb-2 flex items-center gap-2 min-w-0">
+            <h3 className="min-w-0 text-xl font-bold text-foreground truncate group-hover:text-accent transition-colors">
               {name}
             </h3>
+            {business.isVerified ? (
+              <span
+                className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-blue-600"
+                aria-label={locale === "ar" ? "نشاط موثق" : "Verified business"}
+                title={locale === "ar" ? "نشاط موثق" : "Verified business"}
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 1.5l2.39 1.25 2.64.32 1.86 1.86.32 2.64L18.5 10l-1.29 2.43-.32 2.64-1.86 1.86-2.64.32L10 18.5l-2.43-1.29-2.64-.32-1.86-1.86-.32-2.64L1.5 10l1.25-2.39.32-2.64 1.86-1.86 2.64-.32L10 1.5zm-1 10.2l-2.2-2.2-1.4 1.4 3.6 3.6 6-6-1.4-1.4-4.6 4.6z" />
+                </svg>
+              </span>
+            ) : null}
+          </div>
 
-            {/* Description */}
-            {description && (
-              <p className="text-sm text-foreground opacity-70 line-clamp-2 mb-3">
-                {description}
+          {business.isSpecial ? (
+            <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-600">
+              <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.95a1 1 0 00.95.69h4.153c.969 0 1.371 1.24.588 1.81l-3.36 2.44a1 1 0 00-.364 1.118l1.286 3.95c.3.921-.755 1.688-1.54 1.118l-3.36-2.44a1 1 0 00-1.176 0l-3.36 2.44c-.784.57-1.838-.197-1.539-1.118l1.285-3.95a1 1 0 00-.364-1.118l-3.36-2.44c-.783-.57-.38-1.81.588-1.81h4.153a1 1 0 00.95-.69l1.286-3.95z" />
+              </svg>
+              {locale === "ar" ? "مميز" : "Special"}
+            </div>
+          ) : null}
+
+          {/* Description */}
+          {description && (
+            <p className="text-sm text-foreground opacity-70 line-clamp-2 mb-3">
+              {description}
               </p>
             )}
 

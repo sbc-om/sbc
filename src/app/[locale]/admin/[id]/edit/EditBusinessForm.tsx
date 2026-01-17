@@ -162,6 +162,10 @@ export function EditBusinessForm({
   const [selectedCategory, setSelectedCategory] = useState(business.categoryId || "");
   const [selectedOwner, setSelectedOwner] = useState(business.ownerId || "");
   const [avatarMode, setAvatarMode] = useState<"icon" | "logo">(business.avatarMode ?? "icon");
+  const [isVerified, setIsVerified] = useState(!!business.isVerified);
+  const [isSpecial, setIsSpecial] = useState(!!business.isSpecial);
+  const [homepageFeatured, setHomepageFeatured] = useState(!!business.homepageFeatured || !!business.homepageTop);
+  const [homepageTop, setHomepageTop] = useState(!!business.homepageTop);
   
   // File input refs to store actual files for upload
   const coverFileRef = useRef<File | null>(null);
@@ -455,6 +459,100 @@ export function EditBusinessForm({
             placeholder={ar ? "قهوة، واي فاي، إفطار" : "coffee, wifi, breakfast"}
             defaultValue={business.tags?.join(", ")}
           />
+        </div>
+
+        {/* Verification & Homepage */}
+        <div className="sbc-card p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-1">
+            {ar ? "التوثيق والظهور في الرئيسية" : "Verification & Homepage"}
+          </h2>
+          <p className="text-sm text-(--muted-foreground) mb-6">
+            {ar
+              ? "حدد الشارة الزرقاء والحالة الخاصة ومواضع الظهور في الصفحة الرئيسية."
+              : "Control the blue check, special status, and homepage placements."}
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+              <input
+                type="checkbox"
+                name="isVerified"
+                checked={isVerified}
+                onChange={(e) => setIsVerified(e.target.checked)}
+                className="mt-1 h-4 w-4 accent-blue-600"
+              />
+              <div>
+                <div className="text-sm font-semibold text-foreground">
+                  {ar ? "تفعيل التوثيق (تِك أزرق)" : "Verified (blue check)"}
+                </div>
+                <div className="mt-1 text-xs text-(--muted-foreground)">
+                  {ar ? "يظهر بجانب اسم النشاط في القوائم والصفحة." : "Shown next to the business name across the app."}
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+              <input
+                type="checkbox"
+                name="isSpecial"
+                checked={isSpecial}
+                onChange={(e) => setIsSpecial(e.target.checked)}
+                className="mt-1 h-4 w-4 accent-amber-500"
+              />
+              <div>
+                <div className="text-sm font-semibold text-foreground">
+                  {ar ? "حساب خاص / مميّز" : "Special / VIP"}
+                </div>
+                <div className="mt-1 text-xs text-(--muted-foreground)">
+                  {ar ? "تمييز إضافي لعرضه كبزنس خاص." : "Highlights the business as a special listing."}
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+              <input
+                type="checkbox"
+                name="homepageFeatured"
+                checked={homepageFeatured}
+                onChange={(e) => setHomepageFeatured(e.target.checked)}
+                className="mt-1 h-4 w-4 accent-emerald-500"
+              />
+              <div>
+                <div className="text-sm font-semibold text-foreground">
+                  {ar ? "عرض في قائمة الـ 12 الرئيسية" : "Show in homepage 12"}
+                </div>
+                <div className="mt-1 text-xs text-(--muted-foreground)">
+                  {ar
+                    ? "إضافة هذا النشاط إلى قائمة الـ 12 في الصفحة الرئيسية."
+                    : "Pins this business in the homepage 12 list."}
+                </div>
+              </div>
+            </label>
+
+            <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+              <input
+                type="checkbox"
+                name="homepageTop"
+                checked={homepageTop}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  setHomepageTop(next);
+                  if (next) setHomepageFeatured(true);
+                }}
+                className="mt-1 h-4 w-4 accent-emerald-500"
+              />
+              <div>
+                <div className="text-sm font-semibold text-foreground">
+                  {ar ? "ضمن أفضل 3 في الرئيسية" : "Top 3 on homepage"}
+                </div>
+                <div className="mt-1 text-xs text-(--muted-foreground)">
+                  {ar
+                    ? "يظهر ضمن أول 3 أنشطة في الصفحة الرئيسية."
+                    : "Show in the top 3 slot on the homepage."}
+                </div>
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* Media */}

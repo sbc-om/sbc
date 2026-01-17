@@ -26,7 +26,7 @@ export default async function LocaleHome({
   
   // Get latest businesses
   const allBusinesses = listBusinesses({ locale: locale as Locale });
-  // Homepage featured placements (paid directory plans)
+  // Homepage placements (manual flags + paid directory plans)
   const ownerIds = Array.from(
     new Set(allBusinesses.map((b) => b.ownerId).filter(Boolean) as string[]),
   );
@@ -38,14 +38,31 @@ export default async function LocaleHome({
     ownerDirectoryPlan.set(ownerId, sub!.plan);
   }
 
-  const topRowBusinesses = allBusinesses
-    .filter((b) => !!b.ownerId && ownerDirectoryPlan.get(b.ownerId!) === "homepage-top-yearly")
-    .slice(0, 6);
+  const manualTop = allBusinesses.filter((b) => b.homepageTop);
+  const manualTopIds = new Set(manualTop.map((b) => b.id));
 
-  const featuredBusinesses = allBusinesses
-    .filter((b) => !!b.ownerId && ownerDirectoryPlan.get(b.ownerId!) === "homepage-yearly")
-    .filter((b) => !topRowBusinesses.some((t) => t.id === b.id))
-    .slice(0, 9);
+  const topRowBusinesses = [
+    ...manualTop,
+    ...allBusinesses.filter(
+      (b) => !!b.ownerId
+        && ownerDirectoryPlan.get(b.ownerId!) === "homepage-top-yearly"
+        && !manualTopIds.has(b.id),
+    ),
+  ].slice(0, 3);
+
+  const topRowIds = new Set(topRowBusinesses.map((b) => b.id));
+  const manualFeatured = allBusinesses.filter((b) => b.homepageFeatured && !topRowIds.has(b.id));
+  const manualFeaturedIds = new Set(manualFeatured.map((b) => b.id));
+
+  const featuredBusinesses = [
+    ...manualFeatured,
+    ...allBusinesses.filter(
+      (b) => !!b.ownerId
+        && ownerDirectoryPlan.get(b.ownerId!) === "homepage-yearly"
+        && !topRowIds.has(b.id)
+        && !manualFeaturedIds.has(b.id),
+    ),
+  ].slice(0, 12);
 
   const featuredIds = new Set([...topRowBusinesses, ...featuredBusinesses].map((b) => b.id));
   const latestBusinesses = allBusinesses
@@ -196,12 +213,12 @@ export default async function LocaleHome({
           <Container size="lg">
             <div className="mb-10">
               <h2 className="text-3xl font-bold text-foreground mb-3">
-                {locale === "ar" ? "الصف الأول في الرئيسية" : "Top row on homepage"}
+                {locale === "ar" ? "أفضل 3 في الرئيسية" : "Top 3 on homepage"}
               </h2>
               <p className="text-base text-foreground opacity-70">
                 {locale === "ar"
-                  ? "هذه الأنشطة ضمن باقة الصف الأول." 
-                  : "Businesses featured with the Top Row package."}
+                  ? "أنشطة مختارة للظهور في أعلى الصفحة الرئيسية."
+                  : "Hand-picked businesses highlighted at the top of the homepage."}
               </p>
             </div>
 
@@ -227,8 +244,8 @@ export default async function LocaleHome({
               </h2>
               <p className="text-base text-foreground opacity-70">
                 {locale === "ar"
-                  ? "أنشطة ضمن باقة العرض في الصفحة الرئيسية." 
-                  : "Businesses featured with the Homepage Display package."}
+                  ? "قائمة مختارة من 12 نشاطاً في الصفحة الرئيسية."
+                  : "A curated list of up to 12 businesses on the homepage."}
               </p>
             </div>
 

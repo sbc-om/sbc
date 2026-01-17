@@ -41,6 +41,7 @@ export default async function HomeFollowedPage({
     email: user.email,
     role: user.role,
     avatarUrl: user.avatarUrl ?? null,
+    isVerified: user.isVerified ?? false,
     stats: {
       businesses: ownedBusinesses.length,
       followers: followersCount,

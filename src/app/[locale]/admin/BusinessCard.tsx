@@ -37,13 +37,43 @@ export function BusinessCard({
   return (
     <div className="sbc-card sbc-card--interactive p-5 sm:flex sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-foreground">
-          {ar ? business.name.ar : business.name.en}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="truncate text-sm font-semibold text-foreground">
+            {ar ? business.name.ar : business.name.en}
+          </div>
+          {business.isVerified ? (
+            <span
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/15 text-blue-600"
+              aria-label={ar ? "نشاط موثق" : "Verified business"}
+              title={ar ? "نشاط موثق" : "Verified business"}
+            >
+              <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 1.5l2.39 1.25 2.64.32 1.86 1.86.32 2.64L18.5 10l-1.29 2.43-.32 2.64-1.86 1.86-2.64.32L10 18.5l-2.43-1.29-2.64-.32-1.86-1.86-.32-2.64L1.5 10l1.25-2.39.32-2.64 1.86-1.86 2.64-.32L10 1.5zm-1 10.2l-2.2-2.2-1.4 1.4 3.6 3.6 6-6-1.4-1.4-4.6 4.6z" />
+              </svg>
+            </span>
+          ) : null}
+          {business.isSpecial ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
+              <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.95a1 1 0 00.95.69h4.153c.969 0 1.371 1.24.588 1.81l-3.36 2.44a1 1 0 00-.364 1.118l1.286 3.95c.3.921-.755 1.688-1.54 1.118l-3.36-2.44a1 1 0 00-1.176 0l-3.36 2.44c-.784.57-1.838-.197-1.539-1.118l1.285-3.95a1 1 0 00-.364-1.118l-3.36-2.44c-.783-.57-.38-1.81.588-1.81h4.153a1 1 0 00.95-.69l1.286-3.95z" />
+              </svg>
+              {ar ? "مميز" : "Special"}
+            </span>
+          ) : null}
         </div>
         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-(--muted-foreground)">
           <span className="font-mono">/{business.slug}</span>
           {business.city && <span>{business.city}</span>}
           {categoryName && <span className="sbc-chip px-2 py-0.5 rounded-md text-xs">{categoryName}</span>}
+          {business.homepageTop ? (
+            <span className="sbc-chip px-2 py-0.5 rounded-md text-xs">
+              {ar ? "أفضل 3" : "Top 3"}
+            </span>
+          ) : business.homepageFeatured ? (
+            <span className="sbc-chip px-2 py-0.5 rounded-md text-xs">
+              {ar ? "قائمة 12" : "Top 12"}
+            </span>
+          ) : null}
         </div>
       </div>
 
