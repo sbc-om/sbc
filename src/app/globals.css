@@ -156,6 +156,12 @@ html.loaded button {
     box-shadow 150ms ease, transform 150ms ease;
 }
 
+/* Disable focus-visible outlines globally (per request) */
+*:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 html[dir="rtl"] body {
   font-family: var(--font-arabic), Arial, Helvetica, sans-serif;
 }
