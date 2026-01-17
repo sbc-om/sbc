@@ -51,6 +51,14 @@ export default async function RegisterPage({
         </p>
       ) : null}
 
+      {error === "approval" ? (
+        <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+          {locale === "ar"
+            ? "تم إنشاء الحساب وهو قيد المراجعة من الإدارة."
+            : "Your account has been created and is pending admin approval."}
+        </p>
+      ) : null}
+
       <form action={registerAction} className="mt-6 grid gap-3">
         <input type="hidden" name="locale" value={locale} />
         {next ? <input type="hidden" name="next" value={next} /> : null}

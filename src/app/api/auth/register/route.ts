@@ -100,6 +100,22 @@ export async function POST(req: Request) {
       throw error;
     }
 
+    if (user.approvalStatus && user.approvalStatus !== 'approved') {
+      return NextResponse.json(
+        {
+          ok: true,
+          pendingApproval: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            displayName: user.displayName ?? user.email.split('@')[0],
+          },
+        },
+        { status: 202 }
+      );
+    }
+
     const token = await signAuthToken({
       sub: user.id,
       email: user.email,

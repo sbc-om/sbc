@@ -45,6 +45,14 @@ export default async function LoginPage({
         </p>
       ) : null}
 
+      {error === "approval" ? (
+        <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+          {locale === "ar"
+            ? "حسابك قيد المراجعة من الإدارة. سيتم تفعيله قريباً."
+            : "Your account is pending admin approval. You'll be activated soon."}
+        </p>
+      ) : null}
+
       <form action={loginAction} className="mt-6 grid gap-3">
         <input type="hidden" name="locale" value={locale} />
         {next ? <input type="hidden" name="next" value={next} /> : null}

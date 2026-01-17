@@ -5,7 +5,22 @@ import { z } from "zod";
 import { getLmdb } from "./lmdb";
 import type { Role, User } from "./types";
 
-export type UserListItem = Pick<User, "id" | "email" | "role" | "createdAt">;
+export type UserListItem = Pick<
+  User,
+  | "id"
+  | "email"
+  | "phone"
+  | "fullName"
+  | "role"
+  | "createdAt"
+  | "updatedAt"
+  | "approvalStatus"
+  | "approvalReason"
+  | "approvalRequestedAt"
+  | "pendingEmail"
+  | "pendingPhone"
+  | "approvedAt"
+>;
 
 const emailSchema = z
   .string()
@@ -46,6 +61,7 @@ export async function createUser(input: {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
+  const now = new Date().toISOString();
   const user: User = {
     id: nanoid(),
     email,
@@ -53,9 +69,12 @@ export async function createUser(input: {
     fullName,
     passwordHash,
     role: input.role,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: now,
+    updatedAt: now,
     displayName: fullName,
+    approvalStatus: "pending",
+    approvalReason: "new",
+    approvalRequestedAt: now,
   };
 
   users.put(user.id, user);
@@ -90,6 +109,99 @@ export function updateUserProfile(
   };
 
   users.put(id, next);
+  return next;
+}
+
+export function updateUserContact(
+  id: string,
+  patch: { email?: string | null; phone?: string | null },
+): User {
+  const { users, userEmails, userPhones } = getLmdb();
+  const current = ensureUser(id);
+  const currentEmail = current.email;
+  const currentPhone = current.phone ?? "";
+
+  const nextEmail =
+    typeof patch.email === "string" ? emailSchema.parse(patch.email) : currentEmail;
+  const nextPhone =
+    typeof patch.phone === "string"
+      ? normalizePhone(phoneSchema.parse(patch.phone))
+      : currentPhone;
+
+  if (nextEmail !== currentEmail) {
+    const existingId = userEmails.get(nextEmail) as string | undefined;
+    if (existingId && existingId !== id) throw new Error("EMAIL_TAKEN");
+  }
+
+  if (nextPhone !== currentPhone) {
+    const existingId = userPhones.get(nextPhone) as string | undefined;
+    if (existingId && existingId !== id) throw new Error("PHONE_TAKEN");
+  }
+
+  const hasChange = nextEmail !== currentEmail || nextPhone !== currentPhone;
+  if (!hasChange) return current;
+
+  const now = new Date().toISOString();
+  const next: User = {
+    ...current,
+    pendingEmail: nextEmail !== currentEmail ? nextEmail : current.pendingEmail,
+    pendingPhone: nextPhone !== currentPhone ? nextPhone : current.pendingPhone,
+    approvalStatus: "pending",
+    approvalReason:
+      current.approvalStatus === "pending" && current.approvalReason === "new"
+        ? "new"
+        : "contact_update",
+    approvalRequestedAt: now,
+    updatedAt: now,
+  };
+
+  users.put(id, next);
+  return next;
+}
+
+export function approveUserAccount(id: string): User {
+  const { users, userEmails, userPhones } = getLmdb();
+  const current = ensureUser(id);
+
+  const nextEmail = current.pendingEmail ?? current.email;
+  const nextPhone = current.pendingPhone ?? current.phone;
+
+  if (nextEmail !== current.email) {
+    const existingId = userEmails.get(nextEmail) as string | undefined;
+    if (existingId && existingId !== id) throw new Error("EMAIL_TAKEN");
+  }
+
+  if (nextPhone !== current.phone) {
+    const existingId = userPhones.get(nextPhone) as string | undefined;
+    if (existingId && existingId !== id) throw new Error("PHONE_TAKEN");
+  }
+
+  const now = new Date().toISOString();
+  const next: User = {
+    ...current,
+    email: nextEmail,
+    phone: nextPhone,
+    pendingEmail: undefined,
+    pendingPhone: undefined,
+    approvalStatus: "approved",
+    approvalReason: undefined,
+    approvalRequestedAt: undefined,
+    approvedAt: now,
+    updatedAt: now,
+  };
+
+  users.put(id, next);
+
+  if (nextEmail !== current.email) {
+    userEmails.remove(current.email);
+    userEmails.put(nextEmail, id);
+  }
+
+  if (nextPhone !== current.phone) {
+    userPhones.remove(current.phone);
+    userPhones.put(nextPhone, id);
+  }
+
   return next;
 }
 
@@ -170,8 +282,17 @@ export function listUsers(): UserListItem[] {
     out.push({
       id: u.id,
       email: u.email,
+      phone: u.phone ?? "",
+      fullName: u.fullName ?? u.displayName ?? u.email.split("@")[0],
       role: u.role,
       createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+      approvalStatus: u.approvalStatus,
+      approvalReason: u.approvalReason,
+      approvalRequestedAt: u.approvalRequestedAt,
+      pendingEmail: u.pendingEmail,
+      pendingPhone: u.pendingPhone,
+      approvedAt: u.approvedAt,
     });
   }
 

@@ -31,6 +31,11 @@ export default async function ProfilePage({
 
   const initial = {
     email: user.email,
+    phone: user.phone ?? "",
+    pendingEmail: user.pendingEmail ?? null,
+    pendingPhone: user.pendingPhone ?? null,
+    approvalStatus: user.approvalStatus ?? "approved",
+    approvalReason: user.approvalReason ?? null,
     role: user.role,
     displayName: user.displayName ?? user.email.split("@")[0],
     bio: user.bio ?? "",

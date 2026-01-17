@@ -60,6 +60,17 @@ export type User = {
   passwordHash: string;
   role: Role;
   createdAt: string;
+  /** Approval status for new accounts or contact updates. */
+  approvalStatus?: "pending" | "approved";
+  /** Why approval is needed (new account or contact update). */
+  approvalReason?: "new" | "contact_update";
+  /** When approval was requested. */
+  approvalRequestedAt?: string;
+  /** When approval was granted. */
+  approvedAt?: string;
+  /** Pending contact updates awaiting approval. */
+  pendingEmail?: string;
+  pendingPhone?: string;
   /** Optional, user-editable profile display name. */
   displayName?: string;
   /** Optional, user-editable short bio. */

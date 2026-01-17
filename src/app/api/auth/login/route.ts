@@ -76,6 +76,12 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
+    if (user.approvalStatus && user.approvalStatus !== 'approved') {
+      return NextResponse.json(
+        { ok: false, error: 'ACCOUNT_PENDING_APPROVAL' },
+        { status: 403 }
+      );
+    }
 
     const token = await signAuthToken({
       sub: user.id,

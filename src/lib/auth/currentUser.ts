@@ -12,6 +12,7 @@ export async function getCurrentUser() {
     const payload = await verifyAuthToken(token);
     const user = getUserById(payload.sub);
     if (!user) return null;
+    if (user.approvalStatus && user.approvalStatus !== "approved") return null;
 
     return {
       id: user.id,

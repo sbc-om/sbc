@@ -37,6 +37,9 @@ export async function loginAction(formData: FormData) {
   if (!user) {
     redirect(`/${locale}/login?error=invalid`);
   }
+  if (user.approvalStatus && user.approvalStatus !== "approved") {
+    redirect(`/${locale}/login?error=approval`);
+  }
 
   const token = await signAuthToken({ sub: user.id, email: user.email, role: user.role });
   const cookieName = getAuthCookieName();
@@ -96,6 +99,10 @@ export async function registerAction(formData: FormData) {
       redirect(`/${locale}/register?error=phone`);
     }
     throw e;
+  }
+
+  if (user.approvalStatus && user.approvalStatus !== "approved") {
+    redirect(`/${locale}/login?error=approval`);
   }
 
   const token = await signAuthToken({ sub: user.id, email: user.email, role: user.role });

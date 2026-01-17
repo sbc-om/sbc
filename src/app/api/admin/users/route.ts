@@ -16,13 +16,22 @@ export async function GET(req: Request) {
 
   const all = listUsers();
   const filtered = qRaw
-    ? all.filter((u) => u.email.toLowerCase().includes(qRaw) || u.id.toLowerCase().includes(qRaw))
+    ? all.filter((u) =>
+        u.email.toLowerCase().includes(qRaw) ||
+        u.id.toLowerCase().includes(qRaw) ||
+        (u.phone ?? "").toLowerCase().includes(qRaw) ||
+        (u.fullName ?? "").toLowerCase().includes(qRaw)
+      )
     : all;
 
   const users = filtered.slice(0, limit).map((u) => ({
     id: u.id,
     email: u.email,
+    phone: u.phone,
+    fullName: u.fullName,
     role: u.role,
+    approvalStatus: u.approvalStatus,
+    approvalReason: u.approvalReason,
   }));
 
   return Response.json({ ok: true, users });

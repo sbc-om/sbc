@@ -11,6 +11,11 @@ import type { Locale } from "@/lib/i18n/locales";
 
 type ProfileDTO = {
   email: string;
+  phone: string;
+  pendingEmail?: string | null;
+  pendingPhone?: string | null;
+  approvalStatus?: "pending" | "approved";
+  approvalReason?: "new" | "contact_update" | null;
   role: "admin" | "user";
   displayName: string;
   bio: string;
@@ -39,6 +44,16 @@ export function ProfileClient({
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [bio, setBio] = useState(initial.bio);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatarUrl);
+  const [email, setEmail] = useState(initial.email);
+  const [phone, setPhone] = useState(initial.phone);
+  const [pendingEmail, setPendingEmail] = useState(initial.pendingEmail ?? null);
+  const [pendingPhone, setPendingPhone] = useState(initial.pendingPhone ?? null);
+  const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved">(
+    initial.approvalStatus ?? "approved",
+  );
+  const [approvalReason, setApprovalReason] = useState<"new" | "contact_update" | null>(
+    initial.approvalReason ?? null,
+  );
 
   const [busy, setBusy] = useState(false);
   const [busyAvatar, setBusyAvatar] = useState(false);
@@ -60,7 +75,15 @@ export function ProfileClient({
       title: ar ? "الملف الشخصي" : "Profile",
       subtitle: ar ? "قم بتحديث معلوماتك وصورتك." : "Update your info and avatar.",
       displayName: ar ? "الاسم المعروض" : "Display name",
+      email: ar ? "البريد الإلكتروني" : "Email",
+      phone: ar ? "رقم الهاتف" : "Mobile",
       bio: ar ? "نبذة" : "Bio",
+      pendingContact: ar
+        ? "تحديث بيانات الاتصال قيد المراجعة من الإدارة."
+        : "Your contact updates are pending admin approval.",
+      emailTaken: ar ? "البريد الإلكتروني مستخدم بالفعل" : "That email is already in use.",
+      phoneTaken: ar ? "رقم الهاتف مستخدم بالفعل" : "That phone number is already in use.",
+      saveFailed: ar ? "تعذّر حفظ التغييرات" : "Could not save changes.",
       save: ar ? "حفظ" : "Save",
       saving: ar ? "جارٍ الحفظ…" : "Saving…",
       changePhoto: ar ? "تغيير الصورة" : "Change photo",
@@ -81,7 +104,7 @@ export function ProfileClient({
       const res = await fetch("/api/users/me/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName, bio }),
+        body: JSON.stringify({ displayName, bio, email, phone }),
       });
       const json = (await res.json()) as
         | { ok: true; profile: ProfileDTO }
@@ -92,10 +115,23 @@ export function ProfileClient({
       setDisplayName(json.profile.displayName);
       setBio(json.profile.bio);
       setAvatarUrl(json.profile.avatarUrl);
+      setEmail(json.profile.pendingEmail ?? json.profile.email);
+      setPhone(json.profile.pendingPhone ?? json.profile.phone);
+      setPendingEmail(json.profile.pendingEmail ?? null);
+      setPendingPhone(json.profile.pendingPhone ?? null);
+      setApprovalStatus(json.profile.approvalStatus ?? "approved");
+      setApprovalReason(json.profile.approvalReason ?? null);
       setSuccess(t.updated);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "SAVE_FAILED");
+      const message = e instanceof Error ? e.message : "SAVE_FAILED";
+      if (message === "EMAIL_TAKEN") {
+        setError(t.emailTaken);
+      } else if (message === "PHONE_TAKEN") {
+        setError(t.phoneTaken);
+      } else {
+        setError(t.saveFailed);
+      }
     } finally {
       setBusy(false);
     }
@@ -189,7 +225,7 @@ export function ProfileClient({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="text-lg font-semibold truncate">{initial.displayName}</h2>
-                <p className="mt-1 text-sm text-(--muted-foreground)">{initial.email}</p>
+                <p className="mt-1 text-sm text-(--muted-foreground)">{email}</p>
               </div>
 
               {initial.role === "admin" ? (
@@ -242,6 +278,38 @@ export function ProfileClient({
               />
             </div>
           </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="block text-sm font-medium">{t.email}</label>
+              <div className="mt-2">
+                <Input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium">{t.phone}</label>
+              <div className="mt-2">
+                <Input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  type="tel"
+                  autoComplete="tel"
+                />
+              </div>
+            </div>
+          </div>
+
+          {approvalStatus === "pending" && approvalReason === "contact_update" ? (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700">
+              {t.pendingContact}
+            </div>
+          ) : null}
 
           <div>
             <label className="block text-sm font-medium">{t.bio}</label>

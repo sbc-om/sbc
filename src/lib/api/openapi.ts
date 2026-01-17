@@ -584,6 +584,15 @@ export const openApiSpec: OpenAPIV3.Document = {
               schema: {
                 type: 'object',
                 properties: {
+                  email: {
+                    type: 'string',
+                    format: 'email',
+                    example: 'user@example.com',
+                  },
+                  phone: {
+                    type: 'string',
+                    example: '+9647712345678',
+                  },
                   displayName: {
                     type: 'string',
                     nullable: true,
