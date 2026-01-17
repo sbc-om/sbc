@@ -82,6 +82,12 @@ export async function POST(req: Request) {
         { status: 403 }
       );
     }
+    if (user.isActive === false) {
+      return NextResponse.json(
+        { ok: false, error: 'ACCOUNT_INACTIVE' },
+        { status: 403 }
+      );
+    }
 
     const token = await signAuthToken({
       sub: user.id,

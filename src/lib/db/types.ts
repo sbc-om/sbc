@@ -67,6 +67,8 @@ export type User = {
   fullName: string;
   passwordHash: string;
   role: Role;
+  /** Whether the account is active (admin-controlled). */
+  isActive?: boolean;
   /** Verified/special account (blue check). */
   isVerified?: boolean;
   createdAt: string;

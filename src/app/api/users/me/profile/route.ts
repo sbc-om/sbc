@@ -21,6 +21,7 @@ export async function GET() {
       approvalStatus: user.approvalStatus ?? "approved",
       approvalReason: user.approvalReason ?? null,
       role: user.role,
+      fullName: user.fullName,
       displayName: user.displayName ?? user.email.split("@")[0],
       bio: user.bio ?? "",
       avatarUrl: user.avatarUrl ?? null,
@@ -38,12 +39,14 @@ export async function PATCH(req: Request) {
     const body = (await req.json()) as {
       displayName?: string | null;
       bio?: string | null;
+      fullName?: string | null;
       email?: string | null;
       phone?: string | null;
     };
     const next = updateUserProfile(auth.id, {
       displayName: typeof body.displayName === "undefined" ? undefined : body.displayName,
       bio: typeof body.bio === "undefined" ? undefined : body.bio,
+      fullName: typeof body.fullName === "undefined" ? undefined : body.fullName,
     });
 
     const nextWithContact = updateUserContact(auth.id, {
@@ -62,6 +65,7 @@ export async function PATCH(req: Request) {
         approvalStatus: nextWithContact.approvalStatus ?? "approved",
         approvalReason: nextWithContact.approvalReason ?? null,
         role: nextWithContact.role,
+        fullName: next.fullName,
         displayName: next.displayName ?? nextWithContact.email.split("@")[0],
         bio: next.bio ?? "",
         avatarUrl: nextWithContact.avatarUrl ?? null,

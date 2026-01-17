@@ -13,6 +13,7 @@ export async function getCurrentUser() {
     const user = getUserById(payload.sub);
     if (!user) return null;
     if (user.approvalStatus && user.approvalStatus !== "approved") return null;
+    if (user.isActive === false) return null;
 
     return {
       id: user.id,

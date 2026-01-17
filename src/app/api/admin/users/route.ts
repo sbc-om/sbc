@@ -30,6 +30,7 @@ export async function GET(req: Request) {
     phone: u.phone,
     fullName: u.fullName,
     role: u.role,
+    isActive: u.isActive ?? true,
     approvalStatus: u.approvalStatus,
     approvalReason: u.approvalReason,
   }));

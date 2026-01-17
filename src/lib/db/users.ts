@@ -12,6 +12,7 @@ export type UserListItem = Pick<
   | "phone"
   | "fullName"
   | "role"
+  | "isActive"
   | "isVerified"
   | "createdAt"
   | "updatedAt"
@@ -70,6 +71,7 @@ export async function createUser(input: {
     fullName,
     passwordHash,
     role: input.role,
+    isActive: true,
     isVerified: false,
     createdAt: now,
     updatedAt: now,
@@ -95,18 +97,37 @@ function ensureUser(id: string): User {
 
 export function updateUserProfile(
   id: string,
-  patch: { displayName?: string | null; bio?: string | null },
+  patch: { displayName?: string | null; bio?: string | null; fullName?: string | null },
 ): User {
   const { users } = getLmdb();
   const current = ensureUser(id);
 
   const displayName = patch.displayName === null ? undefined : patch.displayName;
   const bio = patch.bio === null ? undefined : patch.bio;
+  const fullName = patch.fullName === null ? undefined : patch.fullName;
 
   const next: User = {
     ...current,
     displayName: typeof displayName === "string" ? displayName.trim() || undefined : current.displayName,
     bio: typeof bio === "string" ? bio.trim() || undefined : current.bio,
+    fullName: typeof fullName === "string" ? fullNameSchema.parse(fullName) : current.fullName,
+    updatedAt: new Date().toISOString(),
+  };
+
+  users.put(id, next);
+  return next;
+}
+
+export function updateUserFullName(id: string, fullName: string | null | undefined): User {
+  if (typeof fullName === "undefined") return ensureUser(id);
+
+  const { users } = getLmdb();
+  const current = ensureUser(id);
+  const nextFullName = fullName === null ? current.fullName : fullNameSchema.parse(fullName);
+
+  const next: User = {
+    ...current,
+    fullName: nextFullName,
     updatedAt: new Date().toISOString(),
   };
 
@@ -275,6 +296,93 @@ export function updateUserRole(id: string, newRole: Role): User {
   return next;
 }
 
+export function setUserActive(id: string, isActive: boolean): User {
+  const { users } = getLmdb();
+  const current = ensureUser(id);
+
+  const next: User = {
+    ...current,
+    isActive,
+    updatedAt: new Date().toISOString(),
+  };
+
+  users.put(id, next);
+  return next;
+}
+
+export function updateUserAdmin(
+  id: string,
+  patch: {
+    email?: string | null;
+    phone?: string | null;
+    fullName?: string | null;
+    displayName?: string | null;
+    bio?: string | null;
+    role?: Role | null;
+    isVerified?: boolean | null;
+    isActive?: boolean | null;
+  }
+): User {
+  const { users, userEmails, userPhones } = getLmdb();
+  const current = ensureUser(id);
+
+  const nextEmail =
+    typeof patch.email === "string" ? emailSchema.parse(patch.email) : current.email;
+  const nextPhone =
+    typeof patch.phone === "string"
+      ? normalizePhone(phoneSchema.parse(patch.phone))
+      : current.phone;
+  const nextFullName =
+    typeof patch.fullName === "string" ? fullNameSchema.parse(patch.fullName) : current.fullName;
+
+  if (nextEmail !== current.email) {
+    const existingId = userEmails.get(nextEmail) as string | undefined;
+    if (existingId && existingId !== id) throw new Error("EMAIL_TAKEN");
+  }
+
+  if (nextPhone !== current.phone) {
+    const existingId = userPhones.get(nextPhone) as string | undefined;
+    if (existingId && existingId !== id) throw new Error("PHONE_TAKEN");
+  }
+
+  const next: User = {
+    ...current,
+    email: nextEmail,
+    phone: nextPhone,
+    fullName: nextFullName,
+    displayName:
+      patch.displayName === null
+        ? undefined
+        : typeof patch.displayName === "string"
+          ? patch.displayName.trim() || undefined
+          : current.displayName,
+    bio:
+      patch.bio === null
+        ? undefined
+        : typeof patch.bio === "string"
+          ? patch.bio.trim() || undefined
+          : current.bio,
+    role: patch.role ?? current.role,
+    isVerified: typeof patch.isVerified === "boolean" ? patch.isVerified : current.isVerified,
+    isActive: typeof patch.isActive === "boolean" ? patch.isActive : current.isActive,
+    updatedAt: new Date().toISOString(),
+  };
+
+  users.put(id, next);
+
+  if (nextEmail !== current.email) {
+    userEmails.remove(current.email);
+    userEmails.put(nextEmail, id);
+  }
+
+  if (nextPhone !== current.phone) {
+    userPhones.remove(current.phone);
+    userPhones.put(nextPhone, id);
+  }
+
+  return next;
+}
+
 export function setUserVerified(id: string, isVerified: boolean): User {
   const { users } = getLmdb();
   const current = ensureUser(id);
@@ -301,6 +409,7 @@ export function listUsers(): UserListItem[] {
       phone: u.phone ?? "",
       fullName: u.fullName ?? u.displayName ?? u.email.split("@")[0],
       role: u.role,
+      isActive: u.isActive ?? true,
       isVerified: u.isVerified,
       createdAt: u.createdAt,
       updatedAt: u.updatedAt,

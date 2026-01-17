@@ -37,6 +37,7 @@ export default async function ProfilePage({
     approvalStatus: user.approvalStatus ?? "approved",
     approvalReason: user.approvalReason ?? null,
     role: user.role,
+    fullName: user.fullName,
     displayName: user.displayName ?? user.email.split("@")[0],
     bio: user.bio ?? "",
     avatarUrl: user.avatarUrl ?? null,

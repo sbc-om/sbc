@@ -53,6 +53,14 @@ export default async function LoginPage({
         </p>
       ) : null}
 
+      {error === "inactive" ? (
+        <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
+          {locale === "ar"
+            ? "تم تعطيل حسابك مؤقتاً. يرجى التواصل مع الإدارة."
+            : "Your account is currently deactivated. Please contact support."}
+        </p>
+      ) : null}
+
       <form action={loginAction} className="mt-6 grid gap-3">
         <input type="hidden" name="locale" value={locale} />
         {next ? <input type="hidden" name="next" value={next} /> : null}

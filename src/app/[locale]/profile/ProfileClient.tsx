@@ -17,6 +17,7 @@ type ProfileDTO = {
   approvalStatus?: "pending" | "approved";
   approvalReason?: "new" | "contact_update" | null;
   role: "admin" | "user";
+  fullName: string;
   displayName: string;
   bio: string;
   avatarUrl: string | null;
@@ -41,6 +42,7 @@ export function ProfileClient({
 }) {
   const router = useRouter();
 
+  const [fullName, setFullName] = useState(initial.fullName);
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [bio, setBio] = useState(initial.bio);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatarUrl);
@@ -74,6 +76,7 @@ export function ProfileClient({
     return {
       title: ar ? "الملف الشخصي" : "Profile",
       subtitle: ar ? "قم بتحديث معلوماتك وصورتك." : "Update your info and avatar.",
+      fullName: ar ? "الاسم الكامل" : "Full name",
       displayName: ar ? "الاسم المعروض" : "Display name",
       email: ar ? "البريد الإلكتروني" : "Email",
       phone: ar ? "رقم الهاتف" : "Mobile",
@@ -104,7 +107,7 @@ export function ProfileClient({
       const res = await fetch("/api/users/me/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName, bio, email, phone }),
+        body: JSON.stringify({ fullName, displayName, bio, email, phone }),
       });
       const json = (await res.json()) as
         | { ok: true; profile: ProfileDTO }
@@ -112,6 +115,7 @@ export function ProfileClient({
       if (!res.ok) throw new Error(`HTTP_${res.status}`);
       if (!json.ok) throw new Error(json.error);
 
+      setFullName(json.profile.fullName);
       setDisplayName(json.profile.displayName);
       setBio(json.profile.bio);
       setAvatarUrl(json.profile.avatarUrl);
@@ -268,6 +272,17 @@ export function ProfileClient({
 
       <div className="sbc-card rounded-2xl p-6">
         <div className="grid gap-4">
+          <div>
+            <label className="block text-sm font-medium">{t.fullName}</label>
+            <div className="mt-2">
+              <Input
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder={initial.fullName}
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium">{t.displayName}</label>
             <div className="mt-2">
