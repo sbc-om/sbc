@@ -24,8 +24,9 @@ export async function joinLoyaltyByCodeAction(
     redirect(`/${locale}/loyalty/join/${code}?error=PHONE_REQUIRED`);
   }
 
+  let customer;
   try {
-    const customer = createLoyaltyCustomer({
+    customer = createLoyaltyCustomer({
       userId: profile.userId,
       customer: {
         fullName,
@@ -33,10 +34,10 @@ export async function joinLoyaltyByCodeAction(
         email: email || undefined,
       },
     });
-
-    // Flag the first visit so the card page can nudge / auto-enable push if permission is already granted.
-    redirect(`/${locale}/loyalty/card/${customer.cardId}?joined=1`);
   } catch {
     redirect(`/${locale}/loyalty/join/${code}?error=INVALID_INPUT`);
   }
+
+  // Flag the first visit so the card page can nudge / auto-enable push if permission is already granted.
+  redirect(`/${locale}/loyalty/card/${customer.cardId}?joined=1`);
 }
