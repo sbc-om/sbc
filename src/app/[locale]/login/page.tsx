@@ -5,8 +5,10 @@ import { PublicPage } from "@/components/PublicPage";
 import { loginAction } from "@/app/[locale]/auth/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
+import { createHumanChallenge } from "@/lib/auth/humanChallenge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { HumanChallenge } from "@/components/auth/HumanChallenge";
 
 export const runtime = "nodejs";
 
@@ -20,6 +22,7 @@ export default async function LoginPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const dict = await getDictionary(locale as Locale);
+  const challenge = createHumanChallenge(locale as Locale);
 
   const { error, next } = await searchParams;
 
@@ -34,15 +37,31 @@ export default async function LoginPage({
         </p>
       ) : null}
 
+      {error === "human" ? (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {locale === "ar"
+            ? "يرجى إكمال التحقق البشري بشكل صحيح."
+            : "Please complete the human check correctly."}
+        </p>
+      ) : null}
+
       <form action={loginAction} className="mt-6 grid gap-3">
         <input type="hidden" name="locale" value={locale} />
         {next ? <input type="hidden" name="next" value={next} /> : null}
 
         <label className="grid gap-1">
           <span className="text-sm font-medium text-(--muted-foreground)">
-            {dict.auth.email}
+            {dict.auth.identifier}
           </span>
-          <Input name="email" type="email" required autoComplete="email" />
+          <Input
+            name="identifier"
+            type="text"
+            required
+            autoComplete="username"
+            placeholder={
+              locale === "ar" ? "البريد الإلكتروني أو الهاتف" : "Email or mobile"
+            }
+          />
         </label>
 
         <label className="grid gap-1">
@@ -56,6 +75,8 @@ export default async function LoginPage({
             autoComplete="current-password"
           />
         </label>
+
+        <HumanChallenge locale={locale} challenge={challenge} />
 
         <Button type="submit" className="mt-2">
           {dict.auth.signIn}

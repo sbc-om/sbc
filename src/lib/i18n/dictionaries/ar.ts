@@ -40,6 +40,9 @@ export const ar = {
   },
   auth: {
     email: "البريد الإلكتروني",
+    phone: "الهاتف",
+    fullName: "الاسم الكامل",
+    identifier: "البريد الإلكتروني أو الهاتف",
     password: "كلمة المرور",
     signIn: "تسجيل الدخول",
     signUp: "إنشاء حساب",

@@ -7,7 +7,7 @@ import { getAuthCookieName, signAuthToken } from '@/lib/auth/jwt';
 export const runtime = 'nodejs';
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  identifier: z.string().min(1),
   password: z.string().min(1),
 });
 
@@ -18,7 +18,7 @@ const loginSchema = z.object({
  *     tags:
  *       - Authentication
  *     summary: User login
- *     description: Authenticate user with email and password
+ *     description: Authenticate user with email or mobile and password
  *     requestBody:
  *       required: true
  *       content:
@@ -26,12 +26,11 @@ const loginSchema = z.object({
  *           schema:
  *             type: object
  *             required:
- *               - email
+ *               - identifier
  *               - password
  *             properties:
- *               email:
+ *               identifier:
  *                 type: string
- *                 format: email
  *                 example: user@example.com
  *               password:
  *                 type: string
@@ -68,12 +67,12 @@ const loginSchema = z.object({
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password } = loginSchema.parse(body);
+    const { identifier, password } = loginSchema.parse(body);
 
-    const user = await verifyUserPassword({ email, password });
+    const user = await verifyUserPassword({ identifier, password });
     if (!user) {
       return NextResponse.json(
-        { ok: false, error: 'Invalid email or password' },
+        { ok: false, error: 'Invalid email/phone or password' },
         { status: 401 }
       );
     }

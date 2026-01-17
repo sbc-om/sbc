@@ -55,6 +55,8 @@ export type Business = {
 export type User = {
   id: string;
   email: string;
+  phone: string;
+  fullName: string;
   passwordHash: string;
   role: Role;
   createdAt: string;

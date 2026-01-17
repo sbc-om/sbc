@@ -66,6 +66,14 @@ export const openApiSpec: OpenAPIV3.Document = {
             format: 'email',
             example: 'user@example.com',
           },
+          phone: {
+            type: 'string',
+            example: '+9647712345678',
+          },
+          fullName: {
+            type: 'string',
+            example: 'John Doe',
+          },
           role: {
             type: 'string',
             enum: ['user', 'admin'],
@@ -378,18 +386,17 @@ export const openApiSpec: OpenAPIV3.Document = {
       post: {
         tags: ['Authentication'],
         summary: 'User login',
-        description: 'Authenticate user with email and password',
+        description: 'Authenticate user with email or phone and password',
         requestBody: {
           required: true,
           content: {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['email', 'password'],
+                required: ['identifier', 'password'],
                 properties: {
-                  email: {
+                  identifier: {
                     type: 'string',
-                    format: 'email',
                     example: 'user@example.com',
                   },
                   password: {
@@ -451,8 +458,16 @@ export const openApiSpec: OpenAPIV3.Document = {
             'application/json': {
               schema: {
                 type: 'object',
-                required: ['email', 'password'],
+                required: ['fullName', 'phone', 'email', 'password'],
                 properties: {
+                  fullName: {
+                    type: 'string',
+                    example: 'John Doe',
+                  },
+                  phone: {
+                    type: 'string',
+                    example: '+9647712345678',
+                  },
                   email: {
                     type: 'string',
                     format: 'email',

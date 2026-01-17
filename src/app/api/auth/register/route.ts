@@ -7,6 +7,8 @@ import { getAuthCookieName, signAuthToken } from '@/lib/auth/jwt';
 export const runtime = 'nodejs';
 
 const registerSchema = z.object({
+  fullName: z.string().min(2),
+  phone: z.string().min(6),
   email: z.string().email(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
@@ -26,9 +28,17 @@ const registerSchema = z.object({
  *           schema:
  *             type: object
  *             required:
+ *               - fullName
+ *               - phone
  *               - email
  *               - password
  *             properties:
+ *               fullName:
+ *                 type: string
+ *                 example: John Doe
+ *               phone:
+ *                 type: string
+ *                 example: +9647712345678
  *               email:
  *                 type: string
  *                 format: email
@@ -69,15 +79,21 @@ const registerSchema = z.object({
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, password } = registerSchema.parse(body);
+    const { email, phone, fullName, password } = registerSchema.parse(body);
 
     let user;
     try {
-      user = await createUser({ email, password, role: 'user' });
+      user = await createUser({ email, phone, fullName, password, role: 'user' });
     } catch (error) {
       if (error instanceof Error && error.message === 'EMAIL_TAKEN') {
         return NextResponse.json(
           { ok: false, error: 'Email already registered' },
+          { status: 400 }
+        );
+      }
+      if (error instanceof Error && error.message === 'PHONE_TAKEN') {
+        return NextResponse.json(
+          { ok: false, error: 'Phone already registered' },
           { status: 400 }
         );
       }

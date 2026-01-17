@@ -5,8 +5,10 @@ import { PublicPage } from "@/components/PublicPage";
 import { registerAction } from "@/app/[locale]/auth/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
+import { createHumanChallenge } from "@/lib/auth/humanChallenge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { HumanChallenge } from "@/components/auth/HumanChallenge";
 
 export const runtime = "nodejs";
 
@@ -20,6 +22,7 @@ export default async function RegisterPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const dict = await getDictionary(locale as Locale);
+  const challenge = createHumanChallenge(locale as Locale);
 
   const { error, next } = await searchParams;
 
@@ -34,9 +37,37 @@ export default async function RegisterPage({
         </p>
       ) : null}
 
+      {error === "phone" ? (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {locale === "ar" ? "رقم الهاتف مستخدم بالفعل" : "That phone number is already in use."}
+        </p>
+      ) : null}
+
+      {error === "human" ? (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {locale === "ar"
+            ? "يرجى إكمال التحقق البشري بشكل صحيح."
+            : "Please complete the human check correctly."}
+        </p>
+      ) : null}
+
       <form action={registerAction} className="mt-6 grid gap-3">
         <input type="hidden" name="locale" value={locale} />
         {next ? <input type="hidden" name="next" value={next} /> : null}
+
+        <label className="grid gap-1">
+          <span className="text-sm font-medium text-(--muted-foreground)">
+            {dict.auth.fullName}
+          </span>
+          <Input name="fullName" type="text" required autoComplete="name" />
+        </label>
+
+        <label className="grid gap-1">
+          <span className="text-sm font-medium text-(--muted-foreground)">
+            {dict.auth.phone}
+          </span>
+          <Input name="phone" type="tel" required autoComplete="tel" />
+        </label>
 
         <label className="grid gap-1">
           <span className="text-sm font-medium text-(--muted-foreground)">
@@ -60,6 +91,8 @@ export default async function RegisterPage({
             {locale === "ar" ? "8 أحرف على الأقل" : "At least 8 characters"}
           </span>
         </label>
+
+        <HumanChallenge locale={locale} challenge={challenge} />
 
         <Button type="submit" className="mt-2">
           {dict.auth.signUp}

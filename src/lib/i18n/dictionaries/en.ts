@@ -40,6 +40,9 @@ export const en = {
   },
   auth: {
     email: "Email",
+    phone: "Mobile",
+    fullName: "Full name",
+    identifier: "Email or mobile",
     password: "Password",
     signIn: "Sign in",
     signUp: "Create account",

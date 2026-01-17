@@ -13,19 +13,35 @@ const emailSchema = z
   .toLowerCase()
   .email();
 
+const phoneSchema = z.string().trim().min(6).max(40);
+const fullNameSchema = z.string().trim().min(2).max(120);
+
+function normalizePhone(value: string) {
+  return value.replace(/[\s\-()]+/g, "");
+}
+
 export async function createUser(input: {
   email: string;
+  phone: string;
+  fullName: string;
   password: string;
   role: Role;
 }): Promise<User> {
   const email = emailSchema.parse(input.email);
+  const fullName = fullNameSchema.parse(input.fullName);
+  const phone = normalizePhone(phoneSchema.parse(input.phone));
   const password = z.string().min(8).parse(input.password);
 
-  const { users, userEmails } = getLmdb();
+  const { users, userEmails, userPhones } = getLmdb();
 
   const existingId = userEmails.get(email) as string | undefined;
   if (existingId) {
     throw new Error("EMAIL_TAKEN");
+  }
+
+  const existingPhoneId = userPhones.get(phone) as string | undefined;
+  if (existingPhoneId) {
+    throw new Error("PHONE_TAKEN");
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -33,15 +49,18 @@ export async function createUser(input: {
   const user: User = {
     id: nanoid(),
     email,
+    phone,
+    fullName,
     passwordHash,
     role: input.role,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    displayName: email.split("@")[0] || undefined,
+    displayName: fullName,
   };
 
   users.put(user.id, user);
   userEmails.put(email, user.id);
+  userPhones.put(phone, user.id);
 
   return user;
 }
@@ -103,11 +122,25 @@ export function getUserByEmail(email: string): User | null {
   return (users.get(id) as User | undefined) ?? null;
 }
 
+export function getUserByPhone(phone: string): User | null {
+  const p = phoneSchema.safeParse(phone);
+  if (!p.success) return null;
+
+  const { users, userPhones } = getLmdb();
+  const normalized = normalizePhone(p.data);
+  const id = (userPhones.get(normalized) as string | undefined) ?? null;
+  if (!id) return null;
+  return (users.get(id) as User | undefined) ?? null;
+}
+
 export async function verifyUserPassword(input: {
-  email: string;
+  identifier: string;
   password: string;
 }): Promise<User | null> {
-  const user = getUserByEmail(input.email);
+  const identifier = input.identifier.trim();
+  const user = identifier.includes("@")
+    ? getUserByEmail(identifier)
+    : getUserByPhone(identifier);
   if (!user) return null;
 
   const ok = await bcrypt.compare(input.password, user.passwordHash);

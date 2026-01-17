@@ -10,6 +10,7 @@ export type LmdbHandles = {
   categorySlugs: ReturnType<ReturnType<typeof open>["openDB"]>;
   users: ReturnType<ReturnType<typeof open>["openDB"]>;
   userEmails: ReturnType<ReturnType<typeof open>["openDB"]>;
+  userPhones: ReturnType<ReturnType<typeof open>["openDB"]>;
   userCategoryFollows: ReturnType<ReturnType<typeof open>["openDB"]>;
   /** User-business likes keyed by `${userId}:${businessId}`. Value is ISO timestamp. */
   userBusinessLikes: ReturnType<ReturnType<typeof open>["openDB"]>;
@@ -62,6 +63,7 @@ export function getLmdb(): LmdbHandles {
     existing.categorySlugs ??= existing.root.openDB({ name: "categorySlugs" });
     existing.users ??= existing.root.openDB({ name: "users" });
     existing.userEmails ??= existing.root.openDB({ name: "userEmails" });
+    existing.userPhones ??= existing.root.openDB({ name: "userPhones" });
     existing.userCategoryFollows ??= existing.root.openDB({ name: "userCategoryFollows" });
     existing.userBusinessLikes ??= existing.root.openDB({ name: "userBusinessLikes" });
     existing.userBusinessSaves ??= existing.root.openDB({ name: "userBusinessSaves" });
@@ -109,6 +111,7 @@ export function getLmdb(): LmdbHandles {
   const categorySlugs = root.openDB({ name: "categorySlugs" });
   const users = root.openDB({ name: "users" });
   const userEmails = root.openDB({ name: "userEmails" });
+  const userPhones = root.openDB({ name: "userPhones" });
   const userCategoryFollows = root.openDB({ name: "userCategoryFollows" });
   const userBusinessLikes = root.openDB({ name: "userBusinessLikes" });
   const userBusinessSaves = root.openDB({ name: "userBusinessSaves" });
@@ -141,6 +144,7 @@ export function getLmdb(): LmdbHandles {
     categorySlugs,
     users,
     userEmails,
+    userPhones,
     userCategoryFollows,
     userBusinessLikes,
     userBusinessSaves,
