@@ -93,6 +93,21 @@ export type User = {
   updatedAt?: string;
 };
 
+export type PasskeyCredential = {
+  /** Base64url-encoded credential id. */
+  id: string;
+  userId: string;
+  /** Base64url-encoded public key. */
+  publicKey: string;
+  counter: number;
+  transports?: AuthenticatorTransport[];
+  deviceType?: "singleDevice" | "multiDevice";
+  backedUp?: boolean;
+  label?: string;
+  createdAt: string;
+  lastUsedAt?: string;
+};
+
 export type BusinessCommentStatus = "pending" | "approved" | "rejected";
 
 export type BusinessComment = {

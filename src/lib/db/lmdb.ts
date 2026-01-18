@@ -40,6 +40,12 @@ export type LmdbHandles = {
   loyaltyPushSubscriptions: ReturnType<ReturnType<typeof open>["openDB"]>;
   /** Apple Wallet PassKit registrations keyed by `${passTypeId}:${serial}:${deviceLibId}`. */
   appleWalletRegistrations: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** Passkey credentials keyed by credentialId (base64url). */
+  passkeyCredentials: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** User passkey ids keyed by userId. */
+  userPasskeys: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** Passkey challenges keyed by requestId. */
+  passkeyChallenges: ReturnType<ReturnType<typeof open>["openDB"]>;
 };
 
 declare global {
@@ -89,6 +95,9 @@ export function getLmdb(): LmdbHandles {
     existing.loyaltyMessages ??= existing.root.openDB({ name: "loyaltyMessages" });
     existing.loyaltyPushSubscriptions ??= existing.root.openDB({ name: "loyaltyPushSubscriptions" });
     existing.appleWalletRegistrations ??= existing.root.openDB({ name: "appleWalletRegistrations" });
+    existing.passkeyCredentials ??= existing.root.openDB({ name: "passkeyCredentials" });
+    existing.userPasskeys ??= existing.root.openDB({ name: "userPasskeys" });
+    existing.passkeyChallenges ??= existing.root.openDB({ name: "passkeyChallenges" });
 
     globalThis.__sbcLmdb = existing as LmdbHandles;
     return globalThis.__sbcLmdb;
@@ -135,6 +144,9 @@ export function getLmdb(): LmdbHandles {
   const loyaltyMessages = root.openDB({ name: "loyaltyMessages" });
   const loyaltyPushSubscriptions = root.openDB({ name: "loyaltyPushSubscriptions" });
   const appleWalletRegistrations = root.openDB({ name: "appleWalletRegistrations" });
+  const passkeyCredentials = root.openDB({ name: "passkeyCredentials" });
+  const userPasskeys = root.openDB({ name: "userPasskeys" });
+  const passkeyChallenges = root.openDB({ name: "passkeyChallenges" });
 
   globalThis.__sbcLmdb = {
     root,
@@ -164,6 +176,9 @@ export function getLmdb(): LmdbHandles {
     loyaltyMessages,
     loyaltyPushSubscriptions,
     appleWalletRegistrations,
+    passkeyCredentials,
+    userPasskeys,
+    passkeyChallenges,
   };
 
   return globalThis.__sbcLmdb;

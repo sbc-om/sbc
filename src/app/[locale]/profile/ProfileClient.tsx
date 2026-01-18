@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/browser";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -62,6 +63,11 @@ export function ProfileClient({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [passkeyError, setPasskeyError] = useState<string | null>(null);
+  const [passkeySuccess, setPasskeySuccess] = useState<string | null>(null);
+
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
 
@@ -70,6 +76,10 @@ export function ProfileClient({
       if (localPreview) URL.revokeObjectURL(localPreview);
     };
   }, [localPreview]);
+
+  useEffect(() => {
+    setPasskeySupported(browserSupportsWebAuthn());
+  }, []);
 
   const t = useMemo(() => {
     const ar = locale === "ar";
@@ -96,6 +106,16 @@ export function ProfileClient({
       businesses: ar ? "بیزینس‌ها" : "Businesses",
       followers: ar ? "فالوورها" : "Followers",
       following: ar ? "فالووینگ" : "Following",
+      passkeysTitle: ar ? "مفاتيح المرور" : "Passkeys",
+      passkeysSubtitle: ar
+        ? "أضف Passkey لتسجيل الدخول بسرعة وأمان عبر جميع الأجهزة."
+        : "Add a passkey to sign in quickly and securely across devices.",
+      passkeysCreate: ar ? "إضافة Passkey" : "Add passkey",
+      passkeysUnsupported: ar
+        ? "المتصفح لا يدعم Passkey على هذا الجهاز."
+        : "Passkeys aren't supported on this device.",
+      passkeysFailed: ar ? "تعذر إنشاء Passkey." : "Could not create passkey.",
+      passkeysSuccess: ar ? "تمت إضافة Passkey." : "Passkey added.",
     };
   }, [locale]);
 
@@ -200,6 +220,56 @@ export function ProfileClient({
     }
   }
 
+  async function createPasskey() {
+    setPasskeyError(null);
+    setPasskeySuccess(null);
+
+    if (!passkeySupported) {
+      setPasskeyError(t.passkeysUnsupported);
+      return;
+    }
+
+    setPasskeyBusy(true);
+    try {
+      const optionsRes = await fetch("/api/auth/passkey/registration/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ label: navigator.userAgent }),
+      });
+
+      const optionsJson = (await optionsRes.json()) as
+        | { ok: true; options: any; requestId: string; label?: string }
+        | { ok: false; error: string };
+
+      if (!optionsRes.ok || !optionsJson.ok) {
+        throw new Error(optionsJson.ok ? "OPTIONS_FAILED" : optionsJson.error);
+      }
+
+      const attestation = await startRegistration(optionsJson.options);
+
+      const verifyRes = await fetch("/api/auth/passkey/registration/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: optionsJson.requestId, response: attestation }),
+      });
+
+      const verifyJson = (await verifyRes.json()) as
+        | { ok: true; alreadyExists?: boolean }
+        | { ok: false; error: string };
+
+      if (!verifyRes.ok || !verifyJson.ok) {
+        throw new Error(verifyJson.ok ? "VERIFY_FAILED" : verifyJson.error);
+      }
+
+      setPasskeySuccess(t.passkeysSuccess);
+      router.refresh();
+    } catch (e) {
+      setPasskeyError(t.passkeysFailed);
+    } finally {
+      setPasskeyBusy(false);
+    }
+  }
+
   const avatarSrc = localPreview ?? avatarUrl;
 
   return (
@@ -268,6 +338,28 @@ export function ProfileClient({
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="sbc-card rounded-2xl p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">{t.passkeysTitle}</h3>
+            <p className="mt-1 text-sm text-(--muted-foreground)">{t.passkeysSubtitle}</p>
+          </div>
+          <Button
+            variant="secondary"
+            onClick={createPasskey}
+            disabled={passkeyBusy}
+          >
+            {t.passkeysCreate}
+          </Button>
+        </div>
+        {passkeyError ? (
+          <p className="mt-3 text-sm text-red-600 dark:text-red-400">{passkeyError}</p>
+        ) : null}
+        {passkeySuccess ? (
+          <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400">{passkeySuccess}</p>
+        ) : null}
       </div>
 
       <div className="sbc-card rounded-2xl p-6">

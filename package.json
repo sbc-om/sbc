@@ -28,6 +28,8 @@
     "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
+    "@simplewebauthn/browser": "^13.2.2",
+    "@simplewebauthn/server": "^13.2.2",
     "@types/jsbarcode": "^3.11.4",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
