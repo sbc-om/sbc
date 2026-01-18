@@ -219,6 +219,30 @@ export default async function AdminPage({
             </Link>
           </div>
         </div>
+
+        <div className="sbc-card p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-2 border-blue-200 dark:border-blue-800">
+          <div className="flex items-center gap-2 mb-4">
+            <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+            <h2 className="text-lg font-semibold">
+              {ar ? "النسخ الاحتياطية" : "Backups"}
+            </h2>
+          </div>
+          <p className="text-sm text-(--muted-foreground) mb-4">
+            {ar 
+              ? "إدارة النسخ الاحتياطية للبيانات والملفات مع التشفير"
+              : "Manage encrypted database and file backups"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/${locale}/admin/backup`}
+              className={buttonVariants({ variant: "primary", size: "sm" })}
+            >
+              {ar ? "إدارة النسخ الاحتياطية" : "Manage Backups"}
+            </Link>
+          </div>
+        </div>
       </div>
     </AppPage>
   );
