@@ -88,6 +88,7 @@ async function exportDatabase(): Promise<Record<string, any[]>> {
     "loyaltyCards",
     "loyaltyMessages",
     "loyaltyPushSubscriptions",
+    "userPushSubscriptions",
     "appleWalletRegistrations",
     "passkeyCredentials",
     "userPasskeys",

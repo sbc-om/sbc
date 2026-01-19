@@ -44,7 +44,8 @@ export function BusinessAvatarSettings({
         | { ok: true; avatarMode: "icon" | "logo" }
         | { ok: false; error: string };
 
-      if (!res.ok || !json.ok) throw new Error(!res.ok ? `HTTP_${res.status}` : json.error);
+      if (!res.ok) throw new Error(`HTTP_${res.status}`);
+      if (!json.ok) throw new Error(json.error);
       setAvatarMode(json.avatarMode);
     } catch (e) {
       setError(e instanceof Error ? e.message : "SAVE_FAILED");
@@ -70,7 +71,8 @@ export function BusinessAvatarSettings({
         | { ok: true; urls: string[]; media: { logo?: string } }
         | { ok: false; error: string };
 
-      if (!res.ok || !json.ok) throw new Error(!res.ok ? `HTTP_${res.status}` : json.error);
+      if (!res.ok) throw new Error(`HTTP_${res.status}`);
+      if (!json.ok) throw new Error(json.error);
 
       const url = json.media?.logo ?? json.urls?.[0];
       if (url) setLogoUrl(url);
@@ -96,7 +98,8 @@ export function BusinessAvatarSettings({
         | { ok: true; media: { logo?: string } }
         | { ok: false; error: string };
 
-      if (!res.ok || !json.ok) throw new Error(!res.ok ? `HTTP_${res.status}` : json.error);
+      if (!res.ok) throw new Error(`HTTP_${res.status}`);
+      if (!json.ok) throw new Error(json.error);
       setLogoUrl(undefined);
 
       // If user was using logo, fall back to icon.

@@ -205,6 +205,23 @@ export default async function AdminPage({
 
         <div className="sbc-card p-6">
           <h2 className="text-lg font-semibold mb-4">
+            {ar ? "إشعارات الدفع" : "Push Notifications"}
+          </h2>
+          <p className="text-sm text-(--muted-foreground) mb-4">
+            {ar ? "إرسال إشعارات للمستخدمين المشتركين" : "Send notifications to subscribed users"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/${locale}/admin/push`}
+              className={buttonVariants({ variant: "secondary", size: "sm" })}
+            >
+              {ar ? "إدارة الإشعارات" : "Manage Notifications"}
+            </Link>
+          </div>
+        </div>
+
+        <div className="sbc-card p-6">
+          <h2 className="text-lg font-semibold mb-4">
             {ar ? "المحصولات" : "Products"}
           </h2>
           <p className="text-sm text-(--muted-foreground) mb-4">

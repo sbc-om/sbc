@@ -8,6 +8,7 @@ import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/brow
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { UserPushOptIn } from "@/components/push/UserPushOptIn";
 import type { Locale } from "@/lib/i18n/locales";
 
 type ProfileDTO = {
@@ -338,6 +339,10 @@ export function ProfileClient({
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="sbc-card rounded-2xl p-6">
+        <UserPushOptIn dir={locale === "ar" ? "rtl" : "ltr"} />
       </div>
 
       <div className="sbc-card rounded-2xl p-6">

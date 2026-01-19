@@ -15,6 +15,7 @@ export const en = {
     users: "Users",
     profile: "Profile",
     settings: "Settings",
+    edit: "Edit",
     logout: "Logout",
   },
   settings: {

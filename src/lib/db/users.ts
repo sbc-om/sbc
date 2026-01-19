@@ -1,9 +1,10 @@
 import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import { createHash } from "node:crypto";
 
 import { getLmdb } from "./lmdb";
-import type { Role, User } from "./types";
+import type { Role, User, UserPushSubscription } from "./types";
 
 export type UserListItem = Pick<
   User,
@@ -424,5 +425,103 @@ export function listUsers(): UserListItem[] {
 
   // Newest first (ISO strings sort lexicographically)
   out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+  return out;
+}
+
+const userPushSubscriptionSchema = z
+  .object({
+    endpoint: z.string().trim().min(1).max(4096),
+    keys: z
+      .object({
+        p256dh: z.string().trim().min(1).max(2048),
+        auth: z.string().trim().min(1).max(2048),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type UserWebPushSubscriptionInput = z.infer<typeof userPushSubscriptionSchema>;
+
+function hashEndpoint(endpoint: string) {
+  return createHash("sha256").update(endpoint).digest("hex").slice(0, 16);
+}
+
+function userPushSubId(userId: string, endpoint: string) {
+  return `${userId}:${hashEndpoint(endpoint)}`;
+}
+
+export function upsertUserPushSubscription(input: {
+  userId: string;
+  subscription: UserWebPushSubscriptionInput;
+  userAgent?: string;
+}): UserPushSubscription {
+  const { userPushSubscriptions } = getLmdb();
+
+  const userId = z.string().trim().min(1).parse(input.userId);
+  const sub = userPushSubscriptionSchema.parse(input.subscription);
+
+  const id = userPushSubId(userId, sub.endpoint);
+  const existing = userPushSubscriptions.get(id) as UserPushSubscription | undefined;
+  const now = new Date().toISOString();
+
+  const next: UserPushSubscription = {
+    id,
+    userId,
+    endpoint: sub.endpoint,
+    keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
+    userAgent: input.userAgent?.slice(0, 300),
+    createdAt: existing?.createdAt ?? now,
+    updatedAt: now,
+  };
+
+  userPushSubscriptions.put(id, next);
+  return next;
+}
+
+export async function removeUserPushSubscription(input: {
+  userId: string;
+  /** Optional endpoint: remove only that subscription; otherwise remove all for this user. */
+  endpoint?: string;
+}): Promise<number> {
+  const { userPushSubscriptions } = getLmdb();
+
+  const userId = z.string().trim().min(1).parse(input.userId);
+
+  let removed = 0;
+  if (input.endpoint) {
+    const id = userPushSubId(userId, String(input.endpoint));
+    if (await userPushSubscriptions.remove(id)) removed += 1;
+    return removed;
+  }
+
+  for (const { key, value } of userPushSubscriptions.getRange()) {
+    const s = value as UserPushSubscription;
+    if (s.userId !== userId) continue;
+    if (await userPushSubscriptions.remove(String(key))) removed += 1;
+  }
+  return removed;
+}
+
+export function listUserPushSubscriptionsByUser(input: {
+  userId: string;
+}): UserPushSubscription[] {
+  const { userPushSubscriptions } = getLmdb();
+  const userId = z.string().trim().min(1).parse(input.userId);
+  const out: UserPushSubscription[] = [];
+
+  for (const { value } of userPushSubscriptions.getRange()) {
+    const s = value as UserPushSubscription;
+    if (s.userId !== userId) continue;
+    out.push(s);
+  }
+  return out;
+}
+
+export function listAllUserPushSubscriptions(): UserPushSubscription[] {
+  const { userPushSubscriptions } = getLmdb();
+  const out: UserPushSubscription[] = [];
+  for (const { value } of userPushSubscriptions.getRange()) {
+    out.push(value as UserPushSubscription);
+  }
   return out;
 }

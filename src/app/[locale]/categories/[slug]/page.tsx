@@ -21,13 +21,7 @@ import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
 import { followCategoryAction, unfollowCategoryAction } from "../actions";
 
 export const runtime = "nodejs";
-
-export async function generateStaticParams() {
-  const categories = listCategories({ locale: "en" });
-  return categories.map((category) => ({
-    slug: category.slug,
-  }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function CategoryDetailPage({
   params,

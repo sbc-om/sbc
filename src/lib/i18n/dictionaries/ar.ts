@@ -15,6 +15,7 @@ export const ar = {
     users: "المستخدمون",
     profile: "الملف الشخصي",
     settings: "الإعدادات",
+    edit: "تعديل",
     logout: "تسجيل الخروج",
   },
   settings: {

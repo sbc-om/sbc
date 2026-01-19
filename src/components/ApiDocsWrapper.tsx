@@ -2,12 +2,12 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
-import type { SwaggerUIProps } from "swagger-ui-react";
+import type SwaggerUIReact from "swagger-ui-react";
 
 // Dynamically import SwaggerUI to avoid SSR issues
 const SwaggerUI = dynamic(() => import("swagger-ui-react"), { ssr: false });
 
-export default function ApiDocsWrapper(props: SwaggerUIProps) {
+export default function ApiDocsWrapper(props: React.ComponentProps<typeof SwaggerUIReact>) {
   useEffect(() => {
     // Suppress the UNSAFE_componentWillReceiveProps warning from swagger-ui-react
     // This is a known issue with the library (v5.31.0) that we cannot fix directly.
