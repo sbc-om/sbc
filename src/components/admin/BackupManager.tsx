@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FiDownload, FiTrash2, FiUpload, FiRefreshCw, FiDatabase, FiAlertCircle } from "react-icons/fi";
+import { FiDownload, FiTrash2, FiUpload, FiRefreshCw, FiDatabase, FiAlertCircle, FiX } from "react-icons/fi";
 import { Button } from "@/components/ui/Button";
 
 interface BackupMetadata {
@@ -18,12 +18,119 @@ interface BackupManagerProps {
   locale: "ar" | "en";
 }
 
+interface ConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: string;
+  confirmText: string;
+  cancelText: string;
+  type?: "danger" | "warning";
+}
+
+function ConfirmModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmText,
+  cancelText,
+  type = "danger",
+}: ConfirmModalProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Overlay */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="relative w-full max-w-md animate-in fade-in zoom-in duration-200">
+        <div className="sbc-card rounded-2xl p-6 shadow-2xl">
+          {/* Header */}
+          <div className="mb-4 flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              {type === "danger" && (
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-900/30">
+                  <FiAlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                </div>
+              )}
+              {type === "warning" && (
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/30">
+                  <FiAlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                </div>
+              )}
+              <h3 className="text-lg font-semibold">{title}</h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="rounded-lg p-1 text-(--muted-foreground) hover:bg-(--surface-subtle) transition-colors"
+            >
+              <FiX className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Message */}
+          <p className="mb-6 text-sm text-(--muted-foreground) leading-relaxed">
+            {message}
+          </p>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <Button
+              onClick={onClose}
+              variant="secondary"
+              className="flex-1"
+            >
+              {cancelText}
+            </Button>
+            <Button
+              onClick={() => {
+                onConfirm();
+                onClose();
+              }}
+              variant={type === "danger" ? "destructive" : "primary"}
+              className="flex-1"
+            >
+              {confirmText}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BackupManager({ locale }: BackupManagerProps) {
   const [backups, setBackups] = useState<BackupMetadata[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  
+  // Modal state
+  const [modalConfig, setModalConfig] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText: string;
+    type: "danger" | "warning";
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "",
+    cancelText: "",
+    type: "danger",
+    onConfirm: () => {},
+  });
 
   const ar = locale === "ar";
 
@@ -85,12 +192,22 @@ export default function BackupManager({ locale }: BackupManagerProps) {
 
   // Delete backup
   const deleteBackup = async (backupId: string) => {
-    const confirmMsg = ar 
-      ? "هل أنت متأكد من حذف هذه النسخة الاحتياطية؟"
-      : "Are you sure you want to delete this backup?";
-      
-    if (!confirm(confirmMsg)) return;
+    setModalConfig({
+      isOpen: true,
+      title: ar ? "حذف النسخة الاحتياطية" : "Delete Backup",
+      message: ar 
+        ? "هل أنت متأكد من حذف هذه النسخة الاحتياطية؟ لا يمكن التراجع عن هذا الإجراء."
+        : "Are you sure you want to delete this backup? This action cannot be undone.",
+      confirmText: ar ? "حذف" : "Delete",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      type: "danger",
+      onConfirm: async () => {
+        await performDelete(backupId);
+      },
+    });
+  };
 
+  const performDelete = async (backupId: string) => {
     try {
       const res = await fetch(`/api/admin/backup/delete/${backupId}`, {
         method: "DELETE",
@@ -142,12 +259,22 @@ export default function BackupManager({ locale }: BackupManagerProps) {
 
   // Restore backup
   const restoreBackup = async (backupId: string) => {
-    const confirmMsg = ar
-      ? "هل أنت متأكد من استعادة هذه النسخة الاحتياطية؟ سيتم استبدال البيانات الحالية."
-      : "Are you sure you want to restore this backup? Current data will be replaced.";
-      
-    if (!confirm(confirmMsg)) return;
+    setModalConfig({
+      isOpen: true,
+      title: ar ? "استعادة النسخة الاحتياطية" : "Restore Backup",
+      message: ar
+        ? "هل أنت متأكد من استعادة هذه النسخة الاحتياطية؟ سيتم استبدال جميع البيانات الحالية بالبيانات من هذه النسخة. هذا الإجراء لا يمكن التراجع عنه."
+        : "Are you sure you want to restore this backup? All current data will be replaced with data from this backup. This action cannot be undone.",
+      confirmText: ar ? "استعادة" : "Restore",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      type: "warning",
+      onConfirm: async () => {
+        await performRestore(backupId);
+      },
+    });
+  };
 
+  const performRestore = async (backupId: string) => {
     try {
       const res = await fetch("/api/admin/backup/restore", {
         method: "POST",
