@@ -194,10 +194,20 @@ export default async function ExplorerBusinessDetailPage({
               </div>
 
               <div className="hidden sm:flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/${locale}/chat/${business.slug}`}
+                  className={buttonVariants({ variant: "primary", size: "sm", className: "shadow-lg" })}
+                >
+                  <svg className="h-4 w-4 me-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  {locale === "ar" ? "دردشة" : "Chat"}
+                </Link>
+
                 {business.phone ? (
                   <a
                     href={`tel:${business.phone}`}
-                    className={buttonVariants({ variant: "primary", size: "sm", className: "shadow-lg" })}
+                    className={buttonVariants({ variant: "secondary", size: "sm" })}
                   >
                     {locale === "ar" ? "اتصال" : "Call"}
                   </a>

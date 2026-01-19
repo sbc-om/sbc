@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
@@ -43,6 +44,11 @@ export default async function LocaleLayout({
   const dict = await getDictionary(locale as Locale);
   const user = await getCurrentUser();
   const products = listStoreProducts();
+  
+  // Check if we're on chat page
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") || "";
+  const isChatPage = pathname.includes("/chat");
 
   return (
     <DictionaryProvider locale={locale as Locale} dict={dict}>
@@ -70,7 +76,7 @@ export default async function LocaleLayout({
                   marginInlineStart: "var(--sidebar-width, 0)",
                 }}
               >
-                <main className="w-full pb-20 lg:pb-6">{children}</main>
+                <main className={isChatPage ? "w-full" : "w-full pb-20 lg:pb-6"}>{children}</main>
               </div>
               <MobileNav locale={locale as Locale} dict={dict} />
             </div>

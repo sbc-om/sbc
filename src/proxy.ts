@@ -104,6 +104,7 @@ export async function proxy(req: NextRequest) {
 
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-locale", locale);
+  requestHeaders.set("x-pathname", pathname);
 
   const res = NextResponse.next({
     request: {
