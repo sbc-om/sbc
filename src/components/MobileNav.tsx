@@ -30,9 +30,10 @@ import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
 interface MobileNavProps {
   locale: Locale;
   dict: Dictionary;
+  user: { role: string };
 }
 
-export function MobileNav({ locale, dict }: MobileNavProps) {
+export function MobileNav({ locale, dict, user }: MobileNavProps) {
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileMenuOpenedAtPath, setProfileMenuOpenedAtPath] = useState<string | null>(null);
@@ -246,6 +247,21 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
                 <span className="min-w-0 truncate">{dict.nav.settings}</span>
               </Link>
 
+              {user.role === "admin" && (
+                <Link
+                  role="menuitem"
+                  href={`/${locale}/admin`}
+                  onClick={() => setProfileMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+                >
+                  {(() => {
+                    const AdminIcon = isActive("/admin") ? HiCog : HiOutlineCog;
+                    return <AdminIcon className="h-5 w-5 shrink-0" />;
+                  })()}
+                  <span className="min-w-0 truncate">{dict.nav.admin}</span>
+                </Link>
+              )}
+
               <Link
                 role="menuitem"
                 href={`/${locale}/saved`}
@@ -269,7 +285,7 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
               >
                 <button
                   type="submit"
-                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+                  className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-red-600 hover:bg-red-500/10 hover:text-red-700 transition-colors text-sm"
                 >
                   <HiOutlineLogout className="h-5 w-5 shrink-0" />
                   <span className="min-w-0 truncate">{dict.nav.logout}</span>

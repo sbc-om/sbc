@@ -85,7 +85,7 @@ export default async function LocaleLayout({
               >
                 <main className="w-full">{children}</main>
               </div>
-              <MobileNav locale={locale as Locale} dict={dict} />
+              <MobileNav locale={locale as Locale} dict={dict} user={{ role: user.role }} />
             </div>
           </SidebarLayout>
         </CartProvider>

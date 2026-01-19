@@ -193,7 +193,7 @@ export default async function ExplorerBusinessDetailPage({
                 </div>
               </div>
 
-              <div className="hidden sm:flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href={`/${locale}/chat/${business.slug}`}
                   className={buttonVariants({ variant: "primary", size: "sm", className: "shadow-lg" })}

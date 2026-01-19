@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
+import { useChatSidebar } from "./ChatLayoutClient";
 
 type Conversation = {
   id: string;
@@ -28,6 +29,7 @@ type ChatSidebarProps = {
 };
 
 export function ChatSidebar({ locale }: ChatSidebarProps) {
+  const sidebarRef = useChatSidebar();
   const params = useParams();
   const activeSlug = params?.slug as string | undefined;
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -84,6 +86,7 @@ export function ChatSidebar({ locale }: ChatSidebarProps) {
                 <Link
                   key={conv.id}
                   href={`/${locale}/chat/${business.slug}`}
+                  onClick={() => sidebarRef?.current?.close()}
                   className={`
                     flex items-center gap-3 p-4 border-b border-(--surface-border) 
                     transition-colors hover:bg-(--surface)

@@ -375,7 +375,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
             >
               <button
                 type="submit"
-                className="w-full flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+                className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-red-600 hover:bg-red-500/10 hover:text-red-700 transition-colors text-sm"
               >
                 <HiOutlineLogout className="h-5 w-5 shrink-0" />
                 <span className="min-w-0 truncate">{dict.nav.logout}</span>
