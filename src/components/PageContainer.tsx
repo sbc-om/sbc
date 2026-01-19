@@ -10,7 +10,9 @@ export function PageContainer({
   withPadding?: boolean;
 }) {
   return (
-    <div className={`${withPadding ? "pt-10 pb-10" : ""} ${className}`}>
+    <div
+      className={`${withPadding ? "pt-10" : ""} pb-[var(--page-bottom-offset,5rem)] lg:pb-10 ${className}`}
+    >
       {children}
     </div>
   );

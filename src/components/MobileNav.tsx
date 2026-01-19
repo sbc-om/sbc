@@ -37,6 +37,7 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileMenuOpenedAtPath, setProfileMenuOpenedAtPath] = useState<string | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
 
   const isActive = (path: string) => pathname.startsWith(`/${locale}${path}`);
 
@@ -73,6 +74,28 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
     };
   }, [isProfileMenuVisible]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const updateHeight = () => {
+      const height = navRef.current?.offsetHeight ?? 0;
+      root.style.setProperty("--mobile-nav-height", `${height}px`);
+    };
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+
+    let observer: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && navRef.current) {
+      observer = new ResizeObserver(() => updateHeight());
+      observer.observe(navRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateHeight);
+      observer?.disconnect();
+    };
+  }, []);
+
   const navItems = [
     {
       key: "home",
@@ -106,6 +129,7 @@ export function MobileNav({ locale, dict }: MobileNavProps) {
 
   return (
     <nav
+      ref={navRef}
       className="fixed bottom-0 inset-x-0 z-40 lg:hidden border-t backdrop-blur-lg"
       style={{
         backgroundColor: "rgba(var(--surface-rgb), 0.95)",

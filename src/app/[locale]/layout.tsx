@@ -59,7 +59,14 @@ export default async function LocaleLayout({
 
           {/* Logged in: Show sidebar layout */}
           <SidebarLayout>
-            <div className="min-h-dvh bg-transparent text-foreground">
+            <div
+              className="min-h-dvh bg-transparent text-foreground"
+              style={{
+                "--page-bottom-offset": isChatPage
+                  ? "0px"
+                  : "calc(var(--mobile-nav-height, 72px) + env(safe-area-inset-bottom) + 22px)",
+              } as Record<string, string>}
+            >
               <Sidebar
                 locale={locale as Locale}
                 dict={dict}
@@ -76,7 +83,7 @@ export default async function LocaleLayout({
                   marginInlineStart: "var(--sidebar-width, 0)",
                 }}
               >
-                <main className={isChatPage ? "w-full" : "w-full pb-20 lg:pb-6"}>{children}</main>
+                <main className="w-full">{children}</main>
               </div>
               <MobileNav locale={locale as Locale} dict={dict} />
             </div>

@@ -18,7 +18,7 @@ export function AppPage({
   containerClassName?: string;
 }) {
   return (
-    <PageContainer withPadding={false} className={cn("py-6", className)}>
+    <PageContainer withPadding={false} className={cn("pt-6", className)}>
       <Container size="lg" className={containerClassName}>
         {children}
       </Container>
