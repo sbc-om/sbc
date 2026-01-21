@@ -1,9 +1,53 @@
 /**
  * Simple AI features without ML5 dependency
- * Fallback implementation for when ML5 is not available
+ * Fallback implementation with keyword matching and relevance scoring
  */
 
 export class SimpleTextFeatures {
+  /**
+   * Extract keywords from text
+   */
+  private extractKeywords(text: string): string[] {
+    const normalized = text.toLowerCase().trim();
+    // Split by spaces and filter out short words
+    return normalized
+      .split(/[\s,،.]+/)
+      .filter(word => word.length > 2)
+      .map(word => word.replace(/[^\w\u0600-\u06FF]/g, ''));
+  }
+
+  /**
+   * Calculate keyword match score with exact and partial matching
+   */
+  calculateRelevanceScore(query: string, businessText: string): number {
+    const queryKeywords = this.extractKeywords(query);
+    const businessKeywords = this.extractKeywords(businessText);
+    const businessLower = businessText.toLowerCase();
+    
+    if (queryKeywords.length === 0) return 0;
+    
+    let score = 0;
+    const maxScore = queryKeywords.length * 10;
+    
+    for (const queryWord of queryKeywords) {
+      // Exact match in business keywords (highest score)
+      if (businessKeywords.some(bw => bw === queryWord)) {
+        score += 10;
+      }
+      // Partial match (business keyword contains query word)
+      else if (businessKeywords.some(bw => bw.includes(queryWord) || queryWord.includes(bw))) {
+        score += 5;
+      }
+      // Substring match in full text
+      else if (businessLower.includes(queryWord)) {
+        score += 2;
+      }
+    }
+    
+    // Normalize score to [0, 1]
+    return Math.min(score / maxScore, 1);
+  }
+
   /**
    * Extract simple features from text using character frequencies and word presence
    */

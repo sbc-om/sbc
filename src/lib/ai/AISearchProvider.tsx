@@ -59,21 +59,32 @@ export function AISearchProvider({ children }: { children: ReactNode }) {
         const useSimple = !extractor;
         
         if (useSimple) {
-          const queryFeatures = simpleFeatures.extractFeatures(query);
-          
+          // Use keyword-based relevance scoring for better results
           const businessesWithScore = businesses.map((business) => {
             const textToAnalyze = [
               business.name[locale],
+              business.name.en,
+              business.name.ar,
               business.description?.[locale] || "",
+              business.description?.en || "",
+              business.description?.ar || "",
               business.category || "",
               business.city || "",
               ...(business.tags || []),
             ].join(" ");
 
+            // Calculate relevance score based on keyword matching
+            const relevanceScore = simpleFeatures.calculateRelevanceScore(query, textToAnalyze);
+            
+            // Also calculate cosine similarity as secondary score
+            const queryFeatures = simpleFeatures.extractFeatures(query);
             const businessFeatures = simpleFeatures.extractFeatures(textToAnalyze);
-            const similarity = simpleFeatures.cosineSimilarity(queryFeatures, businessFeatures);
+            const cosineSim = simpleFeatures.cosineSimilarity(queryFeatures, businessFeatures);
+            
+            // Combined score: 70% relevance + 30% cosine similarity
+            const similarity = (relevanceScore * 0.7) + (cosineSim * 0.3);
 
-            return { business, similarity };
+            return { business, similarity, relevanceScore };
           });
 
           return businessesWithScore
