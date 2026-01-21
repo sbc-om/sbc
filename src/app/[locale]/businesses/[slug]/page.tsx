@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { PublicPage } from "@/components/PublicPage";
-import { isLocale } from "@/lib/i18n/locales";
+import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getBusinessBySlug } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { buttonVariants } from "@/components/ui/Button";
@@ -39,6 +39,10 @@ export default async function BusinessDetailPage({
     : "";
   const isVerified = business.isVerified ?? false;
   const isSpecial = business.isSpecial ?? false;
+
+  const handlePath = business.username
+    ? `/@${business.username}`
+    : `/${locale}/businesses/${business.slug}`;
 
   const mapQuery = [business.address, business.city].filter(Boolean).join(" ").trim();
   const mapsHref = mapQuery
@@ -97,7 +101,7 @@ export default async function BusinessDetailPage({
               </Link>
               <ShareActionButton
                 locale={locale as Locale}
-                path={`/${locale}/businesses/${business.slug}`}
+                path={handlePath}
                 title={name}
                 text={description || name}
                 className={buttonVariants({

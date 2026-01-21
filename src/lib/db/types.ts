@@ -22,6 +22,8 @@ export type Category = {
 export type Business = {
   id: string;
   slug: string;
+  /** Optional public username used for /@handle URLs. */
+  username?: string;
   /** Optional owner user id (set by admin by linking a user email). */
   ownerId?: string;
   name: LocalizedString;

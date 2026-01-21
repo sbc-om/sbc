@@ -7,6 +7,7 @@ interface BusinessCardProps {
   business: {
     id: string;
     slug: string;
+    username?: string;
     name: { en: string; ar: string };
     description?: { en?: string; ar?: string };
     city?: string;
@@ -47,10 +48,13 @@ export function BusinessCard({ business, locale }: BusinessCardProps) {
   const avatarMode = business.avatarMode ?? "icon";
   const showLogo = avatarMode === "logo" && !!logo;
   const CategoryIcon = getCategoryIconComponent(category?.iconId);
+  const detailPath = business.username
+    ? `/@${business.username}`
+    : `/${locale}/businesses/${business.slug}`;
 
   return (
     <Link
-      href={`/${locale}/businesses/${business.slug}`}
+      href={detailPath}
       className="group block"
     >
       <article

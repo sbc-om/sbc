@@ -10,6 +10,14 @@ const slugSchema = z
   .toLowerCase()
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid slug");
 
+const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(2)
+  .max(30)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid username");
+
 const localizedStringSchema = z.object({
   en: z.string().trim().min(1),
   ar: z.string().trim().min(1),
@@ -17,6 +25,7 @@ const localizedStringSchema = z.object({
 
 export const businessInputSchema = z.object({
   slug: slugSchema,
+  username: usernameSchema.optional(),
   ownerId: z.string().trim().min(1).optional(),
   name: localizedStringSchema,
   description: localizedStringSchema.optional(),
@@ -58,6 +67,49 @@ export function getBusinessBySlug(slug: string): Business | null {
   return (businesses.get(id) as Business | undefined) ?? null;
 }
 
+export function getBusinessByUsername(username: string): Business | null {
+  const normalized = username.trim().replace(/^@/, "").toLowerCase();
+  const key = usernameSchema.safeParse(normalized);
+  if (!key.success) return null;
+
+  const { businesses, businessUsernames } = getLmdb();
+  const id = (businessUsernames.get(key.data) as string | undefined) ?? null;
+  if (id) return (businesses.get(id) as Business | undefined) ?? null;
+
+  return getBusinessBySlug(key.data);
+}
+
+export function normalizeBusinessUsername(input: string): string | null {
+  const normalized = input.trim().replace(/^@/, "").toLowerCase();
+  const key = usernameSchema.safeParse(normalized);
+  return key.success ? key.data : null;
+}
+
+export function checkBusinessUsernameAvailability(
+  input: string,
+  options?: { excludeBusinessId?: string }
+): { available: boolean; normalized?: string; reason?: "INVALID" | "TAKEN" } {
+  const normalized = normalizeBusinessUsername(input);
+  if (!normalized) {
+    return { available: false, reason: "INVALID" };
+  }
+
+  const { businessUsernames, businessSlugs } = getLmdb();
+  const excludeId = options?.excludeBusinessId;
+
+  const usernameOwnerId = businessUsernames.get(normalized) as string | undefined;
+  if (usernameOwnerId && usernameOwnerId !== excludeId) {
+    return { available: false, normalized, reason: "TAKEN" };
+  }
+
+  const slugOwnerId = businessSlugs.get(normalized) as string | undefined;
+  if (slugOwnerId && slugOwnerId !== excludeId) {
+    return { available: false, normalized, reason: "TAKEN" };
+  }
+
+  return { available: true, normalized };
+}
+
 export function listBusinesses(input?: {
   q?: string;
   locale?: Locale;
@@ -75,6 +127,7 @@ export function listBusinesses(input?: {
     if (q) {
       const hay = [
         locale ? b.name[locale] : `${b.name.en} ${b.name.ar}`,
+        b.username,
         b.category,
         b.city,
         b.tags?.join(" "),
@@ -111,11 +164,16 @@ export function listBusinessesByOwner(userId: string): Business[] {
 
 export function createBusiness(input: BusinessInput): Business {
   const data = businessInputSchema.parse(input);
-  const { businesses, businessSlugs } = getLmdb();
+  const { businesses, businessSlugs, businessUsernames } = getLmdb();
 
   const existingId = businessSlugs.get(data.slug) as string | undefined;
   if (existingId) {
     throw new Error("SLUG_TAKEN");
+  }
+
+  if (data.username) {
+    const availability = checkBusinessUsernameAvailability(data.username);
+    if (!availability.available) throw new Error("USERNAME_TAKEN");
   }
 
   const now = new Date().toISOString();
@@ -123,6 +181,7 @@ export function createBusiness(input: BusinessInput): Business {
   const business: Business = {
     id: nanoid(),
     slug: data.slug,
+    username: data.username,
     ownerId: data.ownerId,
     name: data.name as LocalizedString,
     description: data.description as LocalizedString | undefined,
@@ -147,12 +206,15 @@ export function createBusiness(input: BusinessInput): Business {
 
   businesses.put(business.id, business);
   businessSlugs.put(business.slug, business.id);
+  if (business.username) {
+    businessUsernames.put(business.username, business.id);
+  }
 
   return business;
 }
 
 export function updateBusiness(id: string, patch: Partial<BusinessInput>): Business {
-  const { businesses, businessSlugs } = getLmdb();
+  const { businesses, businessSlugs, businessUsernames } = getLmdb();
   const current = businesses.get(id) as Business | undefined;
   if (!current) throw new Error("NOT_FOUND");
 
@@ -162,10 +224,25 @@ export function updateBusiness(id: string, patch: Partial<BusinessInput>): Busin
     if (existing && existing !== id) throw new Error("SLUG_TAKEN");
   }
 
+  const nextUsername =
+    typeof patch.username === "string"
+      ? patch.username
+        ? usernameSchema.parse(patch.username)
+        : undefined
+      : current.username;
+
+  if (nextUsername && nextUsername !== current.username) {
+    const availability = checkBusinessUsernameAvailability(nextUsername, {
+      excludeBusinessId: id,
+    });
+    if (!availability.available) throw new Error("USERNAME_TAKEN");
+  }
+
   const next: Business = {
     ...current,
     ...patch,
     slug: nextSlug,
+    username: nextUsername,
     avatarMode: patch.avatarMode ?? current.avatarMode ?? "icon",
     updatedAt: new Date().toISOString(),
   };
@@ -177,16 +254,28 @@ export function updateBusiness(id: string, patch: Partial<BusinessInput>): Busin
     businessSlugs.put(nextSlug, id);
   }
 
+  if (nextUsername !== current.username) {
+    if (current.username) {
+      businessUsernames.remove(current.username);
+    }
+    if (nextUsername) {
+      businessUsernames.put(nextUsername, id);
+    }
+  }
+
   return next;
 }
 
 export function deleteBusiness(id: string) {
-  const { businesses, businessSlugs } = getLmdb();
+  const { businesses, businessSlugs, businessUsernames } = getLmdb();
   const current = businesses.get(id) as Business | undefined;
   if (!current) return;
 
   businesses.remove(id);
   businessSlugs.remove(current.slug);
+  if (current.username) {
+    businessUsernames.remove(current.username);
+  }
 }
 
 function ensureBusiness(id: string) {

@@ -7,6 +7,7 @@ export type LmdbHandles = {
   root: ReturnType<typeof open>;
   businesses: ReturnType<ReturnType<typeof open>["openDB"]>;
   businessSlugs: ReturnType<ReturnType<typeof open>["openDB"]>;
+  businessUsernames: ReturnType<ReturnType<typeof open>["openDB"]>;
   categories: ReturnType<ReturnType<typeof open>["openDB"]>;
   categorySlugs: ReturnType<ReturnType<typeof open>["openDB"]>;
   users: ReturnType<ReturnType<typeof open>["openDB"]>;
@@ -154,6 +155,7 @@ export function getLmdb(): LmdbHandles {
   if (existing?.root) {
     existing.businesses ??= wrapDB(existing.root.openDB({ name: "businesses" })) as any;
     existing.businessSlugs ??= wrapDB(existing.root.openDB({ name: "businessSlugs" })) as any;
+    existing.businessUsernames ??= wrapDB(existing.root.openDB({ name: "businessUsernames" })) as any;
     existing.categories ??= wrapDB(existing.root.openDB({ name: "categories" })) as any;
     existing.categorySlugs ??= wrapDB(existing.root.openDB({ name: "categorySlugs" })) as any;
     existing.users ??= wrapDB(existing.root.openDB({ name: "users" })) as any;
@@ -206,6 +208,7 @@ export function getLmdb(): LmdbHandles {
 
   const businesses = wrapDB(root.openDB({ name: "businesses" }));
   const businessSlugs = wrapDB(root.openDB({ name: "businessSlugs" }));
+  const businessUsernames = wrapDB(root.openDB({ name: "businessUsernames" }));
   const categories = wrapDB(root.openDB({ name: "categories" }));
   const categorySlugs = wrapDB(root.openDB({ name: "categorySlugs" }));
   const users = wrapDB(root.openDB({ name: "users" }));
@@ -243,6 +246,7 @@ export function getLmdb(): LmdbHandles {
     root,
     businesses: businesses as any,
     businessSlugs: businessSlugs as any,
+    businessUsernames: businessUsernames as any,
     categories: categories as any,
     categorySlugs: categorySlugs as any,
     users: users as any,

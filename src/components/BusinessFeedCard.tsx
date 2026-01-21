@@ -23,6 +23,7 @@ interface BusinessFeedCardProps {
   business: {
     id: string;
     slug: string;
+    username?: string;
     name: { en: string; ar: string };
     description?: { en?: string; ar?: string };
     city?: string;
@@ -118,7 +119,9 @@ export function BusinessFeedCard({
     });
   };
 
-  const detailPath = `/${locale}${detailsBasePath}/${business.slug}`;
+  const detailPath = business.username
+    ? `/@${business.username}`
+    : `/${locale}${detailsBasePath}/${business.slug}`;
 
   const handleShare = async () => {
     const url = `${window.location.origin}${detailPath}`;

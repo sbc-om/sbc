@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 
@@ -18,6 +18,35 @@ const OsmLocationPicker = dynamic(
   () => import("@/components/maps/OsmLocationPicker").then((mod) => mod.OsmLocationPicker),
   { ssr: false }
 );
+
+const USERNAME_MIN = 2;
+const USERNAME_MAX = 30;
+const USERNAME_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function getUsernameFormatError(value: string, ar: boolean) {
+  const normalized = value.trim().toLowerCase();
+  if (normalized.length < USERNAME_MIN || normalized.length > USERNAME_MAX) {
+    return ar
+      ? "الطول يجب أن يكون بين 2 و30 حرفاً."
+      : "Length must be 2–30 characters.";
+  }
+  if (!USERNAME_REGEX.test(normalized)) {
+    return ar
+      ? "مسموح فقط أحرف إنجليزية وأرقام والشرطة (-) ولا يمكن أن تبدأ أو تنتهي بشرطة."
+      : "Use only English letters, digits, and hyphens. Hyphen can’t be first or last.";
+  }
+  return null;
+}
+
+function slugifyEnglish(input: string) {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 function Field({
   label,
@@ -156,6 +185,15 @@ export function NewBusinessWizard({
   const [isSpecial, setIsSpecial] = useState(false);
   const [homepageFeatured, setHomepageFeatured] = useState(false);
   const [homepageTop, setHomepageTop] = useState(false);
+  const [usernameValue, setUsernameValue] = useState("");
+  const [nameEnValue, setNameEnValue] = useState("");
+  const [slugValue, setSlugValue] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<
+    "idle" | "checking" | "available" | "taken" | "invalid"
+  >("idle");
+  const [usernameMessage, setUsernameMessage] = useState("");
+  const usernameCheckRef = useRef(0);
   
   // Media states
   const [coverPreview, setCoverPreview] = useState<string[]>([]);
@@ -165,6 +203,69 @@ export function NewBusinessWizard({
   
   // Location state
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+  const usernameStatusClass =
+    usernameStatus === "available"
+      ? "text-emerald-600"
+      : usernameStatus === "checking" || usernameStatus === "idle"
+        ? "text-(--muted-foreground)"
+        : "text-red-600";
+
+  useEffect(() => {
+    if (!usernameValue) {
+      setUsernameStatus("idle");
+      setUsernameMessage("");
+      return;
+    }
+
+    const normalized = usernameValue.trim().toLowerCase();
+    const formatError = getUsernameFormatError(normalized, ar);
+    if (formatError) {
+      setUsernameStatus("invalid");
+      setUsernameMessage(formatError);
+      return;
+    }
+
+    setUsernameStatus("checking");
+    setUsernameMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+
+    const requestId = ++usernameCheckRef.current;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/businesses/username/${encodeURIComponent(normalized)}`
+        );
+        const data = await res.json();
+        if (requestId !== usernameCheckRef.current) return;
+
+        if (!data.ok) {
+          setUsernameStatus("invalid");
+          setUsernameMessage(ar ? "صيغة غير صحيحة" : "Invalid format");
+          return;
+        }
+
+        if (data.available) {
+          setUsernameStatus("available");
+          setUsernameMessage(ar ? "متاح" : "Available");
+        } else {
+          setUsernameStatus("taken");
+          setUsernameMessage(ar ? "غير متاح" : "Not available");
+        }
+      } catch {
+        if (requestId !== usernameCheckRef.current) return;
+        setUsernameStatus("invalid");
+        setUsernameMessage(ar ? "تعذر التحقق الآن" : "Could not check right now");
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [usernameValue, ar]);
+
+  useEffect(() => {
+    if (slugTouched) return;
+    const next = slugifyEnglish(nameEnValue);
+    setSlugValue(next);
+  }, [nameEnValue, slugTouched]);
 
   const handleFileSelect = (
     files: FileList | null,
@@ -271,12 +372,20 @@ export function NewBusinessWizard({
           
           <div className="grid gap-6">
             <div className="grid gap-6 sm:grid-cols-2">
-              <Field 
-                label="Slug" 
-                name="slug" 
-                placeholder="my-coffee-shop" 
-                required 
-              />
+              <label className="group grid gap-2">
+                <span className="text-sm font-semibold text-foreground">
+                  {ar ? "اسم المستخدم" : "Username"}
+                </span>
+                <Input
+                  name="username"
+                  placeholder="username"
+                  value={usernameValue}
+                  onChange={(e) => setUsernameValue(e.target.value.toLowerCase())}
+                />
+                <span className={`min-h-4 text-xs ${usernameStatusClass}`}>
+                  {usernameMessage || " "}
+                </span>
+              </label>
               <label className="group grid gap-2">
                 <span className="text-sm font-semibold text-foreground">
                   {ar ? "التصنيف" : "Category"}
@@ -295,12 +404,19 @@ export function NewBusinessWizard({
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2">
-              <Field 
-                label={ar ? "الاسم (EN)" : "Name (EN)"} 
-                name="name_en" 
-                required 
-                placeholder={ar ? "Coffee Paradise" : "Coffee Paradise"}
-              />
+              <label className="group grid gap-2">
+                <span className="text-sm font-semibold text-foreground">
+                  {ar ? "الاسم (EN)" : "Name (EN)"}
+                  <span className="text-red-500 ms-1">*</span>
+                </span>
+                <Input
+                  name="name_en"
+                  required
+                  placeholder={ar ? "Coffee Paradise" : "Coffee Paradise"}
+                  value={nameEnValue}
+                  onChange={(e) => setNameEnValue(e.target.value)}
+                />
+              </label>
               <Field 
                 label={ar ? "الاسم (AR)" : "Name (AR)"} 
                 name="name_ar" 
@@ -308,6 +424,27 @@ export function NewBusinessWizard({
                 placeholder={ar ? "جنة القهوة" : "جنة القهوة"}
               />
             </div>
+
+            {slugValue || nameEnValue ? (
+              <div className="grid gap-6">
+                <label className="group grid gap-2">
+                  <span className="text-sm font-semibold text-foreground">
+                    {ar ? "المسار (Slug)" : "Slug"}
+                    <span className="text-red-500 ms-1">*</span>
+                  </span>
+                  <Input
+                    name="slug"
+                    required
+                    placeholder="my-coffee-shop"
+                    value={slugValue}
+                    onChange={(e) => {
+                      setSlugTouched(true);
+                      setSlugValue(slugifyEnglish(e.target.value));
+                    }}
+                  />
+                </label>
+              </div>
+            ) : null}
           </div>
         </div>
 

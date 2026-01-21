@@ -37,8 +37,44 @@ export async function proxy(req: NextRequest) {
   const segments = pathname.split("/").filter(Boolean);
   const first = segments[0];
 
+  const rewriteHandle = (handle: string, locale: Locale) => {
+    const url = req.nextUrl.clone();
+    url.pathname = `/${locale}/u/${handle}`;
+
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-locale", locale);
+    requestHeaders.set("x-pathname", pathname);
+
+    const res = NextResponse.rewrite(url, {
+      request: {
+        headers: requestHeaders,
+      },
+    });
+
+    res.cookies.set("locale", locale, {
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+
+    return res;
+  };
+
   // If no locale prefix, redirect to the best locale.
   if (!first || !isLocale(first)) {
+    if (first?.startsWith("@")) {
+      const handle = first.slice(1);
+      if (handle) {
+        const cookieLocale = req.cookies.get("locale")?.value;
+        const preferred: Locale =
+          cookieLocale && isLocale(cookieLocale)
+            ? cookieLocale
+            : detectLocaleFromAcceptLanguage(req.headers.get("accept-language"));
+        return rewriteHandle(handle, preferred);
+      }
+    }
+
     const cookieLocale = req.cookies.get("locale")?.value;
     const preferred: Locale =
       cookieLocale && isLocale(cookieLocale)
@@ -61,9 +97,17 @@ export async function proxy(req: NextRequest) {
   // Locale exists: forward request and annotate locale for the root layout.
   const locale = first;
 
+  const restSegments = segments.slice(1);
+  const handleSegment = restSegments[0];
+  if (handleSegment?.startsWith("@")) {
+    const handle = handleSegment.slice(1);
+    if (handle) {
+      return rewriteHandle(handle, locale);
+    }
+  }
+
   // Auth protection (JWT cookie) for protected areas.
   // Note: Proxy runs before routing; keep it fast and avoid doing heavy DB work here.
-  const restSegments = segments.slice(1);
   const section = restSegments[0];
 
   const isDashboard = section === "dashboard";

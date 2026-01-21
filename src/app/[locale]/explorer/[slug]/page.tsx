@@ -54,6 +54,10 @@ export default async function ExplorerBusinessDetailPage({
   const isVerified = business.isVerified ?? false;
   const isSpecial = business.isSpecial ?? false;
 
+  const handlePath = business.username
+    ? `/@${business.username}`
+    : `/${locale}/businesses/${business.slug}`;
+
   const mapQuery = [business.address, business.city].filter(Boolean).join(" ").trim();
   const mapsHref = mapQuery
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
@@ -128,7 +132,7 @@ export default async function ExplorerBusinessDetailPage({
               </Link>
               <ShareActionButton
                 locale={locale as Locale}
-                path={`/${locale}/businesses/${business.slug}`}
+                path={handlePath}
                 title={name}
                 text={description || name}
                 className={buttonVariants({

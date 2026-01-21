@@ -155,8 +155,12 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
   const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
   const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
 
+  const usernameRaw = String(formData.get("username") || "").trim();
+  const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
+
   const business = createBusiness({
     slug: String(formData.get("slug") || ""),
+    username,
     ownerId,
     name: {
       en: String(formData.get("name_en") || ""),
@@ -214,9 +218,13 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
   const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
 
+  const usernameRaw = String(formData.get("username") || "").trim();
+  const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
+
   // First update the business basic info
   let next = updateBusiness(id, {
     slug: String(formData.get("slug") || "") || undefined,
+    username,
     ownerId,
     name: {
       en: String(formData.get("name_en") || ""),
