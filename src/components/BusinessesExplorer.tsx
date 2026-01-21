@@ -152,7 +152,7 @@ export function BusinessesExplorer({
               href={href}
               className="group sbc-card sbc-card--interactive overflow-hidden rounded-2xl"
             >
-              <div className="relative h-40 w-full bg-linear-to-br from-accent/10 via-accent-2/10 to-transparent">
+              <div className="relative aspect-square w-full bg-linear-to-br from-accent/10 via-accent-2/10 to-transparent">
                 {img ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={img} alt={name} className="h-full w-full object-cover" />

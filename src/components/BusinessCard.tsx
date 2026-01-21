@@ -66,7 +66,7 @@ export function BusinessCard({ business, locale }: BusinessCardProps) {
         }}
       >
         {/* Cover Image */}
-        <div className="relative h-48 w-full overflow-hidden bg-linear-to-br from-accent/10 to-accent-2/10">
+        <div className="relative aspect-square w-full overflow-hidden bg-linear-to-br from-accent/10 to-accent-2/10">
           {coverImage ? (
             <Image
               src={coverImage}
