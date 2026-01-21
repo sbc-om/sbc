@@ -50,48 +50,7 @@ export default async function BusinessDetailPage({
     <PublicPage>
       {/* Top bar */}
       <div className="flex items-start justify-between gap-6">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            {categoryLabel ? (
-              <span className="sbc-chip rounded-full px-3 py-1 text-xs font-medium">
-                {categoryLabel}
-              </span>
-            ) : null}
-            {business.city ? (
-              <span className="sbc-chip rounded-full px-3 py-1 text-xs font-medium">
-                {business.city}
-              </span>
-            ) : null}
-          </div>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl font-semibold leading-tight tracking-tight">
-              {name}
-            </h1>
-            {isVerified ? (
-              <span
-                className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/15 text-blue-600"
-                aria-label={locale === "ar" ? "نشاط موثق" : "Verified business"}
-                title={locale === "ar" ? "نشاط موثق" : "Verified business"}
-              >
-                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10 1.5l2.39 1.25 2.64.32 1.86 1.86.32 2.64L18.5 10l-1.29 2.43-.32 2.64-1.86 1.86-2.64.32L10 18.5l-2.43-1.29-2.64-.32-1.86-1.86-.32-2.64L1.5 10l1.25-2.39.32-2.64 1.86-1.86 2.64-.32L10 1.5zm-1 10.2l-2.2-2.2-1.4 1.4 3.6 3.6 6-6-1.4-1.4-4.6 4.6z" />
-                </svg>
-              </span>
-            ) : null}
-            {isSpecial ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-600">
-                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.95a1 1 0 00.95.69h4.153c.969 0 1.371 1.24.588 1.81l-3.36 2.44a1 1 0 00-.364 1.118l1.286 3.95c.3.921-.755 1.688-1.54 1.118l-3.36-2.44a1 1 0 00-1.176 0l-3.36 2.44c-.784.57-1.838-.197-1.539-1.118l1.285-3.95a1 1 0 00-.364-1.118l-3.36-2.44c-.783-.57-.38-1.81.588-1.81h4.153a1 1 0 00.95-.69l1.286-3.95z" />
-                </svg>
-                {locale === "ar" ? "مميز" : "Special"}
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-2 text-sm text-(--muted-foreground)">
-            <span className="font-mono">/{business.slug}</span>
-          </p>
-        </div>
+        <div className="min-w-0" />
 
         <Link
           href={`/${locale}/businesses`}
@@ -194,80 +153,14 @@ export default async function BusinessDetailPage({
                         {locale === "ar" ? "مميز" : "Special"}
                       </div>
                     ) : null}
-                    {description ? (
-                      <div className="mt-1 line-clamp-2 text-sm text-white/85">
-                        {description}
-                      </div>
-                    ) : null}
                   </div>
                 </div>
               </div>
 
-              <div className="hidden sm:flex flex-wrap items-center gap-2">
-                {business.phone ? (
-                  <a
-                    href={`tel:${business.phone}`}
-                    className={buttonVariants({ variant: "secondary", size: "sm" })}
-                  >
-                    {locale === "ar" ? "اتصال" : "Call"}
-                  </a>
-                ) : null}
-
-                {business.website ? (
-                  <a
-                    href={business.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={buttonVariants({ variant: "secondary", size: "sm" })}
-                  >
-                    {locale === "ar" ? "الموقع" : "Website"}
-                  </a>
-                ) : null}
-
-                {mapsHref ? (
-                  <a
-                    href={mapsHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={buttonVariants({ variant: "ghost", size: "sm", className: "text-white/90 hover:text-white" })}
-                  >
-                    {locale === "ar" ? "خريطة" : "Map"}
-                  </a>
-                ) : null}
-              </div>
+              <div className="hidden sm:block" />
             </div>
 
-            {/* Mobile quick actions */}
-            <div className="mt-3 flex flex-wrap items-center gap-2 sm:hidden">
-              {business.phone ? (
-                <a
-                  href={`tel:${business.phone}`}
-                  className={buttonVariants({ variant: "secondary", size: "sm" })}
-                >
-                  {locale === "ar" ? "اتصال" : "Call"}
-                </a>
-              ) : null}
-
-              {business.website ? (
-                <a
-                  href={business.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={buttonVariants({ variant: "secondary", size: "sm" })}
-                >
-                  {locale === "ar" ? "الموقع" : "Website"}
-                </a>
-              ) : null}
-
-              {business.email ? (
-                <a
-                  href={`mailto:${business.email}`}
-                  className={buttonVariants({ variant: "ghost", size: "sm", className: "text-white/90 hover:text-white" })}
-                >
-                  {locale === "ar" ? "بريد" : "Email"}
-                </a>
-              ) : null}
-            </div>
+            {/* Mobile quick actions removed (chat icon is in banner corner) */}
           </div>
         </div>
       </div>
@@ -373,24 +266,20 @@ export default async function BusinessDetailPage({
             </h2>
 
             <div className="mt-4 grid gap-3 text-sm">
+              {business.city ? (
+                <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-(--muted-foreground)">
+                    {locale === "ar" ? "المدينة" : "City"}
+                  </div>
+                  <div className="mt-2 text-foreground">{business.city}</div>
+                </div>
+              ) : null}
               {business.address ? (
                 <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-4">
                   <div className="text-xs font-semibold uppercase tracking-wide text-(--muted-foreground)">
                     {locale === "ar" ? "العنوان" : "Address"}
                   </div>
                   <div className="mt-2 text-foreground">{business.address}</div>
-                  {mapsHref ? (
-                    <div className="mt-3">
-                      <a
-                        className="text-sm font-medium text-foreground underline-offset-4 hover:underline"
-                        href={mapsHref}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        {locale === "ar" ? "فتح في الخرائط" : "Open in maps"}
-                      </a>
-                    </div>
-                  ) : null}
                 </div>
               ) : null}
 
@@ -439,6 +328,24 @@ export default async function BusinessDetailPage({
                       href={`mailto:${business.email}`}
                     >
                       {business.email}
+                    </a>
+                  </div>
+                </div>
+              ) : null}
+
+              {mapsHref ? (
+                <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-(--muted-foreground)">
+                    {locale === "ar" ? "الخريطة" : "Map"}
+                  </div>
+                  <div className="mt-2">
+                    <a
+                      className="font-medium text-foreground underline-offset-4 hover:underline"
+                      href={mapsHref}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {locale === "ar" ? "فتح في الخرائط" : "Open in maps"}
                     </a>
                   </div>
                 </div>

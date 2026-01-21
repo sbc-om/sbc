@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 
 import { PublicPage } from "@/components/PublicPage";
+import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -53,8 +54,10 @@ export default async function LoyaltyManagePage({
     ? (getLoyaltySettingsByUserId(user.id) ?? defaultLoyaltySettings(user.id))
     : null;
 
+  const Wrapper = user ? AppPage : PublicPage;
+
   return (
-    <PublicPage>
+    <Wrapper>
       <div className="relative overflow-hidden rounded-3xl border border-(--surface-border) bg-(--surface) p-7 sm:p-8">
         <div
           className="absolute inset-0 -z-10 opacity-80"
@@ -231,6 +234,6 @@ export default async function LoyaltyManagePage({
           </div>
         </div>
       ) : null}
-    </PublicPage>
+    </Wrapper>
   );
 }

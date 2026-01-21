@@ -297,7 +297,7 @@ export function OsmLocationPicker({
         <MapContainer
           center={[center.lat, center.lng]}
           zoom={value ? 16 : 12}
-          scrollWheelZoom
+          scrollWheelZoom={false}
           attributionControl={false}
           style={{ height: 320, width: "100%" }}
         >
