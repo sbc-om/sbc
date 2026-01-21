@@ -189,7 +189,7 @@ export default async function CategoriesPage({
 
             return (
               <section key={`group:${parent.id}`} className="grid gap-3">
-                <div className="flex items-center justify-between gap-3">
+                <div className="sbc-card rounded-2xl p-5 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`h-11 w-11 shrink-0 rounded-xl border border-(--surface-border) flex items-center justify-center ${parentAccent.bg}`}>
                       <ParentIcon className={`h-6 w-6 ${parentAccent.fg}`} />
@@ -222,7 +222,7 @@ export default async function CategoriesPage({
                 </div>
 
                 {children.length > 0 ? (
-                  <div className="grid gap-3">
+                  <div className="grid gap-3 ps-4 sm:ps-8">
                     {children.map((c) => {
                       const name = locale === "ar" ? c.name.ar : c.name.en;
                       const isFollowed = followed.has(c.id);

@@ -118,6 +118,23 @@ export default async function BusinessDetailPage({
               <div className="absolute inset-0 bg-linear-to-br from-accent/10 via-accent-2/10 to-transparent" />
             )}
             <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-transparent" />
+
+            <Link
+              href={`/${locale}/login?redirect=/${locale}/chat/${business.slug}`}
+              aria-label={locale === "ar" ? "دردشة" : "Chat"}
+              title={locale === "ar" ? "دردشة" : "Chat"}
+              className={buttonVariants({
+                variant: "secondary",
+                size: "sm",
+                className: `absolute top-3 ${locale === "ar" ? "start-3" : "end-3"} sm:top-4 sm:${
+                  locale === "ar" ? "start-4" : "end-4"
+                } h-10 w-10 p-0 rounded-full bg-black/40 text-white hover:bg-black/55 border border-white/20 backdrop-blur`,
+              })}
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+            </Link>
           </div>
 
           {/* Hero content overlay */}
@@ -187,20 +204,6 @@ export default async function BusinessDetailPage({
               </div>
 
               <div className="hidden sm:flex flex-wrap items-center gap-2">
-                <Link
-                  href={`/${locale}/login?redirect=/${locale}/chat/${business.slug}`}
-                  className={buttonVariants({
-                    variant: "primary",
-                    size: "sm",
-                    className: "shadow-lg",
-                  })}
-                >
-                  <svg className="h-4 w-4 me-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                  {locale === "ar" ? "دردشة" : "Chat"}
-                </Link>
-
                 {business.phone ? (
                   <a
                     href={`tel:${business.phone}`}
@@ -236,16 +239,6 @@ export default async function BusinessDetailPage({
 
             {/* Mobile quick actions */}
             <div className="mt-3 flex flex-wrap items-center gap-2 sm:hidden">
-              <Link
-                href={`/${locale}/login?redirect=/${locale}/chat/${business.slug}`}
-                className={buttonVariants({ variant: "primary", size: "sm", className: "shadow-lg" })}
-              >
-                <svg className="h-4 w-4 me-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                {locale === "ar" ? "دردشة" : "Chat"}
-              </Link>
-
               {business.phone ? (
                 <a
                   href={`tel:${business.phone}`}
