@@ -6,6 +6,7 @@ import "./globals.css";
 import { defaultLocale, isLocale, localeDir } from "@/lib/i18n/locales";
 import { OverlayScrollbarsInit } from "@/components/OverlayScrollbarsInit";
 import { LoyaltyPushSwInit } from "@/components/loyalty/LoyaltyPushSwInit";
+import { ToastProvider } from "@/components/ui/Toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -81,7 +82,7 @@ export default async function RootLayout({
       >
         <OverlayScrollbarsInit />
         <LoyaltyPushSwInit />
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

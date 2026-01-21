@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useToast } from "@/components/ui/Toast";
 import Link from "next/link";
 import Image from "next/image";
 import { 
@@ -68,6 +69,7 @@ export function BusinessFeedCard({
   onToggleLike,
   onToggleSave,
 }: BusinessFeedCardProps) {
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
@@ -126,10 +128,18 @@ export function BusinessFeedCard({
       // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(url);
-        // Could show a toast notification here
-        alert(locale === "ar" ? "تم نسخ الرابط" : "Link copied!");
+        toast({
+          message: locale === "ar" ? "تم نسخ الرابط" : "Link copied",
+          variant: "success",
+          icon: "share",
+        });
       } catch (err) {
         console.error("Failed to copy:", err);
+        toast({
+          message: locale === "ar" ? "تعذر النسخ" : "Copy failed",
+          variant: "error",
+          icon: "share",
+        });
       }
     }
   };
