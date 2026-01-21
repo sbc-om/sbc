@@ -3,11 +3,12 @@ import Link from "next/link";
 
 import { PublicPage } from "@/components/PublicPage";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
-import { getBusinessBySlug, getBusinessByUsername } from "@/lib/db/businesses";
+import { getBusinessBySlug, getBusinessByUsername, listBusinesses } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { buttonVariants } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { PublicBusinessView } from "@/components/business/PublicBusinessView";
+import { AIRecommendations } from "@/components/ai/AIRecommendations";
 
 export default async function BusinessDetailPage({
   params,
@@ -35,6 +36,8 @@ export default async function BusinessDetailPage({
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
     : null;
 
+  const allBusinesses = listBusinesses({ locale: locale as Locale });
+
   return (
     <PublicPage compactTop={!!user}>
       {/* Top bar */}
@@ -58,6 +61,14 @@ export default async function BusinessDetailPage({
         handlePath={handlePath}
         mapsHref={mapsHref}
       />
+
+      <div className="mt-8">
+        <AIRecommendations
+          currentBusiness={business}
+          allBusinesses={allBusinesses}
+          locale={locale as Locale}
+        />
+      </div>
     </PublicPage>
   );
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
-import { getBusinessBySlug, getBusinessByUsername } from "@/lib/db/businesses";
+import { getBusinessBySlug, getBusinessByUsername, listBusinesses } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { getUserById } from "@/lib/db/users";
 import {
@@ -15,6 +15,7 @@ import {
 import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { ExplorerBusinessView } from "@/components/business/ExplorerBusinessView";
+import { AIRecommendations } from "@/components/ai/AIRecommendations";
 
 export default async function ExplorerBusinessDetailPage({
   params,
@@ -62,6 +63,8 @@ export default async function ExplorerBusinessDetailPage({
     usersById[id] = u ? { displayName: u.displayName, email: u.email } : undefined;
   }
 
+  const allBusinesses = listBusinesses({ locale: locale as Locale });
+
   return (
     <AppPage>
       <div className="flex items-start justify-between gap-6">
@@ -91,6 +94,14 @@ export default async function ExplorerBusinessDetailPage({
         canModerate={canModerate}
         usersById={usersById}
       />
+
+      <div className="mt-8">
+        <AIRecommendations
+          currentBusiness={business}
+          allBusinesses={allBusinesses}
+          locale={locale as Locale}
+        />
+      </div>
     </AppPage>
   );
 }

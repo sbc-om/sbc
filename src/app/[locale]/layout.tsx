@@ -16,6 +16,7 @@ import { getCurrentUser } from "@/lib/auth/currentUser";
 import { CartProvider } from "@/components/store/CartProvider";
 import { CartFloating } from "@/components/store/CartFloating";
 import { listStoreProducts } from "@/lib/store/products";
+import { AISearchProvider } from "@/lib/ai/AISearchProvider";
 
 export async function generateMetadata({
   params,
@@ -52,7 +53,8 @@ export default async function LocaleLayout({
 
   return (
     <DictionaryProvider locale={locale as Locale} dict={dict}>
-      <DirectionSync locale={locale as Locale} />
+      <AISearchProvider>
+        <DirectionSync locale={locale as Locale} />
       {user ? (
         <CartProvider userKey={user.id}>
           <CartFloating locale={locale as Locale} products={products} />
@@ -97,6 +99,7 @@ export default async function LocaleLayout({
           <Footer locale={locale as Locale} dict={dict} />
         </div>
       )}
+      </AISearchProvider>
     </DictionaryProvider>
   );
 }
