@@ -33,155 +33,128 @@ export default async function LoyaltyPage({
   const ar = locale === "ar";
 
   const copy = {
-    title: ar ? "بطاقة الولاء" : "Loyalty Card",
+    title: ar ? "بطاقة الولاء" : "Loyalty Platform",
     subtitle: ar
       ? "حوّل عملاءك إلى زبائن دائمين عبر بطاقة ولاء رقمية ونظام نقاط بسيط—كل شيء داخل SBC."
-      : "Turn visitors into repeat customers with a clean digital loyalty card + a simple points system—inside SBC.",
-    ctaManage: ar ? "إدارة الولاء" : "Manage loyalty",
-    ctaStore: ar ? "فتح المتجر" : "Open store",
-    backHome: ar ? "العودة للرئيسية" : "Back to home",
-    sectionFeatures: ar ? "ماذا ستحصل؟" : "What you get",
-    sectionShowcase: ar ? "مميزات بشكل بصري" : "Designed for the real world",
-    sectionHow: ar ? "كيف تعمل؟" : "How it works",
-    sectionNotes: ar ? "ملاحظات" : "Notes",
+      : "Drive customer retention with digital loyalty cards and intelligent points management.",
+    ctaManage: ar ? "إدارة الولاء" : "Get Started",
+    ctaStore: ar ? "فتح المتجر" : "View Plans",
+    backHome: ar ? "العودة للرئيسية" : "Home",
+    sectionFeatures: ar ? "ماذا ستحصل؟" : "Core Features",
+    sectionShowcase: ar ? "مميزات بشكل بصري" : "Why Choose Us",
+    sectionHow: ar ? "كيف تعمل؟" : "Quick Setup",
+    sectionNotes: ar ? "ملاحظات" : "Important Notes",
     note1: ar
       ? "شراء الاشتراك وتفعيله يتم من خلال المتجر (Store)."
-      : "Subscription purchase & activation is handled in the Store.",
+      : "Activate via Store subscription.",
     note2: ar
       ? "إضافة البطاقة إلى Apple Wallet/Google Wallet ستأتي في مرحلة لاحقة."
-      : "Apple Wallet / Google Wallet export will be added in a later phase.",
+      : "Wallet integration coming soon.",
   };
 
   const features = [
     {
       icon: HiOutlineDeviceMobile,
-      title: ar ? "بطاقة رقمية" : "Digital card",
+      title: ar ? "بطاقة رقمية" : "Digital Cards",
       desc: ar
         ? "بطاقة لكل عميل يمكن عرضها عبر رابط عام (ومستقبلاً إضافتها للمحفظة)."
-        : "A card per customer, viewable via a public link (wallet support later).",
-      image:
-        "https://images.unsplash.com/photo-1512428559087-560fa5ceab42?auto=format&fit=crop&w=1600&q=80",
-      alt: ar ? "هاتف مع تطبيق" : "Phone with an app",
+        : "Unique digital card per customer with shareable link.",
     },
     {
       icon: HiOutlineQrcode,
-      title: ar ? "QR / Code" : "QR / Code",
+      title: ar ? "QR / Code" : "QR Integration",
       desc: ar
         ? "عرض النقاط بسرعة، وتحديثها من لوحة التحكم."
-        : "Quickly show points and update them from your dashboard.",
-      image:
-        "https://images.unsplash.com/photo-1556155092-490a1ba16284?auto=format&fit=crop&w=1600&q=80",
-      alt: ar ? "لوحة تحكم" : "Dashboard",
+        : "Real-time points display and updates via dashboard.",
     },
     {
       icon: HiOutlineUsers,
-      title: ar ? "إدارة العملاء" : "Customer management",
+      title: ar ? "إدارة العملاء" : "CRM Built-in",
       desc: ar
         ? "سجل بسيط للعملاء: الاسم، الهاتف، البريد، الملاحظات."
-        : "A lightweight CRM: name, phone, email, and notes.",
-      image:
-        "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80",
-      alt: ar ? "فريق عمل" : "Team collaboration",
+        : "Lightweight customer database with essential fields.",
     },
     {
       icon: HiOutlineChartBar,
-      title: ar ? "نظام نقاط" : "Points system",
+      title: ar ? "نظام نقاط" : "Points Engine",
       desc: ar
         ? "أضف/خصم نقاط للعميل بحسب مشترياته (المرحلة الأولى)."
-        : "Add/remove points per customer based on purchases (phase 1).",
-      image:
-        "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1600&q=80",
-      alt: ar ? "تحليلات" : "Analytics",
+        : "Flexible point allocation based on transactions.",
     },
     {
       icon: HiOutlineShieldCheck,
-      title: ar ? "مشاركة آمنة" : "Safe sharing",
+      title: ar ? "مشاركة آمنة" : "Secure Sharing",
       desc: ar
         ? "صفحة البطاقة العامة تعرض النقاط فقط—دون لوحة الإدارة."
-        : "Public card page shows points only—no admin controls.",
-      image:
-        "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1600&q=80",
-      alt: ar ? "أمان" : "Security",
+        : "Public view displays points only—admin access protected.",
     },
     {
       icon: HiOutlineSparkles,
-      title: ar ? "واجهة أنيقة" : "Polished UI",
-      desc: ar ? "تصميم نظيف وسريع ومناسب للموبايل." : "Clean, fast, mobile-friendly experience.",
-      image:
-        "https://images.unsplash.com/photo-1556742393-d75f468bfcb0?auto=format&fit=crop&w=1600&q=80",
-      alt: ar ? "تصميم واجهة" : "Interface design",
+      title: ar ? "واجهة أنيقة" : "Modern Interface",
+      desc: ar ? "تصميم نظيف وسريع ومناسب للموبايل." : "Fast, responsive design optimized for mobile.",
     },
   ];
 
   const showcase = [
     {
       icon: HiOutlineLightningBolt,
-      title: ar ? "تفعيل سريع" : "Fast onboarding",
+      title: ar ? "تفعيل سريع" : "Instant Setup",
       desc: ar
         ? "ابدأ خلال دقائق: فعّل من المتجر ثم أضف عملاءك مباشرة."
-        : "Start in minutes: activate in the store, then add customers right away.",
-      image:
-        "https://images.unsplash.com/photo-1556155092-490a1ba16284?auto=format&fit=crop&w=1600&q=80",
-      alt: ar ? "فريق يعمل على لوحة تحكم" : "Team working with a dashboard",
+        : "Activate and start adding customers in minutes.",
     },
     {
       icon: HiOutlineGift,
-      title: ar ? "مكافآت واضحة" : "Rewards that make sense",
+      title: ar ? "مكافآت واضحة" : "Clear Rewards",
       desc: ar
         ? "نقاط بسيطة وواضحة—بدون تعقيد وبلا خطوات كثيرة."
-        : "Simple, transparent points—no complicated rules or clutter.",
-      image:
-        "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1600&q=80",
-      alt: ar ? "منتج على طاولة" : "Product on a table",
+        : "Transparent point system with zero complexity.",
     },
     {
       icon: HiOutlineQrcode,
-      title: ar ? "مشاركة برابط" : "Share by link",
+      title: ar ? "مشاركة برابط" : "Easy Sharing",
       desc: ar
         ? "ارسل رابط البطاقة لعرض النقاط—بواجهة موبايل جميلة."
-        : "Send a card link to show points—beautiful on mobile.",
-      image:
-        "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1600&q=80",
-      alt: ar ? "شخص يستخدم هاتف" : "Person using a phone",
+        : "Share card links with optimized mobile experience.",
     },
   ];
 
   const steps = [
     {
       n: "01",
-      title: ar ? "اشترِ من المتجر" : "Purchase in the Store",
+      title: ar ? "اشترِ من المتجر" : "Subscribe",
       desc: ar
         ? "اختر خطة الولاء من المتجر وأكمل الدفع (بوابة افتراضية حالياً)."
-        : "Pick a Loyalty plan in the store and complete checkout (fake gateway for now).",
+        : "Select a plan and activate your loyalty program.",
     },
     {
       n: "02",
-      title: ar ? "أضف عملاءك" : "Add your customers",
+      title: ar ? "أضف عملاءك" : "Add Customers",
       desc: ar
         ? "أدخل بيانات العميل—وسيتم إصدار بطاقة لكل عميل تلقائياً."
-        : "Create customers—each one automatically gets a card.",
+        : "Import customers—cards generated automatically.",
     },
     {
       n: "03",
-      title: ar ? "حدّث النقاط" : "Update points",
-      desc: ar ? "قم بتعديل النقاط (+/-) بحسب التعاملات." : "Adjust points (+/-) based on transactions.",
+      title: ar ? "حدّث النقاط" : "Manage Points",
+      desc: ar ? "قم بتعديل النقاط (+/-) بحسب التعاملات." : "Award or deduct points per transaction.",
     },
     {
       n: "04",
-      title: ar ? "شارك رابط البطاقة" : "Share the card link",
+      title: ar ? "شارك رابط البطاقة" : "Share Cards",
       desc: ar
         ? "أرسل رابط البطاقة للعميل ليشاهد نقاطه الحالية."
-        : "Send the public card link so customers can view their points.",
+        : "Distribute card links to customers for instant access.",
     },
   ];
 
   return (
     <PublicPage>
       <section className="relative animate-in slide-in-from-bottom-6">
-        <div className="absolute -top-24 left-1/2 h-72 w-160 -translate-x-1/2 rounded-full bg-accent/12 blur-3xl" />
-        <div className="absolute -bottom-24 left-1/2 h-72 w-160 -translate-x-1/2 rounded-full bg-accent-2/12 blur-3xl" />
+        <div className="absolute -top-24 left-1/2 h-72 w-160 -translate-x-1/2 rounded-full bg-accent/12 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 left-1/2 h-72 w-160 -translate-x-1/2 rounded-full bg-accent-2/12 blur-3xl pointer-events-none" />
 
-        <div className="text-center">
+        <div className="relative text-center">
           <h1 className="mt-5 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
             <span className="bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent">
               {copy.title}
@@ -191,7 +164,7 @@ export default async function LoyaltyPage({
             {copy.subtitle}
           </p>
 
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-3 relative z-10">
             <Link
               href={`/${locale}/loyalty/manage`}
               className={buttonVariants({ variant: "primary", size: "md" })}
@@ -226,9 +199,9 @@ export default async function LoyaltyPage({
 
         <div className="mt-8 grid gap-3 sm:grid-cols-3">
           {[
-            { icon: HiOutlineUsers, label: ar ? "CRM خفيف" : "Lightweight CRM" },
-            { icon: HiOutlineChartBar, label: ar ? "نقاط" : "Points" },
-            { icon: HiOutlineShieldCheck, label: ar ? "مشاركة آمنة" : "Safe sharing" },
+            { icon: HiOutlineUsers, label: ar ? "CRM خفيف" : "Built-in CRM" },
+            { icon: HiOutlineChartBar, label: ar ? "نقاط" : "Smart Points" },
+            { icon: HiOutlineShieldCheck, label: ar ? "مشاركة آمنة" : "Secure Access" },
           ].map((chip) => {
             const Icon = chip.icon;
             return (
@@ -249,27 +222,14 @@ export default async function LoyaltyPage({
           {showcase.map((c) => {
             const Icon = c.icon;
             return (
-              <div key={c.title} className="sbc-card sbc-card--interactive overflow-hidden rounded-2xl">
-                <div className="relative aspect-video">
-                  <Image
-                    src={c.image}
-                    alt={c.alt}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 100vw, 33vw"
-                    priority={false}
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-transparent" />
-                  <div className="absolute left-4 top-4">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-                      <Icon className="h-4 w-4" />
-                      <span>{c.title}</span>
-                    </div>
+              <div key={c.title} className="sbc-card sbc-card--interactive rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-(--surface-border) bg-(--surface)">
+                    <Icon className="h-6 w-6 text-accent" />
                   </div>
+                  <h3 className="font-semibold">{c.title}</h3>
                 </div>
-                <div className="p-6">
-                  <p className="text-sm leading-7 text-(--muted-foreground)">{c.desc}</p>
-                </div>
+                <p className="text-sm leading-7 text-(--muted-foreground)">{c.desc}</p>
               </div>
             );
           })}
@@ -282,27 +242,14 @@ export default async function LoyaltyPage({
           {features.map((f) => {
             const Icon = f.icon;
             return (
-              <div key={f.title} className="sbc-card sbc-card--interactive group overflow-hidden rounded-2xl">
-                <div className="relative aspect-video">
-                  <Image
-                    src={f.image}
-                    alt={f.alt}
-                    fill
-                    className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                    sizes="(max-width: 1024px) 100vw, 33vw"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-transparent" />
-                  <div className="absolute left-4 top-4">
-                    <div className="inline-flex items-center gap-2 rounded-full bg-black/35 px-3 py-1 text-xs font-medium text-white backdrop-blur">
-                      <Icon className="h-4 w-4" />
-                      <span>{f.title}</span>
-                    </div>
+              <div key={f.title} className="sbc-card sbc-card--interactive rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-(--surface-border) bg-(--surface)">
+                    <Icon className="h-6 w-6 text-accent" />
                   </div>
+                  <h3 className="font-semibold">{f.title}</h3>
                 </div>
-
-                <div className="p-6">
-                  <p className="text-sm leading-7 text-(--muted-foreground)">{f.desc}</p>
-                </div>
+                <p className="text-sm leading-7 text-(--muted-foreground)">{f.desc}</p>
               </div>
             );
           })}
