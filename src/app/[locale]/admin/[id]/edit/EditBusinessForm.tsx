@@ -389,7 +389,7 @@ export function EditBusinessForm({
         <input type="hidden" name="avatarMode" value={avatarMode} />
         
         {/* Basic Info */}
-        <div className="sbc-card p-6">
+        <div className="sbc-card relative z-20 overflow-visible p-6">
           <h2 className="text-lg font-semibold text-foreground mb-1">
             {ar ? "المعلومات الأساسية" : "Basic Information"}
           </h2>
@@ -398,7 +398,7 @@ export function EditBusinessForm({
           </p>
           
           <div className="grid gap-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2 items-start">
               <label className="group grid gap-2">
                 <span className="text-sm font-semibold text-foreground">
                   {ar ? "اسم المستخدم" : "Username"}

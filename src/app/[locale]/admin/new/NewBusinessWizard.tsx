@@ -297,7 +297,7 @@ export function NewBusinessWizard({
   if (state?.ok) {
     return (
       <div className="mt-8">
-        <div className="sbc-card p-6">
+        <div className="sbc-card relative z-20 overflow-visible p-6">
           <div className="flex items-start gap-4">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-500/10">
               <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -371,7 +371,7 @@ export function NewBusinessWizard({
           </p>
           
           <div className="grid gap-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2 items-start">
               <label className="group grid gap-2">
                 <span className="text-sm font-semibold text-foreground">
                   {ar ? "اسم المستخدم" : "Username"}
