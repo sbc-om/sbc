@@ -13,10 +13,12 @@ export function PublicPage({
   children,
   className,
   containerClassName,
+  compactTop,
 }: {
   children: React.ReactNode;
   className?: string;
   containerClassName?: string;
+  compactTop?: boolean;
 }) {
   return (
     <PageContainer
@@ -25,7 +27,7 @@ export function PublicPage({
         // Header is fixed (and slightly taller on mobile). Give enough top space so
         // public pages (e.g. loyalty, business pages, customer card) never render
         // underneath the header/menu when logged out.
-        "pt-24 sm:pt-28",
+        compactTop ? "pt-6" : "pt-24 sm:pt-28",
         className,
       )}
     >

@@ -24,7 +24,7 @@ export function LanguageSwitcher({ locale }: { locale: Locale }) {
   return (
     <Link
       href={href}
-      className={buttonVariants({ variant: "secondary", size: "sm", className: "rounded-full" })}
+      className={buttonVariants({ variant: "secondary", size: "sm", className: "h-9 rounded-xl" })}
     >
       {target === "ar" ? "العربية" : "English"}
     </Link>

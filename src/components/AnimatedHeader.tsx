@@ -244,7 +244,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                 <ThemeToggle locale={locale} />
                 <button
                   type="button"
-                  className={buttonVariants({ variant: "secondary", size: "icon" })}
+                  className={buttonVariants({ variant: "secondary", size: "icon", className: "rounded-xl" })}
                   aria-label={locale === "ar" ? "القائمة" : "Menu"}
                   aria-expanded={mobileOpen}
                   aria-controls="mobile-nav"

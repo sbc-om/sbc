@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -19,9 +19,7 @@ export default async function BusinessDetailPage({
   const { locale, slug } = await params;
   if (!isLocale(locale)) notFound();
 
-  // When logged in, keep the experience inside the app shell (sidebar) and identical paddings.
   const user = await getCurrentUser();
-  if (user) redirect(`/${locale}/explorer/${slug}`);
 
   const business = getBusinessBySlug(slug);
   if (!business) notFound();
@@ -47,7 +45,7 @@ export default async function BusinessDetailPage({
     : null;
 
   return (
-    <PublicPage>
+    <PublicPage compactTop={!!user}>
       {/* Top bar */}
       <div className="flex items-start justify-between gap-6">
         <div className="min-w-0" />

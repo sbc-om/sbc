@@ -53,7 +53,7 @@ export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
         type="button"
         aria-label={label}
         title={label}
-        className={buttonVariants({ variant: "secondary", size: "icon" })}
+        className={buttonVariants({ variant: "secondary", size: "icon", className: "rounded-xl" })}
         disabled
       >
         <svg
@@ -79,7 +79,7 @@ export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
         window.localStorage.setItem("theme", next);
         applyTheme(next);
       }}
-      className={buttonVariants({ variant: "secondary", size: "icon" })}
+      className={buttonVariants({ variant: "secondary", size: "icon", className: "rounded-xl" })}
     >
       {theme === "dark" ? (
         // Sun icon
