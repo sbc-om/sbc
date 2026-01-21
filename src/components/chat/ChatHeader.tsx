@@ -37,7 +37,7 @@ export function ChatHeader({ business, locale }: ChatHeaderProps) {
         </button>
 
         <Link
-          href={`/${locale}/explorer/${business.slug}`}
+          href={business.username ? `/${locale}/explorer/@${business.username}` : `/${locale}/explorer/${business.slug}`}
           className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-80 transition-opacity"
         >
           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-(--chip-bg) flex items-center justify-center">
@@ -56,7 +56,7 @@ export function ChatHeader({ business, locale }: ChatHeaderProps) {
         </Link>
 
         <Link
-          href={`/${locale}/explorer/${business.slug}`}
+          href={business.username ? `/${locale}/explorer/@${business.username}` : `/${locale}/explorer/${business.slug}`}
           className="h-9 px-3 rounded-lg hover:bg-(--surface) flex items-center gap-1.5 text-xs font-medium text-(--muted-foreground) hover:text-foreground transition-colors shrink-0"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

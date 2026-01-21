@@ -86,12 +86,12 @@ export function ExplorerBusinessView({
             )}
             <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-transparent" />
             <div
-              className={`absolute top-3 ${locale === "ar" ? "start-3" : "end-3"} sm:top-4 sm:${
-                locale === "ar" ? "start-4" : "end-4"
+              className={`absolute top-3 ${locale === "ar" ? "left-3" : "right-3"} sm:top-4 sm:${
+                locale === "ar" ? "left-4" : "right-4"
               } flex items-center gap-2`}
             >
               <Link
-                href={`/${locale}/chat/${business.slug}`}
+                href={business.username ? `/${locale}/chat/@${business.username}` : `/${locale}/chat/${business.slug}`}
                 aria-label={locale === "ar" ? "دردشة" : "Chat"}
                 title={locale === "ar" ? "دردشة" : "Chat"}
                 className={buttonVariants({

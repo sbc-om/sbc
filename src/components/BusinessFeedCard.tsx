@@ -391,7 +391,7 @@ export function BusinessFeedCard({
           )}
           {commentCount > 0 && (
             <Link
-              href={`/${locale}/businesses/${business.slug}`}
+              href={business.username ? `/${locale}/businesses/@${business.username}` : `/${locale}/businesses/${business.slug}`}
               className="text-sm text-(--muted-foreground) hover:text-foreground transition-colors block"
             >
               {locale === "ar"

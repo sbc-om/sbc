@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { PublicPage } from "@/components/PublicPage";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
-import { getBusinessBySlug } from "@/lib/db/businesses";
+import { getBusinessBySlug, getBusinessByUsername } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { buttonVariants } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
@@ -19,7 +19,9 @@ export default async function BusinessDetailPage({
 
   const user = await getCurrentUser();
 
-  const business = getBusinessBySlug(slug);
+  const business = slug.startsWith("@")
+    ? getBusinessByUsername(slug)
+    : getBusinessBySlug(slug);
   if (!business) notFound();
 
   const category = business.categoryId ? getCategoryById(business.categoryId) : null;

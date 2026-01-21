@@ -142,10 +142,14 @@ export function BusinessesExplorer({
           const description = b.description ? (locale === "ar" ? b.description.ar : b.description.en) : "";
           const img = b.media?.cover || b.media?.banner || b.media?.logo;
 
+          const href = b.username 
+            ? `/@${b.username}` 
+            : `/${locale}${detailsBasePath}/${b.slug}`;
+          
           return (
             <Link
               key={b.id}
-              href={`/${locale}${detailsBasePath}/${b.slug}`}
+              href={href}
               className="group sbc-card sbc-card--interactive overflow-hidden rounded-2xl"
             >
               <div className="relative h-40 w-full bg-linear-to-br from-accent/10 via-accent-2/10 to-transparent">

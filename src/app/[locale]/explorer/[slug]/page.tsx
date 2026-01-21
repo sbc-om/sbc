@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
-import { getBusinessBySlug } from "@/lib/db/businesses";
+import { getBusinessBySlug, getBusinessByUsername } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { getUserById } from "@/lib/db/users";
 import {
@@ -26,7 +26,9 @@ export default async function ExplorerBusinessDetailPage({
 
   const user = await requireUser(locale as Locale);
 
-  const business = getBusinessBySlug(slug);
+  const business = slug.startsWith("@")
+    ? getBusinessByUsername(slug)
+    : getBusinessBySlug(slug);
   if (!business) notFound();
 
   const category = business.categoryId ? getCategoryById(business.categoryId) : null;
