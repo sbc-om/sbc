@@ -117,6 +117,7 @@ export default async function HomeFollowedPage({
               commentCount={item.commentCount}
               onToggleLike={toggleBusinessLikeAction.bind(null, locale)}
               onToggleSave={toggleBusinessSaveAction.bind(null, locale)}
+              detailsBasePath="/explorer"
             />
           ))}
         </div>

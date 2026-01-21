@@ -106,10 +106,12 @@ export default async function LocaleHome({
             }}
           >
             <h2 className="text-2xl font-bold mb-2 text-foreground">
-              {dict.home.searchPlaceholder}
+              {locale === "ar" ? "ابحث في الدليل" : "Search the directory"}
             </h2>
             <p className="text-base mb-6 opacity-70" style={{ color: "currentColor" }}>
-              {locale === "ar" ? "ابحث عن الأعمال الموثوقة" : "Find trusted businesses"}
+              {locale === "ar"
+                ? "ابحث بالاسم أو التصنيف أو المدينة."
+                : "Search by name, category, or city."}
             </p>
             
             <form
@@ -137,12 +139,12 @@ export default async function LocaleHome({
         <Container size="lg">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-foreground mb-3">
-              {locale === "ar" ? "المنتجات" : "Products"}
+              {locale === "ar" ? "الحلول" : "Solutions"}
             </h2>
             <p className="text-base text-foreground opacity-70">
               {locale === "ar"
-                ? "هذه هي التطبيقات التي ستعمل على هذا النظام: دليل الأعمال، بطاقة الولاء، ومنصة التسويق." 
-                : "Apps you can run on this system: Business Directory, Loyalty Card, and Marketing Platform."}
+                ? "وحدات أعمال احترافية يمكن تفعيلها: دليل الأعمال، بطاقة الولاء، ومنصة التسويق."
+                : "Professional business modules you can activate: Business Directory, Loyalty Card, and Marketing Platform."}
             </p>
           </div>
 
@@ -153,8 +155,8 @@ export default async function LocaleHome({
               </div>
               <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
                 {locale === "ar"
-                  ? "استكشف الأعمال والتصنيفات وصفحات النشاط." 
-                  : "Browse businesses, categories, and business pages."}
+                  ? "استكشف الأعمال الموثوقة والتصنيفات والملفات التعريفية." 
+                  : "Explore trusted businesses, categories, and profiles."}
               </p>
               <div className="mt-4">
                 <Link
@@ -172,8 +174,8 @@ export default async function LocaleHome({
               </div>
               <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
                 {locale === "ar"
-                  ? "أصدر بطاقات ولاء رقمية (Apple/Google Wallet) وادِر عملاءك ونقاطهم." 
-                  : "Issue digital loyalty cards (Apple/Google Wallet) and manage customers & points."}
+                  ? "أصدر بطاقات ولاء رقمية (Apple/Google Wallet) وأدر العملاء والمكافآت." 
+                  : "Issue digital loyalty cards (Apple/Google Wallet) and manage customers & rewards."}
               </p>
               <div className="mt-4">
                 <Link
@@ -191,8 +193,8 @@ export default async function LocaleHome({
               </div>
               <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
                 {locale === "ar"
-                  ? "API مخصص لواتساب وتلغرام—قابل للاستخدام في أي نظام مع تخصيص كامل." 
-                  : "Custom WhatsApp + Telegram APIs you can use anywhere with full customization."}
+                  ? "واجهات واتساب وتلغرام قابلة للتخصيص للحملات والأتمتة." 
+                  : "Customizable WhatsApp + Telegram APIs for campaigns and automation."}
               </p>
               <div className="mt-4">
                 <Link
@@ -213,11 +215,13 @@ export default async function LocaleHome({
           <Container size="lg">
             <div className="mb-10">
               <h2 className="text-3xl font-bold text-foreground mb-3">
-                {locale === "ar" ? "أفضل 3 في الرئيسية" : "Top 3 on homepage"}
+                {locale === "ar"
+                  ? "أفضل 3 أعمال مميزة"
+                  : "Top 3 featured businesses"}
               </h2>
               <p className="text-base text-foreground opacity-70">
                 {locale === "ar"
-                  ? "أنشطة مختارة للظهور في أعلى الصفحة الرئيسية."
+                  ? "مختارات من الأعمال لعرضها في أعلى الصفحة الرئيسية."
                   : "Hand-picked businesses highlighted at the top of the homepage."}
               </p>
             </div>
@@ -240,12 +244,12 @@ export default async function LocaleHome({
           <Container size="lg">
             <div className="mb-10">
               <h2 className="text-3xl font-bold text-foreground mb-3">
-                {locale === "ar" ? "مميّز في الرئيسية" : "Featured on homepage"}
+                {locale === "ar" ? "مميّز في الصفحة الرئيسية" : "Featured on the homepage"}
               </h2>
               <p className="text-base text-foreground opacity-70">
                 {locale === "ar"
-                  ? "قائمة مختارة من 12 نشاطاً في الصفحة الرئيسية."
-                  : "A curated list of up to 12 businesses on the homepage."}
+                  ? "قائمة منتقاة من الأعمال المميزة على الصفحة الرئيسية."
+                  : "A curated selection of businesses featured on the homepage."}
               </p>
             </div>
 
@@ -271,8 +275,8 @@ export default async function LocaleHome({
               </h2>
               <p className="text-base text-foreground opacity-70">
                 {locale === "ar"
-                  ? "اكتشف أحدث الأعمال المسجلة في المنصة"
-                  : "Discover the newest businesses registered on our platform"}
+                  ? "اكتشف أحدث الأعمال المضافة إلى الدليل"
+                  : "Discover the latest businesses added to the directory"}
               </p>
             </div>
 

@@ -31,8 +31,8 @@ export const en = {
   },
   home: {
     title: "Find trusted businesses",
-    subtitle: "A clean, bilingual business directory (English / Arabic).",
-    searchPlaceholder: "Search name, category, city…",
+    subtitle: "A professional, bilingual business directory for trusted listings.",
+    searchPlaceholder: "Search by name, category, or city…",
     browseAll: "Search",
   },
   businesses: {

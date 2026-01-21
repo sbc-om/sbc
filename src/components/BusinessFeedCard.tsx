@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useToast } from "@/components/ui/Toast";
 import Link from "next/link";
 import Image from "next/image";
@@ -12,7 +12,9 @@ import {
   IoBookmarkOutline,
   IoBookmark,
   IoLocationSharp,
-  IoEllipsisHorizontal
+  IoEllipsisHorizontal,
+  IoCopyOutline,
+  IoEyeOutline
 } from "react-icons/io5";
 import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
 import type { Locale } from "@/lib/i18n/locales";
@@ -55,6 +57,8 @@ interface BusinessFeedCardProps {
   /** Actions for like and save */
   onToggleLike: (businessId: string) => Promise<{ liked: boolean; count: number }>;
   onToggleSave: (businessId: string) => Promise<{ saved: boolean }>;
+  /** Route prefix for business details links. Example: "/businesses" or "/explorer" */
+  detailsBasePath?: string;
 }
 
 export function BusinessFeedCard({
@@ -68,12 +72,15 @@ export function BusinessFeedCard({
   commentCount,
   onToggleLike,
   onToggleSave,
+  detailsBasePath = "/businesses",
 }: BusinessFeedCardProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [saved, setSaved] = useState(initialSaved);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   
   const name = locale === "ar" ? business.name.ar : business.name.en;
   const description = business.description
@@ -111,8 +118,10 @@ export function BusinessFeedCard({
     });
   };
 
+  const detailPath = `/${locale}${detailsBasePath}/${business.slug}`;
+
   const handleShare = async () => {
-    const url = `${window.location.origin}/${locale}/businesses/${business.slug}`;
+    const url = `${window.location.origin}${detailPath}`;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -144,9 +153,50 @@ export function BusinessFeedCard({
     }
   };
 
+  const handleCopy = async () => {
+    const url = `${window.location.origin}${detailPath}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast({
+        message: locale === "ar" ? "تم نسخ الرابط" : "Link copied",
+        variant: "success",
+        icon: "share",
+      });
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      toast({
+        message: locale === "ar" ? "تعذر النسخ" : "Copy failed",
+        variant: "error",
+        icon: "share",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (menuRef.current && !menuRef.current.contains(target)) {
+        setMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown, { passive: true });
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
   return (
     <article
-      className="mb-6 rounded-lg overflow-hidden border"
+      className="mb-6 rounded-lg border overflow-visible"
       style={{
         backgroundColor: "var(--background)",
         borderColor: "var(--surface-border)",
@@ -155,7 +205,7 @@ export function BusinessFeedCard({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <Link
-          href={`/${locale}/businesses/${business.slug}`}
+          href={detailPath}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           {showLogo ? (
@@ -200,18 +250,76 @@ export function BusinessFeedCard({
             </div>
           </div>
         </Link>
-        <button
-          className="text-(--muted-foreground) hover:text-foreground transition-colors p-1"
-          aria-label="More options"
-        >
-          <IoEllipsisHorizontal className="w-6 h-6" />
-        </button>
+        <div ref={menuRef} className="relative">
+          <button
+            className="text-(--muted-foreground) hover:text-foreground transition-colors p-1"
+            aria-label={locale === "ar" ? "خيارات" : "More options"}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <IoEllipsisHorizontal className="w-6 h-6" />
+          </button>
+
+          {menuOpen ? (
+            <div
+                className={`absolute ${locale === "ar" ? "start-0" : "end-0"} z-20 mt-2 w-52 rounded-xl border border-(--surface-border) bg-(--surface) p-2 shadow-lg`}
+              role="menu"
+            >
+              <Link
+                href={detailPath}
+                role="menuitem"
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-(--chip-bg) ${locale === "ar" ? "text-right" : "text-left"}`}
+                onClick={() => setMenuOpen(false)}
+              >
+                <IoEyeOutline className="h-4 w-4" />
+                {locale === "ar" ? "عرض النشاط" : "View business"}
+              </Link>
+              <button
+                type="button"
+                role="menuitem"
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-(--chip-bg) ${locale === "ar" ? "text-right" : "text-left"}`}
+                onClick={() => {
+                  setMenuOpen(false);
+                  void handleShare();
+                }}
+              >
+                <IoShareSocialOutline className="h-4 w-4" />
+                {locale === "ar" ? "مشاركة" : "Share"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-(--chip-bg) ${locale === "ar" ? "text-right" : "text-left"}`}
+                onClick={() => {
+                  setMenuOpen(false);
+                  void handleCopy();
+                }}
+              >
+                <IoCopyOutline className="h-4 w-4" />
+                {locale === "ar" ? "نسخ الرابط" : "Copy link"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-(--chip-bg) ${locale === "ar" ? "text-right" : "text-left"}`}
+                onClick={() => {
+                  setMenuOpen(false);
+                  handleSaveClick();
+                }}
+              >
+                {saved ? <IoBookmark className="h-4 w-4" /> : <IoBookmarkOutline className="h-4 w-4" />}
+                {saved ? (locale === "ar" ? "إزالة من المحفوظات" : "Remove from saved") : (locale === "ar" ? "حفظ النشاط" : "Save business")}
+              </button>
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {/* Image - Square Instagram-style (1080x1080) */}
       {mainImage && (
-        <Link href={`/${locale}/businesses/${business.slug}`}>
-          <div className="relative w-full aspect-square bg-linear-to-br from-accent/5 to-accent-2/5">
+        <Link href={detailPath}>
+          <div className="relative w-full aspect-square overflow-hidden rounded-b-lg bg-linear-to-br from-accent/5 to-accent-2/5">
             <Image
               src={mainImage}
               alt={name}
@@ -242,7 +350,7 @@ export function BusinessFeedCard({
               )}
             </button>
             <Link
-              href={`/${locale}/businesses/${business.slug}`}
+              href={detailPath}
               className="transition-all hover:scale-110 active:scale-95"
               aria-label="Comment"
             >
@@ -293,7 +401,7 @@ export function BusinessFeedCard({
         {/* Caption - Single line with ellipsis */}
         <div className="text-sm line-clamp-1">
           <Link
-            href={`/${locale}/businesses/${business.slug}`}
+            href={detailPath}
             className="font-semibold hover:opacity-80 transition-opacity"
           >
             {name}
