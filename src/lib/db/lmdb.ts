@@ -6,6 +6,7 @@ import { maybeEncrypt, maybeDecrypt, isEncryptionEnabled } from "./encryption";
 export type LmdbHandles = {
   root: ReturnType<typeof open>;
   businesses: ReturnType<ReturnType<typeof open>["openDB"]>;
+  businessCards: ReturnType<ReturnType<typeof open>["openDB"]>;
   businessSlugs: ReturnType<ReturnType<typeof open>["openDB"]>;
   businessUsernames: ReturnType<ReturnType<typeof open>["openDB"]>;
   categories: ReturnType<ReturnType<typeof open>["openDB"]>;
@@ -154,6 +155,7 @@ export function getLmdb(): LmdbHandles {
   const existing = globalThis.__sbcLmdb as Partial<LmdbHandles> | undefined;
   if (existing?.root) {
     existing.businesses ??= wrapDB(existing.root.openDB({ name: "businesses" })) as any;
+    existing.businessCards ??= wrapDB(existing.root.openDB({ name: "businessCards" })) as any;
     existing.businessSlugs ??= wrapDB(existing.root.openDB({ name: "businessSlugs" })) as any;
     existing.businessUsernames ??= wrapDB(existing.root.openDB({ name: "businessUsernames" })) as any;
     existing.categories ??= wrapDB(existing.root.openDB({ name: "categories" })) as any;
@@ -207,6 +209,7 @@ export function getLmdb(): LmdbHandles {
   });
 
   const businesses = wrapDB(root.openDB({ name: "businesses" }));
+  const businessCards = wrapDB(root.openDB({ name: "businessCards" }));
   const businessSlugs = wrapDB(root.openDB({ name: "businessSlugs" }));
   const businessUsernames = wrapDB(root.openDB({ name: "businessUsernames" }));
   const categories = wrapDB(root.openDB({ name: "categories" }));
@@ -245,6 +248,7 @@ export function getLmdb(): LmdbHandles {
   globalThis.__sbcLmdb = {
     root,
     businesses: businesses as any,
+    businessCards: businessCards as any,
     businessSlugs: businessSlugs as any,
     businessUsernames: businessUsernames as any,
     categories: categories as any,

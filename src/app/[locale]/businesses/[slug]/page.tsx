@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PublicPage } from "@/components/PublicPage";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getBusinessBySlug, getBusinessByUsername, listBusinesses } from "@/lib/db/businesses";
+import { listPublicBusinessCardsByBusiness } from "@/lib/db/businessCards";
 import { getCategoryById } from "@/lib/db/categories";
 import { buttonVariants } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
@@ -37,6 +38,7 @@ export default async function BusinessDetailPage({
     : null;
 
   const allBusinesses = listBusinesses({ locale: locale as Locale });
+  const publicCards = listPublicBusinessCardsByBusiness(business.id);
 
   return (
     <PublicPage compactTop={!!user}>
@@ -61,6 +63,28 @@ export default async function BusinessDetailPage({
         handlePath={handlePath}
         mapsHref={mapsHref}
       />
+
+      {publicCards.length > 0 ? (
+        <div className="mt-8 sbc-card rounded-2xl p-6">
+          <div className="text-lg font-semibold">
+            {locale === "ar" ? "بطاقات الأعمال" : "Business Cards"}
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {publicCards.map((card) => (
+              <Link
+                key={card.id}
+                href={`/${locale}/business-card/${card.id}`}
+                className="sbc-card sbc-card--interactive rounded-2xl p-4"
+              >
+                <div className="text-sm font-semibold">{card.fullName}</div>
+                <div className="mt-1 text-xs text-(--muted-foreground)">
+                  {card.title || (locale === "ar" ? "بدون مسمى" : "No title")}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-8">
         <AIRecommendations

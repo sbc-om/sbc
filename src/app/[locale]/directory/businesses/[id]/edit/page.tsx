@@ -46,9 +46,17 @@ export default async function DirectoryBusinessEditPage({
           </p>
         </div>
 
-        <Link href={`/${locale}/directory`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
-          {ar ? "رجوع" : "Back"}
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/${locale}/directory/businesses/${business.id}/cards`}
+            className={buttonVariants({ variant: "secondary", size: "sm" })}
+          >
+            {ar ? "بطاقات الأعمال" : "Business Cards"}
+          </Link>
+          <Link href={`/${locale}/directory`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+            {ar ? "رجوع" : "Back"}
+          </Link>
+        </div>
       </div>
 
       <BusinessAvatarSettings

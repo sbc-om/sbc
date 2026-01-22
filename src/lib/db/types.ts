@@ -62,6 +62,22 @@ export type Business = {
   updatedAt: string;
 };
 
+export type BusinessCard = {
+  id: string;
+  businessId: string;
+  ownerId: string;
+  fullName: string;
+  title?: string;
+  email?: string;
+  phone?: string;
+  website?: string;
+  avatarUrl?: string;
+  bio?: string;
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type User = {
   id: string;
   email: string;

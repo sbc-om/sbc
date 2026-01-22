@@ -22,6 +22,8 @@ import {
   getLoyaltySettingsByUserId,
   listLoyaltyMessagesForCustomer,
 } from "@/lib/db/loyalty";
+import { getBusinessById } from "@/lib/db/businesses";
+import { getBusinessCardById } from "@/lib/db/businessCards";
 import type { LoyaltySettings } from "@/lib/db/types";
 
 // ============================================================================
@@ -157,6 +159,61 @@ function prepareLoyaltyCardData(input: {
     design,
     memberId,
     barcodeMessage,
+    googleBarcodeType,
+    links,
+    logoUrl,
+  };
+}
+
+function prepareBusinessCardData(input: {
+  cardId: string;
+  origin?: string;
+  publicCardUrl?: string;
+}) {
+  const card = getBusinessCardById(input.cardId);
+  if (!card || !card.isPublic) throw new Error("CARD_NOT_FOUND");
+
+  const business = getBusinessById(card.businessId);
+  if (!business) throw new Error("BUSINESS_NOT_FOUND");
+
+  const settings = getLoyaltySettingsByUserId(card.ownerId) ?? defaultLoyaltySettings(card.ownerId);
+  const businessName = business.name?.en || business.name?.ar || "SBC";
+  const programId = `bizcard-${card.businessId}`;
+  const design = settings.cardDesign;
+  const memberId = card.id;
+
+  const barcodeMessage = resolveBarcodeMessage(settings.walletBarcodeMessage, {
+    memberId,
+    cardId: card.id,
+    phone: card.phone ? String(card.phone) : "",
+  });
+
+  const googleBarcodeType = settings.walletBarcodeFormat === "code128" ? "CODE_128" : "QR_CODE";
+
+  const links: Array<{ id?: string; label?: string; url?: string; description?: string }> = [];
+  const websiteUrl = sanitizeUrl(card.website || business.website || settings.walletWebsiteUrl);
+  if (websiteUrl) links.push({ id: "website", label: "Website", url: websiteUrl });
+  const supportEmail = (card.email || business.email || settings.walletSupportEmail)?.trim();
+  if (supportEmail) links.push({ id: "email", label: "Email", url: `mailto:${supportEmail}` });
+  const supportPhone = (card.phone || business.phone || settings.walletSupportPhone)?.trim();
+  if (supportPhone) links.push({ id: "phone", label: "Call", url: `tel:${supportPhone}` });
+
+  const publicLogoOverride = env("GOOGLE_WALLET_PUBLIC_LOGO_URL");
+  const logoUrl = sanitizeUrl(publicLogoOverride, ["https:", "http:"], false)
+    || sanitizeUrl(resolvePublicUrl(business.media?.logo ?? undefined, input.origin), ["https:", "http:"], false);
+
+  const publicCardUrl = resolvePublicUrl(input.publicCardUrl, input.origin) || input.publicCardUrl;
+  const effectiveBarcodeMessage = publicCardUrl || barcodeMessage;
+
+  return {
+    card,
+    business,
+    settings,
+    businessName,
+    programId,
+    design,
+    memberId,
+    barcodeMessage: effectiveBarcodeMessage,
     googleBarcodeType,
     links,
     logoUrl,
@@ -469,6 +526,58 @@ export async function getSbcwalletApplePkpassForLoyaltyCard(input: {
   return await adapter.generatePkpass(passData, profileConfig, "child");
 }
 
+export async function getSbcwalletApplePkpassForBusinessCard(input: {
+  cardId: string;
+  publicCardUrl?: string;
+  origin?: string;
+}): Promise<Buffer> {
+  const data = prepareBusinessCardData({
+    cardId: input.cardId,
+    origin: input.origin,
+    publicCardUrl: input.publicCardUrl,
+  });
+
+  const design = data.design;
+  const appleBackground = design?.backgroundColor ? hexToRgbCss(design.backgroundColor) : null;
+  const appleForeground = design?.textColor ? hexToRgbCss(design.textColor) : null;
+  const appleLabel = design?.secondaryColor ? hexToRgbCss(design.secondaryColor) : null;
+
+  const appleBarcodeFormat = data.settings.walletBarcodeFormat === "code128" ? "PKBarcodeFormatCode128" : "PKBarcodeFormatQR";
+  const appleBarcodes = [{
+    format: appleBarcodeFormat,
+    message: data.barcodeMessage,
+    messageEncoding: "iso-8859-1",
+    altText: data.memberId,
+  }];
+
+  const passData = buildLoyaltyChildPassData({
+    cardId: data.card.id,
+    programId: data.programId,
+    customerId: data.card.id,
+    customerName: data.card.fullName,
+    memberId: data.memberId,
+    points: 0,
+    updatedAt: new Date(String(data.card.updatedAt || new Date().toISOString())),
+    publicCardUrl: input.publicCardUrl,
+    settings: data.settings,
+    appleWallet: {
+      description: data.settings.walletPassDescription || `${data.businessName} Business Card`,
+      organizationName: data.businessName,
+      logoText: design?.showBusinessName === false ? "" : data.businessName,
+      backgroundColor: appleBackground || undefined,
+      foregroundColor: appleForeground || undefined,
+      labelColor: appleLabel || undefined,
+      passOverrides: {
+        barcodes: appleBarcodes,
+      },
+    },
+  });
+
+  const profileConfig = getProfile("loyalty");
+  const adapter = getAppleAdapter();
+  return await adapter.generatePkpass(passData, profileConfig, "child");
+}
+
 export async function getSbcwalletGoogleSaveUrlForLoyaltyCard(input: {
   cardId: string;
   origin?: string;
@@ -527,6 +636,60 @@ export async function getSbcwalletGoogleSaveUrlForLoyaltyCard(input: {
         barcode: {
           type: googleBarcodeType,
           value: barcodeMessage,
+        },
+      },
+    },
+  });
+
+  const { saveUrl } = await adapter.generatePassObject(childPassData, profileConfig, "child");
+  return { saveUrl };
+}
+
+export async function getSbcwalletGoogleSaveUrlForBusinessCard(input: {
+  cardId: string;
+  origin?: string;
+  publicCardUrl?: string;
+}): Promise<{ saveUrl: string }> {
+  const data = prepareBusinessCardData({
+    cardId: input.cardId,
+    origin: input.origin,
+    publicCardUrl: input.publicCardUrl,
+  });
+
+  const profileConfig = getProfile("loyalty");
+  const adapter = getGoogleAdapter();
+
+  const parentPassData = buildLoyaltyParentPassData({
+    programId: data.programId,
+    programName: data.businessName,
+    updatedAt: new Date(String(data.card.updatedAt || new Date().toISOString())),
+    homepageUrl: sanitizeUrl(data.business.website) || sanitizeUrl(input.origin),
+    logoUrl: data.logoUrl,
+    settings: data.settings,
+  });
+
+  await adapter.generatePassObject(parentPassData, profileConfig, "parent");
+
+  const childPassData = buildLoyaltyChildPassData({
+    cardId: data.card.id,
+    programId: data.programId,
+    customerId: data.card.id,
+    customerName: data.card.fullName,
+    memberId: data.memberId,
+    points: 0,
+    updatedAt: new Date(String(data.card.updatedAt || new Date().toISOString())),
+    publicCardUrl: input.publicCardUrl,
+    settings: data.settings,
+    googleWallet: {
+      issuerName: data.businessName,
+      programName: data.businessName,
+      logoUrl: data.logoUrl,
+      backgroundColor: normalizeHexColor(data.design?.backgroundColor),
+      links: data.links,
+      objectOverrides: {
+        barcode: {
+          type: data.googleBarcodeType,
+          value: data.barcodeMessage,
         },
       },
     },
