@@ -25,7 +25,8 @@ export default async function BusinessCardsManagePage({
 
   const ar = locale === "ar";
   const businessName = ar ? business.name.ar : business.name.en;
-  const cards = business.isVerified
+  const isApproved = business.isApproved ?? business.isVerified ?? false;
+  const cards = isApproved
     ? listBusinessCardsByBusiness({ ownerId: user.id, businessId: business.id })
     : [];
 
@@ -51,11 +52,11 @@ export default async function BusinessCardsManagePage({
         </Link>
       </div>
 
-      {!business.isVerified ? (
+      {!isApproved ? (
         <div className="mt-8 sbc-card rounded-2xl p-6 text-sm text-(--muted-foreground)">
           {ar
-            ? "لا يمكن إنشاء بطاقات أعمال قبل توثيق النشاط."
-            : "You can create business cards after your business is verified."}
+            ? "لا يمكن إنشاء بطاقات أعمال قبل اعتماد النشاط للظهور."
+            : "You can create business cards after your business is approved for listing."}
         </div>
       ) : (
         <div className="mt-8 grid gap-6 lg:grid-cols-[1.1fr_1fr]">

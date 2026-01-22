@@ -4,11 +4,11 @@ import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getBusinessById } from "@/lib/db/businesses";
-import { getCategoryById } from "@/lib/db/categories";
+import { listCategories } from "@/lib/db/categories";
 import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import Link from "next/link";
-import { BusinessAvatarSettings } from "@/components/directory/BusinessAvatarSettings";
+import { OwnerEditBusinessForm } from "./OwnerEditBusinessForm";
 
 export const runtime = "nodejs";
 
@@ -31,7 +31,7 @@ export default async function DirectoryBusinessEditPage({
   if (!business) notFound();
   if (!business.ownerId || business.ownerId !== user.id) notFound();
 
-  const category = business.categoryId ? getCategoryById(business.categoryId) : null;
+  const categories = listCategories();
 
   const ar = locale === "ar";
   const businessName = ar ? business.name.ar : business.name.en;
@@ -42,7 +42,7 @@ export default async function DirectoryBusinessEditPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{businessName}</h1>
           <p className="mt-1 text-sm text-(--muted-foreground)">
-            {ar ? "إدارة صورة الملف والأيقونة." : "Manage profile image and icon."}
+            {ar ? "تحديث بيانات نشاطك ووسائطه." : "Update your business profile and media."}
           </p>
         </div>
 
@@ -59,14 +59,21 @@ export default async function DirectoryBusinessEditPage({
         </div>
       </div>
 
-      <BusinessAvatarSettings
-        locale={locale as "en" | "ar"}
-        businessId={business.id}
-        businessName={businessName}
-        initialAvatarMode={business.avatarMode ?? "icon"}
-        initialLogoUrl={business.media?.logo}
-        categoryIconId={category?.iconId}
-      />
+      {!(business.isApproved ?? business.isVerified) ? (
+        <div className="mt-6 sbc-card rounded-2xl p-4 text-sm text-(--muted-foreground)">
+          {ar
+            ? "هذا النشاط قيد المراجعة. سيتم عرضه بعد موافقة الإدارة."
+            : "This business is pending review. It will be visible after admin approval."}
+        </div>
+      ) : null}
+
+      <div className="mt-6 sbc-card rounded-2xl p-4 text-sm text-(--muted-foreground)">
+        {ar
+          ? "بعد الحفظ سيتم إرسال التعديلات للمراجعة وإيقاف الظهور حتى الموافقة."
+          : "After saving, changes will be reviewed and listing will be hidden until approved."}
+      </div>
+
+      <OwnerEditBusinessForm locale={locale as Locale} business={business} categories={categories} />
     </AppPage>
   );
 }

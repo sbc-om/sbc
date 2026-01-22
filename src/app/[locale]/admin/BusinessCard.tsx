@@ -41,6 +41,14 @@ export function BusinessCard({
           <div className="truncate text-sm font-semibold text-foreground">
             {ar ? business.name.ar : business.name.en}
           </div>
+          {!(business.isApproved ?? business.isVerified) ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
+              <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm.75 4.5a.75.75 0 00-1.5 0v4.25c0 .414.336.75.75.75h3a.75.75 0 000-1.5h-2.25V6.5z" />
+              </svg>
+              {ar ? "قيد المراجعة" : "Pending review"}
+            </span>
+          ) : null}
           {business.isVerified ? (
             <span
               className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/15 text-blue-600"

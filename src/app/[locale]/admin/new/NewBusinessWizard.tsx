@@ -181,6 +181,7 @@ export function NewBusinessWizard({
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedOwner, setSelectedOwner] = useState("");
   const [avatarMode, setAvatarMode] = useState<"icon" | "logo">("icon");
+  const [isApproved, setIsApproved] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isSpecial, setIsSpecial] = useState(false);
   const [homepageFeatured, setHomepageFeatured] = useState(false);
@@ -574,18 +575,38 @@ export function NewBusinessWizard({
           />
         </div>
 
-        {/* Verification & Homepage */}
+        {/* Approval, Verification & Homepage */}
         <div className="sbc-card p-6">
           <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "التوثيق والظهور في الرئيسية" : "Verification & Homepage"}
+            {ar ? "الاعتماد والتوثيق والظهور في الرئيسية" : "Approval, Verification & Homepage"}
           </h2>
           <p className="text-sm text-(--muted-foreground) mb-6">
             {ar
-              ? "حدد الشارة الزرقاء والحالة الخاصة ومواضع الظهور في الصفحة الرئيسية."
-              : "Control the blue check, special status, and homepage placements."}
+              ? "حدد اعتماد الظهور في القوائم، الشارة الزرقاء، والحالة الخاصة ومواضع الظهور في الصفحة الرئيسية."
+              : "Control listing approval, the blue check, special status, and homepage placements."}
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
+            <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+              <input
+                type="checkbox"
+                name="isApproved"
+                checked={isApproved}
+                onChange={(e) => setIsApproved(e.target.checked)}
+                className="mt-1 h-4 w-4 accent-emerald-600"
+              />
+              <div>
+                <div className="text-sm font-semibold text-foreground">
+                  {ar ? "اعتماد الظهور في القوائم" : "Approved for listings"}
+                </div>
+                <div className="mt-1 text-xs text-(--muted-foreground)">
+                  {ar
+                    ? "السماح بظهور النشاط في قوائم الأنشطة وصفحات الاستكشاف."
+                    : "Allow this business to appear in public listings and discovery pages."}
+                </div>
+              </div>
+            </label>
+
             <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
               <input
                 type="checkbox"

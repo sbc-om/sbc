@@ -25,6 +25,10 @@ export default async function BusinessDetailPage({
     ? getBusinessByUsername(slug)
     : getBusinessBySlug(slug);
   if (!business) notFound();
+  const isOwner = user && business.ownerId && user.id === business.ownerId;
+  const isAdmin = user?.role === "admin";
+  const isApproved = business.isApproved ?? business.isVerified ?? false;
+  if (!isApproved && !isOwner && !isAdmin) notFound();
 
   const category = business.categoryId ? getCategoryById(business.categoryId) : null;
 

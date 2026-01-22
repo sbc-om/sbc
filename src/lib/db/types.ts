@@ -28,6 +28,8 @@ export type Business = {
   ownerId?: string;
   name: LocalizedString;
   description?: LocalizedString;
+  /** Approved for listing in public directories. */
+  isApproved?: boolean;
   /** Verified businesses get a blue check. */
   isVerified?: boolean;
   /** Special/VIP flag shown across the app. */

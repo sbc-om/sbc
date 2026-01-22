@@ -29,6 +29,7 @@ export const businessInputSchema = z.object({
   ownerId: z.string().trim().min(1).optional(),
   name: localizedStringSchema,
   description: localizedStringSchema.optional(),
+  isApproved: z.boolean().optional(),
   isVerified: z.boolean().optional(),
   isSpecial: z.boolean().optional(),
   homepageFeatured: z.boolean().optional(),
@@ -113,16 +114,23 @@ export function checkBusinessUsernameAvailability(
 export function listBusinesses(input?: {
   q?: string;
   locale?: Locale;
+  includeUnverified?: boolean;
+  includeUnapproved?: boolean;
 }): Business[] {
   const { businesses } = getLmdb();
 
   const qRaw = input?.q?.trim();
   const q = qRaw ? qRaw.toLowerCase() : null;
   const locale = input?.locale;
+  const includeUnverified = input?.includeUnverified ?? false;
+  const includeUnapproved = input?.includeUnapproved ?? false;
 
   const results: Business[] = [];
   for (const { value } of businesses.getRange()) {
     const b = value as Business;
+
+    const approved = b.isApproved ?? b.isVerified ?? false;
+    if (!includeUnverified && !includeUnapproved && !approved) continue;
 
     if (q) {
       const hay = [
@@ -185,6 +193,7 @@ export function createBusiness(input: BusinessInput): Business {
     ownerId: data.ownerId,
     name: data.name as LocalizedString,
     description: data.description as LocalizedString | undefined,
+    isApproved: data.isApproved ?? data.isVerified ?? false,
     isVerified: data.isVerified ?? false,
     isSpecial: data.isSpecial ?? false,
     homepageFeatured: data.homepageFeatured ?? false,

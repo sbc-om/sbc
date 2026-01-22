@@ -23,10 +23,11 @@ export default async function AdminBusinessesPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
 
-  const businesses = listBusinesses();
+  const businesses = listBusinesses({ includeUnverified: true });
   const categories = listCategories();
   const categoriesById = new Map(categories.map((c) => [c.id, c] as const));
   const ar = locale === "ar";
+  const pendingCount = businesses.filter((b) => !(b.isApproved ?? b.isVerified)).length;
 
   return (
     <AppPage>
@@ -37,6 +38,11 @@ export default async function AdminBusinessesPage({
           </h1>
           <p className="mt-1 text-sm text-(--muted-foreground)">
             {ar ? `${businesses.length} نشاط تجاري مسجل` : `${businesses.length} registered businesses`}
+            {pendingCount > 0 && (
+              <span className="ms-2 inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
+                {ar ? `${pendingCount} قيد المراجعة` : `${pendingCount} pending review`}
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">

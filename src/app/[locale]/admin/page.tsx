@@ -24,7 +24,7 @@ export default async function AdminPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
 
-  const businesses = listBusinesses();
+  const businesses = listBusinesses({ includeUnverified: true });
   const categories = listCategories();
   const requests = listAllBusinessRequests();
   const loyaltyProfiles = listLoyaltyProfiles();

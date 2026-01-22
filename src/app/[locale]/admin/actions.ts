@@ -79,6 +79,7 @@ export async function createBusinessDraftAction(
     const { ownerId } = resolveOwnerFromFormData(formData);
     const homepageTop = readBoolean(formData, "homepageTop");
     const homepageFeatured = homepageTop || readBoolean(formData, "homepageFeatured");
+    const isApproved = readBoolean(formData, "isApproved");
     const isVerified = readBoolean(formData, "isVerified");
     const isSpecial = readBoolean(formData, "isSpecial");
 
@@ -99,6 +100,7 @@ export async function createBusinessDraftAction(
         ar: String(formData.get("name_ar") || ""),
       },
       description,
+      isApproved,
       isVerified,
       isSpecial,
       homepageFeatured,
@@ -143,6 +145,7 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
   const { ownerId } = resolveOwnerFromFormData(formData);
   const homepageTop = readBoolean(formData, "homepageTop");
   const homepageFeatured = homepageTop || readBoolean(formData, "homepageFeatured");
+  const isApproved = readBoolean(formData, "isApproved");
   const isVerified = readBoolean(formData, "isVerified");
   const isSpecial = readBoolean(formData, "isSpecial");
 
@@ -167,6 +170,7 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
       ar: String(formData.get("name_ar") || ""),
     },
     description,
+    isApproved,
     isVerified,
     isSpecial,
     homepageFeatured,
@@ -206,6 +210,7 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   const { ownerId } = resolveOwnerFromFormData(formData);
   const homepageTop = readBoolean(formData, "homepageTop");
   const homepageFeatured = homepageTop || readBoolean(formData, "homepageFeatured");
+  const isApproved = readBoolean(formData, "isApproved");
   const isVerified = readBoolean(formData, "isVerified");
   const isSpecial = readBoolean(formData, "isSpecial");
 
@@ -231,6 +236,7 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
       ar: String(formData.get("name_ar") || ""),
     },
     description,
+    isApproved,
     isVerified,
     isSpecial,
     homepageFeatured,

@@ -28,7 +28,8 @@ function ensureOwnerForBusiness(ownerId: string, businessId: string) {
   const business = getBusinessById(businessId);
   if (!business) throw new Error("BUSINESS_NOT_FOUND");
   if (!business.ownerId || business.ownerId !== ownerId) throw new Error("UNAUTHORIZED");
-  if (!business.isVerified) throw new Error("BUSINESS_NOT_VERIFIED");
+  const approved = business.isApproved ?? business.isVerified ?? false;
+  if (!approved) throw new Error("BUSINESS_NOT_APPROVED");
   return business;
 }
 
