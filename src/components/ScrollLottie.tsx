@@ -42,6 +42,10 @@ export function ScrollLottie({
 
     let ticking = false;
     let lastScrollY = window.scrollY;
+    let currentFrame = 0;
+
+    // Easing function for smooth transitions
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
     const handleScroll = () => {
       if (ticking) return;
@@ -49,7 +53,6 @@ export function ScrollLottie({
       ticking = true;
       requestAnimationFrame(() => {
         const currentScrollY = window.scrollY;
-        const scrollDirection = currentScrollY > lastScrollY ? 1 : -1;
         
         if (lottieRef.current) {
           const animation = lottieRef.current;
@@ -60,23 +63,21 @@ export function ScrollLottie({
             return;
           }
           
-          // Calculate scroll progress (0 to 1) based on viewport height
+          // Calculate scroll progress (0 to 1) with smooth easing
           const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
           const factor = Math.min(Math.max(scrollFactor, 0.05), 5);
-          const scrollProgress = Math.min(Math.max(currentScrollY / (maxScroll * factor), 0), 1);
+          const rawProgress = Math.min(Math.max(currentScrollY / (maxScroll * factor), 0), 1);
+          const scrollProgress = easeOutCubic(rawProgress);
           
-          // Map scroll progress to animation frame
+          // Map scroll progress to animation frame with interpolation
           const targetFrame = scrollProgress * totalFrames;
           
-          // Smoothly animate to target frame
-          animation.goToAndStop(targetFrame, true);
+          // Smooth interpolation to target frame (reduces jitter)
+          const lerpFactor = 0.15; // Lower = smoother but slightly delayed
+          currentFrame = currentFrame + (targetFrame - currentFrame) * lerpFactor;
           
-          // Optional: Play animation based on scroll direction
-          if (scrollDirection > 0) {
-            animation.setDirection(1);
-          } else {
-            animation.setDirection(-1);
-          }
+          // Update animation
+          animation.goToAndStop(Math.round(currentFrame), true);
         }
 
         lastScrollY = currentScrollY;
@@ -84,16 +85,19 @@ export function ScrollLottie({
       });
     };
 
+    // Initial scroll position
+    handleScroll();
+
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [isReady, scrollFactor]);
 
   return (
-    <div className={"w-full max-w-xl mx-auto py-12 relative " + (className ?? "")}>
+    <div className={"w-full max-w-md mx-auto py-8 relative " + (className ?? "")}>
       <div
         className="relative z-10"
         style={{
-          filter: "drop-shadow(0 20px 60px rgba(79, 70, 229, 0.3))",
+          filter: "drop-shadow(0 15px 40px rgba(79, 70, 229, 0.25))",
         }}
       >
         <Lottie
@@ -111,8 +115,8 @@ export function ScrollLottie({
       {/* Ambient glow effect */}
       {glow ? (
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-accent-2/20 rounded-full blur-3xl animate-pulse delay-300" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 bg-accent/20 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-accent-2/20 rounded-full blur-3xl animate-pulse delay-300" />
         </div>
       ) : null}
     </div>

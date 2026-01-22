@@ -239,6 +239,102 @@ export default async function AboutPage({
             </Link>
           </div>
         </div>
+
+        {/* Legal Links */}
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          <Link
+            href={`/${locale}/faq`}
+            className="sbc-card sbc-card--interactive rounded-2xl p-6 text-center group"
+          >
+            <div className="flex justify-center mb-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                <svg
+                  className="h-6 w-6 text-accent"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <h4 className="font-semibold mb-2">
+              {locale === "ar" ? "الأسئلة الشائعة" : "FAQ"}
+            </h4>
+            <p className="text-xs text-(--muted-foreground)">
+              {locale === "ar"
+                ? "إجابات على الأسئلة الأكثر شيوعاً"
+                : "Answers to common questions"}
+            </p>
+          </Link>
+
+          <Link
+            href={`/${locale}/terms`}
+            className="sbc-card sbc-card--interactive rounded-2xl p-6 text-center group"
+          >
+            <div className="flex justify-center mb-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-2/10 group-hover:bg-accent-2/20 transition-colors">
+                <svg
+                  className="h-6 w-6 text-accent-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <h4 className="font-semibold mb-2">
+              {locale === "ar" ? "شروط الخدمة" : "Terms of Service"}
+            </h4>
+            <p className="text-xs text-(--muted-foreground)">
+              {locale === "ar"
+                ? "الشروط والأحكام للاستخدام"
+                : "Terms and conditions of use"}
+            </p>
+          </Link>
+
+          <Link
+            href={`/${locale}/rules`}
+            className="sbc-card sbc-card--interactive rounded-2xl p-6 text-center group"
+          >
+            <div className="flex justify-center mb-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 group-hover:bg-accent/20 transition-colors">
+                <svg
+                  className="h-6 w-6 text-accent"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+            <h4 className="font-semibold mb-2">
+              {locale === "ar" ? "قواعد المجتمع" : "Community Rules"}
+            </h4>
+            <p className="text-xs text-(--muted-foreground)">
+              {locale === "ar"
+                ? "إرشادات للحفاظ على بيئة آمنة"
+                : "Guidelines for a safe environment"}
+            </p>
+          </Link>
+        </div>
     </PublicPage>
   );
 }

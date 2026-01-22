@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ScrollLottie } from "@/components/ScrollLottie";
 import { BusinessCard } from "@/components/BusinessCard";
+import { FadeInSection } from "@/components/FadeInSection";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { listBusinesses } from "@/lib/db/businesses";
@@ -80,23 +81,28 @@ export default async function LocaleHome({
       {/* Hero Section with Lottie Animation */}
       <section className="relative pt-6 pb-16 overflow-hidden">
         <Container size="lg">
-          <div className="text-center mb-12">
-            <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6 bg-linear-to-r from-accent via-accent-2 to-accent bg-clip-text text-transparent animate-in fade-in slide-in-from-bottom-4 duration-1000">
-              {dict.home.title}
-            </h1>
-            <p className="max-w-3xl mx-auto text-xl leading-8 text-muted-foreground animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-150">
-              {dict.home.subtitle}
-            </p>
-          </div>
+          <FadeInSection duration={800} delay={0}>
+            <div className="text-center mb-12">
+              <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6 bg-linear-to-r from-accent via-accent-2 to-accent bg-clip-text text-transparent">
+                {dict.home.title}
+              </h1>
+              <p className="max-w-3xl mx-auto text-xl leading-8 text-muted-foreground">
+                {dict.home.subtitle}
+              </p>
+            </div>
+          </FadeInSection>
 
           {/* Scroll-controlled Lottie Animation */}
-          <ScrollLottie />
+          <FadeInSection duration={1000} delay={200}>
+            <ScrollLottie />
+          </FadeInSection>
         </Container>
       </section>
 
       {/* Search Section */}
       <Container size="lg">
-        <div className="max-w-4xl mx-auto pb-20">
+        <FadeInSection duration={700} delay={0}>
+          <div className="max-w-4xl mx-auto pb-20">
           <div 
             className="relative rounded-3xl p-8 backdrop-blur-xl shadow-2xl"
             style={{
@@ -131,25 +137,29 @@ export default async function LocaleHome({
               </Button>
             </form>
           </div>
-        </div>
+          </div>
+        </FadeInSection>
       </Container>
 
       {/* Products Section */}
       <section className="py-10">
         <Container size="lg">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-foreground mb-3">
-              {locale === "ar" ? "الحلول" : "Solutions"}
-            </h2>
-            <p className="text-base text-foreground opacity-70">
-              {locale === "ar"
-                ? "وحدات أعمال احترافية يمكن تفعيلها: دليل الأعمال، بطاقة الولاء، ومنصة التسويق."
-                : "Professional business modules you can activate: Business Directory, Loyalty Card, and Marketing Platform."}
-            </p>
-          </div>
+          <FadeInSection duration={600} delay={0}>
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-foreground mb-3">
+                {locale === "ar" ? "الحلول" : "Solutions"}
+              </h2>
+              <p className="text-base text-foreground opacity-70">
+                {locale === "ar"
+                  ? "وحدات أعمال احترافية يمكن تفعيلها: دليل الأعمال، بطاقة الولاء، ومنصة التسويق."
+                  : "Professional business modules you can activate: Business Directory, Loyalty Card, and Marketing Platform."}
+              </p>
+            </div>
+          </FadeInSection>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div className="sbc-card rounded-2xl p-6">
+            <FadeInSection duration={500} delay={0}>
+              <div className="sbc-card rounded-2xl p-6">
               <div className="text-lg font-semibold">
                 {locale === "ar" ? "دليل الأعمال" : "Business Directory"}
               </div>
@@ -167,7 +177,9 @@ export default async function LocaleHome({
                 </Link>
               </div>
             </div>
+            </FadeInSection>
 
+            <FadeInSection duration={500} delay={100}>
             <div className="sbc-card rounded-2xl p-6">
               <div className="text-lg font-semibold">
                 {locale === "ar" ? "بطاقة الولاء" : "Loyalty Card"}
@@ -186,7 +198,9 @@ export default async function LocaleHome({
                 </Link>
               </div>
             </div>
+            </FadeInSection>
 
+            <FadeInSection duration={500} delay={200}>
             <div className="sbc-card rounded-2xl p-6">
               <div className="text-lg font-semibold">
                 {locale === "ar" ? "منصة التسويق" : "Marketing Platform"}
@@ -205,6 +219,7 @@ export default async function LocaleHome({
                 </Link>
               </div>
             </div>
+            </FadeInSection>
           </div>
         </Container>
       </section>
@@ -213,26 +228,29 @@ export default async function LocaleHome({
       {topRowBusinesses.length > 0 ? (
         <section className="py-16">
           <Container size="lg">
-            <div className="mb-10">
-              <h2 className="text-3xl font-bold text-foreground mb-3">
-                {locale === "ar"
-                  ? "أفضل 3 أعمال مميزة"
-                  : "Top 3 featured businesses"}
-              </h2>
-              <p className="text-base text-foreground opacity-70">
-                {locale === "ar"
-                  ? "مختارات من الأعمال لعرضها في أعلى الصفحة الرئيسية."
-                  : "Hand-picked businesses highlighted at the top of the homepage."}
-              </p>
-            </div>
+            <FadeInSection duration={600} delay={0}>
+              <div className="mb-10">
+                <h2 className="text-3xl font-bold text-foreground mb-3">
+                  {locale === "ar"
+                    ? "أفضل 3 أعمال مميزة"
+                    : "Top 3 featured businesses"}
+                </h2>
+                <p className="text-base text-foreground opacity-70">
+                  {locale === "ar"
+                    ? "مختارات من الأعمال لعرضها في أعلى الصفحة الرئيسية."
+                    : "Hand-picked businesses highlighted at the top of the homepage."}
+                </p>
+              </div>
+            </FadeInSection>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {topRowBusinesses.map((business) => (
-                <BusinessCard
-                  key={business.id}
-                  business={business}
-                  locale={locale as Locale}
-                />
+              {topRowBusinesses.map((business, index) => (
+                <FadeInSection key={business.id} duration={500} delay={index * 100}>
+                  <BusinessCard
+                    business={business}
+                    locale={locale as Locale}
+                  />
+                </FadeInSection>
               ))}
             </div>
           </Container>
@@ -242,7 +260,8 @@ export default async function LocaleHome({
       {featuredBusinesses.length > 0 ? (
         <section className="py-6">
           <Container size="lg">
-            <div className="mb-10">
+            <FadeInSection duration={600} delay={0}>
+              <div className="mb-10">
               <h2 className="text-3xl font-bold text-foreground mb-3">
                 {locale === "ar" ? "مميّز في الصفحة الرئيسية" : "Featured on the homepage"}
               </h2>
@@ -252,14 +271,16 @@ export default async function LocaleHome({
                   : "A curated selection of businesses featured on the homepage."}
               </p>
             </div>
+            </FadeInSection>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredBusinesses.map((business) => (
-                <BusinessCard
-                  key={business.id}
-                  business={business}
-                  locale={locale as Locale}
-                />
+              {featuredBusinesses.map((business, index) => (
+                <FadeInSection key={business.id} duration={500} delay={Math.min(index * 80, 800)}>
+                  <BusinessCard
+                    business={business}
+                    locale={locale as Locale}
+                  />
+                </FadeInSection>
               ))}
             </div>
           </Container>
@@ -269,7 +290,8 @@ export default async function LocaleHome({
       {latestBusinesses.length > 0 ? (
         <section className="py-16">
           <Container size="lg">
-            <div className="mb-10">
+            <FadeInSection duration={600} delay={0}>
+              <div className="mb-10">
               <h2 className="text-3xl font-bold text-foreground mb-3">
                 {locale === "ar" ? "أحدث الأعمال" : "Latest Businesses"}
               </h2>
@@ -279,14 +301,16 @@ export default async function LocaleHome({
                   : "Discover the latest businesses added to the directory"}
               </p>
             </div>
+            </FadeInSection>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {latestBusinesses.map((business) => (
-                <BusinessCard
-                  key={business.id}
-                  business={business}
-                  locale={locale as Locale}
-                />
+              {latestBusinesses.map((business, index) => (
+                <FadeInSection key={business.id} duration={500} delay={Math.min(index * 80, 800)}>
+                  <BusinessCard
+                    business={business}
+                    locale={locale as Locale}
+                  />
+                </FadeInSection>
               ))}
             </div>
           </Container>
