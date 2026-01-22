@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
     // Optimize for Instagram-style square images
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384, 1080],
+    // Support both default and high quality images
+    qualities: [75, 90],
   },
 };
 

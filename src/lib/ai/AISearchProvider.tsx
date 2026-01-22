@@ -24,8 +24,25 @@ export function AISearchProvider({ children }: { children: ReactNode }) {
 
     async function initializeAI() {
       try {
+        // Suppress all console messages during TensorFlow.js initialization
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        const originalInfo = console.info;
+        
+        console.log = () => {};
+        console.warn = () => {};
+        console.error = () => {};
+        console.info = () => {};
+        
         const fe = new FeatureExtractor();
         await fe.initialize();
+        
+        // Restore console
+        console.log = originalLog;
+        console.warn = originalWarn;
+        console.error = originalError;
+        console.info = originalInfo;
         
         if (mounted) {
           setExtractor(fe);

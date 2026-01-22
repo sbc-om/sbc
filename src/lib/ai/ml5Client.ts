@@ -13,13 +13,44 @@ export async function loadML5() {
   if (ml5Instance) return ml5Instance;
 
   try {
+    // Configure TensorFlow.js to disable WebGPU and use WebGL backend
+    // @ts-ignore - TensorFlow.js global flags
+    if (typeof window !== 'undefined' && !window.tf) {
+      const tf = await import('@tensorflow/tfjs');
+      // Set flags to disable WebGPU
+      tf.env().set('WEBGPU_ENABLED', false);
+      tf.env().set('WEBGL_VERSION', 2);
+      // Expose tf globally for ml5
+      // @ts-ignore
+      window.tf = tf;
+    }
+    
+    // Suppress ml5.js console messages
+    const originalLog = console.log;
+    const originalWarn = console.warn;
+    const originalInfo = console.info;
+    const originalError = console.error;
+    
+    // Temporarily disable console
+    console.log = () => {};
+    console.warn = () => {};
+    console.info = () => {};
+    console.error = () => {};
+    
     // Dynamic import for client-side only
     const module = await import("ml5");
     ml5Instance = module.default || module;
+    
+    // Restore console
+    console.log = originalLog;
+    console.warn = originalWarn;
+    console.info = originalInfo;
+    console.error = originalError;
+    
     return ml5Instance;
   } catch (error) {
-    console.error("Failed to load ml5:", error);
-    throw error;
+    // Silent fallback
+    return null;
   }
 }
 
@@ -36,7 +67,20 @@ export class FeatureExtractor {
       
       // Try to use imageClassifier if available
       if (this.ml5 && typeof this.ml5.imageClassifier === 'function') {
-        this.extractor = await this.ml5.imageClassifier("MobileNet");
+        // Suppress TensorFlow.js errors during initialization
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        console.error = () => {};
+        console.warn = () => {};
+        
+        try {
+          this.extractor = await this.ml5.imageClassifier("MobileNet");
+        } catch (e) {
+          // Silent fallback to text-only
+        }
+        
+        console.error = originalError;
+        console.warn = originalWarn;
       }
     } catch (error) {
       // Silently fallback to text-only features
