@@ -90,21 +90,6 @@ export default async function AdminBusinessesPage({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="sbc-card p-4">
-          <div className="text-xs text-(--muted-foreground)">{ar ? "إجمالي الأنشطة" : "Total businesses"}</div>
-          <div className="mt-2 text-2xl font-semibold text-foreground">{totalCount}</div>
-        </div>
-        <div className="sbc-card p-4">
-          <div className="text-xs text-(--muted-foreground)">{ar ? "بانتظار الاعتماد" : "Pending approval"}</div>
-          <div className="mt-2 text-2xl font-semibold text-amber-600">{pendingCount}</div>
-        </div>
-        <div className="sbc-card p-4">
-          <div className="text-xs text-(--muted-foreground)">{ar ? "معتمد للعرض" : "Approved for listing"}</div>
-          <div className="mt-2 text-2xl font-semibold text-emerald-600">{approvedCount}</div>
-        </div>
-      </div>
-
       <div className="mt-6 flex flex-wrap items-center gap-2">
         <Link
           href={`/${locale}/admin/businesses?filter=all${q ? `&q=${encodeURIComponent(q)}` : ""}`}
@@ -148,14 +133,6 @@ export default async function AdminBusinessesPage({
             />
           </div>
         </form>
-        {(q || filter !== "all") && (
-          <Link
-            href={`/${locale}/admin/businesses`}
-            className={buttonVariants({ variant: "ghost", size: "sm" })}
-          >
-            {ar ? "إعادة ضبط" : "Reset"}
-          </Link>
-        )}
       </div>
 
       <div className="mt-6 grid gap-3">
