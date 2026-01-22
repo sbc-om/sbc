@@ -18,6 +18,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           border: "2px solid",
           borderColor: "var(--surface-border)",
           backgroundColor: "var(--background)",
+          ["--input-bg" as never]: "var(--background)",
           ...style
         }}
         {...props} 

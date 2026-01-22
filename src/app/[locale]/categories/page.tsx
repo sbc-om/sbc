@@ -139,39 +139,38 @@ export default async function CategoriesPage({
       </div>
 
       <div className="mt-6">
-        <form method="GET" className="relative">
-          <svg
-            className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-(--muted-foreground)"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-
-          <input
-            type="search"
-            name="q"
-            defaultValue={q}
-            placeholder={locale === "ar" ? "ابحث عن تصنيف..." : "Search categories..."}
-            className="h-11 w-full rounded-xl border border-(--surface-border) bg-(--surface) ps-9 pe-26 text-sm text-foreground shadow-(--shadow) outline-none backdrop-blur transition focus:border-(--accent)"
-          />
-
-          <div className="absolute end-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            {q ? (
-              <a
-                href={`/${locale}/categories`}
-                className={buttonVariants({ variant: "ghost", size: "xs" })}
+        <form method="GET">
+          <div className="sbc-card rounded-2xl p-6">
+            <div className="flex items-center gap-3">
+              <svg
+                className="h-5 w-5 text-(--muted-foreground)"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                {locale === "ar" ? "مسح" : "Clear"}
-              </a>
-            ) : null}
-            <button
-              type="submit"
-              className={buttonVariants({ variant: "secondary", size: "xs" })}
-            >
-              {locale === "ar" ? "بحث" : "Search"}
-            </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="search"
+                name="q"
+                defaultValue={q}
+                placeholder={locale === "ar" ? "ابحث عن تصنيف..." : "Search categories..."}
+                className="flex-1 bg-transparent outline-none"
+              />
+              {q ? (
+                <a
+                  href={`/${locale}/categories`}
+                  className={buttonVariants({ variant: "ghost", size: "xs" })}
+                >
+                  {locale === "ar" ? "مسح" : "Clear"}
+                </a>
+              ) : null}
+            </div>
           </div>
         </form>
       </div>
