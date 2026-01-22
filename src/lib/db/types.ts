@@ -76,6 +76,9 @@ export type BusinessCard = {
   avatarUrl?: string;
   bio?: string;
   isPublic: boolean;
+  /** Approved by admin for public display. */
+  isApproved?: boolean;
+  approvedAt?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -140,6 +143,18 @@ export type BusinessComment = {
   moderatedAt?: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  locale: Locale;
+  isRead: boolean;
+  createdAt: string;
+  readAt?: string;
 };
 
 export type LoyaltyPlan = "starter" | "pro";

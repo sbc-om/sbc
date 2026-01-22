@@ -43,6 +43,8 @@ export type LmdbHandles = {
   loyaltyPushSubscriptions: ReturnType<ReturnType<typeof open>["openDB"]>;
   /** Web push subscriptions keyed by `${userId}:${hash(endpoint)}`. */
   userPushSubscriptions: ReturnType<ReturnType<typeof open>["openDB"]>;
+  /** Contact form messages keyed by message id. */
+  contactMessages: ReturnType<ReturnType<typeof open>['openDB']>;
   /** Apple Wallet PassKit registrations keyed by `${passTypeId}:${serial}:${deviceLibId}`. */
   appleWalletRegistrations: ReturnType<ReturnType<typeof open>["openDB"]>;
   /** Passkey credentials keyed by credentialId (base64url). */
@@ -188,6 +190,7 @@ export function getLmdb(): LmdbHandles {
     existing.loyaltyMessages ??= wrapDB(existing.root.openDB({ name: "loyaltyMessages" })) as any;
     existing.loyaltyPushSubscriptions ??= wrapDB(existing.root.openDB({ name: "loyaltyPushSubscriptions" })) as any;
     existing.userPushSubscriptions ??= wrapDB(existing.root.openDB({ name: "userPushSubscriptions" })) as any;
+    existing.contactMessages ??= wrapDB(existing.root.openDB({ name: "contactMessages" })) as any;
     existing.appleWalletRegistrations ??= wrapDB(existing.root.openDB({ name: "appleWalletRegistrations" })) as any;
     existing.passkeyCredentials ??= wrapDB(existing.root.openDB({ name: "passkeyCredentials" })) as any;
     existing.userPasskeys ??= wrapDB(existing.root.openDB({ name: "userPasskeys" })) as any;
@@ -240,6 +243,7 @@ export function getLmdb(): LmdbHandles {
   const loyaltyMessages = wrapDB(root.openDB({ name: "loyaltyMessages" }));
   const loyaltyPushSubscriptions = wrapDB(root.openDB({ name: "loyaltyPushSubscriptions" }));
   const userPushSubscriptions = wrapDB(root.openDB({ name: "userPushSubscriptions" }));
+  const contactMessages = wrapDB(root.openDB({ name: "contactMessages" }));
   const appleWalletRegistrations = wrapDB(root.openDB({ name: "appleWalletRegistrations" }));
   const passkeyCredentials = wrapDB(root.openDB({ name: "passkeyCredentials" }));
   const userPasskeys = wrapDB(root.openDB({ name: "userPasskeys" }));
@@ -275,6 +279,7 @@ export function getLmdb(): LmdbHandles {
     loyaltyMessages: loyaltyMessages as any,
     loyaltyPushSubscriptions: loyaltyPushSubscriptions as any,
     userPushSubscriptions: userPushSubscriptions as any,
+    contactMessages: contactMessages as any,
     appleWalletRegistrations: appleWalletRegistrations as any,
     passkeyCredentials: passkeyCredentials as any,
     userPasskeys: userPasskeys as any,

@@ -22,7 +22,7 @@ export default async function BusinessCardPublicPage({
 
   const dict = await getDictionary(locale as Locale);
   const card = getBusinessCardById(id);
-  if (!card || !card.isPublic) notFound();
+  if (!card || !card.isPublic || !card.isApproved) notFound();
 
   const business = getBusinessById(card.businessId);
   if (!business) notFound();

@@ -6,6 +6,8 @@ import { requireAdmin } from "@/lib/auth/requireUser";
 import { listBusinesses } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
 import { listAllBusinessRequests } from "@/lib/db/businessRequests";
+import { listAllBusinessCards } from "@/lib/db/businessCards";
+import { countUnreadContactMessages } from "@/lib/db/contactMessages";
 import { listLoyaltyProfiles } from "@/lib/db/loyalty";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -28,8 +30,11 @@ export default async function AdminPage({
   const categories = listCategories();
   const requests = listAllBusinessRequests();
   const loyaltyProfiles = listLoyaltyProfiles();
+  const businessCards = listAllBusinessCards();
+  const unreadContactMessages = countUnreadContactMessages();
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
+  const pendingCards = businessCards.filter((c) => !(c.isApproved ?? false));
   const ar = locale === "ar";
 
   return (
@@ -108,6 +113,44 @@ export default async function AdminPage({
             </div>
           </div>
         </Link>
+
+        <Link href={`/${locale}/admin/business-cards`} className="sbc-card p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-(--muted-foreground)">
+                {ar ? "بطاقات الأعمال" : "Business Cards"}
+              </p>
+              <h3 className="mt-2 text-3xl font-bold">{pendingCards.length}</h3>
+              <p className="mt-1 text-xs text-(--muted-foreground)">
+                {ar ? "معلّقة" : "Pending"}
+              </p>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+              <svg className="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+          </div>
+        </Link>
+
+        <Link href={`/${locale}/admin/contact-messages`} className="sbc-card p-6 hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-(--muted-foreground)">
+                {ar ? "رسائل التواصل" : "Contact Messages"}
+              </p>
+              <h3 className="mt-2 text-3xl font-bold">{unreadContactMessages}</h3>
+              <p className="mt-1 text-xs text-(--muted-foreground)">
+                {ar ? "غير مقروءة" : "Unread"}
+              </p>
+            </div>
+            <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+              <svg className="h-6 w-6 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h6m5 6H6a2 2 0 01-2-2V6a2 2 0 012-2h12a2 2 0 012 2v8l-3 3z" />
+              </svg>
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Quick Actions */}
@@ -182,6 +225,40 @@ export default async function AdminPage({
               className={buttonVariants({ variant: "secondary", size: "sm" })}
             >
               {ar ? "عرض البرامج" : "View Programs"}
+            </Link>
+          </div>
+        </div>
+
+        <div className="sbc-card p-6">
+          <h2 className="text-lg font-semibold mb-4">
+            {ar ? "بطاقات الأعمال" : "Business Cards"}
+          </h2>
+          <p className="text-sm text-(--muted-foreground) mb-4">
+            {ar ? "مراجعة واعتماد بطاقات الأعمال" : "Review and approve business cards"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/${locale}/admin/business-cards`}
+              className={buttonVariants({ variant: "secondary", size: "sm" })}
+            >
+              {ar ? `المعلّقة (${pendingCards.length})` : `Pending (${pendingCards.length})`}
+            </Link>
+          </div>
+        </div>
+
+        <div className="sbc-card p-6">
+          <h2 className="text-lg font-semibold mb-4">
+            {ar ? "رسائل التواصل" : "Contact Messages"}
+          </h2>
+          <p className="text-sm text-(--muted-foreground) mb-4">
+            {ar ? "عرض رسائل صفحة تواصل معنا" : "Review messages from the contact page"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/${locale}/admin/contact-messages`}
+              className={buttonVariants({ variant: "secondary", size: "sm" })}
+            >
+              {ar ? `غير مقروءة (${unreadContactMessages})` : `Unread (${unreadContactMessages})`}
             </Link>
           </div>
         </div>

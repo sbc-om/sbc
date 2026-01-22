@@ -8,15 +8,19 @@ import { buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
+import { submitContactMessageAction } from "./actions";
 
 export default async function ContactPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams?: Promise<{ sent?: string; error?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
+  const { sent, error } = (await searchParams) ?? {};
   const dict = await getDictionary(locale as Locale);
 
   return (
@@ -46,6 +50,19 @@ export default async function ContactPage({
           </p>
         </div>
 
+        {sent ? (
+          <div className="mt-4 sbc-card rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm text-emerald-700">
+            {locale === "ar" ? "تم إرسال رسالتك بنجاح." : "Your message has been sent successfully."}
+          </div>
+        ) : null}
+        {error ? (
+          <div className="mt-4 sbc-card rounded-2xl border border-rose-200 bg-rose-50/60 p-4 text-sm text-rose-700">
+            {locale === "ar"
+              ? "تعذر إرسال الرسالة. الرجاء التأكد من تعبئة الحقول بشكل صحيح."
+              : "Could not send the message. Please check the fields and try again."}
+          </div>
+        ) : null}
+
         {/* Main Content */}
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_400px]">
           {/* Contact Form */}
@@ -53,7 +70,10 @@ export default async function ContactPage({
             <h2 className="text-xl font-semibold tracking-tight mb-6">
               {dict.contact.formTitle}
             </h2>
-            <form className="grid gap-5">
+            <form
+              className="grid gap-5"
+              action={submitContactMessageAction.bind(null, locale as Locale)}
+            >
               <div>
                 <label
                   htmlFor="name"
@@ -68,6 +88,7 @@ export default async function ContactPage({
                     locale === "ar" ? "أدخل اسمك" : "Enter your name"
                   }
                   required
+                  minLength={2}
                 />
               </div>
 
@@ -107,6 +128,7 @@ export default async function ContactPage({
                       : "Message subject"
                   }
                   required
+                  minLength={2}
                 />
               </div>
 
@@ -127,6 +149,7 @@ export default async function ContactPage({
                       : "Write your message here..."
                   }
                   required
+                  minLength={10}
                 />
               </div>
 

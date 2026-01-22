@@ -14,7 +14,7 @@ export async function GET(
   const { cardId } = await params;
 
   const card = getBusinessCardById(cardId);
-  if (!card || !card.isPublic) {
+  if (!card || !card.isPublic || !card.isApproved) {
     return new Response("Not found", { status: 404 });
   }
 

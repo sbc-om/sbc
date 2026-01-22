@@ -59,6 +59,7 @@ export function createBusinessCard(input: {
     avatarUrl: data.avatarUrl || undefined,
     bio: data.bio || undefined,
     isPublic: data.isPublic ?? true,
+    isApproved: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -104,7 +105,7 @@ export function listPublicBusinessCardsByBusiness(businessId: string): BusinessC
   for (const { value } of businessCards.getRange()) {
     const card = value as BusinessCard;
     if (card.businessId !== bid.data) continue;
-    if (!card.isPublic) continue;
+    if (!card.isPublic || !card.isApproved) continue;
     results.push(card);
   }
 
@@ -157,4 +158,38 @@ export function deleteBusinessCard(input: {
   if (existing.ownerId !== ownerId) throw new Error("UNAUTHORIZED");
 
   businessCards.remove(cardId);
+}
+
+export function listAllBusinessCards(): BusinessCard[] {
+  const { businessCards } = getLmdb();
+  const results: BusinessCard[] = [];
+
+  for (const { value } of businessCards.getRange()) {
+    results.push(value as BusinessCard);
+  }
+
+  results.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  return results;
+}
+
+export function setBusinessCardApproval(input: {
+  cardId: string;
+  approved: boolean;
+}): BusinessCard {
+  const { businessCards } = getLmdb();
+  const cardId = idSchema.parse(input.cardId);
+
+  const existing = businessCards.get(cardId) as BusinessCard | undefined;
+  if (!existing) throw new Error("CARD_NOT_FOUND");
+
+  const now = new Date().toISOString();
+  const next: BusinessCard = {
+    ...existing,
+    isApproved: input.approved,
+    approvedAt: input.approved ? now : undefined,
+    updatedAt: now,
+  };
+
+  businessCards.put(cardId, next);
+  return next;
 }

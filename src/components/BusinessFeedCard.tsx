@@ -322,7 +322,7 @@ export function BusinessFeedCard({
       {/* Image - Square Instagram-style (1080x1080) */}
       {mainImage && (
         <Link href={detailPath}>
-          <div className="relative w-full aspect-square overflow-hidden rounded-b-lg bg-linear-to-br from-accent/5 to-accent-2/5">
+          <div className="relative w-full aspect-square overflow-hidden bg-linear-to-br from-accent/5 to-accent-2/5">
             <Image
               src={mainImage}
               alt={name}

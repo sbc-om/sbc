@@ -115,16 +115,23 @@ export default async function BusinessCardEditPage({
               <input type="checkbox" name="isPublic" defaultChecked={card.isPublic} className="h-4 w-4" />
               {ar ? "متاح للعامة" : "Publicly visible"}
             </label>
+            {!card.isApproved ? (
+              <div className="text-xs text-amber-600">
+                {ar ? "بانتظار اعتماد الإدارة قبل الظهور للعامة." : "Waiting for admin approval before public display."}
+              </div>
+            ) : null}
             <div className="flex flex-wrap items-center gap-3">
               <button type="submit" className={buttonVariants({ variant: "primary", size: "md" })}>
                 {ar ? "حفظ التغييرات" : "Save changes"}
               </button>
-              <Link
-                href={`/${locale}/business-card/${card.id}`}
-                className={buttonVariants({ variant: "secondary", size: "md" })}
-              >
-                {ar ? "عرض البطاقة" : "View card"}
-              </Link>
+              {card.isPublic && card.isApproved ? (
+                <Link
+                  href={`/${locale}/business-card/${card.id}`}
+                  className={buttonVariants({ variant: "secondary", size: "md" })}
+                >
+                  {ar ? "عرض البطاقة" : "View card"}
+                </Link>
+              ) : null}
             </div>
           </form>
         </div>

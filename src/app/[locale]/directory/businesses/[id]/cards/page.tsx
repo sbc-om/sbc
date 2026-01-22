@@ -82,12 +82,14 @@ export default async function BusinessCardsManagePage({
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Link
-                          href={`/${locale}/business-card/${card.id}`}
-                          className={buttonVariants({ variant: "ghost", size: "xs" })}
-                        >
-                          {ar ? "عرض" : "View"}
-                        </Link>
+                        {card.isPublic && card.isApproved ? (
+                          <Link
+                            href={`/${locale}/business-card/${card.id}`}
+                            className={buttonVariants({ variant: "ghost", size: "xs" })}
+                          >
+                            {ar ? "عرض" : "View"}
+                          </Link>
+                        ) : null}
                         <Link
                           href={`/${locale}/directory/businesses/${business.id}/cards/${card.id}`}
                           className={buttonVariants({ variant: "secondary", size: "xs" })}
@@ -96,6 +98,9 @@ export default async function BusinessCardsManagePage({
                         </Link>
                         <span className="text-xs text-(--muted-foreground)">
                           {card.isPublic ? (ar ? "عام" : "Public") : (ar ? "خاص" : "Private")}
+                        </span>
+                        <span className="text-xs text-(--muted-foreground)">
+                          {card.isApproved ? (ar ? "معتمد" : "Approved") : (ar ? "بانتظار الاعتماد" : "Pending approval")}
                         </span>
                       </div>
                     </div>
@@ -144,6 +149,9 @@ export default async function BusinessCardsManagePage({
                 <input type="checkbox" name="isPublic" defaultChecked className="h-4 w-4" />
                 {ar ? "متاح للعامة" : "Publicly visible"}
               </label>
+              <div className="text-xs text-amber-600">
+                {ar ? "تحتاج البطاقة إلى اعتماد الإدارة قبل الظهور للعامة." : "Cards need admin approval before public display."}
+              </div>
               <div>
                 <button type="submit" className={buttonVariants({ variant: "primary", size: "md" })}>
                   {ar ? "حفظ البطاقة" : "Save card"}
