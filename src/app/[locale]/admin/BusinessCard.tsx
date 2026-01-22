@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import type { Business } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
-import { deleteBusinessAction } from "./actions";
+import { approveBusinessAction, deleteBusinessAction } from "./actions";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
@@ -22,6 +22,8 @@ export function BusinessCard({
   const ar = locale === "ar";
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
+  const [approving, setApproving] = useState(false);
+  const isApproved = business.isApproved ?? business.isVerified ?? false;
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -34,6 +36,17 @@ export function BusinessCard({
     }
   };
 
+  const handleApprove = async () => {
+    setApproving(true);
+    try {
+      await approveBusinessAction(locale, business.id);
+      router.refresh();
+    } catch {
+      setApproving(false);
+      alert(ar ? "فشل الاعتماد" : "Approve failed");
+    }
+  };
+
   return (
     <div className="sbc-card sbc-card--interactive p-5 sm:flex sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0 flex-1">
@@ -41,7 +54,7 @@ export function BusinessCard({
           <div className="truncate text-sm font-semibold text-foreground">
             {ar ? business.name.ar : business.name.en}
           </div>
-          {!(business.isApproved ?? business.isVerified) ? (
+          {!isApproved ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-600">
               <svg className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm.75 4.5a.75.75 0 00-1.5 0v4.25c0 .414.336.75.75.75h3a.75.75 0 000-1.5h-2.25V6.5z" />
@@ -86,6 +99,17 @@ export function BusinessCard({
       </div>
 
       <div className="mt-4 sm:mt-0 flex shrink-0 flex-wrap items-center gap-2">
+        {!isApproved ? (
+          <Button
+            variant="primary"
+            size="xs"
+            onClick={handleApprove}
+            disabled={approving}
+            type="button"
+          >
+            {approving ? (ar ? "..." : "...") : (ar ? "اعتماد" : "Approve")}
+          </Button>
+        ) : null}
         <Link
           href={`/${locale}/businesses/${business.slug}`}
           className={buttonVariants({ variant: "ghost", size: "xs" })}

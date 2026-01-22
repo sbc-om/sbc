@@ -296,3 +296,14 @@ export async function deleteBusinessAction(locale: Locale, id: string) {
   revalidatePath(`/${locale}/admin`);
   redirect(`/${locale}/admin`);
 }
+
+export async function approveBusinessAction(locale: Locale, id: string) {
+  await requireAdmin(locale);
+  const business = getBusinessById(id);
+  if (!business) throw new Error("NOT_FOUND");
+  updateBusiness(id, { isApproved: true });
+  revalidatePath(`/${locale}/businesses`);
+  revalidatePath(`/${locale}/businesses/${business.slug}`);
+  revalidatePath(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/businesses`);
+}
