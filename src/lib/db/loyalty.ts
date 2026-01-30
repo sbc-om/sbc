@@ -267,6 +267,25 @@ export function listAppleWalletPushTokensForSerial(input: {
   return Array.from(out);
 }
 
+export function listAppleWalletRegistrationsForDevice(input: {
+  passTypeIdentifier: string;
+  deviceLibraryIdentifier: string;
+}): AppleWalletRegistration[] {
+  const { appleWalletRegistrations } = getLmdb();
+  const passTypeIdentifier = z.string().trim().min(1).parse(input.passTypeIdentifier);
+  const deviceLibraryIdentifier = z.string().trim().min(1).parse(input.deviceLibraryIdentifier);
+  const out: AppleWalletRegistration[] = [];
+
+  for (const { value } of appleWalletRegistrations.getRange()) {
+    const r = value as AppleWalletRegistration;
+    if (r.passTypeIdentifier !== passTypeIdentifier) continue;
+    if (r.deviceLibraryIdentifier !== deviceLibraryIdentifier) continue;
+    out.push(r);
+  }
+
+  return out;
+}
+
 export function getLoyaltySubscriptionByUserId(userId: string): LoyaltySubscription | null {
   const { loyaltySubscriptions } = getLmdb();
   const uid = userIdSchema.safeParse(userId);

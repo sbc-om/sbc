@@ -41,11 +41,18 @@ export async function GET(
   const proto = h.get("x-forwarded-proto") ?? "http";
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const baseUrl = host ? `${proto}://${host}` : "";
+  const webServiceUrl = process.env.APPLE_WALLET_WEB_SERVICE_URL?.trim()
+    ? process.env.APPLE_WALLET_WEB_SERVICE_URL!.trim().replace(/\/$/, "")
+    : (baseUrl ? `${baseUrl}/api/wallet/apple` : undefined);
   const publicCardUrl = baseUrl
     ? `${baseUrl}/${defaultLocale}/loyalty/card/${encodeURIComponent(card.id)}`
     : undefined;
 
-  const pkpass = await getSbcwalletApplePkpassForLoyaltyCard({ cardId: card.id, publicCardUrl });
+  const pkpass = await getSbcwalletApplePkpassForLoyaltyCard({
+    cardId: card.id,
+    publicCardUrl,
+    webServiceUrl: webServiceUrl || undefined,
+  });
   const body = new Uint8Array(pkpass);
 
   return new Response(body, {
