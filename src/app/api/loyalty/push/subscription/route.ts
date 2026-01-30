@@ -33,20 +33,18 @@ export async function POST(req: Request) {
     const json = await req.json();
     const data = postSchema.parse(json);
 
-    const card = getLoyaltyCardById(data.cardId);
+    const card = await getLoyaltyCardById(data.cardId);
     if (!card || card.status !== "active") {
       return Response.json({ ok: false, error: "CARD_NOT_FOUND" }, { status: 404 });
     }
 
     const ua = req.headers.get("user-agent") ?? undefined;
 
-    const sub = upsertLoyaltyPushSubscription({
+    const sub = await upsertLoyaltyPushSubscription({
       userId: card.userId,
       customerId: card.customerId,
-      subscription: {
-        endpoint: data.subscription.endpoint,
-        keys: data.subscription.keys,
-      },
+      endpoint: data.subscription.endpoint,
+      keys: data.subscription.keys,
       userAgent: ua,
     });
 
@@ -62,16 +60,16 @@ export async function DELETE(req: Request) {
     const json = await req.json().catch(() => ({}));
     const data = deleteSchema.parse(json);
 
-    const card = getLoyaltyCardById(data.cardId);
+    const card = await getLoyaltyCardById(data.cardId);
     if (!card || card.status !== "active") {
       return Response.json({ ok: false, error: "CARD_NOT_FOUND" }, { status: 404 });
     }
 
-    const removed = await removeLoyaltyPushSubscription({
-      userId: card.userId,
-      customerId: card.customerId,
-      endpoint: data.endpoint,
-    });
+    // Build subscription ID from customerId and endpoint hash to remove
+    const { createHash } = await import("node:crypto");
+    const hashEndpoint = (endpoint: string) => createHash("sha256").update(endpoint).digest("hex").slice(0, 16);
+    const subId = data.endpoint ? `${card.customerId}:${hashEndpoint(data.endpoint)}` : null;
+    const removed = subId ? await removeLoyaltyPushSubscription(subId) : false;
 
     return Response.json({ ok: true, removed });
   } catch (e) {

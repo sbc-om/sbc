@@ -13,7 +13,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const activeOnly = searchParams.get("activeOnly") === "true";
     
-    const products = listProducts({ activeOnly });
+    let products = await listProducts();
+    if (activeOnly) {
+      products = products.filter(p => p.isActive);
+    }
     
     return NextResponse.json({ products });
   } catch (err: unknown) {
@@ -38,17 +41,15 @@ export async function POST(req: NextRequest) {
       durationDays: Number(body.durationDays),
       name: body.name,
       description: body.description,
-      price: {
-        amount: Number(body.price.amount),
-        currency: body.price.currency,
-        interval: body.price.interval,
-      },
+      price: Number(body.price?.amount ?? body.price),
+      currency: body.price?.currency ?? body.currency ?? "USD",
       badges: body.badges,
       features: body.features,
       isActive: body.isActive ?? true,
+      sortOrder: body.sortOrder ?? 0,
     };
     
-    const product = createProduct(input);
+    const product = await createProduct(input);
     
     return NextResponse.json({ product }, { status: 201 });
   } catch (err: unknown) {

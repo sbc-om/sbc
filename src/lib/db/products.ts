@@ -1,176 +1,195 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { getLmdb } from "./lmdb";
+import { query } from "./postgres";
 import type { LocalizedString } from "./types";
 
-export type StoreProductPrice = {
-  amount: number;
-  currency: "USD" | "OMR";
-  interval?: "month" | "year" | "6mo";
-};
-
-export type StoreProgramId = "directory" | "loyalty" | "marketing";
-
-export type StoreProduct = {
+export type Product = {
   id: string;
   slug: string;
-  program: StoreProgramId;
-  plan: string;
-  durationDays: number;
   name: LocalizedString;
-  description: LocalizedString;
-  price: StoreProductPrice;
+  description?: LocalizedString;
+  price: number;
+  currency: string;
+  program: string;
+  /** Plan id within the program (e.g., 'basic', 'premium') */
+  plan: string;
+  durationDays?: number;
+  features: string[];
   badges?: string[];
-  features: { en: string[]; ar: string[] };
   isActive: boolean;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 };
 
-const priceSchema = z.object({
-  amount: z.number().positive(),
-  currency: z.enum(["USD", "OMR"]),
-  interval: z.enum(["month", "year", "6mo"]).optional(),
-});
-
-const featuresSchema = z.object({
-  en: z.array(z.string().trim().min(1)),
-  ar: z.array(z.string().trim().min(1)),
-});
+const slugSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid slug");
 
 const localizedStringSchema = z.object({
   en: z.string().trim().min(1),
   ar: z.string().trim().min(1),
 });
 
-export const productInputSchema = z.object({
-  slug: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid slug"),
-  program: z.enum(["directory", "loyalty", "marketing"]),
-  plan: z.string().trim().min(1),
-  durationDays: z.number().int().positive(),
+const productSchema = z.object({
+  slug: slugSchema,
   name: localizedStringSchema,
-  description: localizedStringSchema,
-  price: priceSchema,
-  badges: z.array(z.string().trim()).optional(),
-  features: featuresSchema,
+  description: localizedStringSchema.optional(),
+  price: z.number().min(0),
+  currency: z.string().default("USD"),
+  program: z.string().min(1),
+  plan: z.string().default("basic"),
+  durationDays: z.number().int().positive().optional(),
+  features: z.array(z.string()).default([]),
+  badges: z.array(z.string()).default([]),
   isActive: z.boolean().default(true),
+  sortOrder: z.number().int().default(0),
 });
 
-export type ProductInput = z.infer<typeof productInputSchema>;
+export type ProductInput = z.infer<typeof productSchema>;
 
-export function createProduct(input: ProductInput): StoreProduct {
-  const data = productInputSchema.parse(input);
-  const { products, productSlugs } = getLmdb();
+function rowToProduct(row: any): Product {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: { en: row.name_en, ar: row.name_ar },
+    description: row.description_en || row.description_ar
+      ? { en: row.description_en || "", ar: row.description_ar || "" }
+      : undefined,
+    price: parseFloat(row.price) || 0,
+    currency: row.currency || "USD",
+    program: row.program,
+    plan: row.plan || "basic",
+    durationDays: row.duration_days,
+    features: row.features || [],
+    badges: row.badges || [],
+    isActive: row.is_active ?? true,
+    sortOrder: row.sort_order ?? 0,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+  };
+}
 
-  // Check if slug already exists
-  const existingId = productSlugs.get(data.slug) as string | undefined;
-  if (existingId) {
+export async function createProduct(input: ProductInput): Promise<Product> {
+  const data = productSchema.parse(input);
+  const id = nanoid();
+  const now = new Date();
+
+  // Check slug uniqueness
+  const existingSlug = await query(`SELECT id FROM products WHERE slug = $1`, [data.slug]);
+  if (existingSlug.rows.length > 0) {
     throw new Error("SLUG_TAKEN");
   }
 
-  const product: StoreProduct = {
-    id: nanoid(),
-    slug: data.slug,
-    program: data.program,
-    plan: data.plan,
-    durationDays: data.durationDays,
-    name: data.name,
-    description: data.description,
-    price: data.price,
-    badges: data.badges,
-    features: data.features,
-    isActive: data.isActive,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
+  const result = await query(`
+    INSERT INTO products (
+      id, slug, name_en, name_ar, description_en, description_ar, price, currency,
+      program, plan, duration_days, features, badges, is_active, sort_order, created_at, updated_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $16)
+    RETURNING *
+  `, [
+    id, data.slug, data.name.en, data.name.ar,
+    data.description?.en, data.description?.ar,
+    data.price, data.currency, data.program, data.plan, data.durationDays,
+    JSON.stringify(data.features), JSON.stringify(data.badges), data.isActive, data.sortOrder, now
+  ]);
 
-  products.put(product.id, product);
-  productSlugs.put(product.slug, product.id);
-
-  return product;
+  return rowToProduct(result.rows[0]);
 }
 
-export function getProductById(id: string): StoreProduct | null {
-  const { products } = getLmdb();
-  return (products.get(id) as StoreProduct | undefined) ?? null;
+export async function getProductById(id: string): Promise<Product | null> {
+  const result = await query(`SELECT * FROM products WHERE id = $1`, [id]);
+  return result.rows.length > 0 ? rowToProduct(result.rows[0]) : null;
 }
 
-export function getProductBySlug(slug: string): StoreProduct | null {
-  const { productSlugs } = getLmdb();
-  const id = productSlugs.get(slug) as string | undefined;
-  if (!id) return null;
-  return getProductById(id);
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+  const key = slugSchema.safeParse(slug);
+  if (!key.success) return null;
+
+  const result = await query(`SELECT * FROM products WHERE slug = $1`, [key.data]);
+  return result.rows.length > 0 ? rowToProduct(result.rows[0]) : null;
 }
 
-export function listProducts(options?: { activeOnly?: boolean }): StoreProduct[] {
-  const { products } = getLmdb();
-  const results: StoreProduct[] = [];
-
-  for (const { value } of products.getRange()) {
-    const p = value as StoreProduct;
-    if (options?.activeOnly && !p.isActive) continue;
-    results.push(p);
-  }
-
-  results.sort((a, b) => {
-    // Sort by program, then by price
-    if (a.program !== b.program) {
-      return a.program.localeCompare(b.program);
-    }
-    return a.price.amount - b.price.amount;
-  });
-
-  return results;
+export async function listProducts(): Promise<Product[]> {
+  const result = await query(`SELECT * FROM products ORDER BY sort_order, name_en`);
+  return result.rows.map(rowToProduct);
 }
 
-export function updateProduct(id: string, input: Partial<ProductInput>): StoreProduct {
-  const { products, productSlugs } = getLmdb();
-  const current = products.get(id) as StoreProduct | undefined;
-  if (!current) throw new Error("NOT_FOUND");
+export async function listActiveProducts(): Promise<Product[]> {
+  const result = await query(`SELECT * FROM products WHERE is_active = true ORDER BY sort_order, name_en`);
+  return result.rows.map(rowToProduct);
+}
 
-  // If slug is changing, check availability and update index
+export async function listProductsByProgram(program: string): Promise<Product[]> {
+  const result = await query(`
+    SELECT * FROM products WHERE program = $1 AND is_active = true ORDER BY sort_order, name_en
+  `, [program]);
+  return result.rows.map(rowToProduct);
+}
+
+export async function updateProduct(id: string, input: Partial<ProductInput>): Promise<Product> {
+  const currentRes = await query(`SELECT * FROM products WHERE id = $1`, [id]);
+  if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
+  const current = rowToProduct(currentRes.rows[0]);
+
+  // Check slug uniqueness if changed
   if (input.slug && input.slug !== current.slug) {
-    const existingId = productSlugs.get(input.slug) as string | undefined;
-    if (existingId && existingId !== id) {
+    const existingSlug = await query(`SELECT id FROM products WHERE slug = $1 AND id != $2`, [input.slug, id]);
+    if (existingSlug.rows.length > 0) {
       throw new Error("SLUG_TAKEN");
     }
-    productSlugs.remove(current.slug);
-    productSlugs.put(input.slug, id);
   }
 
-  const updated: StoreProduct = {
-    ...current,
-    ...input,
-    id: current.id,
-    createdAt: current.createdAt,
-    updatedAt: new Date().toISOString(),
-  };
+  const result = await query(`
+    UPDATE products SET
+      slug = COALESCE($1, slug),
+      name_en = COALESCE($2, name_en),
+      name_ar = COALESCE($3, name_ar),
+      description_en = $4,
+      description_ar = $5,
+      price = COALESCE($6, price),
+      currency = COALESCE($7, currency),
+      program = COALESCE($8, program),
+      duration_days = $9,
+      features = COALESCE($10, features),
+      is_active = COALESCE($11, is_active),
+      sort_order = COALESCE($12, sort_order),
+      updated_at = $13
+    WHERE id = $14
+    RETURNING *
+  `, [
+    input.slug,
+    input.name?.en,
+    input.name?.ar,
+    input.description?.en !== undefined ? input.description.en : current.description?.en,
+    input.description?.ar !== undefined ? input.description.ar : current.description?.ar,
+    input.price,
+    input.currency,
+    input.program,
+    input.durationDays !== undefined ? input.durationDays : current.durationDays,
+    input.features ? JSON.stringify(input.features) : null,
+    input.isActive,
+    input.sortOrder,
+    new Date(),
+    id
+  ]);
 
-  products.put(id, updated);
-  return updated;
+  return rowToProduct(result.rows[0]);
 }
 
-export function deleteProduct(id: string): void {
-  const { products, productSlugs } = getLmdb();
-  const current = products.get(id) as StoreProduct | undefined;
-  if (!current) throw new Error("NOT_FOUND");
-
-  productSlugs.remove(current.slug);
-  products.remove(id);
+export async function deleteProduct(id: string): Promise<boolean> {
+  const result = await query(`DELETE FROM products WHERE id = $1`, [id]);
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function toggleProductStatus(id: string): StoreProduct {
-  const { products } = getLmdb();
-  const current = products.get(id) as StoreProduct | undefined;
-  if (!current) throw new Error("NOT_FOUND");
+export async function setProductActive(id: string, isActive: boolean): Promise<Product> {
+  const result = await query(`
+    UPDATE products SET is_active = $1, updated_at = $2 WHERE id = $3 RETURNING *
+  `, [isActive, new Date(), id]);
 
-  const updated: StoreProduct = {
-    ...current,
-    isActive: !current.isActive,
-    updatedAt: new Date().toISOString(),
-  };
-
-  products.put(id, updated);
-  return updated;
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToProduct(result.rows[0]);
 }

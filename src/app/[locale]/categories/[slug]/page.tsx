@@ -7,12 +7,12 @@ import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinesses } from "@/lib/db/businesses";
 import { listCategories, getCategoryById } from "@/lib/db/categories";
-import { getFollowedCategoryIds } from "@/lib/db/follows";
+import { getUserFollowedCategoryIds } from "@/lib/db/follows";
 import {
   getBusinessLikeCount,
   hasUserLikedBusiness,
   hasUserSavedBusiness,
-  listBusinessComments,
+  getBusinessComments,
 } from "@/lib/db/businessEngagement";
 import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "../../home/actions";
 import { AppPage } from "@/components/AppPage";
@@ -34,34 +34,34 @@ export default async function CategoryDetailPage({
   const user = await requireUser(locale as Locale);
 
   // Find category by slug
-  const allCategories = listCategories({ locale: locale as Locale });
+  const allCategories = await listCategories();
   const category = allCategories.find((c) => c.slug === slug);
 
   if (!category) notFound();
 
   // Get businesses for this category
-  const allBusinesses = listBusinesses({ locale: locale as Locale });
+  const allBusinesses = await listBusinesses();
   const businesses = allBusinesses.filter((b) => b.categoryId === category.id);
 
   // Check if user follows this category
-  const followedCategoryIds = new Set(getFollowedCategoryIds(user.id));
+  const followedCategoryIds = new Set(await getUserFollowedCategoryIds(user.id));
   const isFollowing = followedCategoryIds.has(category.id);
 
   // Prepare engagement data for each business
-  const businessesWithEngagement = businesses.map((b) => {
-    const comments = listBusinessComments(b.id);
+  const businessesWithEngagement = await Promise.all(businesses.map(async (b) => {
+    const comments = await getBusinessComments(b.id);
     const approvedComments = comments.filter((c) => c.status === "approved");
 
     return {
       business: b,
       categoryName: locale === "ar" ? category.name.ar : category.name.en,
       categoryIconId: category.iconId,
-      initialLikeCount: getBusinessLikeCount(b.id),
-      initialLiked: hasUserLikedBusiness(user.id, b.id),
-      initialSaved: hasUserSavedBusiness(user.id, b.id),
+      initialLikeCount: await getBusinessLikeCount(b.id),
+      initialLiked: await hasUserLikedBusiness(user.id, b.id),
+      initialSaved: await hasUserSavedBusiness(user.id, b.id),
       commentCount: approvedComments.length,
     };
-  });
+  }));
 
   const CategoryIcon = getCategoryIconComponent(category.iconId);
 

@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getLoyaltyProfileByUserId, listLoyaltyCustomersByUser } from "@/lib/db/loyalty";
-import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
+import { isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 
 import { addLoyaltyCustomerAction } from "../../actions";
 import { CustomersClient } from "./CustomersClient";
@@ -57,8 +57,7 @@ export default async function LoyaltyManageCustomersPage({
     );
   }
 
-  const programSub = getProgramSubscriptionByUser(user.id, "loyalty");
-  const isActive = isProgramSubscriptionActive(programSub);
+  const isActive = await isProgramSubscriptionActive(user.id);
   if (!isActive) {
     return (
       <PublicPage>
@@ -79,8 +78,8 @@ export default async function LoyaltyManageCustomersPage({
     );
   }
 
-  const profile = getLoyaltyProfileByUserId(user.id);
-  const customers = listLoyaltyCustomersByUser(user.id);
+  const profile = await getLoyaltyProfileByUserId(user.id);
+  const customers = await listLoyaltyCustomersByUser(user.id);
 
   return (
     <PublicPage>

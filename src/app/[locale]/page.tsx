@@ -26,7 +26,7 @@ export default async function LocaleHome({
   const user = await getCurrentUser();
   
   // Get latest businesses
-  const allBusinesses = listBusinesses({ locale: locale as Locale });
+  const allBusinesses = await listBusinesses();
   // Homepage placements (manual flags + paid directory plans)
   const ownerIds = Array.from(
     new Set(allBusinesses.map((b) => b.ownerId).filter(Boolean) as string[]),
@@ -34,9 +34,9 @@ export default async function LocaleHome({
 
   const ownerDirectoryPlan = new Map<string, string>();
   for (const ownerId of ownerIds) {
-    const sub = getProgramSubscriptionByUser(ownerId, "directory");
-    if (!isProgramSubscriptionActive(sub)) continue;
-    ownerDirectoryPlan.set(ownerId, sub!.plan);
+    const sub = await getProgramSubscriptionByUser(ownerId);
+    if (!sub || !(await isProgramSubscriptionActive(ownerId))) continue;
+    ownerDirectoryPlan.set(ownerId, sub.plan!);
   }
 
   const manualTop = allBusinesses.filter((b) => b.homepageTop);

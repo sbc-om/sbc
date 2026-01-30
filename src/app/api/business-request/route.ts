@@ -11,22 +11,21 @@ export async function POST(req: Request) {
     const user = await requireUser("en");
 
     // Must have an active Directory subscription
-    ensureActiveProgramSubscription(user.id, "directory");
+    await ensureActiveProgramSubscription(user.id, "directory");
 
     const body = await req.json();
 
-    const request = createBusinessRequest({
+    const request = await createBusinessRequest({
       userId: user.id,
-      name: body.name,
+      businessName: body.businessName || body.name,
+      nameEn: body.nameEn,
+      nameAr: body.nameAr,
       description: body.description,
       categoryId: body.categoryId,
       city: body.city,
-      address: body.address,
       phone: body.phone,
       email: body.email,
       website: body.website,
-      latitude: body.latitude,
-      longitude: body.longitude,
     });
 
     return NextResponse.json(request);

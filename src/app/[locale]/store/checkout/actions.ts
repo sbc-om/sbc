@@ -14,14 +14,17 @@ export async function finalizeCheckoutAction(locale: Locale, slugs: string[]) {
   if (unique.length === 0) return;
 
   for (const slug of unique) {
-    const product = getStoreProductBySlug(slug);
+    const product = await getStoreProductBySlug(slug);
     if (!product) continue;
 
-    purchaseProgramSubscription({
+    await purchaseProgramSubscription({
       userId: user.id,
+      productId: product.id,
+      productSlug: product.slug,
       program: product.program,
-      plan: product.plan,
       durationDays: product.durationDays,
+      amount: product.price.amount,
+      currency: "OMR",
     });
   }
 

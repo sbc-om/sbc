@@ -13,7 +13,7 @@ export async function joinLoyaltyByCodeAction(
   code: string,
   formData: FormData,
 ) {
-  const profile = getLoyaltyProfileByJoinCode(code);
+  const profile = await getLoyaltyProfileByJoinCode(code);
   if (!profile) notFound();
 
   const fullName = String(formData.get("fullName") || "").trim();
@@ -26,13 +26,12 @@ export async function joinLoyaltyByCodeAction(
 
   let customer;
   try {
-    customer = createLoyaltyCustomer({
+    customer = await createLoyaltyCustomer({
       userId: profile.userId,
-      customer: {
-        fullName,
-        phone,
-        email: email || undefined,
-      },
+      fullName,
+      memberId: phone, // Use phone as memberId for public join
+      phone,
+      email: email || undefined,
     });
   } catch {
     redirect(`/${locale}/loyalty/join/${code}?error=INVALID_INPUT`);

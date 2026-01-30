@@ -20,8 +20,8 @@ export default async function AdminNewBusinessPage({
 
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
-  const categories = listCategories();
-  const users = listUsers();
+  const categories = await listCategories();
+  const users = await listUsers();
 
   const title = locale === "ar" ? "إضافة عمل" : "Add business";
 

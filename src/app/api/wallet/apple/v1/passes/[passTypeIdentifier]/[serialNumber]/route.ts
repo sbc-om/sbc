@@ -33,10 +33,10 @@ export async function GET(
   });
   if (!authorized) return new Response("Unauthorized", { status: 401 });
 
-  const card = getLoyaltyCardById(serialNumber);
+  const card = await getLoyaltyCardById(serialNumber);
   if (!card || card.status !== "active") return new Response("Not found", { status: 404 });
 
-  const profile = getLoyaltyProfileByUserId(card.userId);
+  const profile = await getLoyaltyProfileByUserId(card.userId);
 
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "http";

@@ -32,7 +32,7 @@ export function OptimizedImage({
       )}
       <Image
         {...props}
-        className={`transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"} ${props.className || ""}`}
+        className={`transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"} ${className}`}
         onLoad={() => setIsLoading(false)}
         loading={props.loading || "lazy"}
       />

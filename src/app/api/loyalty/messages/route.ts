@@ -9,7 +9,8 @@ import {
   getLoyaltyProfileByUserId,
   getLoyaltySettingsByUserId,
   listLoyaltyCustomersByUser,
-  listLoyaltyPushSubscriptionsByUser,
+  listLoyaltyPushSubscriptionsByBusiness,
+  listLoyaltyPushSubscriptionsByCustomer,
   removeLoyaltyPushSubscription,
 } from "@/lib/db/loyalty";
 import { defaultLocale } from "@/lib/i18n/locales";
@@ -34,9 +35,11 @@ export async function POST(req: Request) {
     const json = await req.json();
     const data = postSchema.parse(json);
 
-    const message = createLoyaltyMessage({
+    const message = await createLoyaltyMessage({
       userId: auth.id,
-      message: data,
+      customerId: data.customerId,
+      title: data.title,
+      body: data.body,
     });
 
     // Best-effort: trigger Wallet-style alerts for customers who added the pass to Apple Wallet.
@@ -44,10 +47,10 @@ export async function POST(req: Request) {
     try {
       const targetCardIds: string[] = [];
       if (message.customerId) {
-        const c = getLoyaltyCustomerById(message.customerId);
+        const c = await getLoyaltyCustomerById(message.customerId);
         if (c?.cardId) targetCardIds.push(c.cardId);
       } else {
-        for (const c of listLoyaltyCustomersByUser(auth.id)) {
+        for (const c of await listLoyaltyCustomersByUser(auth.id)) {
           if (c.cardId) targetCardIds.push(c.cardId);
         }
       }
@@ -65,8 +68,8 @@ export async function POST(req: Request) {
       const host = h.get("x-forwarded-host") ?? h.get("host");
       const baseUrl = host ? `${proto}://${host}` : "";
 
-      const profile = getLoyaltyProfileByUserId(auth.id);
-      const settings = getLoyaltySettingsByUserId(auth.id) ?? defaultLoyaltySettings(auth.id);
+      const profile = await getLoyaltyProfileByUserId(auth.id);
+      const settings = (await getLoyaltySettingsByUserId(auth.id)) ?? defaultLoyaltySettings(auth.id);
       const effectiveIconUrl =
         settings.pointsIconMode === "custom" ? settings.pointsIconUrl : profile?.logoUrl;
       const iconUrl = effectiveIconUrl
@@ -75,16 +78,16 @@ export async function POST(req: Request) {
           : effectiveIconUrl
         : undefined;
 
-      const targetCustomer = message.customerId ? getLoyaltyCustomerById(message.customerId) : null;
+      const targetCustomer = message.customerId ? await getLoyaltyCustomerById(message.customerId) : null;
       const cardUrl =
         targetCustomer?.cardId && baseUrl
           ? `${baseUrl}/${defaultLocale}/loyalty/card/${encodeURIComponent(targetCustomer.cardId)}`
           : baseUrl || undefined;
 
-      const subs = listLoyaltyPushSubscriptionsByUser({
-        userId: auth.id,
-        customerId: message.customerId,
-      });
+      // Get push subscriptions - either for specific customer or all business customers
+      const subs = message.customerId
+        ? await listLoyaltyPushSubscriptionsByCustomer(message.customerId)
+        : await listLoyaltyPushSubscriptionsByBusiness(auth.id);
 
       await Promise.all(
         subs.map(async (s) => {
@@ -100,11 +103,7 @@ export async function POST(req: Request) {
 
           // Cleanup stale subscriptions.
           if (!res.ok && (res.statusCode === 404 || res.statusCode === 410)) {
-            await removeLoyaltyPushSubscription({
-              userId: auth.id,
-              customerId: s.customerId,
-              endpoint: s.endpoint,
-            });
+            await removeLoyaltyPushSubscription(s.id);
           }
         })
       );

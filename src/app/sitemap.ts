@@ -15,7 +15,7 @@ const staticPaths = [
   "store",
 ];
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const items: MetadataRoute.Sitemap = [];
 
   for (const locale of locales) {
@@ -30,7 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   }
 
-  const businesses = listBusinesses();
+  const businesses = await listBusinesses();
   for (const b of businesses) {
     for (const locale of locales) {
       items.push({

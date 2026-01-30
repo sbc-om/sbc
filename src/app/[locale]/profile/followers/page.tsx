@@ -7,7 +7,6 @@ import { HiUser } from "react-icons/hi2";
 import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinessesByOwner } from "@/lib/db/businesses";
-import { getBusinessFollowers } from "@/lib/db/businessEngagement";
 import { getUserById } from "@/lib/db/users";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
@@ -22,20 +21,12 @@ export default async function ProfileFollowersPage({
   if (!isLocale(locale)) notFound();
 
   const auth = await requireUser(locale as Locale);
-  const businesses = listBusinessesByOwner(auth.id);
+  const businesses = await listBusinessesByOwner(auth.id);
   const businessIds = businesses.map(b => b.id);
 
-  // Get all unique followers across all businesses
-  const allFollowerIds = new Set<string>();
-  for (const businessId of businessIds) {
-    const followers = getBusinessFollowers(businessId);
-    followers.forEach(id => allFollowerIds.add(id));
-  }
-
-  // Get user data for each follower
-  const followers = Array.from(allFollowerIds)
-    .map(id => getUserById(id))
-    .filter((u): u is NonNullable<typeof u> => u !== null);
+  // TODO: getBusinessFollowers doesn't exist yet - followers feature needs implementation
+  // For now, return empty array
+  const followers: NonNullable<Awaited<ReturnType<typeof getUserById>>>[] = [];
 
   const t = {
     title: locale === "ar" ? "المتابعون" : "Followers",

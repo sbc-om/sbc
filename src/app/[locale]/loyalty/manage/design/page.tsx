@@ -11,7 +11,7 @@ import {
   getLoyaltyProfileByUserId,
   getLoyaltySettingsByUserId,
 } from "@/lib/db/loyalty";
-import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
+import { isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 import { LoyaltyCardDesigner } from "@/components/loyalty/LoyaltyCardDesigner";
 
 export const runtime = "nodejs";
@@ -28,11 +28,10 @@ export default async function LoyaltyCardDesignPage({
   const ar = locale === "ar";
   const user = await getCurrentUser();
 
-  const programSub = user ? getProgramSubscriptionByUser(user.id, "loyalty") : null;
-  const isActive = isProgramSubscriptionActive(programSub);
-  const profile = user && isActive ? getLoyaltyProfileByUserId(user.id) : null;
+  const isActive = user ? await isProgramSubscriptionActive(user.id) : false;
+  const profile = user && isActive ? await getLoyaltyProfileByUserId(user.id) : null;
   const settings = user && isActive
-    ? (getLoyaltySettingsByUserId(user.id) ?? defaultLoyaltySettings(user.id))
+    ? ((await getLoyaltySettingsByUserId(user.id)) ?? defaultLoyaltySettings(user.id))
     : null;
 
   return (

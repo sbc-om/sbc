@@ -5,7 +5,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listCategories } from "@/lib/db/categories";
-import { getFollowedCategoryIds } from "@/lib/db/follows";
+import { getUserFollowedCategoryIds } from "@/lib/db/follows";
 import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { followCategoryAction, unfollowCategoryAction } from "./actions";
@@ -57,7 +57,7 @@ export default async function CategoriesPage({
   const qLower = q.toLowerCase();
 
   // Fetch all categories for correct parent grouping; apply search filter here.
-  const categories = listCategories({ locale: locale as Locale });
+  const categories = await listCategories();
   
   // Defensive: Filter out categories without id and remove duplicates
   const validCategories = categories.filter(c => c.id);
@@ -121,7 +121,7 @@ export default async function CategoriesPage({
   }));
 
   const hasAnyResults = groups.some((g) => matchesSearch(g.parent) || g.children.length > 0);
-  const followed = new Set(getFollowedCategoryIds(user.id));
+  const followed = new Set(await getUserFollowedCategoryIds(user.id));
 
   return (
     <AppPage>

@@ -4,7 +4,7 @@ import { z } from "zod";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 
 import { consumePasskeyChallenge, getPasskeyById, updatePasskeyCounter } from "@/lib/db/passkeys";
-import { base64UrlToBuffer } from "@/lib/auth/passkeyConfig";
+import { base64UrlToBuffer, resolvePasskeyOrigin, resolvePasskeyRpId } from "@/lib/auth/passkeyConfig";
 import { getUserById } from "@/lib/db/users";
 import { getAuthCookieName, signAuthToken } from "@/lib/auth/jwt";
 
@@ -19,8 +19,8 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { requestId, response } = bodySchema.parse(body);
 
-  const challenge = consumePasskeyChallenge(requestId);
-  if (!challenge || challenge.type !== "authentication") {
+  const challenge = await consumePasskeyChallenge(requestId);
+  if (!challenge) {
     return NextResponse.json({ ok: false, error: "CHALLENGE_INVALID" }, { status: 400 });
   }
 
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "CREDENTIAL_MISSING" }, { status: 400 });
   }
 
-  const passkey = getPasskeyById(credentialId);
+  const passkey = await getPasskeyById(credentialId);
   if (!passkey) {
     return NextResponse.json({ ok: false, error: "CREDENTIAL_NOT_FOUND" }, { status: 404 });
   }
@@ -38,11 +38,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "CREDENTIAL_MISMATCH" }, { status: 400 });
   }
 
+  // Resolve expected origin and RP ID from request
+  const expectedOrigin = resolvePasskeyOrigin(req);
+  const expectedRPID = resolvePasskeyRpId(req);
+
   const verification = await verifyAuthenticationResponse({
     response,
     expectedChallenge: challenge.challenge,
-    expectedOrigin: challenge.expectedOrigin,
-    expectedRPID: challenge.expectedRpId,
+    expectedOrigin,
+    expectedRPID,
     credential: {
       id: passkey.id,
       publicKey: base64UrlToBuffer(passkey.publicKey),
@@ -55,7 +59,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "VERIFICATION_FAILED" }, { status: 401 });
   }
 
-  const user = getUserById(passkey.userId);
+  const user = await getUserById(passkey.userId);
   if (!user) {
     return NextResponse.json({ ok: false, error: "USER_NOT_FOUND" }, { status: 404 });
   }
@@ -66,7 +70,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "ACCOUNT_INACTIVE" }, { status: 403 });
   }
 
-  updatePasskeyCounter(passkey.id, verification.authenticationInfo.newCounter, new Date().toISOString());
+  await updatePasskeyCounter(passkey.id, verification.authenticationInfo.newCounter);
 
   const token = await signAuthToken({ sub: user.id, email: user.email, role: user.role });
   const cookieName = getAuthCookieName();

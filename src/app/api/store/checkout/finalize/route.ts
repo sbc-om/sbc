@@ -26,14 +26,17 @@ export async function POST(req: Request) {
 
     let activated = 0;
     for (const slug of unique) {
-      const product = getStoreProductBySlug(slug);
+      const product = await getStoreProductBySlug(slug);
       if (!product) continue;
 
-      purchaseProgramSubscription({
+      await purchaseProgramSubscription({
         userId: auth.id,
+        productId: product.id,
+        productSlug: product.slug,
         program: product.program,
-        plan: product.plan,
         durationDays: product.durationDays,
+        amount: product.price.amount,
+        currency: product.price.currency,
       });
       activated += 1;
     }

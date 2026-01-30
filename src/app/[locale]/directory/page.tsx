@@ -5,7 +5,7 @@ import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinessesByOwner } from "@/lib/db/businesses";
-import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
+import { getProgramSubscriptionByUser, hasActiveSubscription } from "@/lib/db/subscriptions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
@@ -24,10 +24,10 @@ export default async function DirectoryManagePage({
 
   const ar = locale === "ar";
 
-  const sub = getProgramSubscriptionByUser(user.id, "directory");
-  const active = isProgramSubscriptionActive(sub);
+  const sub = await getProgramSubscriptionByUser(user.id);
+  const active = await hasActiveSubscription(user.id, "directory");
 
-  const businesses = active ? listBusinessesByOwner(user.id) : [];
+  const businesses = active ? await listBusinessesByOwner(user.id) : [];
 
   return (
     <AppPage>

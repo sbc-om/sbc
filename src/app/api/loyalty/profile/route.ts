@@ -26,7 +26,7 @@ export async function GET() {
   const auth = await getCurrentUser();
   if (!auth) return new Response("Unauthorized", { status: 401 });
 
-  const profile = getLoyaltyProfileByUserId(auth.id);
+  const profile = await getLoyaltyProfileByUserId(auth.id);
   return Response.json({ ok: true, profile: profile ?? null });
 }
 
@@ -38,14 +38,12 @@ export async function PATCH(req: Request) {
     const json = await req.json();
     const data = patchSchema.parse(json);
 
-    const profile = upsertLoyaltyProfile({
+    const profile = await upsertLoyaltyProfile({
       userId: auth.id,
-      profile: {
-        businessName: data.businessName,
-        joinCode: data.joinCode ? data.joinCode : undefined,
-        logoUrl: data.logoUrl ? data.logoUrl : undefined,
-        location: data.location,
-      },
+      businessName: data.businessName,
+      joinCode: data.joinCode ?? "",
+      logoUrl: data.logoUrl,
+      location: data.location,
     });
 
     return Response.json({ ok: true, profile });

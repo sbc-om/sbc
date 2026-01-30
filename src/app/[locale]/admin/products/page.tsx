@@ -8,6 +8,7 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { buttonVariants } from "@/components/ui/Button";
 import { ProductCard } from "./ProductCard";
+import type { StoreProduct } from "@/lib/store/types";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,7 @@ export default async function AdminProductsPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
 
-  const products = listProducts();
+  const products = await listProducts();
   const ar = locale === "ar";
 
   const activeProducts = products.filter((p) => p.isActive);
@@ -65,7 +66,7 @@ export default async function AdminProductsPage({
             {activeProducts.map((product) => (
               <ProductCard
                 key={product.id}
-                product={product}
+                product={product as unknown as StoreProduct}
                 locale={locale as Locale}
               />
             ))}
@@ -83,7 +84,7 @@ export default async function AdminProductsPage({
             {inactiveProducts.map((product) => (
               <ProductCard
                 key={product.id}
-                product={product}
+                product={product as unknown as StoreProduct}
                 locale={locale as Locale}
               />
             ))}

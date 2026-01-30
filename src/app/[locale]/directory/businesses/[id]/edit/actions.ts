@@ -6,17 +6,16 @@ import { redirect } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
 import {
-  addBusinessMedia,
   getBusinessById,
-  setBusinessSingleMedia,
+  setBusinessMedia,
   updateBusiness,
 } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { storeUpload } from "@/lib/uploads/storage";
 
-function deriveLegacyCategoryText(categoryId: string | null) {
+async function deriveLegacyCategoryText(categoryId: string | null) {
   if (!categoryId) return { categoryId: undefined, category: undefined };
-  const cat = getCategoryById(categoryId);
+  const cat = await getCategoryById(categoryId);
   if (!cat) throw new Error("INVALID_CATEGORY");
   return { categoryId, category: `${cat.name.en} ${cat.name.ar}` };
 }
@@ -27,7 +26,7 @@ export async function updateOwnerBusinessAction(
   formData: FormData,
 ) {
   const user = await requireUser(locale);
-  const business = getBusinessById(businessId);
+  const business = await getBusinessById(businessId);
   if (!business || business.ownerId !== user.id) {
     throw new Error("UNAUTHORIZED");
   }
@@ -41,7 +40,7 @@ export async function updateOwnerBusinessAction(
 
   const categoryIdRaw = String(formData.get("categoryId") || "").trim();
   const categoryId = categoryIdRaw || null;
-  const categoryPatch = deriveLegacyCategoryText(categoryId);
+  const categoryPatch = await deriveLegacyCategoryText(categoryId);
 
   const tagsRaw = String(formData.get("tags") || "").trim();
   const tags = tagsRaw ? tagsRaw.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
@@ -57,7 +56,7 @@ export async function updateOwnerBusinessAction(
   const usernameRaw = String(formData.get("username") || "").trim();
   const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
 
-  let next = updateBusiness(business.id, {
+  let next = await updateBusiness(business.id, {
     slug: String(formData.get("slug") || "").trim() || undefined,
     username,
     name: { en: nameEn || business.name.en, ar: nameAr || business.name.ar },
@@ -78,19 +77,19 @@ export async function updateOwnerBusinessAction(
   const coverFile = formData.get("coverImage") as File | null;
   if (coverFile && coverFile.size > 0) {
     const result = await storeUpload({ businessId: business.id, kind: "cover", file: coverFile });
-    next = setBusinessSingleMedia(business.id, "cover", result.url);
+    next = await setBusinessMedia(business.id, "cover", result.url);
   }
 
   const logoFile = formData.get("logoImage") as File | null;
   if (logoFile && logoFile.size > 0) {
     const result = await storeUpload({ businessId: business.id, kind: "logo", file: logoFile });
-    next = setBusinessSingleMedia(business.id, "logo", result.url);
+    next = await setBusinessMedia(business.id, "logo", result.url);
   }
 
   const bannerFile = formData.get("bannerImage") as File | null;
   if (bannerFile && bannerFile.size > 0) {
     const result = await storeUpload({ businessId: business.id, kind: "banner", file: bannerFile });
-    next = setBusinessSingleMedia(business.id, "banner", result.url);
+    next = await setBusinessMedia(business.id, "banner", result.url);
   }
 
   const galleryFiles = formData.getAll("galleryImages") as File[];
@@ -100,7 +99,7 @@ export async function updateOwnerBusinessAction(
         .filter((file) => file.size > 0)
         .map((file) => storeUpload({ businessId: business.id, kind: "gallery", file }))
     );
-    next = addBusinessMedia(business.id, "gallery", galleryUrls.map((r) => r.url));
+    next = await setBusinessMedia(business.id, "gallery", galleryUrls.map((r) => r.url));
   }
 
   revalidatePath(`/${locale}/directory/businesses/${business.id}/edit`);

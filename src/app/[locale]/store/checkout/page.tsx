@@ -20,7 +20,7 @@ export default async function CheckoutPage({
 
   const dict = await getDictionary(locale as Locale);
   await requireUser(locale as Locale);
-  const products = listStoreProducts();
+  const products = await listStoreProducts();
 
   const ar = locale === "ar";
 

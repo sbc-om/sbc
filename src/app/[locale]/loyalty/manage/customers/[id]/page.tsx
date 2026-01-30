@@ -33,10 +33,10 @@ export default async function LoyaltyManageCustomerDetailPage({
   const ar = locale === "ar";
 
   const user = await requireUser(locale as Locale);
-  const profile = getLoyaltyProfileByUserId(user.id);
-  const settings = getLoyaltySettingsByUserId(user.id) ?? defaultLoyaltySettings(user.id);
+  const profile = await getLoyaltyProfileByUserId(user.id);
+  const settings = (await getLoyaltySettingsByUserId(user.id)) ?? defaultLoyaltySettings(user.id);
 
-  const customer = getLoyaltyCustomerById(id);
+  const customer = await getLoyaltyCustomerById(id);
   if (!customer || customer.userId !== user.id) notFound();
 
   const sp = searchParams ? await searchParams : null;

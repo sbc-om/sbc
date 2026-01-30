@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import type { Locale } from "@/lib/i18n/locales";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getBusinessById } from "@/lib/db/businesses";
-import { getBusinessCardById, setBusinessCardApproval } from "@/lib/db/businessCards";
+import { getBusinessCardById, setBusinessCardApproved } from "@/lib/db/businessCards";
 
 export async function setBusinessCardApprovalAction(
   locale: Locale,
@@ -14,15 +14,15 @@ export async function setBusinessCardApprovalAction(
 ) {
   await requireAdmin(locale);
 
-  const card = getBusinessCardById(cardId);
+  const card = await getBusinessCardById(cardId);
   if (!card) throw new Error("CARD_NOT_FOUND");
 
-  setBusinessCardApproval({ cardId, approved });
+  await setBusinessCardApproved(cardId, approved);
 
   revalidatePath(`/${locale}/admin/business-cards`);
   revalidatePath(`/${locale}/business-card/${cardId}`);
 
-  const business = getBusinessById(card.businessId);
+  const business = await getBusinessById(card.businessId);
   if (business) {
     revalidatePath(`/${locale}/businesses/${business.slug}`);
   }

@@ -1,107 +1,112 @@
 import { nanoid } from "nanoid";
-import { z } from "zod";
 
-import { getLmdb } from "./lmdb";
+import { query, transaction } from "./postgres";
 
 export type ChatConversation = {
   id: string;
-  userId: string;
-  businessId: string;
-  businessSlug: string;
-  updatedAt: string;
+  participantIds: string[];
+  lastMessageAt?: string;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type ChatMessage = {
   id: string;
   conversationId: string;
-  sender: "user";
+  senderId: string;
   text: string;
   createdAt: string;
 };
 
-const userIdSchema = z.string().trim().min(1);
-const businessIdSchema = z.string().trim().min(1);
-const businessSlugSchema = z.string().trim().min(1);
-const textSchema = z.string().trim().min(1).max(2000);
-
-function convKey(userId: string, businessId: string) {
-  return `${userIdSchema.parse(userId)}:${businessIdSchema.parse(businessId)}`;
-}
-
-export function getOrCreateConversation(input: {
-  userId: string;
-  businessId: string;
-  businessSlug: string;
-}): ChatConversation {
-  const { chatConversations } = getLmdb();
-  const id = convKey(input.userId, input.businessId);
-  const existing = chatConversations.get(id) as ChatConversation | undefined;
-  if (existing) return existing;
-
-  const now = new Date().toISOString();
-  const conv: ChatConversation = {
-    id,
-    userId: userIdSchema.parse(input.userId),
-    businessId: businessIdSchema.parse(input.businessId),
-    businessSlug: businessSlugSchema.parse(input.businessSlug),
-    createdAt: now,
-    updatedAt: now,
+function rowToConversation(row: any): ChatConversation {
+  return {
+    id: row.id,
+    participantIds: row.participant_ids || [],
+    lastMessageAt: row.last_message_at?.toISOString(),
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
-  chatConversations.put(id, conv);
-  return conv;
 }
 
-export function listConversationsByUser(userId: string): ChatConversation[] {
-  const { chatConversations } = getLmdb();
-  const uid = userIdSchema.parse(userId);
+function rowToMessage(row: any): ChatMessage {
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    senderId: row.sender_id,
+    text: row.text,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+  };
+}
 
-  const results: ChatConversation[] = [];
-  for (const { value } of chatConversations.getRange()) {
-    const c = value as ChatConversation;
-    if (c.userId === uid) results.push(c);
+export async function getOrCreateConversation(participantIds: string[]): Promise<ChatConversation> {
+  const sorted = [...participantIds].sort();
+  
+  // Try to find existing conversation
+  const existing = await query(`
+    SELECT * FROM chat_conversations WHERE participant_ids = $1
+  `, [sorted]);
+  
+  if (existing.rows.length > 0) {
+    return rowToConversation(existing.rows[0]);
   }
-  results.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  return results;
+
+  // Create new conversation
+  const id = nanoid();
+  const now = new Date();
+
+  const result = await query(`
+    INSERT INTO chat_conversations (id, participant_ids, created_at, updated_at)
+    VALUES ($1, $2, $3, $3)
+    RETURNING *
+  `, [id, sorted, now]);
+
+  return rowToConversation(result.rows[0]);
 }
 
-export function listMessages(conversationId: string): ChatMessage[] {
-  const { chatMessages } = getLmdb();
-  const value = chatMessages.get(conversationId) as ChatMessage[] | undefined;
-  if (!Array.isArray(value)) return [];
-  return value;
+export async function getConversationById(id: string): Promise<ChatConversation | null> {
+  const result = await query(`SELECT * FROM chat_conversations WHERE id = $1`, [id]);
+  return result.rows.length > 0 ? rowToConversation(result.rows[0]) : null;
 }
 
-export function sendUserMessage(input: {
-  userId: string;
-  businessId: string;
-  businessSlug: string;
+export async function getConversationMessages(conversationId: string): Promise<ChatMessage[]> {
+  const result = await query(`
+    SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at ASC
+  `, [conversationId]);
+  return result.rows.map(rowToMessage);
+}
+
+export async function sendMessage(input: {
+  conversationId: string;
+  senderId: string;
   text: string;
-}): ChatMessage {
-  const { chatMessages, chatConversations } = getLmdb();
+}): Promise<ChatMessage> {
+  return transaction(async (client) => {
+    const id = nanoid();
+    const now = new Date();
 
-  const conv = getOrCreateConversation({
-    userId: input.userId,
-    businessId: input.businessId,
-    businessSlug: input.businessSlug,
+    const msgResult = await client.query(`
+      INSERT INTO chat_messages (id, conversation_id, sender_id, text, created_at)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `, [id, input.conversationId, input.senderId, input.text, now]);
+
+    // Update conversation last_message_at
+    await client.query(`
+      UPDATE chat_conversations SET last_message_at = $1, updated_at = $1 WHERE id = $2
+    `, [now, input.conversationId]);
+
+    return rowToMessage(msgResult.rows[0]);
   });
+}
 
-  const msg: ChatMessage = {
-    id: nanoid(),
-    conversationId: conv.id,
-    sender: "user",
-    text: textSchema.parse(input.text),
-    createdAt: new Date().toISOString(),
-  };
+export async function getUserConversations(userId: string): Promise<ChatConversation[]> {
+  const result = await query(`
+    SELECT * FROM chat_conversations WHERE $1 = ANY(participant_ids) ORDER BY last_message_at DESC NULLS LAST
+  `, [userId]);
+  return result.rows.map(rowToConversation);
+}
 
-  const current = listMessages(conv.id);
-  const next = [...current, msg].slice(-300); // keep last 300 msgs per conversation
-  chatMessages.put(conv.id, next);
-
-  chatConversations.put(conv.id, {
-    ...conv,
-    updatedAt: msg.createdAt,
-  });
-
-  return msg;
+export async function deleteConversation(id: string): Promise<boolean> {
+  const result = await query(`DELETE FROM chat_conversations WHERE id = $1`, [id]);
+  return (result.rowCount ?? 0) > 0;
 }

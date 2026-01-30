@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const { label } = bodySchema.parse(body);
 
-  const existing = listUserPasskeys(user.id);
+  const existing = await listUserPasskeys(user.id);
   const options = await generateRegistrationOptions({
     rpName,
     rpID,
@@ -44,12 +44,10 @@ export async function POST(req: Request) {
     })),
   });
 
-  const challenge = createPasskeyChallenge({
+  const challenge = await createPasskeyChallenge({
     challenge: options.challenge,
-    type: "registration",
     userId: user.id,
-    expectedOrigin: origin,
-    expectedRpId: rpID,
+    expiresInMs: 5 * 60 * 1000,
   });
 
   return NextResponse.json({

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { listMessages, sendUserMessage, getOrCreateConversation } from "@/lib/db/chats";
+import { getConversationMessages, sendMessage, getOrCreateConversation } from "@/lib/db/chats";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getBusinessBySlug } from "@/lib/db/businesses";
 
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       conversationId: url.searchParams.get("conversationId"),
     });
 
-    const messages = listMessages(params.conversationId);
+    const messages = await getConversationMessages(params.conversationId);
     return NextResponse.json({ ok: true, messages });
   } catch (error: any) {
     console.error("[GET /api/chat/messages]", error);
@@ -89,22 +89,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = postSchema.parse(body);
 
-    const business = getBusinessBySlug(data.businessSlug);
+    const business = await getBusinessBySlug(data.businessSlug);
     if (!business) {
       return NextResponse.json({ ok: false, error: "Business not found" }, { status: 404 });
     }
 
-    const message = sendUserMessage({
-      userId: user.id,
-      businessId: business.id,
-      businessSlug: business.slug,
-      text: data.text,
-    });
+    // Get or create conversation between user and business owner
+    const participantIds = business.ownerId 
+      ? [user.id, business.ownerId]
+      : [user.id];
+    const conv = await getOrCreateConversation(participantIds);
 
-    const conv = getOrCreateConversation({
-      userId: user.id,
-      businessId: business.id,
-      businessSlug: business.slug,
+    const message = await sendMessage({
+      conversationId: conv.id,
+      senderId: user.id,
+      text: data.text,
     });
 
     return NextResponse.json({ ok: true, message, conversation: conv });

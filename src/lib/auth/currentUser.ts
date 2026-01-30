@@ -10,7 +10,7 @@ export async function getCurrentUser() {
 
   try {
     const payload = await verifyAuthToken(token);
-    const user = getUserById(payload.sub);
+    const user = await getUserById(payload.sub);
     if (!user) return null;
     if (user.approvalStatus && user.approvalStatus !== "approved") return null;
     if (user.isActive === false) return null;

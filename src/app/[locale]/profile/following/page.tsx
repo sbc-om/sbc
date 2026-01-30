@@ -4,7 +4,7 @@ import { IoArrowBack, IoArrowForward } from "react-icons/io5";
 
 import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
-import { getFollowedCategoryIds } from "@/lib/db/follows";
+import { getUserFollowedCategoryIds } from "@/lib/db/follows";
 import { getCategoryById } from "@/lib/db/categories";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
@@ -20,11 +20,11 @@ export default async function ProfileFollowingPage({
   if (!isLocale(locale)) notFound();
 
   const auth = await requireUser(locale as Locale);
-  const followedCategoryIds = getFollowedCategoryIds(auth.id);
+  const followedCategoryIds = await getUserFollowedCategoryIds(auth.id);
   
-  const categories = followedCategoryIds
-    .map(id => getCategoryById(id))
-    .filter((c): c is NonNullable<typeof c> => c !== null);
+  const categories = (await Promise.all(
+    followedCategoryIds.map(id => getCategoryById(id))
+  )).filter((c): c is NonNullable<typeof c> => c !== null);
 
   const t = {
     title: locale === "ar" ? "التصنيفات المتابعة" : "Following Categories",

@@ -21,7 +21,7 @@ export default async function AdminUserEditPage({
 
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
-  const user = getUserById(id);
+  const user = await getUserById(id);
 
   if (!user) notFound();
 

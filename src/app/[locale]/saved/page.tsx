@@ -10,7 +10,7 @@ import {
   hasUserLikedBusiness,
   hasUserSavedBusiness,
   getUserSavedBusinessIds,
-  listBusinessComments,
+  getBusinessComments,
 } from "@/lib/db/businessEngagement";
 import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "../home/actions";
 import { AppPage } from "@/components/AppPage";
@@ -27,29 +27,29 @@ export default async function SavedPage({
   const user = await requireUser(locale as Locale);
 
   // Get saved business IDs
-  const savedBusinessIds = getUserSavedBusinessIds(user.id);
+  const savedBusinessIds = await getUserSavedBusinessIds(user.id);
 
   // Get full business objects
-  const businesses = savedBusinessIds
-    .map((id) => getBusinessById(id))
-    .filter((b) => b !== null);
+  const businesses = (await Promise.all(
+    savedBusinessIds.map((id) => getBusinessById(id))
+  )).filter((b) => b !== null);
 
   // Prepare engagement data for each business
-  const businessesWithEngagement = businesses.map((b) => {
-    const category = b.categoryId ? getCategoryById(b.categoryId) : null;
-    const comments = listBusinessComments(b.id);
+  const businessesWithEngagement = await Promise.all(businesses.map(async (b) => {
+    const category = b.categoryId ? await getCategoryById(b.categoryId) : null;
+    const comments = await getBusinessComments(b.id);
     const approvedComments = comments.filter((c) => c.status === "approved");
 
     return {
       business: b,
       categoryName: category ? (locale === "ar" ? category.name.ar : category.name.en) : undefined,
       categoryIconId: category?.iconId,
-      initialLikeCount: getBusinessLikeCount(b.id),
-      initialLiked: hasUserLikedBusiness(user.id, b.id),
-      initialSaved: hasUserSavedBusiness(user.id, b.id),
+      initialLikeCount: await getBusinessLikeCount(b.id),
+      initialLiked: await hasUserLikedBusiness(user.id, b.id),
+      initialSaved: await hasUserSavedBusiness(user.id, b.id),
       commentCount: approvedComments.length,
     };
-  });
+  }));
 
   return (
     <AppPage>

@@ -1,86 +1,77 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { getLmdb } from "./lmdb";
-import type { ContactMessage } from "./types";
+import { query } from "./postgres";
+import type { ContactMessage, Locale } from "./types";
 
-const idSchema = z.string().trim().min(1);
-const contactMessageInputSchema = z
-  .object({
-    name: z.string().trim().min(2).max(120),
-    email: z.string().trim().email().max(320),
-    subject: z.string().trim().min(2).max(200),
-    message: z.string().trim().min(10).max(4000),
-    locale: z.enum(["en", "ar"]),
-  })
-  .strict();
+const contactMessageSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  email: z.string().email(),
+  subject: z.string().trim().min(1).max(200),
+  message: z.string().trim().min(1).max(5000),
+  locale: z.enum(["en", "ar"]).default("en"),
+});
 
-export type ContactMessageInput = z.infer<typeof contactMessageInputSchema>;
+export type ContactMessageInput = z.infer<typeof contactMessageSchema>;
 
-export function createContactMessage(input: ContactMessageInput): ContactMessage {
-  const { contactMessages } = getLmdb();
-  const data = contactMessageInputSchema.parse(input);
-  const now = new Date().toISOString();
-
-  const msg: ContactMessage = {
-    id: nanoid(12),
-    name: data.name,
-    email: data.email,
-    subject: data.subject,
-    message: data.message,
-    locale: data.locale,
-    isRead: false,
-    createdAt: now,
+function rowToContactMessage(row: any): ContactMessage {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    subject: row.subject,
+    message: row.message,
+    locale: row.locale as Locale,
+    isRead: row.is_read ?? false,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    readAt: row.read_at?.toISOString(),
   };
-
-  contactMessages.put(msg.id, msg);
-  return msg;
 }
 
-export function getContactMessageById(messageId: string): ContactMessage | null {
-  const { contactMessages } = getLmdb();
-  const id = idSchema.safeParse(messageId);
-  if (!id.success) return null;
-  return (contactMessages.get(id.data) as ContactMessage | undefined) ?? null;
+export async function createContactMessage(input: ContactMessageInput): Promise<ContactMessage> {
+  const data = contactMessageSchema.parse(input);
+  const id = nanoid();
+  const now = new Date();
+
+  const result = await query(`
+    INSERT INTO contact_messages (id, name, email, subject, message, locale, is_read, created_at)
+    VALUES ($1, $2, $3, $4, $5, $6, false, $7)
+    RETURNING *
+  `, [id, data.name, data.email, data.subject, data.message, data.locale, now]);
+
+  return rowToContactMessage(result.rows[0]);
 }
 
-export function listContactMessages(): ContactMessage[] {
-  const { contactMessages } = getLmdb();
-  const results: ContactMessage[] = [];
-
-  for (const { value } of contactMessages.getRange({ reverse: true })) {
-    results.push(value as ContactMessage);
-  }
-
-  return results;
+export async function getContactMessageById(id: string): Promise<ContactMessage | null> {
+  const result = await query(`SELECT * FROM contact_messages WHERE id = $1`, [id]);
+  return result.rows.length > 0 ? rowToContactMessage(result.rows[0]) : null;
 }
 
-export function countUnreadContactMessages(): number {
-  const { contactMessages } = getLmdb();
-  let count = 0;
-  for (const { value } of contactMessages.getRange()) {
-    const msg = value as ContactMessage;
-    if (!msg.isRead) count += 1;
-  }
-  return count;
+export async function listContactMessages(): Promise<ContactMessage[]> {
+  const result = await query(`SELECT * FROM contact_messages ORDER BY created_at DESC`);
+  return result.rows.map(rowToContactMessage);
 }
 
-export function setContactMessageRead(input: {
-  messageId: string;
-  isRead: boolean;
-}): ContactMessage {
-  const { contactMessages } = getLmdb();
-  const messageId = idSchema.parse(input.messageId);
+export async function listUnreadContactMessages(): Promise<ContactMessage[]> {
+  const result = await query(`SELECT * FROM contact_messages WHERE is_read = false ORDER BY created_at DESC`);
+  return result.rows.map(rowToContactMessage);
+}
 
-  const existing = contactMessages.get(messageId) as ContactMessage | undefined;
-  if (!existing) throw new Error("MESSAGE_NOT_FOUND");
+export async function markContactMessageAsRead(id: string): Promise<ContactMessage> {
+  const result = await query(`
+    UPDATE contact_messages SET is_read = true, read_at = $1 WHERE id = $2 RETURNING *
+  `, [new Date(), id]);
 
-  const next: ContactMessage = {
-    ...existing,
-    isRead: input.isRead,
-    readAt: input.isRead ? new Date().toISOString() : undefined,
-  };
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToContactMessage(result.rows[0]);
+}
 
-  contactMessages.put(messageId, next);
-  return next;
+export async function deleteContactMessage(id: string): Promise<boolean> {
+  const result = await query(`DELETE FROM contact_messages WHERE id = $1`, [id]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function getUnreadCount(): Promise<number> {
+  const result = await query(`SELECT COUNT(*) FROM contact_messages WHERE is_read = false`);
+  return parseInt(result.rows[0].count);
 }

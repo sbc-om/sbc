@@ -6,14 +6,16 @@ import type { Locale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getBusinessById } from "@/lib/db/businesses";
 import {
-  approveBusinessComment,
   createBusinessComment,
-  deleteBusinessComment,
-  rejectBusinessComment,
-  toggleBusinessLike,
+  deleteComment,
+  likeBusiness,
+  unlikeBusiness,
+  hasUserLikedBusiness,
+  getBusinessLikeCount,
+  moderateComment,
 } from "@/lib/db/businessEngagement";
 
-function canModerate(user: { id: string; role: string }, business: ReturnType<typeof getBusinessById>) {
+function canModerate(user: { id: string; role: string }, business: Awaited<ReturnType<typeof getBusinessById>>) {
   if (!user || !business) return false;
   if (user.role === "admin") return true;
   return !!business.ownerId && business.ownerId === user.id;
@@ -21,14 +23,20 @@ function canModerate(user: { id: string; role: string }, business: ReturnType<ty
 
 export async function toggleBusinessLikeAction(locale: Locale, businessId: string, businessSlug: string) {
   const user = await requireUser(locale);
-  const result = toggleBusinessLike({ userId: user.id, businessId });
+  const isLiked = await hasUserLikedBusiness(user.id, businessId);
+  if (isLiked) {
+    await unlikeBusiness(user.id, businessId);
+  } else {
+    await likeBusiness(user.id, businessId);
+  }
+  const count = await getBusinessLikeCount(businessId);
   revalidatePath(`/${locale}/explorer/${businessSlug}`);
-  return result;
+  return { liked: !isLiked, count };
 }
 
 export async function createBusinessCommentAction(locale: Locale, businessId: string, businessSlug: string, text: string) {
   const user = await requireUser(locale);
-  const comment = createBusinessComment({ businessId, userId: user.id, text });
+  const comment = await createBusinessComment({ businessId, userId: user.id, text });
   revalidatePath(`/${locale}/explorer/${businessSlug}`);
   return comment;
 }
@@ -40,10 +48,10 @@ export async function approveBusinessCommentAction(
   commentId: string,
 ) {
   const user = await requireUser(locale);
-  const business = getBusinessById(businessId);
+  const business = await getBusinessById(businessId);
   if (!canModerate(user, business)) throw new Error("UNAUTHORIZED");
 
-  const updated = approveBusinessComment({ businessId, commentId, moderatedByUserId: user.id });
+  const updated = await moderateComment(commentId, "approved", user.id);
   revalidatePath(`/${locale}/explorer/${businessSlug}`);
   return updated;
 }
@@ -55,10 +63,10 @@ export async function rejectBusinessCommentAction(
   commentId: string,
 ) {
   const user = await requireUser(locale);
-  const business = getBusinessById(businessId);
+  const business = await getBusinessById(businessId);
   if (!canModerate(user, business)) throw new Error("UNAUTHORIZED");
 
-  const updated = rejectBusinessComment({ businessId, commentId, moderatedByUserId: user.id });
+  const updated = await moderateComment(commentId, "rejected", user.id);
   revalidatePath(`/${locale}/explorer/${businessSlug}`);
   return updated;
 }
@@ -70,10 +78,10 @@ export async function deleteBusinessCommentAction(
   commentId: string,
 ) {
   const user = await requireUser(locale);
-  const business = getBusinessById(businessId);
+  const business = await getBusinessById(businessId);
   if (!canModerate(user, business)) throw new Error("UNAUTHORIZED");
 
-  deleteBusinessComment({ businessId, commentId });
+  await deleteComment(commentId);
   revalidatePath(`/${locale}/explorer/${businessSlug}`);
   return { ok: true };
 }

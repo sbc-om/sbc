@@ -134,24 +134,25 @@ function hexToRgb(hex: string): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-function prepareLoyaltyCardData(input: {
+async function prepareLoyaltyCardData(input: {
   cardId: string;
   origin?: string;
 }) {
-  const card = getLoyaltyCardById(input.cardId);
+  const card = await getLoyaltyCardById(input.cardId);
   if (!card || card.status !== "active") throw new Error("CARD_NOT_FOUND");
 
-  const customer = getLoyaltyCustomerById(card.customerId);
+  const customer = await getLoyaltyCustomerById(card.customerId);
   if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
 
-  const profile = getLoyaltyProfileByUserId(card.userId);
-  const settings = getLoyaltySettingsByUserId(card.userId) ?? defaultLoyaltySettings(card.userId);
+  const profile = await getLoyaltyProfileByUserId(card.userId);
+  const settings = await getLoyaltySettingsByUserId(card.userId) ?? defaultLoyaltySettings(card.userId);
 
-  const latestMessage = listLoyaltyMessagesForCustomer({
+  const messages = await listLoyaltyMessagesForCustomer({
     userId: card.userId,
     customerId: card.customerId,
     limit: 1,
-  })[0];
+  });
+  const latestMessage = messages[0];
 
   const businessName = profile?.businessName ?? "SBC";
   const programId = `loyalty-${card.userId}`;
@@ -196,18 +197,18 @@ function prepareLoyaltyCardData(input: {
   };
 }
 
-function prepareBusinessCardData(input: {
+async function prepareBusinessCardData(input: {
   cardId: string;
   origin?: string;
   publicCardUrl?: string;
 }) {
-  const card = getBusinessCardById(input.cardId);
+  const card = await getBusinessCardById(input.cardId);
   if (!card || !card.isPublic) throw new Error("CARD_NOT_FOUND");
 
-  const business = getBusinessById(card.businessId);
+  const business = await getBusinessById(card.businessId);
   if (!business) throw new Error("BUSINESS_NOT_FOUND");
 
-  const settings = getLoyaltySettingsByUserId(card.ownerId) ?? defaultLoyaltySettings(card.ownerId);
+  const settings = await getLoyaltySettingsByUserId(card.ownerId) ?? defaultLoyaltySettings(card.ownerId);
   const businessName = business.name?.en || business.name?.ar || "SBC";
   const programId = `bizcard-${card.businessId}`;
   const design = settings.cardDesign;
@@ -360,8 +361,13 @@ function loadAppleCertificates(config: AppleAdapterConfig): {
     const certBags = p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag];
     if (!certBags || !certBags.length) throw new Error("APPLE_CERT_NOT_FOUND_IN_P12");
 
-    const privateKeyPem = forge.pki.privateKeyToPem(keyBags[0].key);
-    const certPem = forge.pki.certificateToPem(certBags[0].cert);
+    const privateKey = keyBags[0].key;
+    if (!privateKey) throw new Error("APPLE_CERT_KEY_IS_UNDEFINED");
+    const privateKeyPem = forge.pki.privateKeyToPem(privateKey);
+    
+    const cert = certBags[0].cert;
+    if (!cert) throw new Error("APPLE_CERT_IS_UNDEFINED");
+    const certPem = forge.pki.certificateToPem(cert);
 
     return {
       wwdr,
@@ -447,7 +453,7 @@ function populateAppleTemplate(template: Record<string, unknown>, passData: Pass
   }
 
   if (Array.isArray(populated.barcodes) && populated.barcodes.length > 0) {
-    const barcodeValue = passData.memberId || passData.id;
+    const barcodeValue = passData.type === "child" ? (passData.memberId || passData.id) : passData.id;
     const first = populated.barcodes[0];
     if (first && typeof first === "object") {
       populated.barcodes[0] = { ...first, message: barcodeValue };
@@ -693,20 +699,21 @@ export async function getSbcwalletApplePkpassForLoyaltyCard(input: {
   publicCardUrl?: string;
   webServiceUrl?: string;
 }): Promise<Buffer> {
-  const card = getLoyaltyCardById(input.cardId);
+  const card = await getLoyaltyCardById(input.cardId);
   if (!card || card.status !== "active") throw new Error("CARD_NOT_FOUND");
 
-  const customer = getLoyaltyCustomerById(card.customerId);
+  const customer = await getLoyaltyCustomerById(card.customerId);
   if (!customer) throw new Error("CUSTOMER_NOT_FOUND");
 
-  const profile = getLoyaltyProfileByUserId(card.userId);
-  const settings = getLoyaltySettingsByUserId(card.userId) ?? defaultLoyaltySettings(card.userId);
+  const profile = await getLoyaltyProfileByUserId(card.userId);
+  const settings = await getLoyaltySettingsByUserId(card.userId) ?? defaultLoyaltySettings(card.userId);
 
-  const latestMessage = listLoyaltyMessagesForCustomer({
+  const messages = await listLoyaltyMessagesForCustomer({
     userId: card.userId,
     customerId: card.customerId,
     limit: 1,
-  })[0];
+  });
+  const latestMessage = messages[0];
 
   const programId = `loyalty-${card.userId}`;
 
@@ -787,7 +794,7 @@ export async function getSbcwalletApplePkpassForBusinessCard(input: {
   origin?: string;
   webServiceUrl?: string;
 }): Promise<Buffer> {
-  const data = prepareBusinessCardData({
+  const data = await prepareBusinessCardData({
     cardId: input.cardId,
     origin: input.origin,
     publicCardUrl: input.publicCardUrl,
@@ -860,7 +867,7 @@ export async function getSbcwalletGoogleSaveUrlForLoyaltyCard(input: {
     googleBarcodeType,
     links,
     logoUrl,
-  } = prepareLoyaltyCardData({ cardId: input.cardId, origin: input.origin });
+  } = await prepareLoyaltyCardData({ cardId: input.cardId, origin: input.origin });
 
   const profileConfig = getProfile("loyalty");
   const adapter = getGoogleAdapter();
@@ -913,7 +920,7 @@ export async function getSbcwalletGoogleSaveUrlForBusinessCard(input: {
   origin?: string;
   publicCardUrl?: string;
 }): Promise<{ saveUrl: string }> {
-  const data = prepareBusinessCardData({
+  const data = await prepareBusinessCardData({
     cardId: input.cardId,
     origin: input.origin,
     publicCardUrl: input.publicCardUrl,
@@ -983,7 +990,7 @@ export async function updateGoogleWalletLoyaltyPoints(input: {
     googleBarcodeType,
     links,
     logoUrl,
-  } = prepareLoyaltyCardData({ cardId: input.cardId });
+  } = await prepareLoyaltyCardData({ cardId: input.cardId });
 
   const profileConfig = getProfile("loyalty");
   const adapter = getGoogleAdapter();

@@ -22,10 +22,10 @@ export default async function AdminEditBusinessPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
 
-  const categories = listCategories();
-  const business = getBusinessById(id);
+  const categories = await listCategories();
+  const business = await getBusinessById(id);
   if (!business) notFound();
-  const users = listUsers();
+  const users = await listUsers();
 
   const title = locale === "ar" ? "تعديل النشاط التجاري" : "Edit Business";
 

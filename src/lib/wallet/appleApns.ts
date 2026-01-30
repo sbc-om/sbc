@@ -102,7 +102,7 @@ export async function notifyAppleWalletPassUpdated(input: { cardId: string }): P
   if (!isAppleApnsConfigured()) return { attempted: 0, ok: 0, failed: 0 };
 
   const passTypeIdentifier = getApplePassTypeIdentifier();
-  const tokens = listAppleWalletPushTokensForSerial({ passTypeIdentifier, serialNumber: input.cardId });
+  const tokens = await listAppleWalletPushTokensForSerial(passTypeIdentifier, input.cardId);
 
   if (!tokens.length) return { attempted: 0, ok: 0, failed: 0 };
 

@@ -21,8 +21,8 @@ export default async function ExplorerPage({
   const user = await getCurrentUser();
 
   const dict = await getDictionary(locale as Locale);
-  const businesses = listBusinesses({ locale: locale as Locale });
-  const categories = listCategories({ locale: locale as Locale });
+  const businesses = await listBusinesses();
+  const categories = await listCategories();
 
   const Wrapper = user ? AppPage : PublicPage;
   const detailsBasePath = user ? "/explorer" : "/businesses";

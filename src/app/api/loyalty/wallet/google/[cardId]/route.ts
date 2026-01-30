@@ -16,12 +16,12 @@ export async function GET(
 ) {
   const { cardId } = await params;
 
-  const card = getLoyaltyCardById(cardId);
+  const card = await getLoyaltyCardById(cardId);
   if (!card || card.status !== "active") {
     return new Response("Not found", { status: 404 });
   }
 
-  const profile = getLoyaltyProfileByUserId(card.userId);
+  const profile = await getLoyaltyProfileByUserId(card.userId);
 
   if (!isEnabled()) {
     return Response.json(

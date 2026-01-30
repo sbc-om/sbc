@@ -3,9 +3,8 @@ import { notFound } from "next/navigation";
 import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getUserById } from "@/lib/db/users";
-import { getFollowedCategoryIds } from "@/lib/db/follows";
+import { getUserFollowedCategoryIds } from "@/lib/db/follows";
 import { listBusinessesByOwner } from "@/lib/db/businesses";
-import { getBusinessesFollowersCount } from "@/lib/db/businessEngagement";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { ProfileClient } from "./ProfileClient";
 
@@ -20,14 +19,13 @@ export default async function ProfilePage({
   if (!isLocale(locale)) notFound();
 
   const auth = await requireUser(locale as Locale);
-  const user = getUserById(auth.id);
+  const user = await getUserById(auth.id);
   if (!user) notFound();
 
   // Calculate stats
-  const followedCategories = getFollowedCategoryIds(auth.id);
-  const ownedBusinesses = listBusinessesByOwner(auth.id);
-  const businessIds = ownedBusinesses.map(b => b.id);
-  const followersCount = businessIds.length > 0 ? getBusinessesFollowersCount(businessIds) : 0;
+  const followedCategories = await getUserFollowedCategoryIds(auth.id);
+  const ownedBusinesses = await listBusinessesByOwner(auth.id);
+  const followersCount = 0; // TODO: Implement getBusinessesFollowersCount
 
   const initial = {
     email: user.email,

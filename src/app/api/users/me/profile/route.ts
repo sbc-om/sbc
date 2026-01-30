@@ -7,7 +7,7 @@ export async function GET() {
   const auth = await getCurrentUser();
   if (!auth) return new Response("Unauthorized", { status: 401 });
 
-  const user = getUserById(auth.id);
+  const user = await getUserById(auth.id);
   if (!user) return new Response("Not found", { status: 404 });
 
   return Response.json({
@@ -43,13 +43,13 @@ export async function PATCH(req: Request) {
       email?: string | null;
       phone?: string | null;
     };
-    const next = updateUserProfile(auth.id, {
+    const next = await updateUserProfile(auth.id, {
       displayName: typeof body.displayName === "undefined" ? undefined : body.displayName,
       bio: typeof body.bio === "undefined" ? undefined : body.bio,
       fullName: typeof body.fullName === "undefined" ? undefined : body.fullName,
     });
 
-    const nextWithContact = updateUserContact(auth.id, {
+    const nextWithContact = await updateUserContact(auth.id, {
       email: typeof body.email === "undefined" ? undefined : body.email,
       phone: typeof body.phone === "undefined" ? undefined : body.phone,
     });

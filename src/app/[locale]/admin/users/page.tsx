@@ -20,7 +20,7 @@ export default async function AdminUsersPage({
   const currentUser = await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
 
-  const users = listUsers();
+  const users = await listUsers();
 
   const title = dict.nav.users ?? (locale === "ar" ? "المستخدمون" : "Users");
 

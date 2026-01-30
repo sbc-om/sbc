@@ -8,6 +8,7 @@ import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { buttonVariants } from "@/components/ui/Button";
 import { EditProductForm } from "./EditProductForm";
+import type { StoreProduct } from "@/lib/store/types";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,7 @@ export default async function EditProductPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
 
-  const product = getProductById(id);
+  const product = await getProductById(id);
   if (!product) notFound();
 
   const ar = locale === "ar";
@@ -47,7 +48,7 @@ export default async function EditProductPage({
       </div>
 
       <div className="sbc-card p-6">
-        <EditProductForm product={product} locale={locale as Locale} />
+        <EditProductForm product={product as unknown as StoreProduct} locale={locale as Locale} />
       </div>
     </AppPage>
   );

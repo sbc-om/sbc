@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listConversationsByUser } from "@/lib/db/chats";
+import { getUserConversations } from "@/lib/db/chats";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { getBusinessById } from "@/lib/db/businesses";
 
 /**
  * @swagger
@@ -23,26 +22,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const conversations = listConversationsByUser(user.id);
+    const conversations = await getUserConversations(user.id);
     
-    // Enrich with business data
-    const enriched = conversations.map((conv) => {
-      const business = getBusinessById(conv.businessId);
-      return {
-        ...conv,
-        business: business
-          ? {
-              id: business.id,
-              slug: business.slug,
-              name: business.name,
-              category: business.category,
-              media: business.media,
-            }
-          : null,
-      };
-    });
-
-    return NextResponse.json({ ok: true, conversations: enriched });
+    // Return conversations as-is (participantIds-based model)
+    return NextResponse.json({ ok: true, conversations });
   } catch (error) {
     console.error("[GET /api/chat/conversations]", error);
     return NextResponse.json(

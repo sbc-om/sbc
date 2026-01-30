@@ -39,7 +39,7 @@ export default async function AdminEditCategoryPage({
 
   await requireAdmin(locale as Locale);
 
-  const category = getCategoryById(id);
+  const category = await getCategoryById(id);
   if (!category) notFound();
 
   const title = locale === "ar" ? "تعديل تصنيف" : "Edit category";

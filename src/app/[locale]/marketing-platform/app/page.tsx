@@ -23,8 +23,8 @@ export default async function MarketingAppPage({
 
   const ar = locale === "ar";
 
-  const sub = getProgramSubscriptionByUser(user.id, "marketing");
-  const active = isProgramSubscriptionActive(sub);
+  const sub = await getProgramSubscriptionByUser(user.id);
+  const active = await isProgramSubscriptionActive(user.id);
 
   return (
     <AppPage>

@@ -3,7 +3,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getBusinessBySlug, getBusinessByUsername } from "@/lib/db/businesses";
-import { getOrCreateConversation, listMessages } from "@/lib/db/chats";
+import { getOrCreateConversation, getConversationMessages } from "@/lib/db/chats";
 import { ClientChatPage } from "./ClientChatPage";
 
 export default async function ChatConversationPage({
@@ -16,22 +16,19 @@ export default async function ChatConversationPage({
 
   const user = await requireUser(locale as Locale);
   const business = slug.startsWith("@")
-    ? getBusinessByUsername(slug)
-    : getBusinessBySlug(slug);
+    ? await getBusinessByUsername(slug)
+    : await getBusinessBySlug(slug);
   if (!business) notFound();
 
-  const conv = getOrCreateConversation({
-    userId: user.id,
-    businessId: business.id,
-    businessSlug: business.slug,
-  });
+  const conv = await getOrCreateConversation([user.id, business.id]);
 
-  const messages = listMessages(conv.id);
+  const messages = await getConversationMessages(conv.id);
 
   return (
     <ClientChatPage
       locale={locale}
       businessSlug={business.slug}
+      userId={user.id}
       business={{
         id: business.id,
         slug: business.slug,

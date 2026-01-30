@@ -39,7 +39,7 @@ export default async function StorePage({
   const sp = await searchParams;
   const q = (sp.q ?? "").trim().toLowerCase();
 
-  const products = listStoreProducts().filter((p) => {
+  const products = (await listStoreProducts()).filter((p) => {
     if (!q) return true;
     const t = getStoreProductText(p, locale as Locale);
     return (

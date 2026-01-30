@@ -20,10 +20,10 @@ export default async function BusinessCardEditPage({
   if (!isLocale(locale)) notFound();
 
   const user = await requireUser(locale as Locale);
-  const business = getBusinessById(id);
+  const business = await getBusinessById(id);
   if (!business || business.ownerId !== user.id) notFound();
 
-  const card = getBusinessCardById(cardId);
+  const card = await getBusinessCardById(cardId);
   if (!card || card.businessId !== business.id) notFound();
 
   const ar = locale === "ar";

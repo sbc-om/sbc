@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
-import { listAllBusinessRequests } from "@/lib/db/businessRequests";
+import { listBusinessRequests } from "@/lib/db/businessRequests";
 import { listUsers, type UserListItem } from "@/lib/db/users";
 import { listCategories } from "@/lib/db/categories";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -24,9 +24,9 @@ export default async function AdminRequestsPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
 
-  const requests = listAllBusinessRequests();
-  const users = listUsers();
-  const categories = listCategories();
+  const requests = await listBusinessRequests();
+  const users = await listUsers();
+  const categories = await listCategories();
 
   const usersById = new Map(users.map((u) => [u.id, u] as const));
   const categoriesById = new Map(categories.map((c) => [c.id, c] as const));
@@ -92,7 +92,7 @@ export default async function AdminRequestsPage({
           </h2>
           <div className="grid gap-4">
             {pendingRequests.map((req) => {
-              const user = usersById.get(req.userId);
+              const user = req.userId ? usersById.get(req.userId) : undefined;
               const category = req.categoryId ? categoriesById.get(req.categoryId) : null;
               return (
                 <RequestCard
@@ -116,7 +116,7 @@ export default async function AdminRequestsPage({
           </h2>
           <div className="grid gap-4">
             {approvedRequests.map((req) => {
-              const user = usersById.get(req.userId);
+              const user = req.userId ? usersById.get(req.userId) : undefined;
               const category = req.categoryId ? categoriesById.get(req.categoryId) : null;
               return (
                 <RequestCard
@@ -140,7 +140,7 @@ export default async function AdminRequestsPage({
           </h2>
           <div className="grid gap-4">
             {rejectedRequests.map((req) => {
-              const user = usersById.get(req.userId);
+              const user = req.userId ? usersById.get(req.userId) : undefined;
               const category = req.categoryId ? categoriesById.get(req.categoryId) : null;
               return (
                 <RequestCard

@@ -37,14 +37,14 @@ export default async function LoyaltyCardPublicPage({
   await getDictionary(locale as Locale);
   const ar = locale === "ar";
 
-  const card = getLoyaltyCardById(id);
+  const card = await getLoyaltyCardById(id);
   if (!card || card.status !== "active") notFound();
 
-  const customer = getLoyaltyCustomerById(card.customerId);
-  const profile = getLoyaltyProfileByUserId(card.userId);
-  const settings = getLoyaltySettingsByUserId(card.userId) ?? defaultLoyaltySettings(card.userId);
+  const customer = await getLoyaltyCustomerById(card.customerId);
+  const profile = await getLoyaltyProfileByUserId(card.userId);
+  const settings = (await getLoyaltySettingsByUserId(card.userId)) ?? defaultLoyaltySettings(card.userId);
 
-  const messages = listLoyaltyMessagesForCustomer({
+  const messages = await listLoyaltyMessagesForCustomer({
     userId: card.userId,
     customerId: card.customerId,
     limit: 10,

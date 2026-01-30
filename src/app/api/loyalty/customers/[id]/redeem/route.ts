@@ -1,5 +1,5 @@
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { redeemLoyaltyCustomerPoints } from "@/lib/db/loyalty";
+import { redeemLoyaltyCustomerPoints, getLoyaltySettings, getLoyaltyCustomerById, defaultLoyaltySettings } from "@/lib/db/loyalty";
 import { updateWalletCardPoints } from "@/lib/wallet/walletUpdates";
 
 export const runtime = "nodejs";
@@ -14,10 +14,17 @@ export async function POST(
   const { id } = await params;
 
   try {
-    const { customer, settings } = redeemLoyaltyCustomerPoints({
-      userId: auth.id,
-      customerId: id,
-    });
+    // First get customer to find the owner's userId
+    const existingCustomer = await getLoyaltyCustomerById(id);
+    if (!existingCustomer) {
+      return Response.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
+    }
+
+    // Get settings for the business owner
+    const settings = await getLoyaltySettings(existingCustomer.userId) ?? defaultLoyaltySettings(existingCustomer.userId);
+
+    // Redeem points
+    const customer = await redeemLoyaltyCustomerPoints(id, settings.pointsDeductPerRedemption);
 
     // Professional wallet update: Update both Apple & Google Wallet passes
     // This runs asynchronously and provides detailed results

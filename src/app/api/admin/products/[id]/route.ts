@@ -5,7 +5,7 @@ import {
   getProductById, 
   updateProduct, 
   deleteProduct, 
-  toggleProductStatus,
+  setProductActive,
   type ProductInput 
 } from "@/lib/db/products";
 
@@ -20,7 +20,7 @@ export async function GET(
     await requireAdmin("en");
     const { id } = await params;
     
-    const product = getProductById(id);
+    const product = await getProductById(id);
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
@@ -54,17 +54,14 @@ export async function PATCH(
     if (body.name !== undefined) input.name = body.name;
     if (body.description !== undefined) input.description = body.description;
     if (body.price !== undefined) {
-      input.price = {
-        amount: Number(body.price.amount),
-        currency: body.price.currency,
-        interval: body.price.interval,
-      };
+      input.price = Number(body.price.amount ?? body.price);
     }
+    if (body.currency !== undefined) input.currency = body.currency;
     if (body.badges !== undefined) input.badges = body.badges;
     if (body.features !== undefined) input.features = body.features;
     if (body.isActive !== undefined) input.isActive = body.isActive;
     
-    const product = updateProduct(id, input);
+    const product = await updateProduct(id, input);
     
     return NextResponse.json({ product });
   } catch (err: unknown) {
@@ -91,7 +88,7 @@ export async function DELETE(
     await requireAdmin("en");
     const { id } = await params;
     
-    deleteProduct(id);
+    await deleteProduct(id);
     
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
@@ -115,7 +112,12 @@ export async function POST(
     await requireAdmin("en");
     const { id } = await params;
     
-    const product = toggleProductStatus(id);
+    // Get current product to determine new status
+    const current = await getProductById(id);
+    if (!current) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
+    }
+    const product = await setProductActive(id, !current.isActive);
     
     return NextResponse.json({ product });
   } catch (err: unknown) {

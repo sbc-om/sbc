@@ -12,7 +12,7 @@ import {
 
 import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
-import { listProgramSubscriptionsByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
+import { listProgramSubscriptionsByUser, hasActiveSubscription } from "@/lib/db/subscriptions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getStoreProductText, listStoreProducts } from "@/lib/store/products";
@@ -31,8 +31,8 @@ export default async function DashboardPage({
   const dict = await getDictionary(locale as Locale);
 
   const ar = locale === "ar";
-  const subscriptions = listProgramSubscriptionsByUser(user.id);
-  const products = listStoreProducts();
+  const subscriptions = await listProgramSubscriptionsByUser(user.id);
+  const products = await listStoreProducts();
 
   const df = new Intl.DateTimeFormat(ar ? "ar-OM" : "en-OM", {
     year: "numeric",
@@ -109,11 +109,11 @@ export default async function DashboardPage({
       </div>
 
       <div className="mt-8 flex flex-col gap-4">
-        {(Object.keys(programMeta) as Array<keyof typeof programMeta>).map((programId) => {
+        {await Promise.all((Object.keys(programMeta) as Array<keyof typeof programMeta>).map(async (programId) => {
           const meta = programMeta[programId];
           const isMarketingDisabled = programId === 'marketing';
           const sub = subscriptions.find((s) => s.program === programId) ?? null;
-          const active = isProgramSubscriptionActive(sub);
+          const active = await hasActiveSubscription(user.id, programId);
           const daysLeft = sub ? remainingDays(sub.expiresAt) : 0;
 
           const product = sub
@@ -241,7 +241,7 @@ export default async function DashboardPage({
               </div>
             </section>
           );
-        })}
+        }))}
       </div>
     </AppPage>
   );

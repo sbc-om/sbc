@@ -5,9 +5,9 @@ import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { listBusinesses } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
-import { listAllBusinessRequests } from "@/lib/db/businessRequests";
+import { listBusinessRequests } from "@/lib/db/businessRequests";
 import { listAllBusinessCards } from "@/lib/db/businessCards";
-import { countUnreadContactMessages } from "@/lib/db/contactMessages";
+import { listUnreadContactMessages } from "@/lib/db/contactMessages";
 import { listLoyaltyProfiles } from "@/lib/db/loyalty";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -26,12 +26,12 @@ export default async function AdminPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
 
-  const businesses = listBusinesses({ includeUnverified: true });
-  const categories = listCategories();
-  const requests = listAllBusinessRequests();
-  const loyaltyProfiles = listLoyaltyProfiles();
-  const businessCards = listAllBusinessCards();
-  const unreadContactMessages = countUnreadContactMessages();
+  const businesses = await listBusinesses();
+  const categories = await listCategories();
+  const requests = await listBusinessRequests();
+  const loyaltyProfiles = await listLoyaltyProfiles();
+  const businessCards = await listAllBusinessCards();
+  const unreadContactMessages = (await listUnreadContactMessages()).length;
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
   const pendingCards = businessCards.filter((c) => !(c.isApproved ?? false));

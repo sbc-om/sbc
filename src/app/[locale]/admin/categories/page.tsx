@@ -53,7 +53,7 @@ export default async function AdminCategoriesPage({
 
   await requireAdmin(locale as Locale);
 
-  const cats = listCategories();
+  const cats = await listCategories();
   const sp = (await searchParams) ?? {};
   const error = sp.error ? decodeURIComponent(sp.error) : null;
 

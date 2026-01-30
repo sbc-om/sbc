@@ -18,9 +18,9 @@ export default async function AdminPushPage({
 
   await requireAdmin(locale as Locale);
 
-  const users = listUsers();
+  const users = await listUsers();
   const usersById = new Map(users.map((u) => [u.id, u] as const));
-  const subs = listAllUserPushSubscriptions();
+  const subs = await listAllUserPushSubscriptions();
 
   const stats = new Map<string, { count: number; lastUpdatedAt: string }>();
   for (const sub of subs) {

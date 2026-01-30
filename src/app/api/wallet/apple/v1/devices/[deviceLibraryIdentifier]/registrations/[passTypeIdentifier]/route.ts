@@ -28,10 +28,10 @@ export async function GET(
   const authHeader = (await headers()).get("authorization");
   if (!authHeader) return new Response("Unauthorized", { status: 401 });
 
-  const registrations = listAppleWalletRegistrationsForDevice({
+  const registrations = await listAppleWalletRegistrationsForDevice(
     deviceLibraryIdentifier,
-    passTypeIdentifier,
-  });
+    passTypeIdentifier
+  );
 
   const authorized = registrations.some((r) => {
     const token = buildAppleWalletAuthToken({ serialNumber: r.serialNumber, passTypeIdentifier });
@@ -47,7 +47,7 @@ export async function GET(
   let lastUpdatedMs: number | null = null;
 
   for (const reg of registrations) {
-    const card = getLoyaltyCardById(reg.serialNumber);
+    const card = await getLoyaltyCardById(reg.serialNumber);
     if (!card || card.status !== "active") continue;
 
     const updatedAt = Date.parse(String(card.updatedAt ?? card.createdAt ?? new Date().toISOString()));

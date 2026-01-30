@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/Button";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getBusinessById } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
-import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
+import { getProgramSubscriptionByUser, hasActiveSubscription } from "@/lib/db/subscriptions";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import Link from "next/link";
 import { OwnerEditBusinessForm } from "./OwnerEditBusinessForm";
@@ -22,16 +22,16 @@ export default async function DirectoryBusinessEditPage({
 
   const user = await requireUser(locale as Locale);
 
-  const sub = getProgramSubscriptionByUser(user.id, "directory");
-  if (!isProgramSubscriptionActive(sub)) {
+  const sub = await getProgramSubscriptionByUser(user.id);
+  if (!(await hasActiveSubscription(user.id, "directory"))) {
     redirect(`/${locale}/directory`);
   }
 
-  const business = getBusinessById(id);
+  const business = await getBusinessById(id);
   if (!business) notFound();
   if (!business.ownerId || business.ownerId !== user.id) notFound();
 
-  const categories = listCategories();
+  const categories = await listCategories();
 
   const ar = locale === "ar";
   const businessName = ar ? business.name.ar : business.name.en;

@@ -22,8 +22,8 @@ export default async function AdminLoyaltyPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
 
-  const profiles = listLoyaltyProfiles();
-  const users = listUsers();
+  const profiles = await listLoyaltyProfiles();
+  const users = await listUsers();
   const usersById = new Map(users.map((u) => [u.id, u] as const));
 
   const ar = locale === "ar";

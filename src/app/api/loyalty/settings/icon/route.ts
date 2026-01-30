@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     validateUserImageUpload({ kind: "loyalty-point-icon", file });
 
-    const current = getLoyaltySettingsByUserId(auth.id) ?? defaultLoyaltySettings(auth.id);
+    const current = (await getLoyaltySettingsByUserId(auth.id)) ?? defaultLoyaltySettings(auth.id);
     const previousUrl = current.pointsIconMode === "custom" ? current.pointsIconUrl ?? null : null;
 
     const stored = await storeUserUpload({
@@ -41,12 +41,9 @@ export async function POST(req: Request) {
       file,
     });
 
-    const next = upsertLoyaltySettings({
-      userId: auth.id,
-      settings: {
-        pointsIconMode: "custom",
-        pointsIconUrl: stored.url,
-      },
+    const next = await upsertLoyaltySettings(auth.id, {
+      pointsIconMode: "custom",
+      pointsIconUrl: stored.url,
     });
 
     // Best-effort delete previous icon file
@@ -73,7 +70,7 @@ export async function DELETE() {
   if (!auth) return new Response("Unauthorized", { status: 401 });
 
   try {
-    const current = getLoyaltySettingsByUserId(auth.id);
+    const current = await getLoyaltySettingsByUserId(auth.id);
     const previousUrl =
       current && current.pointsIconMode === "custom" ? current.pointsIconUrl ?? null : null;
 
@@ -84,12 +81,9 @@ export async function DELETE() {
       await fs.unlink(`${diskPath}.json`).catch(() => {});
     }
 
-    const next = upsertLoyaltySettings({
-      userId: auth.id,
-      settings: {
-        pointsIconMode: "logo",
-        pointsIconUrl: undefined,
-      },
+    const next = await upsertLoyaltySettings(auth.id, {
+      pointsIconMode: "logo",
+      pointsIconUrl: undefined,
     });
 
     return Response.json({ ok: true, settings: next });

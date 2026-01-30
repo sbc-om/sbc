@@ -3,7 +3,7 @@ import { z } from "zod";
 import { verifyRegistrationResponse } from "@simplewebauthn/server";
 
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { bufferToBase64Url } from "@/lib/auth/passkeyConfig";
+import { bufferToBase64Url, resolvePasskeyOrigin, resolvePasskeyRpId } from "@/lib/auth/passkeyConfig";
 import { addPasskeyCredential, consumePasskeyChallenge, listUserPasskeys } from "@/lib/db/passkeys";
 
 export const runtime = "nodejs";
@@ -23,16 +23,20 @@ export async function POST(req: Request) {
   const body = await req.json();
   const { requestId, response, label } = bodySchema.parse(body);
 
-  const challenge = consumePasskeyChallenge(requestId);
-  if (!challenge || challenge.type !== "registration" || challenge.userId !== user.id) {
+  const challenge = await consumePasskeyChallenge(requestId);
+  if (!challenge || challenge.userId !== user.id) {
     return NextResponse.json({ ok: false, error: "CHALLENGE_INVALID" }, { status: 400 });
   }
+
+  // Resolve expected origin and RP ID from request
+  const expectedOrigin = resolvePasskeyOrigin(req);
+  const expectedRPID = resolvePasskeyRpId(req);
 
   const verification = await verifyRegistrationResponse({
     response,
     expectedChallenge: challenge.challenge,
-    expectedOrigin: challenge.expectedOrigin,
-    expectedRPID: challenge.expectedRpId,
+    expectedOrigin,
+    expectedRPID,
   });
 
   if (!verification.verified || !verification.registrationInfo) {
@@ -42,12 +46,13 @@ export async function POST(req: Request) {
   const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
 
   const id = credential.id;
-  const existing = listUserPasskeys(user.id).some((item) => item.id === id);
+  const existingPasskeys = await listUserPasskeys(user.id);
+  const existing = existingPasskeys.some((item) => item.id === id);
   if (existing) {
     return NextResponse.json({ ok: true, alreadyExists: true });
   }
 
-  addPasskeyCredential({
+  await addPasskeyCredential({
     id,
     userId: user.id,
     publicKey: bufferToBase64Url(credential.publicKey),
@@ -56,7 +61,6 @@ export async function POST(req: Request) {
     deviceType: credentialDeviceType,
     backedUp: credentialBackedUp,
     label,
-    createdAt: new Date().toISOString(),
   });
 
   return NextResponse.json({ ok: true });

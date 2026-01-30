@@ -44,7 +44,7 @@ export default async function LocaleLayout({
 
   const dict = await getDictionary(locale as Locale);
   const user = await getCurrentUser();
-  const products = listStoreProducts();
+  const products = await listStoreProducts();
   
   // Check if we're on chat page
   const headersList = await headers();

@@ -33,7 +33,7 @@ export async function GET() {
   const auth = await getCurrentUser();
   if (!auth) return new Response("Unauthorized", { status: 401 });
 
-  const existing = getLoyaltySettingsByUserId(auth.id);
+  const existing = await getLoyaltySettingsByUserId(auth.id);
   const settings = existing ?? defaultLoyaltySettings(auth.id);
 
   return Response.json({ ok: true, settings });
@@ -47,10 +47,7 @@ export async function PATCH(req: Request) {
     const json = await req.json();
     const data = patchSchema.parse(json);
 
-    const settings = upsertLoyaltySettings({
-      userId: auth.id,
-      settings: data,
-    });
+    const settings = await upsertLoyaltySettings(auth.id, data);
 
     return Response.json({ ok: true, settings });
   } catch (e) {

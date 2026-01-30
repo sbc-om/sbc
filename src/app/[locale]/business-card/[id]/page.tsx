@@ -21,10 +21,10 @@ export default async function BusinessCardPublicPage({
   if (!isLocale(locale)) notFound();
 
   const dict = await getDictionary(locale as Locale);
-  const card = getBusinessCardById(id);
+  const card = await getBusinessCardById(id);
   if (!card || !card.isPublic || !card.isApproved) notFound();
 
-  const business = getBusinessById(card.businessId);
+  const business = await getBusinessById(card.businessId);
   if (!business) notFound();
 
   const ar = locale === "ar";

@@ -53,7 +53,17 @@ export async function GET(req: Request) {
     const localeParam = url.searchParams.get('locale') || 'en';
     const locale = (localeParam === 'en' || localeParam === 'ar') ? localeParam : 'en';
 
-    const businesses = listBusinesses({ q, locale });
+    const allBusinesses = await listBusinesses();
+    // Filter by search query if provided
+    const businesses = q
+      ? allBusinesses.filter((b) => {
+          const searchLower = q.toLowerCase();
+          const nameMatch = (locale === 'ar' ? b.name?.ar : b.name?.en)?.toLowerCase().includes(searchLower);
+          const categoryMatch = b.category?.toLowerCase().includes(searchLower);
+          const cityMatch = b.city?.toLowerCase().includes(searchLower);
+          return nameMatch || categoryMatch || cityMatch;
+        })
+      : allBusinesses;
 
     return NextResponse.json({
       ok: true,

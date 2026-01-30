@@ -5,7 +5,7 @@ import {
   storeUserUpload,
   validateUserImageUpload,
 } from "@/lib/uploads/storage";
-import { getCategoryById, updateCategoryImage } from "@/lib/db/categories";
+import { getCategoryById, updateCategory } from "@/lib/db/categories";
 import fs from "node:fs/promises";
 
 function isValidCategoryImageUrl(userId: string, categoryId: string, url: string) {
@@ -24,7 +24,7 @@ export async function POST(
     }
 
     const { id: categoryId } = await context.params;
-    const category = getCategoryById(categoryId);
+    const category = await getCategoryById(categoryId);
     if (!category) {
       return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
     }
@@ -53,7 +53,7 @@ export async function POST(
       } catch {}
     }
 
-    updateCategoryImage(categoryId, stored.url);
+    await updateCategory(categoryId, { image: stored.url });
 
     return NextResponse.json({ ok: true, url: stored.url });
   } catch (e) {
@@ -73,7 +73,7 @@ export async function DELETE(
     }
 
     const { id: categoryId } = await context.params;
-    const category = getCategoryById(categoryId);
+    const category = await getCategoryById(categoryId);
     if (!category) {
       return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
     }
@@ -87,7 +87,7 @@ export async function DELETE(
       } catch {}
     }
 
-    updateCategoryImage(categoryId, undefined);
+    await updateCategory(categoryId, { image: null });
 
     return NextResponse.json({ ok: true });
   } catch (e) {

@@ -59,11 +59,11 @@ export async function DELETE(
   });
   if (!authorized) return new Response("Unauthorized", { status: 401 });
 
-  await removeAppleWalletRegistration({
+  await removeAppleWalletRegistration(
     passTypeIdentifier,
     serialNumber,
-    deviceLibraryIdentifier,
-  });
+    deviceLibraryIdentifier
+  );
 
   return new Response("", { status: 200 });
 }

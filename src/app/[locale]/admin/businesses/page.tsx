@@ -30,8 +30,8 @@ export default async function AdminBusinessesPage({
   const q = typeof sp.q === "string" ? sp.q.trim() : "";
   const filter = typeof sp.filter === "string" ? sp.filter : "all";
 
-  const businesses = listBusinesses({ includeUnverified: true, includeUnapproved: true });
-  const categories = listCategories();
+  const businesses = await listBusinesses();
+  const categories = await listCategories();
   const categoriesById = new Map(categories.map((c) => [c.id, c] as const));
   const ar = locale === "ar";
   const pendingCount = businesses.filter((b) => !(b.isApproved ?? b.isVerified)).length;

@@ -8,6 +8,7 @@ import { ChatHeader } from "@/components/chat/ChatHeader";
 type ClientChatPageProps = {
   locale: string;
   businessSlug: string;
+  userId: string;
   business: {
     id: string;
     slug: string;
@@ -22,7 +23,7 @@ type ClientChatPageProps = {
   initialMessages: Array<{
     id: string;
     conversationId: string;
-    sender: "user";
+    senderId: string;
     text: string;
     createdAt: string;
   }>;
@@ -31,6 +32,7 @@ type ClientChatPageProps = {
 export function ClientChatPage({
   locale,
   businessSlug,
+  userId,
   business,
   initialMessages,
 }: ClientChatPageProps) {
@@ -55,11 +57,19 @@ export function ClientChatPage({
     }
   };
 
+  const messages = initialMessages.map((msg) => ({
+    id: msg.id,
+    conversationId: msg.conversationId,
+    sender: (msg.senderId === userId ? "user" : "business") as "user" | "business",
+    text: msg.text,
+    createdAt: msg.createdAt,
+  }));
+
   return (
     <div className="h-full flex flex-col">
       <ChatHeader business={business} locale={locale} />
       <div className="flex-1 min-h-0">
-        <ChatMessages messages={initialMessages} business={business} locale={locale} />
+        <ChatMessages messages={messages} business={business} locale={locale} />
       </div>
       <MessageInput onSendMessage={handleSendMessage} locale={locale} />
     </div>

@@ -21,7 +21,7 @@ export default async function LoyaltyLookupPage({ params }: Props) {
   await getDictionary(locale as Locale);
   const ar = locale === "ar";
 
-  const profile = getLoyaltyProfileByJoinCode(joinCode);
+  const profile = await getLoyaltyProfileByJoinCode(joinCode);
   if (!profile) {
     return (
       <PublicPage>

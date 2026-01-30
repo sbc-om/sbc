@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { getLmdb } from "./lmdb";
+import { query, transaction } from "./postgres";
 import type { Business, Locale, LocalizedString } from "./types";
 
 const slugSchema = z
@@ -34,9 +34,7 @@ export const businessInputSchema = z.object({
   isSpecial: z.boolean().optional(),
   homepageFeatured: z.boolean().optional(),
   homepageTop: z.boolean().optional(),
-  // Legacy free-text category (kept for backward compatibility + search)
   category: z.string().trim().min(1).optional(),
-  // Preferred: managed category reference
   categoryId: z.string().trim().min(1).optional(),
   city: z.string().trim().min(1).optional(),
   address: z.string().trim().min(1).optional(),
@@ -53,31 +51,63 @@ export type BusinessInput = z.infer<typeof businessInputSchema>;
 
 export type BusinessMediaKind = "cover" | "logo" | "banner" | "gallery" | "video";
 
-export function getBusinessById(id: string): Business | null {
-  const { businesses } = getLmdb();
-  return (businesses.get(id) as Business | undefined) ?? null;
+function rowToBusiness(row: any): Business {
+  return {
+    id: row.id,
+    slug: row.slug,
+    username: row.username,
+    ownerId: row.owner_id,
+    name: { en: row.name_en, ar: row.name_ar },
+    description: row.description_en || row.description_ar
+      ? { en: row.description_en || "", ar: row.description_ar || "" }
+      : undefined,
+    isApproved: row.is_approved ?? false,
+    isVerified: row.is_verified ?? false,
+    isSpecial: row.is_special ?? false,
+    homepageFeatured: row.homepage_featured ?? false,
+    homepageTop: row.homepage_top ?? false,
+    category: row.category,
+    categoryId: row.category_id,
+    city: row.city,
+    address: row.address,
+    phone: row.phone,
+    website: row.website,
+    email: row.email,
+    tags: row.tags || [],
+    latitude: row.latitude,
+    longitude: row.longitude,
+    avatarMode: row.avatar_mode,
+    media: row.media || {},
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+  };
 }
 
-export function getBusinessBySlug(slug: string): Business | null {
-  const { businesses, businessSlugs } = getLmdb();
+export async function getBusinessById(id: string): Promise<Business | null> {
+  const result = await query(`SELECT * FROM businesses WHERE id = $1`, [id]);
+  return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
+}
+
+export async function getBusinessBySlug(slug: string): Promise<Business | null> {
   const key = slugSchema.safeParse(slug);
   if (!key.success) return null;
 
-  const id = (businessSlugs.get(key.data) as string | undefined) ?? null;
-  if (!id) return null;
-  return (businesses.get(id) as Business | undefined) ?? null;
+  const result = await query(`SELECT * FROM businesses WHERE slug = $1`, [key.data]);
+  return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
 }
 
-export function getBusinessByUsername(username: string): Business | null {
+export async function getBusinessByUsername(username: string): Promise<Business | null> {
   const normalized = username.trim().replace(/^@/, "").toLowerCase();
   const key = usernameSchema.safeParse(normalized);
   if (!key.success) return null;
 
-  const { businesses, businessUsernames } = getLmdb();
-  const id = (businessUsernames.get(key.data) as string | undefined) ?? null;
-  if (id) return (businesses.get(id) as Business | undefined) ?? null;
+  // Try username first
+  let result = await query(`SELECT * FROM businesses WHERE username = $1`, [key.data]);
+  if (result.rows.length > 0) return rowToBusiness(result.rows[0]);
 
-  return getBusinessBySlug(key.data);
+  // Fall back to slug
+  result = await query(`SELECT * FROM businesses WHERE slug = $1`, [key.data]);
+  return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
 }
 
 export function normalizeBusinessUsername(input: string): string | null {
@@ -86,301 +116,292 @@ export function normalizeBusinessUsername(input: string): string | null {
   return key.success ? key.data : null;
 }
 
-export function checkBusinessUsernameAvailability(
+export async function checkBusinessUsernameAvailability(
   input: string,
   options?: { excludeBusinessId?: string }
-): { available: boolean; normalized?: string; reason?: "INVALID" | "TAKEN" } {
+): Promise<{ available: boolean; normalized?: string; reason?: "INVALID" | "TAKEN" }> {
   const normalized = normalizeBusinessUsername(input);
   if (!normalized) {
     return { available: false, reason: "INVALID" };
   }
 
-  const { businessUsernames, businessSlugs } = getLmdb();
   const excludeId = options?.excludeBusinessId;
 
-  const usernameOwnerId = businessUsernames.get(normalized) as string | undefined;
-  if (usernameOwnerId && usernameOwnerId !== excludeId) {
+  // Check username
+  let result = await query(
+    excludeId
+      ? `SELECT id FROM businesses WHERE username = $1 AND id != $2`
+      : `SELECT id FROM businesses WHERE username = $1`,
+    excludeId ? [normalized, excludeId] : [normalized]
+  );
+  if (result.rows.length > 0) {
     return { available: false, normalized, reason: "TAKEN" };
   }
 
-  const slugOwnerId = businessSlugs.get(normalized) as string | undefined;
-  if (slugOwnerId && slugOwnerId !== excludeId) {
+  // Check slug
+  result = await query(
+    excludeId
+      ? `SELECT id FROM businesses WHERE slug = $1 AND id != $2`
+      : `SELECT id FROM businesses WHERE slug = $1`,
+    excludeId ? [normalized, excludeId] : [normalized]
+  );
+  if (result.rows.length > 0) {
     return { available: false, normalized, reason: "TAKEN" };
   }
 
   return { available: true, normalized };
 }
 
-export function listBusinesses(input?: {
-  q?: string;
-  locale?: Locale;
-  includeUnverified?: boolean;
-  includeUnapproved?: boolean;
-}): Business[] {
-  const { businesses } = getLmdb();
-
-  const qRaw = input?.q?.trim();
-  const q = qRaw ? qRaw.toLowerCase() : null;
-  const locale = input?.locale;
-  const includeUnverified = input?.includeUnverified ?? false;
-  const includeUnapproved = input?.includeUnapproved ?? false;
-
-  const results: Business[] = [];
-  for (const { value } of businesses.getRange()) {
-    const b = value as Business;
-
-    const approved = b.isApproved ?? b.isVerified ?? false;
-    if (!includeUnverified && !includeUnapproved && !approved) continue;
-
-    if (q) {
-      const hay = [
-        locale ? b.name[locale] : `${b.name.en} ${b.name.ar}`,
-        b.username,
-        b.category,
-        b.city,
-        b.tags?.join(" "),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      if (!hay.includes(q)) continue;
-    }
-
-    results.push(b);
-  }
-
-  results.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  return results;
+export async function listBusinesses(): Promise<Business[]> {
+  const result = await query(`SELECT * FROM businesses ORDER BY created_at DESC`);
+  return result.rows.map(rowToBusiness);
 }
 
-export function listBusinessesByOwner(userId: string): Business[] {
-  const { businesses } = getLmdb();
-  const uid = z.string().trim().min(1).safeParse(userId);
-  if (!uid.success) return [];
-
-  const results: Business[] = [];
-  for (const { value } of businesses.getRange()) {
-    const b = value as Business;
-    if (b.ownerId !== uid.data) continue;
-    results.push(b);
-  }
-
-  results.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  return results;
+export async function listApprovedBusinesses(): Promise<Business[]> {
+  const result = await query(`SELECT * FROM businesses WHERE is_approved = true ORDER BY name_en`);
+  return result.rows.map(rowToBusiness);
 }
 
-export function createBusiness(input: BusinessInput): Business {
+export async function createBusiness(input: BusinessInput): Promise<Business> {
   const data = businessInputSchema.parse(input);
-  const { businesses, businessSlugs, businessUsernames } = getLmdb();
+  const id = nanoid();
+  const now = new Date();
 
-  const existingId = businessSlugs.get(data.slug) as string | undefined;
-  if (existingId) {
+  // Check slug uniqueness
+  const existingSlug = await query(`SELECT id FROM businesses WHERE slug = $1`, [data.slug]);
+  if (existingSlug.rows.length > 0) {
     throw new Error("SLUG_TAKEN");
   }
 
+  // Check username uniqueness if provided
   if (data.username) {
-    const availability = checkBusinessUsernameAvailability(data.username);
-    if (!availability.available) throw new Error("USERNAME_TAKEN");
-  }
-
-  const now = new Date().toISOString();
-
-  const business: Business = {
-    id: nanoid(),
-    slug: data.slug,
-    username: data.username,
-    ownerId: data.ownerId,
-    name: data.name as LocalizedString,
-    description: data.description as LocalizedString | undefined,
-    isApproved: data.isApproved ?? data.isVerified ?? false,
-    isVerified: data.isVerified ?? false,
-    isSpecial: data.isSpecial ?? false,
-    homepageFeatured: data.homepageFeatured ?? false,
-    homepageTop: data.homepageTop ?? false,
-    category: data.category,
-    categoryId: data.categoryId,
-    city: data.city,
-    address: data.address,
-    phone: data.phone,
-    website: data.website,
-    email: data.email,
-    tags: data.tags,
-    latitude: data.latitude,
-    longitude: data.longitude,
-    avatarMode: data.avatarMode ?? "icon",
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  businesses.put(business.id, business);
-  businessSlugs.put(business.slug, business.id);
-  if (business.username) {
-    businessUsernames.put(business.username, business.id);
-  }
-
-  return business;
-}
-
-export function updateBusiness(id: string, patch: Partial<BusinessInput>): Business {
-  const { businesses, businessSlugs, businessUsernames } = getLmdb();
-  const current = businesses.get(id) as Business | undefined;
-  if (!current) throw new Error("NOT_FOUND");
-
-  const nextSlug = patch.slug ? slugSchema.parse(patch.slug) : current.slug;
-  if (nextSlug !== current.slug) {
-    const existing = businessSlugs.get(nextSlug) as string | undefined;
-    if (existing && existing !== id) throw new Error("SLUG_TAKEN");
-  }
-
-  const nextUsername =
-    typeof patch.username === "string"
-      ? patch.username
-        ? usernameSchema.parse(patch.username)
-        : undefined
-      : current.username;
-
-  if (nextUsername && nextUsername !== current.username) {
-    const availability = checkBusinessUsernameAvailability(nextUsername, {
-      excludeBusinessId: id,
-    });
-    if (!availability.available) throw new Error("USERNAME_TAKEN");
-  }
-
-  const next: Business = {
-    ...current,
-    ...patch,
-    slug: nextSlug,
-    username: nextUsername,
-    avatarMode: patch.avatarMode ?? current.avatarMode ?? "icon",
-    updatedAt: new Date().toISOString(),
-  };
-
-  businesses.put(id, next);
-
-  if (nextSlug !== current.slug) {
-    businessSlugs.remove(current.slug);
-    businessSlugs.put(nextSlug, id);
-  }
-
-  if (nextUsername !== current.username) {
-    if (current.username) {
-      businessUsernames.remove(current.username);
-    }
-    if (nextUsername) {
-      businessUsernames.put(nextUsername, id);
+    const existingUsername = await query(`SELECT id FROM businesses WHERE username = $1`, [data.username]);
+    if (existingUsername.rows.length > 0) {
+      throw new Error("USERNAME_TAKEN");
     }
   }
 
-  return next;
+  const result = await query(`
+    INSERT INTO businesses (
+      id, slug, username, owner_id, name_en, name_ar, description_en, description_ar,
+      is_approved, is_verified, is_special, homepage_featured, homepage_top,
+      category, category_id, city, address, phone, website, email, tags,
+      latitude, longitude, avatar_mode, media, created_at, updated_at
+    ) VALUES (
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $26
+    ) RETURNING *
+  `, [
+    id, data.slug, data.username, data.ownerId,
+    data.name.en, data.name.ar,
+    data.description?.en, data.description?.ar,
+    data.isApproved ?? false, data.isVerified ?? false, data.isSpecial ?? false,
+    data.homepageFeatured ?? false, data.homepageTop ?? false,
+    data.category, data.categoryId, data.city, data.address, data.phone, data.website, data.email,
+    data.tags || [], data.latitude, data.longitude, data.avatarMode || 'icon',
+    JSON.stringify({}), now
+  ]);
+
+  return rowToBusiness(result.rows[0]);
 }
 
-export function deleteBusiness(id: string) {
-  const { businesses, businessSlugs, businessUsernames } = getLmdb();
-  const current = businesses.get(id) as Business | undefined;
-  if (!current) return;
+export async function updateBusiness(id: string, input: Partial<BusinessInput>): Promise<Business> {
+  return transaction(async (client) => {
+    const currentRes = await client.query(`SELECT * FROM businesses WHERE id = $1 FOR UPDATE`, [id]);
+    if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
+    const current = rowToBusiness(currentRes.rows[0]);
 
-  businesses.remove(id);
-  businessSlugs.remove(current.slug);
-  if (current.username) {
-    businessUsernames.remove(current.username);
-  }
+    const data = businessInputSchema.partial().parse(input);
+
+    // Check slug uniqueness if changed
+    if (data.slug && data.slug !== current.slug) {
+      const existingSlug = await client.query(`SELECT id FROM businesses WHERE slug = $1 AND id != $2`, [data.slug, id]);
+      if (existingSlug.rows.length > 0) {
+        throw new Error("SLUG_TAKEN");
+      }
+    }
+
+    // Check username uniqueness if changed
+    if (data.username && data.username !== current.username) {
+      const existingUsername = await client.query(`SELECT id FROM businesses WHERE username = $1 AND id != $2`, [data.username, id]);
+      if (existingUsername.rows.length > 0) {
+        throw new Error("USERNAME_TAKEN");
+      }
+    }
+
+    const result = await client.query(`
+      UPDATE businesses SET
+        slug = COALESCE($1, slug),
+        username = $2,
+        owner_id = $3,
+        name_en = COALESCE($4, name_en),
+        name_ar = COALESCE($5, name_ar),
+        description_en = $6,
+        description_ar = $7,
+        is_approved = COALESCE($8, is_approved),
+        is_verified = COALESCE($9, is_verified),
+        is_special = COALESCE($10, is_special),
+        homepage_featured = COALESCE($11, homepage_featured),
+        homepage_top = COALESCE($12, homepage_top),
+        category = $13,
+        category_id = $14,
+        city = $15,
+        address = $16,
+        phone = $17,
+        website = $18,
+        email = $19,
+        tags = COALESCE($20, tags),
+        latitude = $21,
+        longitude = $22,
+        avatar_mode = COALESCE($23, avatar_mode),
+        updated_at = $24
+      WHERE id = $25
+      RETURNING *
+    `, [
+      data.slug,
+      data.username !== undefined ? data.username : current.username,
+      data.ownerId !== undefined ? data.ownerId : current.ownerId,
+      data.name?.en,
+      data.name?.ar,
+      data.description?.en !== undefined ? data.description.en : current.description?.en,
+      data.description?.ar !== undefined ? data.description.ar : current.description?.ar,
+      data.isApproved,
+      data.isVerified,
+      data.isSpecial,
+      data.homepageFeatured,
+      data.homepageTop,
+      data.category !== undefined ? data.category : current.category,
+      data.categoryId !== undefined ? data.categoryId : current.categoryId,
+      data.city !== undefined ? data.city : current.city,
+      data.address !== undefined ? data.address : current.address,
+      data.phone !== undefined ? data.phone : current.phone,
+      data.website !== undefined ? data.website : current.website,
+      data.email !== undefined ? data.email : current.email,
+      data.tags,
+      data.latitude !== undefined ? data.latitude : current.latitude,
+      data.longitude !== undefined ? data.longitude : current.longitude,
+      data.avatarMode,
+      new Date(),
+      id
+    ]);
+
+    return rowToBusiness(result.rows[0]);
+  });
 }
 
-function ensureBusiness(id: string) {
-  const { businesses } = getLmdb();
-  const current = businesses.get(id) as Business | undefined;
-  if (!current) throw new Error("NOT_FOUND");
-  return current;
+export async function deleteBusiness(id: string): Promise<boolean> {
+  const result = await query(`DELETE FROM businesses WHERE id = $1`, [id]);
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function setBusinessSingleMedia(
-  id: string,
-  kind: Extract<BusinessMediaKind, "cover" | "logo" | "banner">,
-  url: string | null,
-): Business {
-  const { businesses } = getLmdb();
-  const current = ensureBusiness(id);
+export async function setBusinessApproved(id: string, isApproved: boolean): Promise<Business> {
+  const result = await query(`
+    UPDATE businesses SET is_approved = $1, updated_at = $2 WHERE id = $3 RETURNING *
+  `, [isApproved, new Date(), id]);
 
-  const next: Business = {
-    ...current,
-    media: {
-      ...current.media,
-      [kind]: url ?? undefined,
-    },
-    updatedAt: new Date().toISOString(),
-  };
-
-  businesses.put(id, next);
-  return next;
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToBusiness(result.rows[0]);
 }
 
-export function setBusinessLogo(id: string, url: string | null): Business {
-  // Backward compatibility
-  return setBusinessSingleMedia(id, "logo", url);
+export async function setBusinessVerified(id: string, isVerified: boolean): Promise<Business> {
+  const result = await query(`
+    UPDATE businesses SET is_verified = $1, updated_at = $2 WHERE id = $3 RETURNING *
+  `, [isVerified, new Date(), id]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToBusiness(result.rows[0]);
 }
 
-export function addBusinessMedia(
-  id: string,
-  kind: Extract<BusinessMediaKind, "gallery" | "video">,
-  urls: string[],
-): Business {
-  const { businesses } = getLmdb();
-  const current = ensureBusiness(id);
+export async function setBusinessSpecial(id: string, isSpecial: boolean): Promise<Business> {
+  const result = await query(`
+    UPDATE businesses SET is_special = $1, updated_at = $2 WHERE id = $3 RETURNING *
+  `, [isSpecial, new Date(), id]);
 
-  const existing = kind === "gallery"
-    ? current.media?.gallery ?? []
-    : current.media?.videos ?? [];
-
-  const merged = Array.from(new Set([...existing, ...urls]));
-
-  const next: Business = {
-    ...current,
-    media: {
-      ...current.media,
-      ...(kind === "gallery" ? { gallery: merged } : { videos: merged }),
-    },
-    updatedAt: new Date().toISOString(),
-  };
-
-  businesses.put(id, next);
-  return next;
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToBusiness(result.rows[0]);
 }
 
-export function removeBusinessMedia(
+export async function setBusinessHomepageFeatured(id: string, homepageFeatured: boolean): Promise<Business> {
+  const result = await query(`
+    UPDATE businesses SET homepage_featured = $1, updated_at = $2 WHERE id = $3 RETURNING *
+  `, [homepageFeatured, new Date(), id]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToBusiness(result.rows[0]);
+}
+
+export async function setBusinessHomepageTop(id: string, homepageTop: boolean): Promise<Business> {
+  const result = await query(`
+    UPDATE businesses SET homepage_top = $1, updated_at = $2 WHERE id = $3 RETURNING *
+  `, [homepageTop, new Date(), id]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToBusiness(result.rows[0]);
+}
+
+export async function setBusinessMedia(
   id: string,
   kind: BusinessMediaKind,
-  url: string,
-): Business {
-  const { businesses } = getLmdb();
-  const current = ensureBusiness(id);
+  value: string | string[] | null
+): Promise<Business> {
+  return transaction(async (client) => {
+    const currentRes = await client.query(`SELECT media FROM businesses WHERE id = $1 FOR UPDATE`, [id]);
+    if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
 
-  let nextMedia = current.media ?? {};
+    const media = currentRes.rows[0].media || {};
 
-  if (kind === "cover") {
-    if (nextMedia.cover === url) nextMedia = { ...nextMedia, cover: undefined };
-  } else if (kind === "logo") {
-    if (nextMedia.logo === url) nextMedia = { ...nextMedia, logo: undefined };
-  } else if (kind === "banner") {
-    if (nextMedia.banner === url) nextMedia = { ...nextMedia, banner: undefined };
-  } else if (kind === "gallery") {
-    nextMedia = {
-      ...nextMedia,
-      gallery: (nextMedia.gallery ?? []).filter((u) => u !== url),
-    };
-  } else {
-    nextMedia = {
-      ...nextMedia,
-      videos: (nextMedia.videos ?? []).filter((u) => u !== url),
-    };
-  }
+    if (kind === "gallery" || kind === "video") {
+      if (Array.isArray(value)) {
+        media[kind === "video" ? "videos" : "gallery"] = value;
+      } else if (value === null) {
+        delete media[kind === "video" ? "videos" : "gallery"];
+      }
+    } else {
+      if (typeof value === "string") {
+        media[kind] = value;
+      } else if (value === null) {
+        delete media[kind];
+      }
+    }
 
-  const next: Business = {
-    ...current,
-    media: nextMedia,
-    updatedAt: new Date().toISOString(),
-  };
+    const result = await client.query(`
+      UPDATE businesses SET media = $1, updated_at = $2 WHERE id = $3 RETURNING *
+    `, [JSON.stringify(media), new Date(), id]);
 
-  businesses.put(id, next);
-  return next;
+    return rowToBusiness(result.rows[0]);
+  });
+}
+
+export async function listBusinessesByCategory(categoryId: string): Promise<Business[]> {
+  const result = await query(`
+    SELECT * FROM businesses WHERE category_id = $1 AND is_approved = true ORDER BY name_en
+  `, [categoryId]);
+  return result.rows.map(rowToBusiness);
+}
+
+export async function listBusinessesByOwner(ownerId: string): Promise<Business[]> {
+  const result = await query(`SELECT * FROM businesses WHERE owner_id = $1 ORDER BY created_at DESC`, [ownerId]);
+  return result.rows.map(rowToBusiness);
+}
+
+export async function getBusinessesByIds(ids: string[]): Promise<Business[]> {
+  if (ids.length === 0) return [];
+  const result = await query(`SELECT * FROM businesses WHERE id = ANY($1)`, [ids]);
+  return result.rows.map(rowToBusiness);
+}
+
+export async function searchBusinesses(searchTerm: string, locale: Locale = "en"): Promise<Business[]> {
+  const term = `%${searchTerm.toLowerCase()}%`;
+  const result = await query(`
+    SELECT * FROM businesses
+    WHERE is_approved = true AND (
+      LOWER(name_en) LIKE $1 OR
+      LOWER(name_ar) LIKE $1 OR
+      LOWER(category) LIKE $1 OR
+      LOWER(city) LIKE $1 OR
+      EXISTS (SELECT 1 FROM unnest(tags) tag WHERE LOWER(tag) LIKE $1)
+    )
+    ORDER BY name_${locale === "ar" ? "ar" : "en"}
+    LIMIT 100
+  `, [term]);
+  return result.rows.map(rowToBusiness);
 }

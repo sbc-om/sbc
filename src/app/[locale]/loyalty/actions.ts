@@ -6,10 +6,12 @@ import { redirect } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
 import {
-  purchaseLoyaltySubscription,
+  createLoyaltySubscription,
   createLoyaltyCustomer,
-  adjustLoyaltyCustomerPoints,
+  adjustCustomerPoints,
   redeemLoyaltyCustomerPoints,
+  getLoyaltySettings,
+  defaultLoyaltySettings,
 } from "@/lib/db/loyalty";
 import type { LoyaltyPlan } from "@/lib/db/types";
 
@@ -31,11 +33,7 @@ export async function purchaseLoyaltySubscriptionAction(locale: Locale, formData
 
   const plan: LoyaltyPlan = planRaw;
 
-  purchaseLoyaltySubscription({
-    userId: user.id,
-    // validated again in db layer
-    plan,
-  });
+  await createLoyaltySubscription(user.id, plan);
 
   revalidatePath(`/${locale}/loyalty/manage`);
   redirect(`/${locale}/loyalty/manage?success=1`);
@@ -55,14 +53,12 @@ export async function addLoyaltyCustomerAction(locale: Locale, formData: FormDat
     redirect(returnTo ? `${returnTo}?error=PHONE_REQUIRED` : `/${locale}/loyalty/manage?error=PHONE_REQUIRED`);
   }
 
-  createLoyaltyCustomer({
+  await createLoyaltyCustomer({
     userId: user.id,
-    customer: {
-      fullName,
-      phone,
-      email: email || undefined,
-      notes: notes || undefined,
-    },
+    fullName,
+    memberId: phone, // use phone as memberId
+    phone: phone || undefined,
+    email: email || undefined,
   });
 
   const target = returnTo ?? `/${locale}/loyalty/manage`;
@@ -83,11 +79,7 @@ export async function adjustLoyaltyCustomerPointsAction(locale: Locale, formData
     redirect(returnTo ?? `/${locale}/loyalty/manage`);
   }
 
-  adjustLoyaltyCustomerPoints({
-    userId: user.id,
-    customerId,
-    delta: Math.trunc(delta),
-  });
+  await adjustCustomerPoints(customerId, Math.trunc(delta));
 
   const target = returnTo ?? `/${locale}/loyalty/manage`;
   revalidatePath(target);
@@ -101,10 +93,8 @@ export async function redeemLoyaltyCustomerPointsAction(locale: Locale, formData
   const customerId = String(formData.get("customerId") || "").trim();
 
   try {
-    redeemLoyaltyCustomerPoints({
-      userId: user.id,
-      customerId,
-    });
+    const settings = await getLoyaltySettings(user.id) ?? defaultLoyaltySettings(user.id);
+    await redeemLoyaltyCustomerPoints(customerId, settings.pointsDeductPerRedemption);
   } catch (e) {
     const message = e instanceof Error ? e.message : "REDEEM_FAILED";
     const target = returnTo ?? `/${locale}/loyalty/manage`;

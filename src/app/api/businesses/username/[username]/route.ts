@@ -12,7 +12,7 @@ export async function GET(
   const url = new URL(req.url);
   const excludeId = url.searchParams.get("excludeId") || undefined;
 
-  const availability = checkBusinessUsernameAvailability(username, {
+  const availability = await checkBusinessUsernameAvailability(username, {
     excludeBusinessId: excludeId,
   });
 

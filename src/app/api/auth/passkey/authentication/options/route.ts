@@ -30,15 +30,15 @@ export async function POST(req: Request) {
 
   if (identifier) {
     const user = identifier.includes("@")
-      ? getUserByEmail(identifier)
-      : getUserByPhone(identifier);
+      ? await getUserByEmail(identifier)
+      : await getUserByPhone(identifier);
 
     if (!user) {
       return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
     }
 
     userId = user.id;
-    const passkeys = listUserPasskeys(user.id);
+    const passkeys = await listUserPasskeys(user.id);
     if (passkeys.length === 0) {
       return NextResponse.json({ ok: false, error: "NO_PASSKEYS" }, { status: 404 });
     }
@@ -56,13 +56,10 @@ export async function POST(req: Request) {
     userVerification: "preferred",
   });
 
-  const challenge = createPasskeyChallenge({
+  const challenge = await createPasskeyChallenge({
     challenge: options.challenge,
-    type: "authentication",
     userId,
-    identifier,
-    expectedOrigin: origin,
-    expectedRpId: rpID,
+    expiresInMs: 5 * 60 * 1000,
   });
 
   return NextResponse.json({ ok: true, options, requestId: challenge.id });

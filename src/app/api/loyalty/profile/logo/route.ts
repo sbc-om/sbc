@@ -31,19 +31,17 @@ export async function POST(req: Request) {
 
     validateUserImageUpload({ kind: "loyalty-logo", file });
 
-    const currentProfile = getLoyaltyProfileByUserId(auth.id);
+    const currentProfile = await getLoyaltyProfileByUserId(auth.id);
     const previousUrl = currentProfile?.logoUrl ?? null;
 
     const stored = await storeUserUpload({ userId: auth.id, kind: "loyalty-logo", file });
 
     // If profile doesn't exist yet, create one using a reasonable default name.
-    const next = upsertLoyaltyProfile({
+    const next = await upsertLoyaltyProfile({
       userId: auth.id,
-      profile: {
-        businessName: currentProfile?.businessName ?? auth.displayName,
-        joinCode: currentProfile?.joinCode,
-        logoUrl: stored.url,
-      },
+      businessName: currentProfile?.businessName ?? auth.displayName,
+      joinCode: currentProfile?.joinCode ?? "",
+      logoUrl: stored.url,
     });
 
     // Best-effort delete previous logo file
@@ -70,7 +68,7 @@ export async function DELETE() {
   if (!auth) return new Response("Unauthorized", { status: 401 });
 
   try {
-    const currentProfile = getLoyaltyProfileByUserId(auth.id);
+    const currentProfile = await getLoyaltyProfileByUserId(auth.id);
     const previousUrl = currentProfile?.logoUrl ?? null;
 
     if (previousUrl) {
@@ -81,13 +79,11 @@ export async function DELETE() {
     }
 
     if (currentProfile) {
-      const next = upsertLoyaltyProfile({
+      const next = await upsertLoyaltyProfile({
         userId: auth.id,
-        profile: {
-          businessName: currentProfile.businessName,
-          joinCode: currentProfile.joinCode,
-          logoUrl: undefined,
-        },
+        businessName: currentProfile.businessName,
+        joinCode: currentProfile.joinCode,
+        logoUrl: undefined,
       });
       return Response.json({ ok: true, logoUrl: null, profile: next });
     }

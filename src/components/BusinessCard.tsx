@@ -25,7 +25,7 @@ interface BusinessCardProps {
   locale: "en" | "ar";
 }
 
-export function BusinessCard({ business, locale }: BusinessCardProps) {
+export async function BusinessCard({ business, locale }: BusinessCardProps) {
   const name = locale === "ar" ? business.name.ar : business.name.en;
   const description = business.description
     ? locale === "ar"
@@ -35,7 +35,7 @@ export function BusinessCard({ business, locale }: BusinessCardProps) {
 
   // Get category name in correct language
   const category = business.categoryId
-    ? getCategoryById(business.categoryId)
+    ? await getCategoryById(business.categoryId)
     : null;
   const categoryName = category
     ? locale === "ar"

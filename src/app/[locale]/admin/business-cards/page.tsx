@@ -26,8 +26,8 @@ export default async function AdminBusinessCardsPage({
   const { filter = "pending", q = "" } = (await searchParams) ?? {};
   const query = q.trim().toLowerCase();
 
-  const cards = listAllBusinessCards();
-  const businesses = listBusinesses({ includeUnapproved: true, includeUnverified: true });
+  const cards = await listAllBusinessCards();
+  const businesses = await listBusinesses();
   const businessMap = new Map(businesses.map((b) => [b.id, b]));
 
   const filteredCards = cards.filter((card) => {

@@ -1,734 +1,535 @@
-import { customAlphabet, nanoid } from "nanoid";
+import { nanoid } from "nanoid";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 
-import { getLmdb } from "./lmdb";
-import { triggerWalletUpdate } from "@/lib/wallet/walletUpdates";
+import { query, transaction } from "./postgres";
 import type {
-  AppleWalletRegistration,
-  LoyaltyCard,
-  LoyaltyCustomer,
-  LoyaltyMessage,
-  LoyaltyPlan,
-  LoyaltyProfile,
-  LoyaltyPushSubscription,
-  LoyaltySettings,
   LoyaltySubscription,
+  LoyaltyProfile,
+  LoyaltySettings,
+  LoyaltyCustomer,
+  LoyaltyCard,
+  LoyaltyMessage,
+  LoyaltyPushSubscription,
+  AppleWalletRegistration,
 } from "./types";
-import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "./subscriptions";
 
-const userIdSchema = z.string().trim().min(1);
-const planSchema = z.enum(["starter", "pro"]);
+// ==================== Subscriptions ====================
 
-const joinCodeSchema = z
-  .string()
-  .trim()
-  .toUpperCase()
-  .regex(/^[A-Z0-9]{4,16}$/, "INVALID_JOIN_CODE");
-
-const profileInputSchema = z.object({
-  businessName: z.string().trim().min(2).max(120),
-  logoUrl: z.string().trim().min(1).max(2048).optional(),
-  joinCode: joinCodeSchema.optional(),
-  location: z
-    .object({
-      lat: z.number().finite().min(-90).max(90),
-      lng: z.number().finite().min(-180).max(180),
-      radiusMeters: z.number().int().min(25).max(20000),
-      label: z.string().trim().min(1).max(200).optional(),
-    })
-    .optional(),
-});
-
-export type LoyaltyProfileInput = z.infer<typeof profileInputSchema>;
-
-const cardDesignSchema = z.object({
-  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  secondaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  textColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
-  backgroundStyle: z.enum(["solid", "gradient", "pattern"]),
-  logoPosition: z.enum(["top", "center", "corner"]),
-  showBusinessName: z.boolean(),
-  showCustomerName: z.boolean(),
-  cornerRadius: z.number().int().min(0).max(32),
-});
-
-const settingsInputSchema = z
-  .object({
-    pointsRequiredPerRedemption: z.number().int().min(1).max(100000).optional(),
-    pointsDeductPerRedemption: z.number().int().min(1).max(100000).optional(),
-    pointsIconMode: z.enum(["logo", "custom"]).optional(),
-    pointsIconUrl: z.string().trim().min(1).max(2048).optional(),
-    cardDesign: cardDesignSchema.optional(),
-
-    // Wallet pass content (used in previews and pass generation)
-    walletPassDescription: z.string().trim().min(1).max(2000).optional(),
-    walletPassTerms: z.string().trim().min(1).max(4000).optional(),
-    walletWebsiteUrl: z.string().trim().min(1).max(2048).optional(),
-    walletSupportEmail: z.string().trim().min(1).max(320).optional(),
-    walletSupportPhone: z.string().trim().min(1).max(80).optional(),
-    walletAddress: z.string().trim().min(1).max(400).optional(),
-    walletBarcodeFormat: z.enum(["qr", "code128"]).optional(),
-    walletBarcodeMessage: z.string().trim().min(1).max(2048).optional(),
-    walletNotificationTitle: z.string().trim().min(1).max(140).optional(),
-    walletNotificationBody: z.string().trim().min(1).max(1200).optional(),
-  })
-  .strict();
-
-export type LoyaltySettingsInput = z.infer<typeof settingsInputSchema>;
-
-const genJoinCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", 8);
-
-const customerInputSchema = z.object({
-  fullName: z.string().trim().min(2).max(120),
-  // Phone is required (used for quick lookup in-store).
-  phone: z.string().trim().min(6).max(40),
-  email: z.string().trim().email().optional(),
-  notes: z.string().trim().max(2000).optional(),
-  tags: z.array(z.string().trim().min(1).max(40)).optional(),
-  memberId: z.string().trim().min(3).max(40).optional(),
-});
-
-export type LoyaltyCustomerInput = z.infer<typeof customerInputSchema>;
-
-const messageInputSchema = z
-  .object({
-    customerId: z.string().trim().min(1).optional(),
-    title: z.string().trim().min(2).max(120),
-    body: z.string().trim().min(2).max(1200),
-  })
-  .strict();
-
-export type LoyaltyMessageInput = z.infer<typeof messageInputSchema>;
-
-const webPushSubscriptionSchema = z
-  .object({
-    endpoint: z.string().trim().min(1).max(4096),
-    keys: z
-      .object({
-        p256dh: z.string().trim().min(1).max(2048),
-        auth: z.string().trim().min(1).max(2048),
-      })
-      .strict(),
-  })
-  .strict();
-
-export type WebPushSubscriptionInput = z.infer<typeof webPushSubscriptionSchema>;
-
-function hashEndpoint(endpoint: string) {
-  return createHash("sha256").update(endpoint).digest("hex").slice(0, 16);
-}
-
-function pushSubId(customerId: string, endpoint: string) {
-  return `${customerId}:${hashEndpoint(endpoint)}`;
-}
-
-export function upsertLoyaltyPushSubscription(input: {
-  /** Business owner id (validated against the card). */
-  userId: string;
-  customerId: string;
-  subscription: WebPushSubscriptionInput;
-  userAgent?: string;
-}): LoyaltyPushSubscription {
-  const { loyaltyPushSubscriptions, loyaltyCustomers } = getLmdb();
-
-  const uid = userIdSchema.parse(input.userId);
-  const customerId = z.string().trim().min(1).parse(input.customerId);
-  const sub = webPushSubscriptionSchema.parse(input.subscription);
-
-  const customer = loyaltyCustomers.get(customerId) as LoyaltyCustomer | undefined;
-  if (!customer || customer.userId !== uid) throw new Error("CUSTOMER_NOT_FOUND");
-
-  const id = pushSubId(customerId, sub.endpoint);
-  const existing = loyaltyPushSubscriptions.get(id) as LoyaltyPushSubscription | undefined;
-  const now = new Date().toISOString();
-
-  const next: LoyaltyPushSubscription = {
-    id,
-    userId: uid,
-    customerId,
-    endpoint: sub.endpoint,
-    keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
-    userAgent: input.userAgent?.slice(0, 300),
-    createdAt: existing?.createdAt ?? now,
-    updatedAt: now,
+function rowToSubscription(row: any): LoyaltySubscription {
+  return {
+    userId: row.user_id,
+    plan: row.plan,
+    status: row.status,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
-
-  loyaltyPushSubscriptions.put(id, next);
-  return next;
 }
 
-export async function removeLoyaltyPushSubscription(input: {
-  userId: string;
-  customerId: string;
-  /** Optional endpoint: remove only that subscription; otherwise remove all for this customer. */
-  endpoint?: string;
-}): Promise<number> {
-  const { loyaltyPushSubscriptions, loyaltyCustomers } = getLmdb();
-
-  const uid = userIdSchema.parse(input.userId);
-  const customerId = z.string().trim().min(1).parse(input.customerId);
-
-  const customer = loyaltyCustomers.get(customerId) as LoyaltyCustomer | undefined;
-  if (!customer || customer.userId !== uid) throw new Error("CUSTOMER_NOT_FOUND");
-
-  let removed = 0;
-  if (input.endpoint) {
-    const id = pushSubId(customerId, String(input.endpoint));
-    if (await loyaltyPushSubscriptions.remove(id)) removed += 1;
-    return removed;
-  }
-
-  for (const { key, value } of loyaltyPushSubscriptions.getRange()) {
-    const s = value as LoyaltyPushSubscription;
-    if (s.userId !== uid) continue;
-    if (s.customerId !== customerId) continue;
-    if (await loyaltyPushSubscriptions.remove(String(key))) removed += 1;
-  }
-  return removed;
+export async function getLoyaltySubscription(userId: string): Promise<LoyaltySubscription | null> {
+  const result = await query(`SELECT * FROM loyalty_subscriptions WHERE user_id = $1`, [userId]);
+  return result.rows.length > 0 ? rowToSubscription(result.rows[0]) : null;
 }
 
-export function listLoyaltyPushSubscriptionsByUser(input: {
-  userId: string;
-  customerId?: string;
-}): LoyaltyPushSubscription[] {
-  const { loyaltyPushSubscriptions } = getLmdb();
-  const uid = userIdSchema.parse(input.userId);
-  const customerId = input.customerId ? z.string().trim().min(1).parse(input.customerId) : null;
-
-  const out: LoyaltyPushSubscription[] = [];
-  for (const { value } of loyaltyPushSubscriptions.getRange()) {
-    const s = value as LoyaltyPushSubscription;
-    if (s.userId !== uid) continue;
-    if (customerId && s.customerId !== customerId) continue;
-    out.push(s);
-  }
-  return out;
+export async function createLoyaltySubscription(userId: string, plan: string): Promise<LoyaltySubscription> {
+  const now = new Date();
+  const result = await query(`
+    INSERT INTO loyalty_subscriptions (user_id, plan, status, created_at, updated_at)
+    VALUES ($1, $2, 'active', $3, $3)
+    ON CONFLICT (user_id) DO UPDATE SET plan = $2, status = 'active', updated_at = $3
+    RETURNING *
+  `, [userId, plan, now]);
+  return rowToSubscription(result.rows[0]);
 }
 
-function appleRegId(passTypeIdentifier: string, serialNumber: string, deviceLibraryIdentifier: string) {
-  return `${passTypeIdentifier}:${serialNumber}:${deviceLibraryIdentifier}`;
-}
+// ==================== Profiles ====================
 
-export function upsertAppleWalletRegistration(input: {
-  passTypeIdentifier: string;
-  serialNumber: string;
-  deviceLibraryIdentifier: string;
-  pushToken: string;
-}): AppleWalletRegistration {
-  const { appleWalletRegistrations } = getLmdb();
-  const passTypeIdentifier = z.string().trim().min(1).max(200).parse(input.passTypeIdentifier);
-  const serialNumber = z.string().trim().min(1).max(200).parse(input.serialNumber);
-  const deviceLibraryIdentifier = z.string().trim().min(1).max(200).parse(input.deviceLibraryIdentifier);
-  const pushToken = z.string().trim().min(1).max(512).parse(input.pushToken);
-
-  const id = appleRegId(passTypeIdentifier, serialNumber, deviceLibraryIdentifier);
-  const now = new Date().toISOString();
-  const next: AppleWalletRegistration = {
-    id,
-    passTypeIdentifier,
-    serialNumber,
-    deviceLibraryIdentifier,
-    pushToken,
-    updatedAt: now,
+function rowToProfile(row: any): LoyaltyProfile {
+  return {
+    userId: row.user_id,
+    businessName: row.business_name,
+    logoUrl: row.logo_url,
+    joinCode: row.join_code,
+    location: row.location,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
-  appleWalletRegistrations.put(id, next);
-  return next;
 }
 
-export async function removeAppleWalletRegistration(input: {
-  passTypeIdentifier: string;
-  serialNumber: string;
-  deviceLibraryIdentifier: string;
-}): Promise<boolean> {
-  const { appleWalletRegistrations } = getLmdb();
-  const passTypeIdentifier = z.string().trim().min(1).parse(input.passTypeIdentifier);
-  const serialNumber = z.string().trim().min(1).parse(input.serialNumber);
-  const deviceLibraryIdentifier = z.string().trim().min(1).parse(input.deviceLibraryIdentifier);
-  const id = appleRegId(passTypeIdentifier, serialNumber, deviceLibraryIdentifier);
-  return await appleWalletRegistrations.remove(id);
+export async function getLoyaltyProfile(userId: string): Promise<LoyaltyProfile | null> {
+  const result = await query(`SELECT * FROM loyalty_profiles WHERE user_id = $1`, [userId]);
+  return result.rows.length > 0 ? rowToProfile(result.rows[0]) : null;
 }
 
-export function listAppleWalletPushTokensForSerial(input: {
-  passTypeIdentifier: string;
-  serialNumber: string;
-}): string[] {
-  const { appleWalletRegistrations } = getLmdb();
-  const passTypeIdentifier = z.string().trim().min(1).parse(input.passTypeIdentifier);
-  const serialNumber = z.string().trim().min(1).parse(input.serialNumber);
-  const out = new Set<string>();
-  for (const { value } of appleWalletRegistrations.getRange()) {
-    const r = value as AppleWalletRegistration;
-    if (r.passTypeIdentifier !== passTypeIdentifier) continue;
-    if (r.serialNumber !== serialNumber) continue;
-    out.add(r.pushToken);
-  }
-  return Array.from(out);
+export async function getLoyaltyProfileByJoinCode(joinCode: string): Promise<LoyaltyProfile | null> {
+  const result = await query(`SELECT * FROM loyalty_profiles WHERE join_code = $1`, [joinCode]);
+  return result.rows.length > 0 ? rowToProfile(result.rows[0]) : null;
 }
 
-export function listAppleWalletRegistrationsForDevice(input: {
-  passTypeIdentifier: string;
-  deviceLibraryIdentifier: string;
-}): AppleWalletRegistration[] {
-  const { appleWalletRegistrations } = getLmdb();
-  const passTypeIdentifier = z.string().trim().min(1).parse(input.passTypeIdentifier);
-  const deviceLibraryIdentifier = z.string().trim().min(1).parse(input.deviceLibraryIdentifier);
-  const out: AppleWalletRegistration[] = [];
-
-  for (const { value } of appleWalletRegistrations.getRange()) {
-    const r = value as AppleWalletRegistration;
-    if (r.passTypeIdentifier !== passTypeIdentifier) continue;
-    if (r.deviceLibraryIdentifier !== deviceLibraryIdentifier) continue;
-    out.push(r);
-  }
-
-  return out;
+export async function createOrUpdateLoyaltyProfile(input: {
+  userId: string;
+  businessName: string;
+  logoUrl?: string;
+  joinCode: string;
+  location?: LoyaltyProfile["location"];
+}): Promise<LoyaltyProfile> {
+  const now = new Date();
+  const result = await query(`
+    INSERT INTO loyalty_profiles (user_id, business_name, logo_url, join_code, location, created_at, updated_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $6)
+    ON CONFLICT (user_id) DO UPDATE SET
+      business_name = $2,
+      logo_url = $3,
+      join_code = $4,
+      location = $5,
+      updated_at = $6
+    RETURNING *
+  `, [input.userId, input.businessName, input.logoUrl, input.joinCode, input.location ? JSON.stringify(input.location) : null, now]);
+  return rowToProfile(result.rows[0]);
 }
 
-export function getLoyaltySubscriptionByUserId(userId: string): LoyaltySubscription | null {
-  const { loyaltySubscriptions } = getLmdb();
-  const uid = userIdSchema.safeParse(userId);
-  if (!uid.success) return null;
-  return (loyaltySubscriptions.get(uid.data) as LoyaltySubscription | undefined) ?? null;
+// ==================== Settings ====================
+
+function rowToSettings(row: any): LoyaltySettings {
+  return {
+    userId: row.user_id,
+    pointsRequiredPerRedemption: row.points_required_per_redemption ?? 10,
+    pointsDeductPerRedemption: row.points_deduct_per_redemption ?? 10,
+    pointsIconMode: row.points_icon_mode ?? "logo",
+    pointsIconUrl: row.points_icon_url,
+    cardDesign: row.card_design,
+    walletPassDescription: row.wallet_pass_description,
+    walletPassTerms: row.wallet_pass_terms,
+    walletWebsiteUrl: row.wallet_website_url,
+    walletSupportEmail: row.wallet_support_email,
+    walletSupportPhone: row.wallet_support_phone,
+    walletAddress: row.wallet_address,
+    walletBarcodeFormat: row.wallet_barcode_format ?? "qr",
+    walletBarcodeMessage: row.wallet_barcode_message,
+    walletNotificationTitle: row.wallet_notification_title,
+    walletNotificationBody: row.wallet_notification_body,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+  };
 }
 
-export function ensureActiveLoyaltySubscription(userId: string): LoyaltySubscription {
-  // New source of truth: store program subscription.
-  const storeSub = getProgramSubscriptionByUser(userId, "loyalty");
-  if (isProgramSubscriptionActive(storeSub)) {
-    // Return a compatible shape for callers that expect a LoyaltySubscription.
-    const now = new Date().toISOString();
-    return {
-      userId,
-      plan: "starter",
-      status: "active",
-      createdAt: storeSub!.startedAt,
-      updatedAt: now,
-    } satisfies LoyaltySubscription;
-  }
-
-  // Backward compatibility: legacy loyaltySubscriptions table.
-  const legacy = getLoyaltySubscriptionByUserId(userId);
-  if (legacy && legacy.status === "active") return legacy;
-
-  throw new Error("LOYALTY_NOT_ACTIVE");
-}
-
-export function getLoyaltyProfileByUserId(userId: string): LoyaltyProfile | null {
-  const { loyaltyProfiles } = getLmdb();
-  const uid = userIdSchema.safeParse(userId);
-  if (!uid.success) return null;
-  return (loyaltyProfiles.get(uid.data) as LoyaltyProfile | undefined) ?? null;
-}
-
-export function listLoyaltyProfiles(): LoyaltyProfile[] {
-  const { loyaltyProfiles } = getLmdb();
-  const results: LoyaltyProfile[] = [];
-  
-  for (const { value } of loyaltyProfiles.getRange()) {
-    results.push(value as LoyaltyProfile);
-  }
-  
-  results.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  return results;
-}
-
+/** Default loyalty settings for a user who hasn't configured any */
 export function defaultLoyaltySettings(userId: string): LoyaltySettings {
-  const uid = userIdSchema.parse(userId);
   const now = new Date().toISOString();
   return {
-    userId: uid,
+    userId,
     pointsRequiredPerRedemption: 10,
     pointsDeductPerRedemption: 10,
     pointsIconMode: "logo",
-    pointsIconUrl: undefined,
     walletBarcodeFormat: "qr",
     createdAt: now,
     updatedAt: now,
   };
 }
 
-export function getLoyaltySettingsByUserId(userId: string): LoyaltySettings | null {
-  const { loyaltySettings } = getLmdb();
-  const uid = userIdSchema.safeParse(userId);
-  if (!uid.success) return null;
-  return (loyaltySettings.get(uid.data) as LoyaltySettings | undefined) ?? null;
+export async function getLoyaltySettings(userId: string): Promise<LoyaltySettings | null> {
+  const result = await query(`SELECT * FROM loyalty_settings WHERE user_id = $1`, [userId]);
+  return result.rows.length > 0 ? rowToSettings(result.rows[0]) : null;
 }
 
-export function upsertLoyaltySettings(input: {
-  userId: string;
-  settings: LoyaltySettingsInput;
-}): LoyaltySettings {
-  ensureActiveLoyaltySubscription(input.userId);
+export async function createOrUpdateLoyaltySettings(
+  userId: string,
+  settings: Partial<Omit<LoyaltySettings, "userId" | "createdAt" | "updatedAt">>
+): Promise<LoyaltySettings> {
+  const now = new Date();
+  const result = await query(`
+    INSERT INTO loyalty_settings (
+      user_id, points_required_per_redemption, points_deduct_per_redemption,
+      points_icon_mode, points_icon_url, card_design, wallet_pass_description,
+      wallet_pass_terms, wallet_website_url, wallet_support_email, wallet_support_phone,
+      wallet_address, wallet_barcode_format, wallet_barcode_message,
+      wallet_notification_title, wallet_notification_body, created_at, updated_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $17)
+    ON CONFLICT (user_id) DO UPDATE SET
+      points_required_per_redemption = COALESCE($2, loyalty_settings.points_required_per_redemption),
+      points_deduct_per_redemption = COALESCE($3, loyalty_settings.points_deduct_per_redemption),
+      points_icon_mode = COALESCE($4, loyalty_settings.points_icon_mode),
+      points_icon_url = $5,
+      card_design = COALESCE($6, loyalty_settings.card_design),
+      wallet_pass_description = $7,
+      wallet_pass_terms = $8,
+      wallet_website_url = $9,
+      wallet_support_email = $10,
+      wallet_support_phone = $11,
+      wallet_address = $12,
+      wallet_barcode_format = COALESCE($13, loyalty_settings.wallet_barcode_format),
+      wallet_barcode_message = $14,
+      wallet_notification_title = $15,
+      wallet_notification_body = $16,
+      updated_at = $17
+    RETURNING *
+  `, [
+    userId,
+    settings.pointsRequiredPerRedemption,
+    settings.pointsDeductPerRedemption,
+    settings.pointsIconMode,
+    settings.pointsIconUrl,
+    settings.cardDesign ? JSON.stringify(settings.cardDesign) : null,
+    settings.walletPassDescription,
+    settings.walletPassTerms,
+    settings.walletWebsiteUrl,
+    settings.walletSupportEmail,
+    settings.walletSupportPhone,
+    settings.walletAddress,
+    settings.walletBarcodeFormat,
+    settings.walletBarcodeMessage,
+    settings.walletNotificationTitle,
+    settings.walletNotificationBody,
+    now
+  ]);
+  return rowToSettings(result.rows[0]);
+}
 
-  const { loyaltySettings } = getLmdb();
-  const uid = userIdSchema.parse(input.userId);
-  const data = settingsInputSchema.parse(input.settings);
+// ==================== Customers ====================
 
-  const existing = loyaltySettings.get(uid) as LoyaltySettings | undefined;
-  const now = new Date().toISOString();
-  const base = existing ?? defaultLoyaltySettings(uid);
-
-  // If mode is custom but url is missing, keep existing url (if any).
-  // If mode is logo, we clear custom url.
-  const nextMode = data.pointsIconMode ?? base.pointsIconMode;
-  const nextUrl =
-    nextMode === "logo"
-      ? undefined
-      : (data.pointsIconUrl ?? base.pointsIconUrl ?? undefined);
-
-  const next: LoyaltySettings = {
-    ...base,
-    pointsRequiredPerRedemption:
-      data.pointsRequiredPerRedemption ?? base.pointsRequiredPerRedemption,
-    pointsDeductPerRedemption:
-      data.pointsDeductPerRedemption ?? base.pointsDeductPerRedemption,
-    pointsIconMode: nextMode,
-    pointsIconUrl: nextUrl,
-    cardDesign: data.cardDesign ?? base.cardDesign,
-    walletPassDescription: data.walletPassDescription ?? base.walletPassDescription,
-    walletPassTerms: data.walletPassTerms ?? base.walletPassTerms,
-    walletWebsiteUrl: data.walletWebsiteUrl ?? base.walletWebsiteUrl,
-    walletSupportEmail: data.walletSupportEmail ?? base.walletSupportEmail,
-    walletSupportPhone: data.walletSupportPhone ?? base.walletSupportPhone,
-    walletAddress: data.walletAddress ?? base.walletAddress,
-    walletBarcodeFormat: data.walletBarcodeFormat ?? base.walletBarcodeFormat,
-    walletBarcodeMessage: data.walletBarcodeMessage ?? base.walletBarcodeMessage,
-    walletNotificationTitle: data.walletNotificationTitle ?? base.walletNotificationTitle,
-    walletNotificationBody: data.walletNotificationBody ?? base.walletNotificationBody,
-    createdAt: base.createdAt ?? now,
-    updatedAt: now,
+function rowToCustomer(row: any): LoyaltyCustomer {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    businessId: row.business_id,
+    fullName: row.full_name,
+    memberId: row.member_id,
+    phone: row.phone,
+    email: row.email,
+    notes: row.notes,
+    tags: row.tags || [],
+    cardId: row.card_id,
+    points: row.points ?? 0,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
-
-  loyaltySettings.put(uid, next);
-  return next;
 }
 
-export function getLoyaltyProfileByJoinCode(code: string): LoyaltyProfile | null {
-  const { loyaltyProfiles } = getLmdb();
-  const parsed = joinCodeSchema.safeParse(code);
-  if (!parsed.success) return null;
-  const target = parsed.data;
-
-  for (const { value } of loyaltyProfiles.getRange()) {
-    const p = value as LoyaltyProfile;
-    if ((p.joinCode ?? "").toUpperCase() === target) return p;
-  }
-  return null;
-}
-
-function ensureJoinCodeUnique(input: { code: string; excludeUserId?: string }) {
-  const { loyaltyProfiles } = getLmdb();
-  const code = joinCodeSchema.parse(input.code);
-  for (const { value } of loyaltyProfiles.getRange()) {
-    const p = value as LoyaltyProfile;
-    if ((p.joinCode ?? "").toUpperCase() !== code) continue;
-    if (input.excludeUserId && p.userId === input.excludeUserId) continue;
-    throw new Error("JOIN_CODE_TAKEN");
-  }
-}
-
-export function upsertLoyaltyProfile(input: {
+export async function createLoyaltyCustomer(input: {
   userId: string;
-  profile: LoyaltyProfileInput;
-}): LoyaltyProfile {
-  // Only owners with an active subscription should be able to create a join link.
-  ensureActiveLoyaltySubscription(input.userId);
+  fullName: string;
+  memberId: string;
+  phone?: string;
+  email?: string;
+}): Promise<LoyaltyCustomer> {
+  return transaction(async (client) => {
+    const customerId = nanoid();
+    const cardId = nanoid();
+    const now = new Date();
 
-  const { loyaltyProfiles } = getLmdb();
-  const uid = userIdSchema.parse(input.userId);
-  const data = profileInputSchema.parse(input.profile);
+    // Create customer
+    await client.query(`
+      INSERT INTO loyalty_customers (id, user_id, full_name, member_id, phone, email, card_id, points, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8, $8)
+    `, [customerId, input.userId, input.fullName, input.memberId, input.phone, input.email, cardId, now]);
 
-  const existing = loyaltyProfiles.get(uid) as LoyaltyProfile | undefined;
-  const now = new Date().toISOString();
+    // Create card
+    await client.query(`
+      INSERT INTO loyalty_cards (id, user_id, customer_id, status, points, created_at, updated_at)
+      VALUES ($1, $2, $3, 'active', 0, $4, $4)
+    `, [cardId, input.userId, customerId, now]);
 
-  const joinCode = data.joinCode
-    ? joinCodeSchema.parse(data.joinCode)
-    : existing?.joinCode ?? genJoinCode();
-
-  ensureJoinCodeUnique({ code: joinCode, excludeUserId: uid });
-
-  const next: LoyaltyProfile = {
-    userId: uid,
-    businessName: data.businessName,
-    logoUrl: data.logoUrl || undefined,
-    joinCode,
-    location: data.location ?? existing?.location,
-    createdAt: existing?.createdAt ?? now,
-    updatedAt: now,
-  };
-
-  loyaltyProfiles.put(uid, next);
-  return next;
+    const result = await client.query(`SELECT * FROM loyalty_customers WHERE id = $1`, [customerId]);
+    return rowToCustomer(result.rows[0]);
+  });
 }
 
-export function purchaseLoyaltySubscription(input: {
+export async function getLoyaltyCustomerById(id: string): Promise<LoyaltyCustomer | null> {
+  const result = await query(`SELECT * FROM loyalty_customers WHERE id = $1`, [id]);
+  return result.rows.length > 0 ? rowToCustomer(result.rows[0]) : null;
+}
+
+export async function getLoyaltyCustomerByMemberId(userId: string, memberId: string): Promise<LoyaltyCustomer | null> {
+  const result = await query(`SELECT * FROM loyalty_customers WHERE user_id = $1 AND member_id = $2`, [userId, memberId]);
+  return result.rows.length > 0 ? rowToCustomer(result.rows[0]) : null;
+}
+
+export async function listLoyaltyCustomers(userId: string): Promise<LoyaltyCustomer[]> {
+  const result = await query(`SELECT * FROM loyalty_customers WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
+  return result.rows.map(rowToCustomer);
+}
+
+export async function updateLoyaltyCustomer(
+  id: string,
+  update: Partial<Pick<LoyaltyCustomer, "fullName" | "phone" | "email" | "notes" | "tags">>
+): Promise<LoyaltyCustomer> {
+  const result = await query(`
+    UPDATE loyalty_customers SET
+      full_name = COALESCE($1, full_name),
+      phone = $2,
+      email = $3,
+      notes = $4,
+      tags = COALESCE($5, tags),
+      updated_at = $6
+    WHERE id = $7
+    RETURNING *
+  `, [update.fullName, update.phone, update.email, update.notes, update.tags, new Date(), id]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToCustomer(result.rows[0]);
+}
+
+export async function adjustCustomerPoints(id: string, delta: number): Promise<LoyaltyCustomer> {
+  return transaction(async (client) => {
+    const customerRes = await client.query(`SELECT * FROM loyalty_customers WHERE id = $1 FOR UPDATE`, [id]);
+    if (customerRes.rows.length === 0) throw new Error("NOT_FOUND");
+    const customer = rowToCustomer(customerRes.rows[0]);
+
+    const newPoints = Math.max(0, customer.points + delta);
+    const now = new Date();
+
+    await client.query(`UPDATE loyalty_customers SET points = $1, updated_at = $2 WHERE id = $3`, [newPoints, now, id]);
+    await client.query(`UPDATE loyalty_cards SET points = $1, updated_at = $2 WHERE id = $3`, [newPoints, now, customer.cardId]);
+
+    const result = await client.query(`SELECT * FROM loyalty_customers WHERE id = $1`, [id]);
+    return rowToCustomer(result.rows[0]);
+  });
+}
+
+export async function deleteLoyaltyCustomer(id: string): Promise<boolean> {
+  const result = await query(`DELETE FROM loyalty_customers WHERE id = $1`, [id]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+// ==================== Cards ====================
+
+function rowToCard(row: any): LoyaltyCard {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    customerId: row.customer_id,
+    businessId: row.business_id,
+    status: row.status,
+    points: row.points ?? 0,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+  };
+}
+
+export async function getLoyaltyCardById(id: string): Promise<LoyaltyCard | null> {
+  const result = await query(`SELECT * FROM loyalty_cards WHERE id = $1`, [id]);
+  return result.rows.length > 0 ? rowToCard(result.rows[0]) : null;
+}
+
+export async function getLoyaltyCardByCustomerId(customerId: string): Promise<LoyaltyCard | null> {
+  const result = await query(`SELECT * FROM loyalty_cards WHERE customer_id = $1`, [customerId]);
+  return result.rows.length > 0 ? rowToCard(result.rows[0]) : null;
+}
+
+// ==================== Messages ====================
+
+function rowToMessage(row: any): LoyaltyMessage {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    customerId: row.customer_id,
+    title: row.title,
+    body: row.body,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+  };
+}
+
+export async function createLoyaltyMessage(input: {
   userId: string;
-  plan: LoyaltyPlan;
-}): LoyaltySubscription {
-  const { loyaltySubscriptions } = getLmdb();
-  const uid = userIdSchema.parse(input.userId);
-  const plan = planSchema.parse(input.plan);
+  customerId?: string;
+  title: string;
+  body: string;
+}): Promise<LoyaltyMessage> {
+  const id = nanoid();
+  const now = new Date();
 
-  const now = new Date().toISOString();
-  const existing = loyaltySubscriptions.get(uid) as LoyaltySubscription | undefined;
+  const result = await query(`
+    INSERT INTO loyalty_messages (id, user_id, customer_id, title, body, created_at)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    RETURNING *
+  `, [id, input.userId, input.customerId, input.title, input.body, now]);
 
-  const next: LoyaltySubscription = {
-    userId: uid,
-    plan,
-    status: "active",
-    createdAt: existing?.createdAt ?? now,
-    updatedAt: now,
-  };
-
-  loyaltySubscriptions.put(uid, next);
-  return next;
+  return rowToMessage(result.rows[0]);
 }
 
-export function createLoyaltyMessage(input: {
-  userId: string;
-  message: LoyaltyMessageInput;
-}): LoyaltyMessage {
-  ensureActiveLoyaltySubscription(input.userId);
-
-  const { loyaltyMessages, loyaltyCustomers } = getLmdb();
-  const uid = userIdSchema.parse(input.userId);
-  const data = messageInputSchema.parse(input.message);
-
-  // If targeted, validate the customer belongs to this business.
-  if (data.customerId) {
-    const c = loyaltyCustomers.get(data.customerId) as LoyaltyCustomer | undefined;
-    if (!c || c.userId !== uid) throw new Error("CUSTOMER_NOT_FOUND");
-  }
-
-  const now = new Date().toISOString();
-  // Prefix with timestamp so lexicographic order roughly matches creation time.
-  const id = `${Date.now()}_${nanoid(10)}`;
-
-  const msg: LoyaltyMessage = {
-    id,
-    userId: uid,
-    customerId: data.customerId || undefined,
-    title: data.title,
-    body: data.body,
-    createdAt: now,
-  };
-
-  loyaltyMessages.put(id, msg);
-  return msg;
+export async function listLoyaltyMessages(userId: string): Promise<LoyaltyMessage[]> {
+  const result = await query(`SELECT * FROM loyalty_messages WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
+  return result.rows.map(rowToMessage);
 }
 
-export function listLoyaltyMessagesForCustomer(input: {
+export async function listLoyaltyMessagesForCustomer(input: {
   userId: string;
   customerId: string;
   limit?: number;
-}): LoyaltyMessage[] {
-  const { loyaltyMessages } = getLmdb();
-  const uid = userIdSchema.parse(input.userId);
-  const customerId = z.string().trim().min(1).parse(input.customerId);
-  const limit = Math.min(50, Math.max(1, Math.trunc(input.limit ?? 10)));
-
-  const all: LoyaltyMessage[] = [];
-  for (const { value } of loyaltyMessages.getRange({ reverse: true })) {
-    const m = value as LoyaltyMessage;
-    if (m.userId !== uid) continue;
-    if (m.customerId && m.customerId !== customerId) continue;
-    all.push(m);
-    if (all.length >= limit) break;
-  }
-  return all;
+}): Promise<LoyaltyMessage[]> {
+  const limit = input.limit ?? 100;
+  const result = await query(`
+    SELECT * FROM loyalty_messages 
+    WHERE user_id = $1 AND (customer_id = $2 OR customer_id IS NULL)
+    ORDER BY created_at DESC
+    LIMIT $3
+  `, [input.userId, input.customerId, limit]);
+  return result.rows.map(rowToMessage);
 }
 
-export function createLoyaltyCustomer(input: {
-  userId: string;
-  customer: LoyaltyCustomerInput;
-}): LoyaltyCustomer {
-  ensureActiveLoyaltySubscription(input.userId);
+// ==================== Push Subscriptions ====================
 
-  const { loyaltyCustomers, loyaltyCards } = getLmdb();
-  const uid = userIdSchema.parse(input.userId);
-  const data = customerInputSchema.parse(input.customer);
-
-  const now = new Date().toISOString();
-  const customerId = nanoid();
-  const cardId = nanoid();
-
-  // Generate stable memberId (shown in wallet QR/barcode)
-  const memberId = data.memberId || `M${customerId.slice(0, 8).toUpperCase()}`;
-
-  const card: LoyaltyCard = {
-    id: cardId,
-    userId: uid,
-    customerId,
-    status: "active",
-    points: 0,
-    createdAt: now,
-    updatedAt: now,
+function rowToPushSub(row: any): LoyaltyPushSubscription {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    customerId: row.customer_id,
+    endpoint: row.endpoint,
+    keys: row.keys,
+    userAgent: row.user_agent,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
-
-  const customer: LoyaltyCustomer = {
-    id: customerId,
-    userId: uid,
-    fullName: data.fullName,
-    memberId,
-    phone: data.phone,
-    email: data.email,
-    notes: data.notes,
-    tags: data.tags,
-    cardId,
-    points: 0,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  loyaltyCards.put(cardId, card);
-  loyaltyCustomers.put(customerId, customer);
-
-  return customer;
 }
 
-export function listLoyaltyCustomersByUser(userId: string): LoyaltyCustomer[] {
-  const { loyaltyCustomers } = getLmdb();
-  const uid = userIdSchema.safeParse(userId);
-  if (!uid.success) return [];
-
-  const out: LoyaltyCustomer[] = [];
-  for (const { value } of loyaltyCustomers.getRange()) {
-    const c = value as LoyaltyCustomer;
-    if (c.userId === uid.data) out.push(c);
-  }
-
-  out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
-  return out;
+function hashEndpoint(endpoint: string) {
+  return createHash("sha256").update(endpoint).digest("hex").slice(0, 16);
 }
 
-export function adjustLoyaltyCustomerPoints(input: {
+export async function upsertLoyaltyPushSubscription(input: {
   userId: string;
   customerId: string;
-  delta: number;
-}): LoyaltyCustomer {
-  ensureActiveLoyaltySubscription(input.userId);
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  userAgent?: string;
+}): Promise<LoyaltyPushSubscription> {
+  const id = `${input.customerId}:${hashEndpoint(input.endpoint)}`;
+  const now = new Date();
 
-  const { loyaltyCustomers, loyaltyCards } = getLmdb();
-  const uid = userIdSchema.parse(input.userId);
-  const customerId = z.string().trim().min(1).parse(input.customerId);
-  const delta = z.number().int().min(-1000).max(1000).parse(input.delta);
+  const result = await query(`
+    INSERT INTO loyalty_push_subscriptions (id, user_id, customer_id, endpoint, keys, user_agent, created_at, updated_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
+    ON CONFLICT (id) DO UPDATE SET
+      endpoint = $4,
+      keys = $5,
+      user_agent = $6,
+      updated_at = $7
+    RETURNING *
+  `, [id, input.userId, input.customerId, input.endpoint, input.keys, input.userAgent, now]);
 
-  const existing = loyaltyCustomers.get(customerId) as LoyaltyCustomer | undefined;
-  if (!existing || existing.userId !== uid) throw new Error("NOT_FOUND");
+  return rowToPushSub(result.rows[0]);
+}
 
-  const nextPoints = Math.max(0, (existing.points ?? 0) + delta);
-  const now = new Date().toISOString();
+export async function listLoyaltyPushSubscriptionsByCustomer(customerId: string): Promise<LoyaltyPushSubscription[]> {
+  const result = await query(`SELECT * FROM loyalty_push_subscriptions WHERE customer_id = $1`, [customerId]);
+  return result.rows.map(rowToPushSub);
+}
 
-  const next: LoyaltyCustomer = {
-    ...existing,
-    points: nextPoints,
-    updatedAt: now,
+export async function listLoyaltyPushSubscriptionsByBusiness(userId: string): Promise<LoyaltyPushSubscription[]> {
+  const result = await query(`SELECT * FROM loyalty_push_subscriptions WHERE user_id = $1`, [userId]);
+  return result.rows.map(rowToPushSub);
+}
+
+export async function removeLoyaltyPushSubscription(id: string): Promise<boolean> {
+  const result = await query(`DELETE FROM loyalty_push_subscriptions WHERE id = $1`, [id]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+// ==================== Apple Wallet Registrations ====================
+
+function rowToAppleWalletReg(row: any): AppleWalletRegistration {
+  return {
+    id: row.id,
+    passTypeIdentifier: row.pass_type_identifier,
+    serialNumber: row.serial_number,
+    deviceLibraryIdentifier: row.device_library_identifier,
+    pushToken: row.push_token,
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
-
-  loyaltyCustomers.put(customerId, next);
-
-  const card = loyaltyCards.get(existing.cardId) as LoyaltyCard | undefined;
-  if (card) {
-    loyaltyCards.put(existing.cardId, {
-      ...card,
-      points: nextPoints,
-      updatedAt: now,
-    } satisfies LoyaltyCard);
-
-    // Trigger wallet updates (Apple & Google Wallet) - fire and forget
-    triggerWalletUpdate({
-      cardId: existing.cardId,
-      points: nextPoints,
-      delta,
-    });
-  }
-
-  return next;
 }
 
-export function redeemLoyaltyCustomerPoints(input: {
-  userId: string;
-  customerId: string;
-}): { customer: LoyaltyCustomer; settings: LoyaltySettings } {
-  ensureActiveLoyaltySubscription(input.userId);
+export async function upsertAppleWalletRegistration(input: {
+  passTypeIdentifier: string;
+  serialNumber: string;
+  deviceLibraryIdentifier: string;
+  pushToken: string;
+}): Promise<AppleWalletRegistration> {
+  const id = `${input.passTypeIdentifier}:${input.serialNumber}:${input.deviceLibraryIdentifier}`;
+  const now = new Date();
 
-  const uid = userIdSchema.parse(input.userId);
-  const customerId = z.string().trim().min(1).parse(input.customerId);
+  const result = await query(`
+    INSERT INTO apple_wallet_registrations (id, pass_type_identifier, serial_number, device_library_identifier, push_token, updated_at)
+    VALUES ($1, $2, $3, $4, $5, $6)
+    ON CONFLICT (id) DO UPDATE SET push_token = $5, updated_at = $6
+    RETURNING *
+  `, [id, input.passTypeIdentifier, input.serialNumber, input.deviceLibraryIdentifier, input.pushToken, now]);
 
-  const settings = getLoyaltySettingsByUserId(uid) ?? defaultLoyaltySettings(uid);
-
-  const { loyaltyCustomers, loyaltyCards } = getLmdb();
-  const existing = loyaltyCustomers.get(customerId) as LoyaltyCustomer | undefined;
-  if (!existing || existing.userId !== uid) throw new Error("NOT_FOUND");
-
-  const points = existing.points ?? 0;
-  if (points < settings.pointsRequiredPerRedemption) {
-    throw new Error("INSUFFICIENT_POINTS");
-  }
-
-  const nextPoints = Math.max(0, points - settings.pointsDeductPerRedemption);
-  const now = new Date().toISOString();
-
-  const next: LoyaltyCustomer = {
-    ...existing,
-    points: nextPoints,
-    updatedAt: now,
-  };
-
-  loyaltyCustomers.put(customerId, next);
-
-  const card = loyaltyCards.get(existing.cardId) as LoyaltyCard | undefined;
-  if (card) {
-    loyaltyCards.put(existing.cardId, {
-      ...card,
-      points: nextPoints,
-      updatedAt: now,
-    } satisfies LoyaltyCard);
-
-    // Trigger wallet updates (Apple & Google Wallet) - fire and forget
-    triggerWalletUpdate({
-      cardId: existing.cardId,
-      points: nextPoints,
-      delta: -(settings.pointsDeductPerRedemption),
-    });
-  }
-
-  return { customer: next, settings };
+  return rowToAppleWalletReg(result.rows[0]);
 }
 
-export function getLoyaltyCardById(id: string): LoyaltyCard | null {
-  const { loyaltyCards } = getLmdb();
-  const cid = z.string().trim().min(1).safeParse(id);
-  if (!cid.success) return null;
-  return (loyaltyCards.get(cid.data) as LoyaltyCard | undefined) ?? null;
+export async function removeAppleWalletRegistration(
+  passTypeIdentifier: string,
+  serialNumber: string,
+  deviceLibraryIdentifier: string
+): Promise<boolean> {
+  const id = `${passTypeIdentifier}:${serialNumber}:${deviceLibraryIdentifier}`;
+  const result = await query(`DELETE FROM apple_wallet_registrations WHERE id = $1`, [id]);
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function getLoyaltyCustomerById(id: string): LoyaltyCustomer | null {
-  const { loyaltyCustomers } = getLmdb();
-  const cid = z.string().trim().min(1).safeParse(id);
-  if (!cid.success) return null;
-  return (loyaltyCustomers.get(cid.data) as LoyaltyCustomer | undefined) ?? null;
+export async function listAppleWalletRegistrationsForDevice(
+  deviceLibraryIdentifier: string,
+  passTypeIdentifier: string
+): Promise<AppleWalletRegistration[]> {
+  const result = await query(`
+    SELECT * FROM apple_wallet_registrations
+    WHERE device_library_identifier = $1 AND pass_type_identifier = $2
+  `, [deviceLibraryIdentifier, passTypeIdentifier]);
+  return result.rows.map(rowToAppleWalletReg);
 }
 
-export function getLoyaltyCustomerByPhone(input: {
-  userId: string;
-  phone: string;
-}): LoyaltyCustomer | null {
-  const { loyaltyCustomers } = getLmdb();
-  const uid = userIdSchema.safeParse(input.userId);
-  if (!uid.success) return null;
-  
-  const phoneNormalized = input.phone.trim().replace(/\s+/g, "");
-  if (!phoneNormalized) return null;
+export async function listAppleWalletRegistrationsForPass(
+  passTypeIdentifier: string,
+  serialNumber: string
+): Promise<AppleWalletRegistration[]> {
+  const result = await query(`
+    SELECT * FROM apple_wallet_registrations
+    WHERE pass_type_identifier = $1 AND serial_number = $2
+  `, [passTypeIdentifier, serialNumber]);
+  return result.rows.map(rowToAppleWalletReg);
+}
 
-  for (const { value } of loyaltyCustomers.getRange()) {
-    const c = value as LoyaltyCustomer;
-    if (c.userId !== uid.data) continue;
-    const customerPhone = (c.phone ?? "").trim().replace(/\s+/g, "");
-    if (customerPhone === phoneNormalized) return c;
-  }
-  
-  return null;
+/**
+ * Get push tokens for Apple Wallet push notifications for a given pass serial number
+ */
+export async function listAppleWalletPushTokensForSerial(
+  passTypeIdentifier: string,
+  serialNumber: string
+): Promise<string[]> {
+  const regs = await listAppleWalletRegistrationsForPass(passTypeIdentifier, serialNumber);
+  return regs.map((r) => r.pushToken);
+}
+
+// ==================== Alias Functions for API Compatibility ====================
+
+/** Alias for getLoyaltyProfile */
+export const getLoyaltyProfileByUserId = getLoyaltyProfile;
+
+/** Alias for getLoyaltySettings */
+export const getLoyaltySettingsByUserId = getLoyaltySettings;
+
+/** Alias for createOrUpdateLoyaltySettings */
+export const upsertLoyaltySettings = createOrUpdateLoyaltySettings;
+
+/** Alias for createOrUpdateLoyaltyProfile */
+export const upsertLoyaltyProfile = createOrUpdateLoyaltyProfile;
+
+/** Alias for listLoyaltyCustomers */
+export const listLoyaltyCustomersByUser = listLoyaltyCustomers;
+
+/** Alias for adjustCustomerPoints */
+export const adjustLoyaltyCustomerPoints = adjustCustomerPoints;
+
+/** Redeem customer points (deduct) */
+export async function redeemLoyaltyCustomerPoints(
+  customerId: string,
+  pointsToDeduct: number
+): Promise<LoyaltyCustomer> {
+  return adjustCustomerPoints(customerId, -Math.abs(pointsToDeduct));
+}
+
+/** List all loyalty profiles (for admin) */
+export async function listLoyaltyProfiles(): Promise<LoyaltyProfile[]> {
+  const result = await query(`SELECT * FROM loyalty_profiles ORDER BY created_at DESC`);
+  return result.rows.map(rowToProfile);
 }

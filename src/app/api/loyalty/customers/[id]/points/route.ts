@@ -23,11 +23,7 @@ export async function PATCH(
     const json = await req.json();
     const data = patchSchema.parse(json);
 
-    const customer = adjustLoyaltyCustomerPoints({
-      userId: auth.id,
-      customerId: id,
-      delta: data.delta,
-    });
+    const customer = await adjustLoyaltyCustomerPoints(id, data.delta);
 
     // Professional wallet update: Update both Apple & Google Wallet passes
     // This runs asynchronously and provides detailed results

@@ -2,7 +2,7 @@ import { z } from "zod";
 import {
   defaultLoyaltySettings,
   getLoyaltyProfileByJoinCode,
-  getLoyaltyCustomerByPhone,
+  getLoyaltyCustomerByMemberId,
   getLoyaltySettingsByUserId,
 } from "@/lib/db/loyalty";
 
@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 
 const lookupSchema = z.object({
   joinCode: z.string().trim().min(1),
-  phone: z.string().trim().optional(),
+  memberId: z.string().trim().optional(),
 });
 
 /**
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const data = lookupSchema.parse(json);
 
     // Find business profile
-    const profile = getLoyaltyProfileByJoinCode(data.joinCode);
+    const profile = await getLoyaltyProfileByJoinCode(data.joinCode);
     if (!profile) {
       return Response.json(
         { ok: false, error: "BUSINESS_NOT_FOUND" },
@@ -32,16 +32,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const settings = getLoyaltySettingsByUserId(profile.userId) ?? defaultLoyaltySettings(profile.userId);
+    const settings = (await getLoyaltySettingsByUserId(profile.userId)) ?? defaultLoyaltySettings(profile.userId);
     const pointsIconUrl = settings.pointsIconMode === "custom" ? settings.pointsIconUrl : profile.logoUrl;
 
-    // If phone is provided, search for customer
+    // If memberId is provided, search for customer
     let customer = null;
-    if (data.phone) {
-      customer = getLoyaltyCustomerByPhone({
-        userId: profile.userId,
-        phone: data.phone,
-      });
+    if (data.memberId) {
+      customer = await getLoyaltyCustomerByMemberId(profile.userId, data.memberId);
     }
 
     return Response.json({

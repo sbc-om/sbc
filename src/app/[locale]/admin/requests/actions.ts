@@ -22,13 +22,13 @@ export async function respondToRequestAction(
   response: string
 ) {
   const admin = await requireAdmin(locale);
-  const request = getBusinessRequestById(requestId);
+  const request = await getBusinessRequestById(requestId);
   
   if (!request) {
     throw new Error("REQUEST_NOT_FOUND");
   }
 
-  updateBusinessRequestStatus(requestId, status, response, admin.id);
+  await updateBusinessRequestStatus(requestId, status, response, admin.id);
 
   revalidatePath(`/${locale}/admin/requests`);
   revalidatePath(`/${locale}/admin`);
@@ -40,18 +40,21 @@ export async function convertRequestToBusinessAction(
 ) {
   await requireAdmin(locale);
   
-  const request = getBusinessRequestById(requestId);
+  const request = await getBusinessRequestById(requestId);
   if (!request) {
     throw new Error("REQUEST_NOT_FOUND");
   }
 
-  const user = getUserById(request.userId);
+  if (!request.userId) {
+    throw new Error("USER_NOT_FOUND");
+  }
+  const user = await getUserById(request.userId);
   if (!user) {
     throw new Error("USER_NOT_FOUND");
   }
 
   // Generate slug from name
-  let baseSlug = slugify(request.name, {
+  let baseSlug = slugify(request.businessName || request.name.en, {
     lower: true,
     strict: true,
     trim: true,
@@ -72,18 +75,18 @@ export async function convertRequestToBusinessAction(
       // Get category text if categoryId exists
       let category: string | undefined;
       if (request.categoryId) {
-        const cat = getCategoryById(request.categoryId);
+        const cat = await getCategoryById(request.categoryId);
         if (cat) {
           category = `${cat.name.en} | ${cat.name.ar}`;
         }
       }
 
-      const business = createBusiness({
+      const business = await createBusiness({
         slug,
         ownerId: request.userId,
         name: {
-          en: request.name,
-          ar: request.name,
+          en: request.name.en,
+          ar: request.name.ar,
         },
         description: request.description
           ? {
@@ -101,7 +104,7 @@ export async function convertRequestToBusinessAction(
 
       // Success! Update request status if not already approved
       if (request.status !== "approved") {
-        updateBusinessRequestStatus(
+        await updateBusinessRequestStatus(
           requestId,
           "approved",
           locale === "ar" 
@@ -133,7 +136,7 @@ export async function convertRequestToBusinessAction(
 
 export async function deleteRequestAction(locale: Locale, requestId: string) {
   await requireAdmin(locale);
-  deleteBusinessRequest(requestId);
+  await deleteBusinessRequest(requestId);
   
   revalidatePath(`/${locale}/admin/requests`);
   revalidatePath(`/${locale}/admin`);

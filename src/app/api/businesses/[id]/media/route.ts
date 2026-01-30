@@ -2,10 +2,8 @@ import fs from "node:fs/promises";
 
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
-  addBusinessMedia,
   getBusinessById,
-  removeBusinessMedia,
-  setBusinessSingleMedia,
+  setBusinessMedia,
   type BusinessMediaKind,
 } from "@/lib/db/businesses";
 import {
@@ -31,7 +29,7 @@ async function requireAdminApi() {
   return user ?? null;
 }
 
-function canEditBusiness(user: Awaited<ReturnType<typeof requireAdminApi>>, business: ReturnType<typeof getBusinessById>): boolean {
+function canEditBusiness(user: Awaited<ReturnType<typeof requireAdminApi>>, business: Awaited<ReturnType<typeof getBusinessById>>): boolean {
   if (!user || !business) return false;
   if (user.role === "admin") return true;
   return !!business.ownerId && business.ownerId === user.id;
@@ -42,7 +40,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  const business = getBusinessById(id);
+  const business = await getBusinessById(id);
   if (!business) return new Response("Not found", { status: 404 });
 
   const user = await requireAdminApi();
@@ -57,7 +55,7 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  const business = getBusinessById(id);
+  const business = await getBusinessById(id);
   if (!business) return new Response("Not found", { status: 404 });
 
   const user = await requireAdminApi();
@@ -94,11 +92,11 @@ export async function POST(
     let business;
     if (kind === "cover" || kind === "logo" || kind === "banner") {
       // For single-image kinds, replace existing value.
-      business = setBusinessSingleMedia(id, kind, stored[0].url);
+      business = await setBusinessMedia(id, kind, stored[0].url);
     } else if (kind === "gallery") {
-      business = addBusinessMedia(id, "gallery", stored.map((s) => s.url));
+      business = await setBusinessMedia(id, "gallery", stored.map((s) => s.url));
     } else {
-      business = addBusinessMedia(id, "video", stored.map((s) => s.url));
+      business = await setBusinessMedia(id, "video", stored.map((s) => s.url));
     }
 
     return Response.json({ ok: true, urls: stored.map((s) => s.url), media: business.media });
@@ -114,7 +112,7 @@ export async function DELETE(
 ) {
   const { id } = await params;
 
-  const business = getBusinessById(id);
+  const business = await getBusinessById(id);
   if (!business) return new Response("Not found", { status: 404 });
 
   const user = await requireAdminApi();
@@ -136,9 +134,9 @@ export async function DELETE(
     // Remove sidecar metadata if present.
     await fs.unlink(`${diskPath}.json`).catch(() => {});
 
-    const business = removeBusinessMedia(id, kind, url);
+    const updatedBusiness = await setBusinessMedia(id, kind, null);
 
-    return Response.json({ ok: true, media: business.media });
+    return Response.json({ ok: true, media: updatedBusiness.media });
   } catch (err) {
     const message = err instanceof Error ? err.message : "DELETE_FAILED";
     return Response.json({ ok: false, error: message }, { status: 400 });

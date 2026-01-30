@@ -1,316 +1,145 @@
-import { nanoid } from "nanoid";
-import { z } from "zod";
+import { query } from "./postgres";
 
-import { getLmdb } from "./lmdb";
+// Business likes
+export async function likeBusiness(userId: string, businessId: string): Promise<void> {
+  await query(`
+    INSERT INTO user_business_likes (user_id, business_id, created_at)
+    VALUES ($1, $2, $3)
+    ON CONFLICT DO NOTHING
+  `, [userId, businessId, new Date()]);
+}
+
+export async function unlikeBusiness(userId: string, businessId: string): Promise<void> {
+  await query(`DELETE FROM user_business_likes WHERE user_id = $1 AND business_id = $2`, [userId, businessId]);
+}
+
+export async function hasUserLikedBusiness(userId: string, businessId: string): Promise<boolean> {
+  const result = await query(`
+    SELECT 1 FROM user_business_likes WHERE user_id = $1 AND business_id = $2
+  `, [userId, businessId]);
+  return result.rows.length > 0;
+}
+
+export async function getBusinessLikeCount(businessId: string): Promise<number> {
+  const result = await query(`
+    SELECT COUNT(*) FROM user_business_likes WHERE business_id = $1
+  `, [businessId]);
+  return parseInt(result.rows[0].count);
+}
+
+export async function getUserLikedBusinessIds(userId: string): Promise<string[]> {
+  const result = await query(`
+    SELECT business_id FROM user_business_likes WHERE user_id = $1
+  `, [userId]);
+  return result.rows.map((row: { business_id: string }) => row.business_id);
+}
+
+// Business saves
+export async function saveBusiness(userId: string, businessId: string): Promise<void> {
+  await query(`
+    INSERT INTO user_business_saves (user_id, business_id, created_at)
+    VALUES ($1, $2, $3)
+    ON CONFLICT DO NOTHING
+  `, [userId, businessId, new Date()]);
+}
+
+export async function unsaveBusiness(userId: string, businessId: string): Promise<void> {
+  await query(`DELETE FROM user_business_saves WHERE user_id = $1 AND business_id = $2`, [userId, businessId]);
+}
+
+export async function hasUserSavedBusiness(userId: string, businessId: string): Promise<boolean> {
+  const result = await query(`
+    SELECT 1 FROM user_business_saves WHERE user_id = $1 AND business_id = $2
+  `, [userId, businessId]);
+  return result.rows.length > 0;
+}
+
+export async function getUserSavedBusinessIds(userId: string): Promise<string[]> {
+  const result = await query(`
+    SELECT business_id FROM user_business_saves WHERE user_id = $1 ORDER BY created_at DESC
+  `, [userId]);
+  return result.rows.map((row: { business_id: string }) => row.business_id);
+}
+
+// Business comments
+import { nanoid } from "nanoid";
 import type { BusinessComment, BusinessCommentStatus } from "./types";
 
-const businessIdSchema = z.string().trim().min(1);
-const userIdSchema = z.string().trim().min(1);
-const commentIdSchema = z.string().trim().min(1);
-const commentTextSchema = z.string().trim().min(1).max(1200);
-
-function likeKey(userId: string, businessId: string) {
-  return `${userIdSchema.parse(userId)}:${businessIdSchema.parse(businessId)}`;
+function rowToComment(row: any): BusinessComment {
+  return {
+    id: row.id,
+    businessId: row.business_id,
+    userId: row.user_id,
+    text: row.text,
+    status: row.status as BusinessCommentStatus,
+    moderatedByUserId: row.moderated_by_user_id,
+    moderatedAt: row.moderated_at?.toISOString(),
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+  };
 }
 
-function ensureNonNegativeInt(n: unknown) {
-  if (typeof n !== "number" || !Number.isFinite(n)) return 0;
-  return Math.max(0, Math.floor(n));
-}
-
-export function getBusinessLikeCount(businessId: string): number {
-  const { businessLikeCounts } = getLmdb();
-  const bid = businessIdSchema.parse(businessId);
-  const n = businessLikeCounts.get(bid) as number | undefined;
-  return ensureNonNegativeInt(n);
-}
-
-export function hasUserLikedBusiness(userId: string, businessId: string): boolean {
-  const { userBusinessLikes } = getLmdb();
-  const key = likeKey(userId, businessId);
-  return !!userBusinessLikes.get(key);
-}
-
-export function toggleBusinessLike(input: {
-  userId: string;
-  businessId: string;
-}): { liked: boolean; count: number } {
-  const { userBusinessLikes, businessLikeCounts } = getLmdb();
-  const key = likeKey(input.userId, input.businessId);
-  const bid = businessIdSchema.parse(input.businessId);
-
-  const existing = userBusinessLikes.get(key) as string | undefined;
-  const now = new Date().toISOString();
-
-  const currentCount = getBusinessLikeCount(bid);
-
-  if (existing) {
-    userBusinessLikes.remove(key);
-    const next = Math.max(0, currentCount - 1);
-    businessLikeCounts.put(bid, next);
-    return { liked: false, count: next };
-  }
-
-  userBusinessLikes.put(key, now);
-  const next = currentCount + 1;
-  businessLikeCounts.put(bid, next);
-  return { liked: true, count: next };
-}
-
-function normalizeStatus(s: unknown): BusinessCommentStatus | null {
-  if (s === "pending" || s === "approved" || s === "rejected") return s;
-  return null;
-}
-
-export function listBusinessComments(businessId: string): BusinessComment[] {
-  const { businessComments } = getLmdb();
-  const bid = businessIdSchema.parse(businessId);
-  const value = businessComments.get(bid) as BusinessComment[] | undefined;
-  if (!Array.isArray(value)) return [];
-
-  // Basic shape hardening (avoid breaking UI on old data)
-  const out: BusinessComment[] = [];
-  for (const raw of value) {
-    if (!raw || typeof raw !== "object") continue;
-    const c = raw as BusinessComment;
-    if (c.businessId !== bid) continue;
-    if (!normalizeStatus(c.status)) continue;
-    if (!c.id || !c.userId || !c.text || !c.createdAt) continue;
-    out.push(c);
-  }
-
-  // Oldest -> newest for threaded feel
-  out.sort((a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0));
-  return out;
-}
-
-export function createBusinessComment(input: {
+export async function createBusinessComment(input: {
   businessId: string;
   userId: string;
   text: string;
-}): BusinessComment {
-  const { businessComments } = getLmdb();
+}): Promise<BusinessComment> {
+  const id = nanoid();
+  const now = new Date();
 
-  const bid = businessIdSchema.parse(input.businessId);
-  const uid = userIdSchema.parse(input.userId);
-  const text = commentTextSchema.parse(input.text);
+  const result = await query(`
+    INSERT INTO business_comments (id, business_id, user_id, text, status, created_at, updated_at)
+    VALUES ($1, $2, $3, $4, 'pending', $5, $5)
+    RETURNING *
+  `, [id, input.businessId, input.userId, input.text, now]);
 
-  const now = new Date().toISOString();
-
-  const comment: BusinessComment = {
-    id: nanoid(),
-    businessId: bid,
-    userId: uid,
-    text,
-    status: "pending",
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  const current = listBusinessComments(bid);
-  const next = [...current, comment].slice(-500);
-  businessComments.put(bid, next);
-
-  return comment;
+  return rowToComment(result.rows[0]);
 }
 
-function updateComment(
-  businessId: string,
+export async function getBusinessComments(businessId: string): Promise<BusinessComment[]> {
+  const result = await query(`
+    SELECT * FROM business_comments WHERE business_id = $1 ORDER BY created_at DESC
+  `, [businessId]);
+  return result.rows.map(rowToComment);
+}
+
+export async function getApprovedBusinessComments(businessId: string): Promise<BusinessComment[]> {
+  const result = await query(`
+    SELECT * FROM business_comments WHERE business_id = $1 AND status = 'approved' ORDER BY created_at DESC
+  `, [businessId]);
+  return result.rows.map(rowToComment);
+}
+
+export async function moderateComment(
   commentId: string,
-  updater: (c: BusinessComment) => BusinessComment,
-): BusinessComment {
-  const { businessComments } = getLmdb();
-  const bid = businessIdSchema.parse(businessId);
-  const cid = commentIdSchema.parse(commentId);
+  status: BusinessCommentStatus,
+  moderatorUserId: string
+): Promise<BusinessComment> {
+  const result = await query(`
+    UPDATE business_comments SET
+      status = $1,
+      moderated_by_user_id = $2,
+      moderated_at = $3,
+      updated_at = $3
+    WHERE id = $4
+    RETURNING *
+  `, [status, moderatorUserId, new Date(), commentId]);
 
-  const current = listBusinessComments(bid);
-  const idx = current.findIndex((c) => c.id === cid);
-  if (idx === -1) throw new Error("NOT_FOUND");
-
-  const updated = updater(current[idx]!);
-
-  const next = [...current];
-  next[idx] = updated;
-  businessComments.put(bid, next);
-
-  return updated;
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToComment(result.rows[0]);
 }
 
-export function approveBusinessComment(input: {
-  businessId: string;
-  commentId: string;
-  moderatedByUserId: string;
-}): BusinessComment {
-  return updateComment(input.businessId, input.commentId, (c) => {
-    const now = new Date().toISOString();
-    return {
-      ...c,
-      status: "approved",
-      moderatedByUserId: userIdSchema.parse(input.moderatedByUserId),
-      moderatedAt: now,
-      updatedAt: now,
-    };
-  });
+export async function deleteComment(commentId: string): Promise<boolean> {
+  const result = await query(`DELETE FROM business_comments WHERE id = $1`, [commentId]);
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function rejectBusinessComment(input: {
-  businessId: string;
-  commentId: string;
-  moderatedByUserId: string;
-}): BusinessComment {
-  return updateComment(input.businessId, input.commentId, (c) => {
-    const now = new Date().toISOString();
-    return {
-      ...c,
-      status: "rejected",
-      moderatedByUserId: userIdSchema.parse(input.moderatedByUserId),
-      moderatedAt: now,
-      updatedAt: now,
-    };
-  });
+export async function listAllComments(): Promise<BusinessComment[]> {
+  const result = await query(`SELECT * FROM business_comments ORDER BY created_at DESC`);
+  return result.rows.map(rowToComment);
 }
 
-export function deleteBusinessComment(input: {
-  businessId: string;
-  commentId: string;
-}): void {
-  const { businessComments } = getLmdb();
-  const bid = businessIdSchema.parse(input.businessId);
-  const cid = commentIdSchema.parse(input.commentId);
-
-  const current = listBusinessComments(bid);
-  const next = current.filter((c) => c.id !== cid);
-  businessComments.put(bid, next);
-}
-
-// =====================
-// Business Save/Bookmark Functions
-// =====================
-
-function saveKey(userId: string, businessId: string) {
-  return `${userIdSchema.parse(userId)}:${businessIdSchema.parse(businessId)}`;
-}
-
-export function hasUserSavedBusiness(userId: string, businessId: string): boolean {
-  const { userBusinessSaves } = getLmdb();
-  const key = saveKey(userId, businessId);
-  return !!userBusinessSaves.get(key);
-}
-
-export function toggleBusinessSave(input: {
-  userId: string;
-  businessId: string;
-}): { saved: boolean } {
-  const { userBusinessSaves } = getLmdb();
-  const key = saveKey(input.userId, input.businessId);
-
-  const existing = userBusinessSaves.get(key) as string | undefined;
-  const now = new Date().toISOString();
-
-  if (existing) {
-    userBusinessSaves.remove(key);
-    return { saved: false };
-  }
-
-  userBusinessSaves.put(key, now);
-  return { saved: true };
-}
-
-export function getUserSavedBusinessIds(userId: string): string[] {
-  const { userBusinessSaves } = getLmdb();
-  const uid = userIdSchema.parse(userId);
-  const savedIds: string[] = [];
-
-  // Iterate through all saved business entries for this user
-  for (const { key } of userBusinessSaves.getRange({})) {
-    const keyStr = String(key);
-    if (keyStr.startsWith(`${uid}:`)) {
-      const businessId = keyStr.substring(uid.length + 1);
-      savedIds.push(businessId);
-    }
-  }
-
-  return savedIds;
-}
-
-// =====================
-// Business Follower Functions
-// =====================
-
-export function getBusinessFollowersCount(businessId: string): number {
-  const { userBusinessLikes, userBusinessSaves } = getLmdb();
-  const bid = businessIdSchema.parse(businessId);
-  const followers = new Set<string>();
-
-  // Count users who liked
-  for (const { key } of userBusinessLikes.getRange({})) {
-    const keyStr = String(key);
-    const [userId, bId] = keyStr.split(":");
-    if (bId === bid && userId) {
-      followers.add(userId);
-    }
-  }
-
-  // Count users who saved (union)
-  for (const { key } of userBusinessSaves.getRange({})) {
-    const keyStr = String(key);
-    const [userId, bId] = keyStr.split(":");
-    if (bId === bid && userId) {
-      followers.add(userId);
-    }
-  }
-
-  return followers.size;
-}
-
-export function getBusinessesFollowersCount(businessIds: string[]): number {
-  const { userBusinessLikes, userBusinessSaves } = getLmdb();
-  const followers = new Set<string>();
-  const bidSet = new Set(businessIds.map(id => businessIdSchema.parse(id)));
-
-  // Count users who liked any business
-  for (const { key } of userBusinessLikes.getRange({})) {
-    const keyStr = String(key);
-    const [userId, bId] = keyStr.split(":");
-    if (bId && bidSet.has(bId) && userId) {
-      followers.add(userId);
-    }
-  }
-
-  // Count users who saved any business (union)
-  for (const { key } of userBusinessSaves.getRange({})) {
-    const keyStr = String(key);
-    const [userId, bId] = keyStr.split(":");
-    if (bId && bidSet.has(bId) && userId) {
-      followers.add(userId);
-    }
-  }
-
-  return followers.size;
-}
-
-export function getBusinessFollowers(businessId: string): string[] {
-  const { userBusinessLikes, userBusinessSaves } = getLmdb();
-  const bid = businessIdSchema.parse(businessId);
-  const followers = new Set<string>();
-
-  // Get users who liked
-  for (const { key } of userBusinessLikes.getRange({})) {
-    const keyStr = String(key);
-    const [userId, bId] = keyStr.split(":");
-    if (bId === bid && userId) {
-      followers.add(userId);
-    }
-  }
-
-  // Get users who saved
-  for (const { key } of userBusinessSaves.getRange({})) {
-    const keyStr = String(key);
-    const [userId, bId] = keyStr.split(":");
-    if (bId === bid && userId) {
-      followers.add(userId);
-    }
-  }
-
-  return Array.from(followers);
+export async function listPendingComments(): Promise<BusinessComment[]> {
+  const result = await query(`SELECT * FROM business_comments WHERE status = 'pending' ORDER BY created_at DESC`);
+  return result.rows.map(rowToComment);
 }

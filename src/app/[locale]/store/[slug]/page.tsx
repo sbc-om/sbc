@@ -27,7 +27,7 @@ export default async function StoreProductPage({
   const dict = await getDictionary(locale as Locale);
   const user = await getCurrentUser();
 
-  const product = getStoreProductBySlug(slug);
+  const product = await getStoreProductBySlug(slug);
   if (!product) notFound();
 
   const ar = locale === "ar";

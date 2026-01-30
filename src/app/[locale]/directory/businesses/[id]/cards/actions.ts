@@ -25,19 +25,17 @@ export async function createBusinessCardAction(
 ) {
   const user = await requireUser(locale);
 
-  const card = createBusinessCard({
+  const card = await createBusinessCard({
     ownerId: user.id,
     businessId,
-    data: {
-      fullName: String(formData.get("fullName") || "").trim(),
-      title: String(formData.get("title") || "").trim() || undefined,
-      email: String(formData.get("email") || "").trim() || undefined,
-      phone: String(formData.get("phone") || "").trim() || undefined,
-      website: String(formData.get("website") || "").trim() || undefined,
-      avatarUrl: String(formData.get("avatarUrl") || "").trim() || undefined,
-      bio: String(formData.get("bio") || "").trim() || undefined,
-      isPublic: readBoolean(formData, "isPublic") ?? true,
-    },
+    fullName: String(formData.get("fullName") || "").trim(),
+    title: String(formData.get("title") || "").trim() || undefined,
+    email: String(formData.get("email") || "").trim() || undefined,
+    phone: String(formData.get("phone") || "").trim() || undefined,
+    website: String(formData.get("website") || "").trim() || undefined,
+    avatarUrl: String(formData.get("avatarUrl") || "").trim() || undefined,
+    bio: String(formData.get("bio") || "").trim() || undefined,
+    isPublic: readBoolean(formData, "isPublic") ?? true,
   });
 
   revalidatePath(`/${locale}/directory/businesses/${businessId}/cards`);
@@ -52,19 +50,15 @@ export async function updateBusinessCardAction(
 ) {
   const user = await requireUser(locale);
 
-  updateBusinessCard({
-    ownerId: user.id,
-    cardId,
-    data: {
-      fullName: String(formData.get("fullName") || "").trim(),
-      title: String(formData.get("title") || "").trim() || undefined,
-      email: String(formData.get("email") || "").trim() || undefined,
-      phone: String(formData.get("phone") || "").trim() || undefined,
-      website: String(formData.get("website") || "").trim() || undefined,
-      avatarUrl: String(formData.get("avatarUrl") || "").trim() || undefined,
-      bio: String(formData.get("bio") || "").trim() || undefined,
-      isPublic: readBoolean(formData, "isPublic") ?? true,
-    },
+  await updateBusinessCard(cardId, {
+    fullName: String(formData.get("fullName") || "").trim(),
+    title: String(formData.get("title") || "").trim() || undefined,
+    email: String(formData.get("email") || "").trim() || undefined,
+    phone: String(formData.get("phone") || "").trim() || undefined,
+    website: String(formData.get("website") || "").trim() || undefined,
+    avatarUrl: String(formData.get("avatarUrl") || "").trim() || undefined,
+    bio: String(formData.get("bio") || "").trim() || undefined,
+    isPublic: readBoolean(formData, "isPublic") ?? true,
   });
 
   revalidatePath(`/${locale}/directory/businesses/${businessId}/cards`);
@@ -77,8 +71,8 @@ export async function deleteBusinessCardAction(
   businessId: string,
   cardId: string
 ) {
-  const user = await requireUser(locale);
-  deleteBusinessCard({ ownerId: user.id, cardId });
+  await requireUser(locale);
+  await deleteBusinessCard(cardId);
 
   revalidatePath(`/${locale}/directory/businesses/${businessId}/cards`);
   revalidatePath(`/${locale}/business-card/${cardId}`);
@@ -91,8 +85,8 @@ export async function toggleBusinessCardVisibilityAction(
   cardId: string,
   isPublic: boolean
 ) {
-  const user = await requireUser(locale);
-  updateBusinessCard({ ownerId: user.id, cardId, data: { isPublic } });
+  await requireUser(locale);
+  await updateBusinessCard(cardId, { isPublic });
 
   revalidatePath(`/${locale}/directory/businesses/${businessId}/cards`);
   revalidatePath(`/${locale}/business-card/${cardId}`);
@@ -105,7 +99,7 @@ export async function editBusinessCardRedirectAction(
   cardId: string
 ) {
   await requireUser(locale);
-  const card = getBusinessCardById(cardId);
+  const card = await getBusinessCardById(cardId);
   if (!card) return;
   redirect(`/${locale}/directory/businesses/${businessId}/cards/${card.id}`);
 }

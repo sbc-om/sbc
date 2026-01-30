@@ -1,195 +1,173 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { getLmdb } from "./lmdb";
-import { getBusinessById } from "./businesses";
+import { query, transaction } from "./postgres";
 import type { BusinessCard } from "./types";
 
-const idSchema = z.string().trim().min(1);
-const ownerIdSchema = z.string().trim().min(1);
-const businessIdSchema = z.string().trim().min(1);
+const businessCardSchema = z.object({
+  businessId: z.string().min(1),
+  ownerId: z.string().min(1),
+  fullName: z.string().trim().min(1).max(120),
+  title: z.string().trim().max(100).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().trim().max(50).optional(),
+  website: z.string().url().optional(),
+  avatarUrl: z.string().url().optional(),
+  bio: z.string().trim().max(500).optional(),
+  isPublic: z.boolean().default(true),
+});
 
-const cardInputSchema = z
-  .object({
-    fullName: z.string().trim().min(2).max(120),
-    title: z.string().trim().min(1).max(120).optional(),
-    email: z.string().trim().email().optional(),
-    phone: z.string().trim().min(6).max(40).optional(),
-    website: z.string().trim().min(1).max(2048).optional(),
-    avatarUrl: z.string().trim().min(1).max(2048).optional(),
-    bio: z.string().trim().min(1).max(2000).optional(),
-    isPublic: z.boolean().optional(),
-  })
-  .strict();
+export type BusinessCardInput = z.infer<typeof businessCardSchema>;
 
-export type BusinessCardInput = z.infer<typeof cardInputSchema>;
-
-function ensureOwnerForBusiness(ownerId: string, businessId: string) {
-  const business = getBusinessById(businessId);
-  if (!business) throw new Error("BUSINESS_NOT_FOUND");
-  if (!business.ownerId || business.ownerId !== ownerId) throw new Error("UNAUTHORIZED");
-  const approved = business.isApproved ?? business.isVerified ?? false;
-  if (!approved) throw new Error("BUSINESS_NOT_APPROVED");
-  return business;
+function rowToBusinessCard(row: any): BusinessCard {
+  return {
+    id: row.id,
+    businessId: row.business_id,
+    ownerId: row.owner_id,
+    fullName: row.full_name,
+    title: row.title,
+    email: row.email,
+    phone: row.phone,
+    website: row.website,
+    avatarUrl: row.avatar_url,
+    bio: row.bio,
+    isPublic: row.is_public ?? true,
+    isApproved: row.is_approved ?? false,
+    approvedAt: row.approved_at?.toISOString(),
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+  };
 }
 
-export function createBusinessCard(input: {
+export async function createBusinessCard(input: BusinessCardInput): Promise<BusinessCard> {
+  const data = businessCardSchema.parse(input);
+  const id = nanoid();
+  const now = new Date();
+
+  const result = await query(`
+    INSERT INTO business_cards (
+      id, business_id, owner_id, full_name, title, email, phone, website,
+      avatar_url, bio, is_public, is_approved, created_at, updated_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, $12, $12)
+    RETURNING *
+  `, [
+    id, data.businessId, data.ownerId, data.fullName, data.title,
+    data.email, data.phone, data.website, data.avatarUrl, data.bio,
+    data.isPublic, now
+  ]);
+
+  return rowToBusinessCard(result.rows[0]);
+}
+
+export async function getBusinessCardById(id: string): Promise<BusinessCard | null> {
+  const result = await query(`SELECT * FROM business_cards WHERE id = $1`, [id]);
+  return result.rows.length > 0 ? rowToBusinessCard(result.rows[0]) : null;
+}
+
+export async function getBusinessCardsByBusinessId(businessId: string): Promise<BusinessCard[]> {
+  const result = await query(`
+    SELECT * FROM business_cards WHERE business_id = $1 ORDER BY created_at DESC
+  `, [businessId]);
+  return result.rows.map(rowToBusinessCard);
+}
+
+export async function getBusinessCardsByOwnerId(ownerId: string): Promise<BusinessCard[]> {
+  const result = await query(`
+    SELECT * FROM business_cards WHERE owner_id = $1 ORDER BY created_at DESC
+  `, [ownerId]);
+  return result.rows.map(rowToBusinessCard);
+}
+
+export async function updateBusinessCard(
+  id: string,
+  input: Partial<BusinessCardInput>
+): Promise<BusinessCard> {
+  const currentRes = await query(`SELECT * FROM business_cards WHERE id = $1`, [id]);
+  if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
+  const current = rowToBusinessCard(currentRes.rows[0]);
+
+  const result = await query(`
+    UPDATE business_cards SET
+      full_name = COALESCE($1, full_name),
+      title = $2,
+      email = $3,
+      phone = $4,
+      website = $5,
+      avatar_url = $6,
+      bio = $7,
+      is_public = COALESCE($8, is_public),
+      updated_at = $9
+    WHERE id = $10
+    RETURNING *
+  `, [
+    input.fullName,
+    input.title !== undefined ? input.title : current.title,
+    input.email !== undefined ? input.email : current.email,
+    input.phone !== undefined ? input.phone : current.phone,
+    input.website !== undefined ? input.website : current.website,
+    input.avatarUrl !== undefined ? input.avatarUrl : current.avatarUrl,
+    input.bio !== undefined ? input.bio : current.bio,
+    input.isPublic,
+    new Date(),
+    id
+  ]);
+
+  return rowToBusinessCard(result.rows[0]);
+}
+
+export async function deleteBusinessCard(id: string): Promise<boolean> {
+  const result = await query(`DELETE FROM business_cards WHERE id = $1`, [id]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+export async function setBusinessCardApproved(id: string, isApproved: boolean): Promise<BusinessCard> {
+  const result = await query(`
+    UPDATE business_cards SET
+      is_approved = $1,
+      approved_at = CASE WHEN $1 THEN $2 ELSE NULL END,
+      updated_at = $2
+    WHERE id = $3
+    RETURNING *
+  `, [isApproved, new Date(), id]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToBusinessCard(result.rows[0]);
+}
+
+export async function listAllBusinessCards(): Promise<BusinessCard[]> {
+  const result = await query(`SELECT * FROM business_cards ORDER BY created_at DESC`);
+  return result.rows.map(rowToBusinessCard);
+}
+
+export async function listApprovedBusinessCards(): Promise<BusinessCard[]> {
+  const result = await query(`
+    SELECT * FROM business_cards WHERE is_approved = true AND is_public = true ORDER BY created_at DESC
+  `);
+  return result.rows.map(rowToBusinessCard);
+}
+
+// ==================== Alias Functions for API Compatibility ====================
+
+/** List business cards for a business (with owner check) */
+export async function listBusinessCardsByBusiness(input: {
   ownerId: string;
   businessId: string;
-  data: BusinessCardInput;
-}): BusinessCard {
-  const { businessCards } = getLmdb();
-
-  const ownerId = ownerIdSchema.parse(input.ownerId);
-  const businessId = businessIdSchema.parse(input.businessId);
-  const data = cardInputSchema.parse(input.data);
-
-  ensureOwnerForBusiness(ownerId, businessId);
-
-  const now = new Date().toISOString();
-  const card: BusinessCard = {
-    id: nanoid(12),
-    businessId,
-    ownerId,
-    fullName: data.fullName,
-    title: data.title || undefined,
-    email: data.email || undefined,
-    phone: data.phone || undefined,
-    website: data.website || undefined,
-    avatarUrl: data.avatarUrl || undefined,
-    bio: data.bio || undefined,
-    isPublic: data.isPublic ?? true,
-    isApproved: false,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  businessCards.put(card.id, card);
-  return card;
+}): Promise<BusinessCard[]> {
+  const result = await query(`
+    SELECT * FROM business_cards 
+    WHERE business_id = $1 AND owner_id = $2
+    ORDER BY created_at DESC
+  `, [input.businessId, input.ownerId]);
+  return result.rows.map(rowToBusinessCard);
 }
 
-export function getBusinessCardById(cardId: string): BusinessCard | null {
-  const { businessCards } = getLmdb();
-  const id = idSchema.safeParse(cardId);
-  if (!id.success) return null;
-  return (businessCards.get(id.data) as BusinessCard | undefined) ?? null;
+/** List public business cards for a business */
+export async function listPublicBusinessCardsByBusiness(businessId: string): Promise<BusinessCard[]> {
+  const result = await query(`
+    SELECT * FROM business_cards 
+    WHERE business_id = $1 AND is_public = true AND is_approved = true
+    ORDER BY created_at DESC
+  `, [businessId]);
+  return result.rows.map(rowToBusinessCard);
 }
 
-export function listBusinessCardsByBusiness(input: {
-  ownerId: string;
-  businessId: string;
-}): BusinessCard[] {
-  const { businessCards } = getLmdb();
-  const ownerId = ownerIdSchema.parse(input.ownerId);
-  const businessId = businessIdSchema.parse(input.businessId);
-
-  ensureOwnerForBusiness(ownerId, businessId);
-
-  const results: BusinessCard[] = [];
-  for (const { value } of businessCards.getRange()) {
-    const card = value as BusinessCard;
-    if (card.businessId !== businessId) continue;
-    results.push(card);
-  }
-
-  results.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  return results;
-}
-
-export function listPublicBusinessCardsByBusiness(businessId: string): BusinessCard[] {
-  const { businessCards } = getLmdb();
-  const bid = businessIdSchema.safeParse(businessId);
-  if (!bid.success) return [];
-
-  const results: BusinessCard[] = [];
-  for (const { value } of businessCards.getRange()) {
-    const card = value as BusinessCard;
-    if (card.businessId !== bid.data) continue;
-    if (!card.isPublic || !card.isApproved) continue;
-    results.push(card);
-  }
-
-  results.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  return results;
-}
-
-export function updateBusinessCard(input: {
-  ownerId: string;
-  cardId: string;
-  data: Partial<BusinessCardInput>;
-}): BusinessCard {
-  const { businessCards } = getLmdb();
-  const ownerId = ownerIdSchema.parse(input.ownerId);
-  const cardId = idSchema.parse(input.cardId);
-  const data = cardInputSchema.partial().parse(input.data);
-
-  const existing = businessCards.get(cardId) as BusinessCard | undefined;
-  if (!existing) throw new Error("CARD_NOT_FOUND");
-  if (existing.ownerId !== ownerId) throw new Error("UNAUTHORIZED");
-
-  const now = new Date().toISOString();
-  const next: BusinessCard = {
-    ...existing,
-    fullName: data.fullName ?? existing.fullName,
-    title: data.title ?? existing.title,
-    email: data.email ?? existing.email,
-    phone: data.phone ?? existing.phone,
-    website: data.website ?? existing.website,
-    avatarUrl: data.avatarUrl ?? existing.avatarUrl,
-    bio: data.bio ?? existing.bio,
-    isPublic: data.isPublic ?? existing.isPublic,
-    updatedAt: now,
-  };
-
-  businessCards.put(cardId, next);
-  return next;
-}
-
-export function deleteBusinessCard(input: {
-  ownerId: string;
-  cardId: string;
-}): void {
-  const { businessCards } = getLmdb();
-  const ownerId = ownerIdSchema.parse(input.ownerId);
-  const cardId = idSchema.parse(input.cardId);
-
-  const existing = businessCards.get(cardId) as BusinessCard | undefined;
-  if (!existing) throw new Error("CARD_NOT_FOUND");
-  if (existing.ownerId !== ownerId) throw new Error("UNAUTHORIZED");
-
-  businessCards.remove(cardId);
-}
-
-export function listAllBusinessCards(): BusinessCard[] {
-  const { businessCards } = getLmdb();
-  const results: BusinessCard[] = [];
-
-  for (const { value } of businessCards.getRange()) {
-    results.push(value as BusinessCard);
-  }
-
-  results.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  return results;
-}
-
-export function setBusinessCardApproval(input: {
-  cardId: string;
-  approved: boolean;
-}): BusinessCard {
-  const { businessCards } = getLmdb();
-  const cardId = idSchema.parse(input.cardId);
-
-  const existing = businessCards.get(cardId) as BusinessCard | undefined;
-  if (!existing) throw new Error("CARD_NOT_FOUND");
-
-  const now = new Date().toISOString();
-  const next: BusinessCard = {
-    ...existing,
-    isApproved: input.approved,
-    approvedAt: input.approved ? now : undefined,
-    updatedAt: now,
-  };
-
-  businessCards.put(cardId, next);
-  return next;
-}

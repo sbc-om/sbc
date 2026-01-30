@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     const json = await req.json();
     const data = postSchema.parse(json);
 
-    const allSubs = listAllUserPushSubscriptions();
+    const allSubs = await listAllUserPushSubscriptions();
     const targetIds = data.userIds?.length ? new Set(data.userIds) : null;
     const subs = targetIds
       ? allSubs.filter((s) => targetIds.has(s.userId))

@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { getLmdb } from "./lmdb";
+import { query, transaction } from "./postgres";
 import type { Category, Locale, LocalizedString } from "./types";
 
 const slugSchema = z
@@ -15,141 +15,163 @@ const localizedStringSchema = z.object({
   ar: z.string().trim().min(1),
 });
 
-export const categoryInputSchema = z.object({
-  slug: slugSchema,
-  name: localizedStringSchema,
-  iconId: z.string().trim().min(1).optional(),
-  parentId: z.string().trim().min(1).optional(),
-});
-
-export type CategoryInput = z.infer<typeof categoryInputSchema>;
-
-export function getCategoryById(id: string): Category | null {
-  const { categories } = getLmdb();
-  return (categories.get(id) as Category | undefined) ?? null;
+function rowToCategory(row: any): Category {
+  return {
+    id: row.id,
+    slug: row.slug,
+    name: { en: row.name_en, ar: row.name_ar },
+    image: row.image,
+    iconId: row.icon_id,
+    parentId: row.parent_id,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+  };
 }
 
-export function getCategoryBySlug(slug: string): Category | null {
-  const { categorySlugs } = getLmdb();
+export async function getCategoryById(id: string): Promise<Category | null> {
+  const result = await query(`SELECT * FROM categories WHERE id = $1`, [id]);
+  return result.rows.length > 0 ? rowToCategory(result.rows[0]) : null;
+}
+
+export async function getCategoryBySlug(slug: string): Promise<Category | null> {
   const key = slugSchema.safeParse(slug);
   if (!key.success) return null;
 
-  const id = (categorySlugs.get(key.data) as string | undefined) ?? null;
-  if (!id) return null;
-  return getCategoryById(id);
+  const result = await query(`SELECT * FROM categories WHERE slug = $1`, [key.data]);
+  return result.rows.length > 0 ? rowToCategory(result.rows[0]) : null;
 }
 
-export function listCategories(input?: { locale?: Locale; q?: string }): Category[] {
-  const { categories } = getLmdb();
+export async function listCategories(): Promise<Category[]> {
+  const result = await query(`SELECT * FROM categories ORDER BY name_en`);
+  return result.rows.map(rowToCategory);
+}
 
-  const qRaw = input?.q?.trim();
-  const q = qRaw ? qRaw.toLowerCase() : null;
-  const locale = input?.locale;
+export async function listRootCategories(): Promise<Category[]> {
+  const result = await query(`SELECT * FROM categories WHERE parent_id IS NULL ORDER BY name_en`);
+  return result.rows.map(rowToCategory);
+}
 
-  const results: Category[] = [];
-  for (const { value } of categories.getRange()) {
-    const c = value as Category;
+export async function listChildCategories(parentId: string): Promise<Category[]> {
+  const result = await query(`SELECT * FROM categories WHERE parent_id = $1 ORDER BY name_en`, [parentId]);
+  return result.rows.map(rowToCategory);
+}
 
-    if (q) {
-      const hay = [
-        locale ? c.name[locale] : `${c.name.en} ${c.name.ar}`,
-        c.slug,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      if (!hay.includes(q)) continue;
+export async function createCategory(input: {
+  slug: string;
+  name: LocalizedString;
+  image?: string;
+  iconId?: string;
+  parentId?: string;
+}): Promise<Category> {
+  const slug = slugSchema.parse(input.slug);
+  const name = localizedStringSchema.parse(input.name);
+  const id = nanoid();
+  const now = new Date();
+
+  // Check slug uniqueness
+  const existingSlug = await query(`SELECT id FROM categories WHERE slug = $1`, [slug]);
+  if (existingSlug.rows.length > 0) {
+    throw new Error("SLUG_TAKEN");
+  }
+
+  const result = await query(`
+    INSERT INTO categories (id, slug, name_en, name_ar, image, icon_id, parent_id, created_at, updated_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
+    RETURNING *
+  `, [id, slug, name.en, name.ar, input.image, input.iconId, input.parentId, now]);
+
+  return rowToCategory(result.rows[0]);
+}
+
+export async function updateCategory(
+  id: string,
+  input: {
+    slug?: string;
+    name?: LocalizedString;
+    image?: string | null;
+    iconId?: string | null;
+    parentId?: string | null;
+  }
+): Promise<Category> {
+  return transaction(async (client) => {
+    const currentRes = await client.query(`SELECT * FROM categories WHERE id = $1 FOR UPDATE`, [id]);
+    if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
+    const current = rowToCategory(currentRes.rows[0]);
+
+    const slug = input.slug ? slugSchema.parse(input.slug) : current.slug;
+    const name = input.name ? localizedStringSchema.parse(input.name) : current.name;
+
+    // Check slug uniqueness if changed
+    if (slug !== current.slug) {
+      const existingSlug = await client.query(`SELECT id FROM categories WHERE slug = $1 AND id != $2`, [slug, id]);
+      if (existingSlug.rows.length > 0) {
+        throw new Error("SLUG_TAKEN");
+      }
     }
 
-    results.push(c);
-  }
+    const result = await client.query(`
+      UPDATE categories SET
+        slug = $1,
+        name_en = $2,
+        name_ar = $3,
+        image = $4,
+        icon_id = $5,
+        parent_id = $6,
+        updated_at = $7
+      WHERE id = $8
+      RETURNING *
+    `, [
+      slug,
+      name.en,
+      name.ar,
+      input.image !== undefined ? input.image : current.image,
+      input.iconId !== undefined ? input.iconId : current.iconId,
+      input.parentId !== undefined ? input.parentId : current.parentId,
+      new Date(),
+      id
+    ]);
 
-  results.sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
-  return results;
+    return rowToCategory(result.rows[0]);
+  });
 }
 
-export function createCategory(input: CategoryInput): Category {
-  const data = categoryInputSchema.parse(input);
-  const { categories, categorySlugs } = getLmdb();
-
-  const existingId = categorySlugs.get(data.slug) as string | undefined;
-  if (existingId) throw new Error("SLUG_TAKEN");
-
-  const now = new Date().toISOString();
-
-  const category: Category = {
-    id: nanoid(),
-    slug: data.slug,
-    name: data.name as LocalizedString,
-    iconId: data.iconId,
-    parentId: data.parentId,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  categories.put(category.id, category);
-  categorySlugs.put(category.slug, category.id);
-
-  return category;
-}
-
-export function updateCategory(id: string, patch: Partial<CategoryInput>): Category {
-  const { categories, categorySlugs } = getLmdb();
-  const current = categories.get(id) as Category | undefined;
-  if (!current) throw new Error("NOT_FOUND");
-
-  const nextSlug = patch.slug ? slugSchema.parse(patch.slug) : current.slug;
-  if (nextSlug !== current.slug) {
-    const existing = categorySlugs.get(nextSlug) as string | undefined;
-    if (existing && existing !== id) throw new Error("SLUG_TAKEN");
+export async function deleteCategory(id: string): Promise<boolean> {
+  // Check if there are businesses using this category
+  const businessCount = await query(`SELECT COUNT(*) FROM businesses WHERE category_id = $1`, [id]);
+  if (parseInt(businessCount.rows[0].count) > 0) {
+    throw new Error("CATEGORY_HAS_BUSINESSES");
   }
 
-  const next: Category = {
-    ...current,
-    ...patch,
-    slug: nextSlug,
-    name: (patch.name ?? current.name) as LocalizedString,
-    iconId: patch.iconId ?? current.iconId,
-    parentId: patch.parentId ?? current.parentId,
-    updatedAt: new Date().toISOString(),
-  };
-
-  categories.put(id, next);
-
-  if (nextSlug !== current.slug) {
-    categorySlugs.remove(current.slug);
-    categorySlugs.put(nextSlug, id);
+  // Check if there are child categories
+  const childCount = await query(`SELECT COUNT(*) FROM categories WHERE parent_id = $1`, [id]);
+  if (parseInt(childCount.rows[0].count) > 0) {
+    throw new Error("CATEGORY_HAS_CHILDREN");
   }
 
-  return next;
+  const result = await query(`DELETE FROM categories WHERE id = $1`, [id]);
+  return (result.rowCount ?? 0) > 0;
 }
 
-export function deleteCategory(id: string) {
-  const { categories, categorySlugs, businesses } = getLmdb();
-  const current = categories.get(id) as Category | undefined;
-  if (!current) return;
-
-  // Professional behavior: don't allow deleting a category that is in use.
-  for (const { value } of businesses.getRange()) {
-    const b = value as { categoryId?: string };
-    if (b.categoryId === id) throw new Error("CATEGORY_IN_USE");
-  }
-
-  categories.remove(id);
-  categorySlugs.remove(current.slug);
+export async function countBusinessesInCategory(categoryId: string): Promise<number> {
+  const result = await query(`SELECT COUNT(*) FROM businesses WHERE category_id = $1 AND is_approved = true`, [categoryId]);
+  return parseInt(result.rows[0].count);
 }
 
-export function updateCategoryImage(id: string, image: string | undefined): Category {
-  const { categories } = getLmdb();
-  const current = categories.get(id) as Category | undefined;
-  if (!current) throw new Error("NOT_FOUND");
+export async function getCategoriesWithCount(): Promise<(Category & { businessCount: number })[]> {
+  const result = await query(`
+    SELECT c.*, COALESCE(bc.count, 0)::int as business_count
+    FROM categories c
+    LEFT JOIN (
+      SELECT category_id, COUNT(*) as count
+      FROM businesses
+      WHERE is_approved = true
+      GROUP BY category_id
+    ) bc ON c.id = bc.category_id
+    ORDER BY c.name_en
+  `);
 
-  const next: Category = {
-    ...current,
-    image: image || undefined,
-    updatedAt: new Date().toISOString(),
-  };
-
-  categories.put(id, next);
-  return next;
+  return result.rows.map((row: any) => ({
+    ...rowToCategory(row),
+    businessCount: row.business_count,
+  }));
 }

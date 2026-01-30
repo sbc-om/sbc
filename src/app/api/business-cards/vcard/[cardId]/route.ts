@@ -13,12 +13,12 @@ export async function GET(
 ) {
   const { cardId } = await params;
 
-  const card = getBusinessCardById(cardId);
+  const card = await getBusinessCardById(cardId);
   if (!card || !card.isPublic || !card.isApproved) {
     return new Response("Not found", { status: 404 });
   }
 
-  const business = getBusinessById(card.businessId);
+  const business = await getBusinessById(card.businessId);
   const businessName = business?.name?.en ?? business?.name?.ar ?? "SBC";
 
   const lines = [

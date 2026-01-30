@@ -21,8 +21,8 @@ export default async function BusinessesPage({
 
   const dict = await getDictionary(locale as Locale);
 
-  const businesses = listBusinesses({ locale: locale as Locale });
-  const categories = listCategories({ locale: locale as Locale });
+  const businesses = await listBusinesses();
+  const categories = await listCategories();
 
   return (
     <PublicPage>

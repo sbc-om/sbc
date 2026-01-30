@@ -5,19 +5,47 @@ import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinesses, listBusinessesByOwner } from "@/lib/db/businesses";
-import { getFollowedCategoryIds } from "@/lib/db/follows";
+import { getUserFollowedCategoryIds } from "@/lib/db/follows";
 import { getCategoryById } from "@/lib/db/categories";
 import {
   getBusinessLikeCount,
   hasUserLikedBusiness,
   hasUserSavedBusiness,
-  listBusinessComments,
-  getBusinessesFollowersCount,
+  getApprovedBusinessComments,
 } from "@/lib/db/businessEngagement";
 import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "./actions";
 import { AppPage } from "@/components/AppPage";
 import { BusinessFeedCard } from "@/components/BusinessFeedCard";
 import { FeedProfileHeader } from "@/components/FeedProfileHeader";
+
+async function FollowedCategoriesDisplay({
+  categoryIds,
+  locale,
+}: {
+  categoryIds: string[];
+  locale: string;
+}) {
+  if (categoryIds.length === 0) return null;
+
+  const categories = await Promise.all(
+    categoryIds.map((id) => getCategoryById(id))
+  );
+
+  return (
+    <div className="mt-8 flex flex-wrap gap-2 text-xs text-(--muted-foreground)">
+      <span>{locale === "ar" ? "تتابع:" : "Following:"}</span>
+      {categories.map((c) => {
+        if (!c) return null;
+        const name = locale === "ar" ? c.name.ar : c.name.en;
+        return (
+          <span key={c.id} className="sbc-chip rounded-full px-2 py-0.5">
+            {name}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
 export default async function HomeFollowedPage({
   params,
@@ -31,10 +59,8 @@ export default async function HomeFollowedPage({
   const user = await requireUser(locale as Locale);
 
   // Calculate user stats
-  const followedCategories = getFollowedCategoryIds(user.id);
-  const ownedBusinesses = listBusinessesByOwner(user.id);
-  const businessIds = ownedBusinesses.map(b => b.id);
-  const followersCount = businessIds.length > 0 ? getBusinessesFollowersCount(businessIds) : 0;
+  const followedCategories = await getUserFollowedCategoryIds(user.id);
+  const ownedBusinesses = await listBusinessesByOwner(user.id);
 
   const viewUser = {
     displayName: user.displayName ?? user.email.split("@")[0],
@@ -44,34 +70,35 @@ export default async function HomeFollowedPage({
     isVerified: user.isVerified ?? false,
     stats: {
       businesses: ownedBusinesses.length,
-      followers: followersCount,
+      followers: 0, // Business followers not yet implemented
       followedCategories: followedCategories.length,
     },
   };
 
-  const followedCategoryIds = new Set(getFollowedCategoryIds(user.id));
-  const allBusinesses = listBusinesses({ locale: locale as Locale });
+  const followedCategoryIds = new Set(await getUserFollowedCategoryIds(user.id));
+  const allBusinesses = await listBusinesses();
 
   const businesses = allBusinesses.filter((b) =>
     b.categoryId ? followedCategoryIds.has(b.categoryId) : false,
   );
 
   // Prepare engagement data for each business
-  const businessesWithEngagement = businesses.map((b) => {
-    const category = b.categoryId ? getCategoryById(b.categoryId) : null;
-    const comments = listBusinessComments(b.id);
-    const approvedComments = comments.filter((c) => c.status === "approved");
-    
-    return {
-      business: b,
-      categoryName: category ? (locale === "ar" ? category.name.ar : category.name.en) : undefined,
-      categoryIconId: category?.iconId,
-      initialLikeCount: getBusinessLikeCount(b.id),
-      initialLiked: hasUserLikedBusiness(user.id, b.id),
-      initialSaved: hasUserSavedBusiness(user.id, b.id),
-      commentCount: approvedComments.length,
-    };
-  });
+  const businessesWithEngagement = await Promise.all(
+    businesses.map(async (b) => {
+      const category = b.categoryId ? await getCategoryById(b.categoryId) : null;
+      const approvedComments = await getApprovedBusinessComments(b.id);
+
+      return {
+        business: b,
+        categoryName: category ? (locale === "ar" ? category.name.ar : category.name.en) : undefined,
+        categoryIconId: category?.iconId,
+        initialLikeCount: await getBusinessLikeCount(b.id),
+        initialLiked: await hasUserLikedBusiness(user.id, b.id),
+        initialSaved: await hasUserSavedBusiness(user.id, b.id),
+        commentCount: approvedComments.length,
+      };
+    })
+  );
 
   return (
     <AppPage>
@@ -130,21 +157,10 @@ export default async function HomeFollowedPage({
           </div>
         ) : null}
 
-        {followedCategoryIds.size > 0 ? (
-          <div className="mt-8 flex flex-wrap gap-2 text-xs text-(--muted-foreground)">
-            <span>{locale === "ar" ? "تتابع:" : "Following:"}</span>
-            {Array.from(followedCategoryIds).slice(0, 12).map((id) => {
-              const c = getCategoryById(id);
-              if (!c) return null;
-              const name = locale === "ar" ? c.name.ar : c.name.en;
-              return (
-                <span key={id} className="sbc-chip rounded-full px-2 py-0.5">
-                  {name}
-                </span>
-              );
-            })}
-          </div>
-        ) : null}
+        <FollowedCategoriesDisplay
+          categoryIds={Array.from(followedCategoryIds).slice(0, 12)}
+          locale={locale}
+        />
     </AppPage>
   );
 }

@@ -5,13 +5,13 @@ import { redirect } from "next/navigation";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { requireAdmin } from "@/lib/auth/requireUser";
-import { createCategory, deleteCategory, updateCategory, updateCategoryImage } from "@/lib/db/categories";
+import { createCategory, deleteCategory, updateCategory } from "@/lib/db/categories";
 import { storeUserUpload, validateUserImageUpload } from "@/lib/uploads/storage";
 
 export async function createCategoryAction(locale: Locale, formData: FormData) {
   await requireAdmin(locale);
 
-  const category = createCategory({
+  const category = await createCategory({
     slug: String(formData.get("slug") || ""),
     name: {
       en: String(formData.get("name_en") || ""),
@@ -28,7 +28,7 @@ export async function createCategoryAction(locale: Locale, formData: FormData) {
       kind: "avatar",
       file,
     });
-    updateCategoryImage(category.id, stored.url);
+    await updateCategory(category.id, { image: stored.url });
   }
 
   revalidatePath(`/${locale}/admin/categories`);
@@ -38,7 +38,7 @@ export async function createCategoryAction(locale: Locale, formData: FormData) {
 export async function updateCategoryAction(locale: Locale, id: string, formData: FormData) {
   await requireAdmin(locale);
 
-  updateCategory(id, {
+  await updateCategory(id, {
     slug: String(formData.get("slug") || "") || undefined,
     name: {
       en: String(formData.get("name_en") || ""),
@@ -55,7 +55,7 @@ export async function deleteCategoryAction(locale: Locale, id: string) {
   await requireAdmin(locale);
 
   try {
-    deleteCategory(id);
+    await deleteCategory(id);
     revalidatePath(`/${locale}/admin/categories`);
     redirect(`/${locale}/admin/categories`);
   } catch (e) {

@@ -9,8 +9,7 @@ import {
   deleteBusiness, 
   updateBusiness, 
   getBusinessById,
-  setBusinessSingleMedia,
-  addBusinessMedia
+  setBusinessMedia
 } from "@/lib/db/businesses";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getCategoryById } from "@/lib/db/categories";
@@ -22,10 +21,10 @@ function readBoolean(formData: FormData, key: string): boolean {
   return raw === "on" || raw === "true" || raw === "1" || raw === "yes";
 }
 
-function resolveOwnerFromFormData(formData: FormData): { ownerId: string | undefined } {
+async function resolveOwnerFromFormData(formData: FormData): Promise<{ ownerId: string | undefined }> {
   const ownerIdRaw = String(formData.get("ownerId") || "").trim();
   if (ownerIdRaw) {
-    const user = getUserById(ownerIdRaw);
+    const user = await getUserById(ownerIdRaw);
     if (!user) throw new Error("OWNER_NOT_FOUND");
     return { ownerId: user.id };
   }
@@ -33,7 +32,7 @@ function resolveOwnerFromFormData(formData: FormData): { ownerId: string | undef
   // Backward compatibility (and manual entry fallback).
   const ownerEmail = String(formData.get("ownerEmail") || "").trim();
   if (ownerEmail) {
-    const user = getUserByEmail(ownerEmail);
+    const user = await getUserByEmail(ownerEmail);
     if (!user) {
       const looksValid = ownerEmail.includes("@");
       throw new Error(looksValid ? "OWNER_NOT_FOUND" : "OWNER_EMAIL_INVALID");
@@ -45,9 +44,9 @@ function resolveOwnerFromFormData(formData: FormData): { ownerId: string | undef
   return { ownerId: undefined };
 }
 
-function deriveLegacyCategoryText(categoryId: string | null) {
+async function deriveLegacyCategoryText(categoryId: string | null) {
   if (!categoryId) return { categoryId: undefined, category: undefined };
-  const cat = getCategoryById(categoryId);
+  const cat = await getCategoryById(categoryId);
   if (!cat) throw new Error("INVALID_CATEGORY");
   // Keep legacy string populated for search/backward compatibility.
   return { categoryId, category: `${cat.name.en} ${cat.name.ar}` };
@@ -74,9 +73,9 @@ export async function createBusinessDraftAction(
 
     const categoryIdRaw = String(formData.get("categoryId") || "").trim();
     const categoryId = categoryIdRaw || null;
-    const categoryPatch = deriveLegacyCategoryText(categoryId);
+    const categoryPatch = await deriveLegacyCategoryText(categoryId);
 
-    const { ownerId } = resolveOwnerFromFormData(formData);
+    const { ownerId } = await resolveOwnerFromFormData(formData);
     const homepageTop = readBoolean(formData, "homepageTop");
     const homepageFeatured = homepageTop || readBoolean(formData, "homepageFeatured");
     const isApproved = readBoolean(formData, "isApproved");
@@ -92,7 +91,7 @@ export async function createBusinessDraftAction(
     const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
     const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
 
-    const business = createBusiness({
+    const business = await createBusiness({
       slug: String(formData.get("slug") || ""),
       ownerId,
       name: {
@@ -140,9 +139,9 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
 
   const categoryIdRaw = String(formData.get("categoryId") || "").trim();
   const categoryId = categoryIdRaw || null;
-  const categoryPatch = deriveLegacyCategoryText(categoryId);
+  const categoryPatch = await deriveLegacyCategoryText(categoryId);
 
-  const { ownerId } = resolveOwnerFromFormData(formData);
+  const { ownerId } = await resolveOwnerFromFormData(formData);
   const homepageTop = readBoolean(formData, "homepageTop");
   const homepageFeatured = homepageTop || readBoolean(formData, "homepageFeatured");
   const isApproved = readBoolean(formData, "isApproved");
@@ -161,7 +160,7 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
   const usernameRaw = String(formData.get("username") || "").trim();
   const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
 
-  const business = createBusiness({
+  const business = await createBusiness({
     slug: String(formData.get("slug") || ""),
     username,
     ownerId,
@@ -205,9 +204,9 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
 
   const categoryIdRaw = String(formData.get("categoryId") || "").trim();
   const categoryId = categoryIdRaw || null;
-  const categoryPatch = deriveLegacyCategoryText(categoryId);
+  const categoryPatch = await deriveLegacyCategoryText(categoryId);
 
-  const { ownerId } = resolveOwnerFromFormData(formData);
+  const { ownerId } = await resolveOwnerFromFormData(formData);
   const homepageTop = readBoolean(formData, "homepageTop");
   const homepageFeatured = homepageTop || readBoolean(formData, "homepageFeatured");
   const isApproved = readBoolean(formData, "isApproved");
@@ -227,7 +226,7 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
 
   // First update the business basic info
-  let next = updateBusiness(id, {
+  let next = await updateBusiness(id, {
     slug: String(formData.get("slug") || "") || undefined,
     username,
     ownerId,
@@ -257,19 +256,19 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   const coverFile = formData.get("coverImage") as File | null;
   if (coverFile && coverFile.size > 0) {
     const result = await storeUpload({ businessId: id, kind: "cover", file: coverFile });
-    next = setBusinessSingleMedia(id, "cover", result.url);
+    next = await setBusinessMedia(id, "cover", result.url);
   }
 
   const logoFile = formData.get("logoImage") as File | null;
   if (logoFile && logoFile.size > 0) {
     const result = await storeUpload({ businessId: id, kind: "logo", file: logoFile });
-    next = setBusinessSingleMedia(id, "logo", result.url);
+    next = await setBusinessMedia(id, "logo", result.url);
   }
 
   const bannerFile = formData.get("bannerImage") as File | null;
   if (bannerFile && bannerFile.size > 0) {
     const result = await storeUpload({ businessId: id, kind: "banner", file: bannerFile });
-    next = setBusinessSingleMedia(id, "banner", result.url);
+    next = await setBusinessMedia(id, "banner", result.url);
   }
 
   // Process gallery images (multiple files)
@@ -280,7 +279,7 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
         .filter(file => file.size > 0)
         .map(file => storeUpload({ businessId: id, kind: "gallery", file }))
     );
-    next = addBusinessMedia(id, "gallery", galleryUrls.map(r => r.url));
+    next = await setBusinessMedia(id, "gallery", galleryUrls.map(r => r.url));
   }
 
   revalidatePath(`/${locale}/businesses`);
@@ -291,7 +290,7 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
 
 export async function deleteBusinessAction(locale: Locale, id: string) {
   await requireAdmin(locale);
-  deleteBusiness(id);
+  await deleteBusiness(id);
   revalidatePath(`/${locale}/businesses`);
   revalidatePath(`/${locale}/admin`);
   redirect(`/${locale}/admin`);
@@ -299,9 +298,9 @@ export async function deleteBusinessAction(locale: Locale, id: string) {
 
 export async function approveBusinessAction(locale: Locale, id: string) {
   await requireAdmin(locale);
-  const business = getBusinessById(id);
+  const business = await getBusinessById(id);
   if (!business) throw new Error("NOT_FOUND");
-  updateBusiness(id, { isApproved: true });
+  await updateBusiness(id, { isApproved: true });
   revalidatePath(`/${locale}/businesses`);
   revalidatePath(`/${locale}/businesses/${business.slug}`);
   revalidatePath(`/${locale}/admin`);

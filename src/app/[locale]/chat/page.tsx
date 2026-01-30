@@ -4,7 +4,8 @@ import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
-import { listConversationsByUser } from "@/lib/db/chats";
+import { getUserConversations } from "@/lib/db/chats";
+import { getBusinessById } from "@/lib/db/businesses";
 
 export default async function ChatIndexPage({
   params,
@@ -15,11 +16,18 @@ export default async function ChatIndexPage({
   if (!isLocale(locale)) notFound();
 
   const user = await requireUser(locale as Locale);
-  const conversations = listConversationsByUser(user.id);
+  const conversations = await getUserConversations(user.id);
 
   // If user has conversations, redirect to the most recent one
   if (conversations.length > 0) {
-    redirect(`/${locale}/chat/${conversations[0].businessSlug}`);
+    // Find the other participant (the business) in the conversation
+    const otherParticipantId = conversations[0].participantIds.find(id => id !== user.id);
+    if (otherParticipantId) {
+      const business = await getBusinessById(otherParticipantId);
+      if (business) {
+        redirect(`/${locale}/chat/${business.slug}`);
+      }
+    }
   }
 
   // Otherwise, show empty state

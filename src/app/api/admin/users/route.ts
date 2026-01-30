@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const limitRaw = url.searchParams.get("limit") ?? "20";
   const limit = Math.max(1, Math.min(50, Number(limitRaw) || 20));
 
-  const all = listUsers();
+  const all = await listUsers();
   const filtered = qRaw
     ? all.filter((u) =>
         u.email.toLowerCase().includes(qRaw) ||

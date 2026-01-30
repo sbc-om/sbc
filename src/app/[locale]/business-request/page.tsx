@@ -6,7 +6,7 @@ import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listCategories } from "@/lib/db/categories";
-import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
+import { isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 import { AppPage } from "@/components/AppPage";
 import { CategorySelectField } from "@/components/CategorySelectField";
 import { BusinessRequestForm } from "./BusinessRequestForm";
@@ -28,10 +28,9 @@ export default async function BusinessRequestPage({
   const sp = await searchParams;
   const success = sp.success === "1";
 
-  const sub = getProgramSubscriptionByUser(user.id, "directory");
-  const active = isProgramSubscriptionActive(sub);
+  const active = await isProgramSubscriptionActive(user.id);
 
-  const categories = listCategories({ locale: locale as Locale });
+  const categories = await listCategories();
 
   return (
     <AppPage>

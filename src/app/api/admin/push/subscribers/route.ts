@@ -8,9 +8,9 @@ export async function GET() {
   if (!auth) return new Response("Unauthorized", { status: 401 });
   if (auth.role !== "admin") return new Response("Forbidden", { status: 403 });
 
-  const users = listUsers();
+  const users = await listUsers();
   const usersById = new Map(users.map((u) => [u.id, u] as const));
-  const subs = listAllUserPushSubscriptions();
+  const subs = await listAllUserPushSubscriptions();
 
   const stats = new Map<string, { count: number; lastUpdatedAt: string }>();
   for (const sub of subs) {

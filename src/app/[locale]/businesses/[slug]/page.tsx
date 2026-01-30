@@ -22,15 +22,15 @@ export default async function BusinessDetailPage({
   const user = await getCurrentUser();
 
   const business = slug.startsWith("@")
-    ? getBusinessByUsername(slug)
-    : getBusinessBySlug(slug);
+    ? await getBusinessByUsername(slug)
+    : await getBusinessBySlug(slug);
   if (!business) notFound();
   const isOwner = user && business.ownerId && user.id === business.ownerId;
   const isAdmin = user?.role === "admin";
   const isApproved = business.isApproved ?? business.isVerified ?? false;
   if (!isApproved && !isOwner && !isAdmin) notFound();
 
-  const category = business.categoryId ? getCategoryById(business.categoryId) : null;
+  const category = business.categoryId ? await getCategoryById(business.categoryId) : null;
 
   const handlePath = business.username
     ? `/@${business.username}`
@@ -41,8 +41,8 @@ export default async function BusinessDetailPage({
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
     : null;
 
-  const allBusinesses = listBusinesses({ locale: locale as Locale });
-  const publicCards = listPublicBusinessCardsByBusiness(business.id);
+  const allBusinesses = await listBusinesses();
+  const publicCards = await listPublicBusinessCardsByBusiness(business.id);
 
   return (
     <PublicPage compactTop={!!user}>

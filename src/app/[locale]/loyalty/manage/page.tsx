@@ -14,7 +14,7 @@ import {
   getLoyaltySettingsByUserId,
   listLoyaltyCustomersByUser,
 } from "@/lib/db/loyalty";
-import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
+import { isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 
 import { LoyaltyProfileClient } from "./LoyaltyProfileClient";
 import { LoyaltySettingsClient } from "./LoyaltySettingsClient";
@@ -46,12 +46,11 @@ export default async function LoyaltyManagePage({
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const baseUrl = host ? `${proto}://${host}` : null;
 
-  const programSub = user ? getProgramSubscriptionByUser(user.id, "loyalty") : null;
-  const isActive = isProgramSubscriptionActive(programSub);
-  const customers = user && isActive ? listLoyaltyCustomersByUser(user.id) : [];
-  const profile = user && isActive ? getLoyaltyProfileByUserId(user.id) : null;
+  const isActive = user ? await isProgramSubscriptionActive(user.id) : false;
+  const customers = user && isActive ? await listLoyaltyCustomersByUser(user.id) : [];
+  const profile = user && isActive ? await getLoyaltyProfileByUserId(user.id) : null;
   const settings = user && isActive
-    ? (getLoyaltySettingsByUserId(user.id) ?? defaultLoyaltySettings(user.id))
+    ? ((await getLoyaltySettingsByUserId(user.id)) ?? defaultLoyaltySettings(user.id))
     : null;
 
   const Wrapper = user ? AppPage : PublicPage;

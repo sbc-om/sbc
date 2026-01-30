@@ -36,11 +36,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Use upsertLoyaltySettings with cardDesign
-    const updatedSettings = upsertLoyaltySettings({
-      userId: user.id,
-      settings: {
-        cardDesign: parsed.data,
-      },
+    const updatedSettings = await upsertLoyaltySettings(user.id, {
+      cardDesign: parsed.data,
     });
 
     return NextResponse.json({ success: true, cardDesign: updatedSettings.cardDesign });
@@ -60,7 +57,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const settings = getLoyaltySettingsByUserId(user.id);
+    const settings = await getLoyaltySettingsByUserId(user.id);
     if (!settings) {
       return NextResponse.json(
         { error: "Loyalty settings not found" },

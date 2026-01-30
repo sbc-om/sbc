@@ -20,14 +20,14 @@ export default async function BusinessCardsManagePage({
   if (!isLocale(locale)) notFound();
 
   const user = await requireUser(locale as Locale);
-  const business = getBusinessById(id);
+  const business = await getBusinessById(id);
   if (!business || business.ownerId !== user.id) notFound();
 
   const ar = locale === "ar";
   const businessName = ar ? business.name.ar : business.name.en;
   const isApproved = business.isApproved ?? business.isVerified ?? false;
   const cards = isApproved
-    ? listBusinessCardsByBusiness({ ownerId: user.id, businessId: business.id })
+    ? await listBusinessCardsByBusiness({ ownerId: user.id, businessId: business.id })
     : [];
 
   return (

@@ -15,7 +15,7 @@ export default async function BusinessHandlePage({
   if (!isLocale(locale)) notFound();
 
   const handle = username.replace(/^@/, "").trim().toLowerCase();
-  const business = getBusinessByUsername(handle);
+  const business = await getBusinessByUsername(handle);
   if (!business) notFound();
 
   const user = await getCurrentUser();

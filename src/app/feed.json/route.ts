@@ -15,7 +15,7 @@ async function getBaseUrl() {
 export async function GET() {
   const baseUrl = await getBaseUrl();
 
-  const businesses = listBusinesses();
+  const businesses = await listBusinesses();
   const nowIso = new Date().toISOString();
 
   const staticItems = [
@@ -53,7 +53,7 @@ export async function GET() {
     },
   ];
 
-  function buildBusinessItem(locale: "en" | "ar", b: ReturnType<typeof listBusinesses>[number]) {
+  function buildBusinessItem(locale: "en" | "ar", b: Awaited<ReturnType<typeof listBusinesses>>[number]) {
     const name = b.name[locale];
     const description = b.description?.[locale] || name;
     const url = `${baseUrl}/${locale}/businesses/${encodeURIComponent(b.slug)}`;

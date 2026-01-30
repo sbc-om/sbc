@@ -33,7 +33,7 @@ export async function POST(req: Request) {
 
     const ua = req.headers.get("user-agent") ?? undefined;
 
-    const sub = upsertUserPushSubscription({
+    const sub = await upsertUserPushSubscription({
       userId: auth.id,
       subscription: {
         endpoint: data.subscription.endpoint,

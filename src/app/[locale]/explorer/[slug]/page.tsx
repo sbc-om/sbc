@@ -10,7 +10,7 @@ import { getUserById } from "@/lib/db/users";
 import {
   getBusinessLikeCount,
   hasUserLikedBusiness,
-  listBusinessComments,
+  getBusinessComments,
 } from "@/lib/db/businessEngagement";
 import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
@@ -28,11 +28,11 @@ export default async function ExplorerBusinessDetailPage({
   const user = await requireUser(locale as Locale);
 
   const business = slug.startsWith("@")
-    ? getBusinessByUsername(slug)
-    : getBusinessBySlug(slug);
+    ? await getBusinessByUsername(slug)
+    : await getBusinessBySlug(slug);
   if (!business) notFound();
 
-  const category = business.categoryId ? getCategoryById(business.categoryId) : null;
+  const category = business.categoryId ? await getCategoryById(business.categoryId) : null;
 
   const handlePath = business.username
     ? `/@${business.username}`
@@ -43,10 +43,10 @@ export default async function ExplorerBusinessDetailPage({
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
     : null;
 
-  const likeCount = getBusinessLikeCount(business.id);
-  const liked = hasUserLikedBusiness(user.id, business.id);
+  const likeCount = await getBusinessLikeCount(business.id);
+  const liked = await hasUserLikedBusiness(user.id, business.id);
 
-  const allComments = listBusinessComments(business.id);
+  const allComments = await getBusinessComments(business.id);
   const approvedComments = allComments.filter((c) => c.status === "approved");
   const myPendingComments = allComments.filter((c) => c.status === "pending" && c.userId === user.id);
   const canModerate = user.role === "admin" || (!!business.ownerId && business.ownerId === user.id);
@@ -59,11 +59,11 @@ export default async function ExplorerBusinessDetailPage({
 
   const usersById: Record<string, { displayName?: string; email?: string } | undefined> = {};
   for (const id of needUserIds) {
-    const u = getUserById(id);
+    const u = await getUserById(id);
     usersById[id] = u ? { displayName: u.displayName, email: u.email } : undefined;
   }
 
-  const allBusinesses = listBusinesses({ locale: locale as Locale });
+  const allBusinesses = await listBusinesses();
 
   return (
     <AppPage>

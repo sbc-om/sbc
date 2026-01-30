@@ -28,11 +28,11 @@ export async function POST(req: Request) {
 
     validateUserImageUpload({ kind: "avatar", file });
 
-    const current = getUserById(auth.id);
+    const current = await getUserById(auth.id);
     const previousUrl = current?.avatarUrl ?? null;
 
     const stored = await storeUserUpload({ userId: auth.id, kind: "avatar", file });
-    const next = setUserAvatar(auth.id, stored.url);
+    const next = await setUserAvatar(auth.id, stored.url);
 
     // Best-effort delete previous avatar file
     if (previousUrl) {
@@ -59,7 +59,7 @@ export async function DELETE(req: Request) {
   if (!auth) return new Response("Unauthorized", { status: 401 });
 
   try {
-    const current = getUserById(auth.id);
+    const current = await getUserById(auth.id);
     const previousUrl = current?.avatarUrl ?? null;
 
     if (previousUrl) {
@@ -69,7 +69,7 @@ export async function DELETE(req: Request) {
       await fs.unlink(`${diskPath}.json`).catch(() => {});
     }
 
-    const next = setUserAvatar(auth.id, null);
+    const next = await setUserAvatar(auth.id, null);
     return Response.json({ ok: true, avatarUrl: next.avatarUrl ?? null });
   } catch (e) {
     const message = e instanceof Error ? e.message : "DELETE_FAILED";

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getLoyaltyProfileByJoinCode } from "@/lib/db/loyalty";
-import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
+import { isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 
 import { joinLoyaltyByCodeAction } from "./actions";
 
@@ -26,14 +26,13 @@ export default async function LoyaltyJoinPage({
   await getDictionary(locale as Locale);
   const ar = locale === "ar";
 
-  const profile = getLoyaltyProfileByJoinCode(code);
+  const profile = await getLoyaltyProfileByJoinCode(code);
   if (!profile) notFound();
 
   const sp = await searchParams;
   const error = sp.error;
 
-  const sub = getProgramSubscriptionByUser(profile.userId, "loyalty");
-  const active = isProgramSubscriptionActive(sub);
+  const active = await isProgramSubscriptionActive(profile.userId);
 
   return (
     <PublicPage>

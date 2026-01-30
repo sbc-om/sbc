@@ -6,7 +6,7 @@ import Image from "next/image";
 type Message = {
   id: string;
   conversationId: string;
-  sender: "user";
+  sender: "user" | "business";
   text: string;
   createdAt: string;
 };

@@ -25,7 +25,7 @@ export default async function AdminContactMessagesPage({
   const { filter = "unread", q = "" } = (await searchParams) ?? {};
   const query = q.trim().toLowerCase();
 
-  const messages = listContactMessages();
+  const messages = await listContactMessages();
   const unreadCount = messages.filter((m) => !m.isRead).length;
   const readCount = messages.length - unreadCount;
   const ar = locale === "ar";
