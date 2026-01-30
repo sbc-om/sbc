@@ -59,6 +59,7 @@ export function BusinessesExplorer({
   const [city, setCity] = useState("");
   const [tags, setTags] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("relevance");
   const [aiResults, setAiResults] = useState<Business[] | null>(null);
   
   // AI Search
@@ -110,6 +111,7 @@ export function BusinessesExplorer({
     setCity("");
     setTags("");
     setCategoryId("");
+    setSortBy("relevance");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -191,6 +193,60 @@ export function BusinessesExplorer({
       return true;
     });
   }, [businesses, aiResults, searchQuery, city, tags, categoryId, locale]);
+
+  const sorted = useMemo(() => {
+    if (sortBy === "relevance") return filtered;
+
+    const withIndex = filtered.map((b, index) => ({ b, index }));
+
+    const toDate = (value?: string) => (value ? Date.parse(value) : 0);
+    const nameOf = (b: Business) => (locale === "ar" ? b.name.ar : b.name.en);
+    const cityOf = (b: Business) => b.city ?? "";
+
+    withIndex.sort((a, b) => {
+      const aB = a.b;
+      const bB = b.b;
+
+      let diff = 0;
+      switch (sortBy) {
+        case "name-asc":
+          diff = nameOf(aB).localeCompare(nameOf(bB));
+          break;
+        case "name-desc":
+          diff = nameOf(bB).localeCompare(nameOf(aB));
+          break;
+        case "city-asc":
+          diff = cityOf(aB).localeCompare(cityOf(bB));
+          break;
+        case "created-desc":
+          diff = toDate(bB.createdAt) - toDate(aB.createdAt);
+          break;
+        case "created-asc":
+          diff = toDate(aB.createdAt) - toDate(bB.createdAt);
+          break;
+        case "updated-desc":
+          diff = toDate(bB.updatedAt) - toDate(aB.updatedAt);
+          break;
+        case "verified-first":
+          diff = Number(Boolean(bB.isVerified)) - Number(Boolean(aB.isVerified));
+          break;
+        case "special-first":
+          diff = Number(Boolean(bB.isSpecial)) - Number(Boolean(aB.isSpecial));
+          break;
+        case "featured-first":
+          diff =
+            Number(Boolean(bB.homepageTop || bB.homepageFeatured)) -
+            Number(Boolean(aB.homepageTop || aB.homepageFeatured));
+          break;
+        default:
+          diff = 0;
+      }
+
+      return diff !== 0 ? diff : a.index - b.index;
+    });
+
+    return withIndex.map((x) => x.b);
+  }, [filtered, sortBy, locale]);
 
   return (
     <div>
@@ -343,6 +399,42 @@ export function BusinessesExplorer({
                   searchPlaceholder={locale === "ar" ? "ابحث عن تصنيف..." : "Search categories..."}
                   locale={locale}
                 />
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="h-11 w-full rounded-xl border border-(--surface-border) bg-(--surface) px-3 text-sm text-foreground shadow-(--shadow) outline-none backdrop-blur transition focus:border-(--accent)"
+                >
+                  <option value="relevance">
+                    {locale === "ar" ? "الترتيب: حسب الصلة" : "Sort: Relevance"}
+                  </option>
+                  <option value="name-asc">
+                    {locale === "ar" ? "الاسم: أ-ي" : "Name: A-Z"}
+                  </option>
+                  <option value="name-desc">
+                    {locale === "ar" ? "الاسم: ي-أ" : "Name: Z-A"}
+                  </option>
+                  <option value="city-asc">
+                    {locale === "ar" ? "المدينة: أ-ي" : "City: A-Z"}
+                  </option>
+                  <option value="created-desc">
+                    {locale === "ar" ? "الأحدث" : "Newest"}
+                  </option>
+                  <option value="created-asc">
+                    {locale === "ar" ? "الأقدم" : "Oldest"}
+                  </option>
+                  <option value="updated-desc">
+                    {locale === "ar" ? "آخر تحديث" : "Recently Updated"}
+                  </option>
+                  <option value="verified-first">
+                    {locale === "ar" ? "الموثق أولاً" : "Verified First"}
+                  </option>
+                  <option value="special-first">
+                    {locale === "ar" ? "المميز أولاً" : "Special First"}
+                  </option>
+                  <option value="featured-first">
+                    {locale === "ar" ? "المُبرز أولاً" : "Featured First"}
+                  </option>
+                </select>
               </div>
             </div>
           )}
@@ -460,7 +552,7 @@ export function BusinessesExplorer({
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((b) => {
+        {sorted.map((b) => {
           const name = locale === "ar" ? b.name.ar : b.name.en;
           const description = b.description ? (locale === "ar" ? b.description.ar : b.description.en) : "";
           const img = b.media?.cover || b.media?.banner || b.media?.logo;
