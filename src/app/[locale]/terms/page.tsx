@@ -278,8 +278,8 @@ export default async function TermsPage({
                 </li>
                 <li>
                   {locale === "ar"
-                    ? "تخزين آمن في قاعدة بيانات LMDB"
-                    : "Secure storage in LMDB database"}
+                    ? "تخزين آمن في قاعدة بيانات PostgreSQL"
+                    : "Secure storage in PostgreSQL database"}
                 </li>
               </ul>
             </div>

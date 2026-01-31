@@ -2,7 +2,7 @@
  * Database Backup Utilities
  * 
  * Stub implementations for backup/restore functionality.
- * TODO: Implement actual backup logic using LMDB snapshots and file archiving.
+ * TODO: Implement actual backup logic using pg_dump and file archiving.
  */
 
 import path from "node:path";
@@ -70,7 +70,7 @@ export async function createBackup(options: BackupOptions = {}): Promise<BackupM
   const filename = `${id}.tar.gz`;
 
   // TODO: Implement actual backup creation
-  // 1. Create LMDB snapshot
+  // 1. Create PostgreSQL dump using pg_dump
   // 2. Archive database files
   // 3. Optionally include media, certs, public files
   // 4. Compress into tar.gz

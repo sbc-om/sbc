@@ -11,8 +11,7 @@
 - The inline theme/scrollbar bootstrap script in [src/app/layout.tsx](src/app/layout.tsx#L72-L88) must stay first in `<head>` to avoid flash.
 
 ## Data + auth
-- Data is stored in LMDB via [src/lib/db/lmdb.ts](src/lib/db/lmdb.ts); entity operations are in [src/lib/db](src/lib/db).
-- Optional at-rest encryption uses `DB_ENCRYPTION_KEY` and `DB_ENCRYPTION_ENABLED` (see [src/lib/db/encryption.ts](src/lib/db/encryption.ts)). Default DB path is `.data/lmdb` (or `LMDB_PATH`).
+- Data is stored in PostgreSQL via [src/lib/db/postgres.ts](src/lib/db/postgres.ts); entity operations are in [src/lib/db](src/lib/db).
 - Auth is JWT-in-cookie using `jose` in [src/lib/auth/jwt.ts](src/lib/auth/jwt.ts); session lookup is `getCurrentUser()` in [src/lib/auth/currentUser.ts](src/lib/auth/currentUser.ts).
 
 ## API conventions

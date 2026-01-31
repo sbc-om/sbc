@@ -20,7 +20,7 @@ out/
 # production
 build/
 
-# local app data (LMDB + uploads)
+# local app data (uploads, backups)
 .data/
 
 # env files (keep .env.example)
