@@ -1,14 +1,16 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useChatSidebar } from "./ChatLayoutClient";
 
 type ChatHeaderProps = {
   business: {
+    id?: string;
     name: { ar: string; en: string };
     slug: string;
-    category?: string;
+    categoryId?: string;
     media?: {
       logo?: string;
       cover?: string;
@@ -16,12 +18,33 @@ type ChatHeaderProps = {
     };
   };
   locale: string;
+  participantType?: "business" | "user";
 };
 
-export function ChatHeader({ business, locale }: ChatHeaderProps) {
+export function ChatHeader({ business, locale, participantType = "business" }: ChatHeaderProps) {
   const sidebarRef = useChatSidebar();
   const name = locale === "ar" ? business.name.ar : business.name.en;
   const logo = business.media?.logo || business.media?.cover;
+  const [categoryName, setCategoryName] = useState<string | null>(null);
+
+  // Only fetch category for business participants
+  useEffect(() => {
+    if (participantType === "business" && business.categoryId) {
+      fetch(`/api/categories/${business.categoryId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.ok && data.category) {
+            setCategoryName(locale === "ar" ? data.category.name.ar : data.category.name.en);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [business.categoryId, locale, participantType]);
+
+  // Determine link destination based on participant type
+  const profileLink = participantType === "user" 
+    ? `/${locale}/u/@${business.slug}`
+    : `/${locale}/explorer/${business.slug}`;
 
   return (
     <div className="border-b border-(--surface-border) bg-(--surface/0.5) backdrop-blur-sm">
@@ -37,7 +60,7 @@ export function ChatHeader({ business, locale }: ChatHeaderProps) {
         </button>
 
         <Link
-          href={`/${locale}/explorer/${business.slug}`}
+          href={profileLink}
           className="flex items-center gap-3 min-w-0 flex-1 hover:opacity-80 transition-opacity"
         >
           <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-(--chip-bg) flex items-center justify-center">
@@ -49,14 +72,19 @@ export function ChatHeader({ business, locale }: ChatHeaderProps) {
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate font-semibold text-sm">{name}</div>
-            {business.category && (
-              <div className="truncate text-xs text-(--muted-foreground)">{business.category}</div>
+            {participantType === "business" && categoryName && (
+              <div className="truncate text-xs text-(--muted-foreground)">{categoryName}</div>
+            )}
+            {participantType === "user" && (
+              <div className="truncate text-xs text-(--muted-foreground)">
+                {locale === "ar" ? "کاربر" : "User"}
+              </div>
             )}
           </div>
         </Link>
 
         <Link
-          href={`/${locale}/explorer/${business.slug}`}
+          href={profileLink}
           className="h-9 px-3 rounded-lg hover:bg-(--surface) flex items-center gap-1.5 text-xs font-medium text-(--muted-foreground) hover:text-foreground transition-colors shrink-0"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

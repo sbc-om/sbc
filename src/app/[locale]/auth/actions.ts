@@ -67,6 +67,7 @@ const registerSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(6),
   fullName: z.string().min(2),
+  username: z.string().optional(),
   password: z.string().min(8),
   humanToken: z.string(),
   humanAnswer: z.string(),
@@ -79,13 +80,14 @@ export async function registerAction(formData: FormData) {
     email: String(formData.get("email") || ""),
     phone: String(formData.get("phone") || ""),
     fullName: String(formData.get("fullName") || ""),
+    username: String(formData.get("username") || "") || undefined,
     password: String(formData.get("password") || ""),
     humanToken: String(formData.get("humanToken") || ""),
     humanAnswer: String(formData.get("humanAnswer") || ""),
     next: String(formData.get("next") || "") || undefined,
   };
 
-  const { locale, email, phone, fullName, password, humanToken, humanAnswer, next } =
+  const { locale, email, phone, fullName, username, password, humanToken, humanAnswer, next } =
     registerSchema.parse(raw);
   if (!verifyHumanChallenge(humanToken, humanAnswer)) {
     redirect(`/${locale}/register?error=human`);
@@ -93,13 +95,19 @@ export async function registerAction(formData: FormData) {
 
   let user;
   try {
-    user = await createUser({ email, phone, fullName, password, role: "user" });
+    user = await createUser({ email, phone, fullName, username, password, role: "user" });
   } catch (e) {
     if (e instanceof Error && e.message === "EMAIL_TAKEN") {
       redirect(`/${locale}/register?error=taken`);
     }
     if (e instanceof Error && e.message === "PHONE_TAKEN") {
       redirect(`/${locale}/register?error=phone`);
+    }
+    if (e instanceof Error && e.message === "USERNAME_TAKEN") {
+      redirect(`/${locale}/register?error=username`);
+    }
+    if (e instanceof Error && e.message === "INVALID_USERNAME") {
+      redirect(`/${locale}/register?error=invalid-username`);
     }
     throw e;
   }

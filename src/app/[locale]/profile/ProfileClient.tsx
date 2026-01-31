@@ -23,6 +23,7 @@ type ProfileDTO = {
   displayName: string;
   bio: string;
   avatarUrl: string | null;
+  username?: string | null;
   stats?: {
     followedCategories: number;
     followers: number;
@@ -64,6 +65,15 @@ export function ProfileClient({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // Username state
+  const [username, setUsername] = useState<string>(initial.username ?? "");
+  const [usernameInput, setUsernameInput] = useState<string>(initial.username ?? "");
+  const [usernameLoading, setUsernameLoading] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [usernameSaving, setUsernameSaving] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameSuccess, setUsernameSuccess] = useState(false);
+
   const [passkeySupported, setPasskeySupported] = useState(false);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
@@ -81,6 +91,75 @@ export function ProfileClient({
   useEffect(() => {
     setPasskeySupported(browserSupportsWebAuthn());
   }, []);
+
+  // Check username availability with debounce
+  useEffect(() => {
+    const trimmed = usernameInput.trim().toLowerCase();
+    if (!trimmed || trimmed.length < 3 || trimmed === username) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    if (!/^[a-z0-9_]+$/.test(trimmed)) {
+      setUsernameAvailable(false);
+      setUsernameError(locale === "ar" 
+        ? "يمكن استخدام الأحرف الإنجليزية الصغيرة والأرقام و _ فقط"
+        : "Only lowercase letters, numbers, and _ allowed"
+      );
+      return;
+    }
+
+    setUsernameLoading(true);
+    setUsernameError(null);
+
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/users/username/check?username=${encodeURIComponent(trimmed)}`);
+        const data = await res.json();
+        setUsernameAvailable(data.available);
+        if (!data.available) {
+          setUsernameError(locale === "ar" ? "اسم المستخدم مستخدم بالفعل" : "Username is already taken");
+        }
+      } catch {
+        setUsernameAvailable(null);
+      } finally {
+        setUsernameLoading(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [usernameInput, username, locale]);
+
+  async function saveUsername() {
+    const trimmed = usernameInput.trim().toLowerCase();
+    if (!trimmed || trimmed.length < 3 || !usernameAvailable) return;
+
+    setUsernameSaving(true);
+    setUsernameError(null);
+    setUsernameSuccess(false);
+
+    try {
+      const res = await fetch("/api/users/username", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: trimmed }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        setUsername(trimmed);
+        setUsernameSuccess(true);
+        setTimeout(() => setUsernameSuccess(false), 3000);
+        router.refresh();
+      } else {
+        setUsernameError(data.error || (locale === "ar" ? "فشل في الحفظ" : "Failed to save"));
+      }
+    } catch {
+      setUsernameError(locale === "ar" ? "خطأ في الاتصال" : "Connection error");
+    } finally {
+      setUsernameSaving(false);
+    }
+  }
 
   const t = useMemo(() => {
     const ar = locale === "ar";
@@ -117,6 +196,12 @@ export function ProfileClient({
         : "Passkeys aren't supported on this device.",
       passkeysFailed: ar ? "تعذر إنشاء Passkey." : "Could not create passkey.",
       passkeysSuccess: ar ? "تمت إضافة Passkey." : "Passkey added.",
+      username: ar ? "اسم المستخدم" : "Username",
+      usernameDesc: ar 
+        ? "اختر اسم مستخدم فريد للملف الشخصي والمحادثات."
+        : "Choose a unique username for your profile and chats.",
+      usernameSave: ar ? "حفظ" : "Save",
+      usernameSaving: ar ? "جارٍ الحفظ..." : "Saving...",
     };
   }, [locale]);
 
@@ -338,6 +423,73 @@ export function ProfileClient({
               </Button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Username Section */}
+      <div className="sbc-card rounded-2xl p-6">
+        <h3 className="text-base font-semibold">{t.username}</h3>
+        <p className="mt-1 text-sm text-(--muted-foreground)">
+          {t.usernameDesc}
+        </p>
+        <div className="mt-4 space-y-3">
+          <div className="flex gap-3">
+            <div className="flex-1 relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-(--muted-foreground)">@</span>
+              <input
+                type="text"
+                value={usernameInput}
+                onChange={(e) => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                placeholder={locale === "ar" ? "اسم_المستخدم" : "your_username"}
+                className="w-full rounded-xl border border-(--surface-border) bg-(--surface) px-3 py-2.5 pl-8 text-sm placeholder:text-(--muted-foreground) focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                maxLength={30}
+              />
+              {usernameLoading && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg className="h-4 w-4 animate-spin text-(--muted-foreground)" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                </span>
+              )}
+              {!usernameLoading && usernameAvailable === true && usernameInput !== username && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </span>
+              )}
+              {!usernameLoading && usernameAvailable === false && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </span>
+              )}
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={!usernameAvailable || usernameSaving || usernameInput === username}
+              onClick={saveUsername}
+            >
+              {usernameSaving ? t.usernameSaving : t.usernameSave}
+            </Button>
+          </div>
+          {usernameError && (
+            <p className="text-xs text-red-500">{usernameError}</p>
+          )}
+          {usernameSuccess && (
+            <p className="text-xs text-green-500">
+              {locale === "ar" ? "تم حفظ اسم المستخدم بنجاح!" : "Username saved successfully!"}
+            </p>
+          )}
+          {username && (
+            <p className="text-xs text-(--muted-foreground)">
+              {locale === "ar" ? "رابط ملفك الشخصي: " : "Your profile link: "}
+              <span className="font-mono text-accent">/{locale}/u/@{username}</span>
+            </p>
+          )}
         </div>
       </div>
 

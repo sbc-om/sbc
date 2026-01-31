@@ -43,6 +43,7 @@ function rowToUser(row: any): User {
     id: row.id,
     email: row.email,
     phone: row.phone || "",
+    username: row.username || undefined,
     fullName: row.full_name,
     passwordHash: row.password_hash,
     role: row.role as Role,
@@ -68,6 +69,7 @@ export async function createUser(input: {
   fullName: string;
   password: string;
   role: Role;
+  username?: string;
 }): Promise<User> {
   const email = emailSchema.parse(input.email);
   const fullName = fullNameSchema.parse(input.fullName);
@@ -86,16 +88,31 @@ export async function createUser(input: {
     throw new Error("PHONE_TAKEN");
   }
 
+  // Check and validate username if provided
+  let validatedUsername: string | null = null;
+  if (input.username) {
+    const usernameResult = usernameSchema.safeParse(input.username);
+    if (!usernameResult.success) {
+      throw new Error("INVALID_USERNAME");
+    }
+    validatedUsername = usernameResult.data;
+    
+    const available = await isUsernameAvailable(validatedUsername);
+    if (!available) {
+      throw new Error("USERNAME_TAKEN");
+    }
+  }
+
   const passwordHash = await bcrypt.hash(password, 12);
   const now = new Date();
   const id = nanoid();
 
   const result = await query(`
-    INSERT INTO users (id, email, phone, full_name, password_hash, role, is_active, is_verified,
+    INSERT INTO users (id, email, phone, full_name, username, password_hash, role, is_active, is_verified,
       display_name, approval_status, approval_reason, approval_requested_at, created_at, updated_at)
-    VALUES ($1, $2, $3, $4, $5, $6, true, false, $4, 'pending', 'new', $7, $7, $7)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, true, false, $4, 'pending', 'new', $8, $8, $8)
     RETURNING *
-  `, [id, email, phone, fullName, passwordHash, input.role, now]);
+  `, [id, email, phone, fullName, validatedUsername, passwordHash, input.role, now]);
 
   return rowToUser(result.rows[0]);
 }
@@ -530,4 +547,93 @@ export async function listAllUserPushSubscriptions(): Promise<UserPushSubscripti
     createdAt: row.created_at?.toISOString(),
     updatedAt: row.updated_at?.toISOString(),
   }));
+}
+
+// ========== Username Management ==========
+
+const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3)
+  .max(30)
+  .regex(/^[a-z0-9_]+$/, "Username can only contain lowercase letters, numbers, and underscores");
+
+/**
+ * Check if a username/slug is available globally (not used by any user or business)
+ */
+export async function isUsernameAvailable(username: string, excludeUserId?: string): Promise<boolean> {
+  const parsed = usernameSchema.safeParse(username);
+  if (!parsed.success) return false;
+  
+  const normalizedUsername = parsed.data;
+  
+  // Check in users table
+  const userResult = excludeUserId
+    ? await query(`SELECT id FROM users WHERE username = $1 AND id != $2`, [normalizedUsername, excludeUserId])
+    : await query(`SELECT id FROM users WHERE username = $1`, [normalizedUsername]);
+  
+  if (userResult.rows.length > 0) return false;
+  
+  // Check in businesses table (both slug and username)
+  const businessResult = await query(
+    `SELECT id FROM businesses WHERE slug = $1 OR username = $1`,
+    [normalizedUsername]
+  );
+  
+  if (businessResult.rows.length > 0) return false;
+  
+  return true;
+}
+
+/**
+ * Set or update a user's username
+ */
+export async function setUserUsername(userId: string, username: string | null): Promise<User> {
+  if (username === null) {
+    // Remove username
+    const result = await query(
+      `UPDATE users SET username = NULL, updated_at = $1 WHERE id = $2 RETURNING *`,
+      [new Date(), userId]
+    );
+    if (result.rows.length === 0) throw new Error("NOT_FOUND");
+    return rowToUser(result.rows[0]);
+  }
+  
+  const parsed = usernameSchema.parse(username);
+  
+  // Check availability
+  const available = await isUsernameAvailable(parsed, userId);
+  if (!available) throw new Error("USERNAME_TAKEN");
+  
+  const result = await query(
+    `UPDATE users SET username = $1, updated_at = $2 WHERE id = $3 RETURNING *`,
+    [parsed, new Date(), userId]
+  );
+  
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToUser(result.rows[0]);
+}
+
+/**
+ * Get user by username
+ */
+export async function getUserByUsername(username: string): Promise<User | null> {
+  const parsed = usernameSchema.safeParse(username);
+  if (!parsed.success) return null;
+  
+  const result = await query(`SELECT * FROM users WHERE username = $1`, [parsed.data]);
+  return result.rows.length > 0 ? rowToUser(result.rows[0]) : null;
+}
+
+/**
+ * Get user by username or ID
+ */
+export async function getUserByUsernameOrId(identifier: string): Promise<User | null> {
+  // First try as ID
+  const byId = await getUserById(identifier);
+  if (byId) return byId;
+  
+  // Then try as username
+  return getUserByUsername(identifier);
 }

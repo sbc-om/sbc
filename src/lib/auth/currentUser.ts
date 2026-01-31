@@ -22,6 +22,7 @@ export async function getCurrentUser() {
       displayName: user.displayName ?? user.email.split("@")[0],
       avatarUrl: user.avatarUrl ?? null,
       isVerified: user.isVerified ?? false,
+      username: user.username,
     };
   } catch {
     return null;

@@ -110,6 +110,7 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       id TEXT PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
       phone TEXT UNIQUE,
+      username TEXT UNIQUE,
       full_name TEXT NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'user',
@@ -476,6 +477,14 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_id ON chat_messages(conversation_id);
     CREATE INDEX IF NOT EXISTS idx_user_business_likes_business_id ON user_business_likes(business_id);
     CREATE INDEX IF NOT EXISTS idx_user_business_saves_business_id ON user_business_saves(business_id);
+
+    -- Migrations: Add username column to users table if not exists
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'username') THEN
+        ALTER TABLE users ADD COLUMN username TEXT UNIQUE;
+      END IF;
+    END $$;
   `);
 }
 

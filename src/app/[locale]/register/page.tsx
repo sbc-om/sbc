@@ -59,6 +59,20 @@ export default async function RegisterPage({
         </p>
       ) : null}
 
+      {error === "username" ? (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {locale === "ar" ? "اسم المستخدم مستخدم بالفعل" : "That username is already taken."}
+        </p>
+      ) : null}
+
+      {error === "invalid-username" ? (
+        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+          {locale === "ar"
+            ? "اسم المستخدم غير صالح. استخدم أحرف صغيرة وأرقام وشرطة سفلية فقط (3-30 حرفًا)"
+            : "Invalid username. Use only lowercase letters, numbers, and underscores (3-30 characters)"}
+        </p>
+      ) : null}
+
       <form action={registerAction} className="mt-6 grid gap-3">
         <input type="hidden" name="locale" value={locale} />
         {next ? <input type="hidden" name="next" value={next} /> : null}
@@ -68,6 +82,26 @@ export default async function RegisterPage({
             {dict.auth.fullName}
           </span>
           <Input name="fullName" type="text" required autoComplete="name" />
+        </label>
+
+        <label className="grid gap-1">
+          <span className="text-sm font-medium text-(--muted-foreground)">
+            {locale === "ar" ? "اسم المستخدم (اختياري)" : "Username (optional)"}
+          </span>
+          <Input 
+            name="username" 
+            type="text" 
+            autoComplete="username"
+            pattern="[a-z0-9_]+"
+            minLength={3}
+            maxLength={30}
+            placeholder={locale === "ar" ? "اسم_المستخدم" : "username_here"}
+          />
+          <span className="text-xs text-(--muted-foreground)">
+            {locale === "ar" 
+              ? "أحرف صغيرة وأرقام وشرطة سفلية فقط" 
+              : "Lowercase letters, numbers, and underscores only"}
+          </span>
         </label>
 
         <label className="grid gap-1">

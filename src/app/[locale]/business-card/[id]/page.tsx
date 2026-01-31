@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 
 import { PublicPage } from "@/components/PublicPage";
 import { buttonVariants } from "@/components/ui/Button";
+import { AppleWalletButton } from "@/components/business/AppleWalletButton";
 import { getBusinessCardById } from "@/lib/db/businessCards";
 import { getBusinessById } from "@/lib/db/businesses";
+import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { BusinessCardQrClient } from "./BusinessCardQrClient";
@@ -26,6 +28,8 @@ export default async function BusinessCardPublicPage({
 
   const business = await getBusinessById(card.businessId);
   if (!business) notFound();
+
+  const currentUser = await getCurrentUser();
 
   const ar = locale === "ar";
   const businessName = ar ? business.name.ar : business.name.en;
@@ -76,12 +80,11 @@ export default async function BusinessCardPublicPage({
               >
                 {ar ? "تحميل vCard" : "Download vCard"}
               </a>
-              <a
-                href={`/api/business-cards/wallet/apple/${encodeURIComponent(card.id)}`}
-                className={buttonVariants({ variant: "primary", size: "sm" })}
-              >
-                {ar ? "إضافة إلى Apple Wallet" : "Add to Apple Wallet"}
-              </a>
+              <AppleWalletButton
+                cardId={card.id}
+                label={ar ? "إضافة إلى Apple Wallet" : "Add to Apple Wallet"}
+                locale={locale}
+              />
               <a
                 href={`/api/business-cards/wallet/google/${encodeURIComponent(card.id)}`}
                 className={buttonVariants({ variant: "secondary", size: "sm" })}
@@ -125,6 +128,22 @@ export default async function BusinessCardPublicPage({
           ) : null}
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
+            {currentUser && (
+              <Link
+                href={`/${locale}/chat/${business.slug}`}
+                className={buttonVariants({ variant: "primary", size: "sm" })}
+              >
+                <svg className="h-4 w-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                {ar ? "إرسال رسالة" : "Send Message"}
+              </Link>
+            )}
             <Link
               href={`/${locale}/businesses/${business.slug}`}
               className={buttonVariants({ variant: "secondary", size: "sm" })}

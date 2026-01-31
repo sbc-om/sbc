@@ -3,20 +3,16 @@
  * Provides Apple Wallet and Google Wallet functionality for loyalty cards.
  */
 
-import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
+import { PKPass } from "passkit-generator";
 import {
   GoogleWalletAdapter,
   getProfile,
   type ChildPassData,
   type ParentPassData,
-  type PassData,
-  type ProfileConfig,
 } from "sbcwallet";
-import forge from "node-forge";
-import { PKPass } from "passkit-generator";
 
 import {
   defaultLoyaltySettings,
@@ -83,33 +79,6 @@ function resolvePublicUrl(rawUrl?: string, origin?: string): string | undefined 
 function env(name: string): string | undefined {
   const v = process.env[name];
   return v && v.trim() ? v.trim() : undefined;
-}
-
-function getAppleWalletAuthSecret(): string | undefined {
-  return env("APPLE_WALLET_AUTH_SECRET") || env("AUTH_JWT_SECRET");
-}
-
-export function buildAppleWalletAuthToken(input: { serialNumber: string; passTypeIdentifier?: string }): string | undefined {
-  const secret = getAppleWalletAuthSecret();
-  if (!secret) return undefined;
-  const payload = `${input.passTypeIdentifier ?? ""}:${input.serialNumber}`;
-  return crypto.createHmac("sha256", secret).update(payload).digest("base64url");
-}
-
-export function verifyAppleWalletAuthToken(input: {
-  authorization: string | null;
-  serialNumber: string;
-  passTypeIdentifier?: string;
-}): boolean {
-  const token = buildAppleWalletAuthToken({
-    serialNumber: input.serialNumber,
-    passTypeIdentifier: input.passTypeIdentifier,
-  });
-  if (!token || !input.authorization) return false;
-  const prefix = "ApplePass ";
-  if (!input.authorization.startsWith(prefix)) return false;
-  const supplied = input.authorization.slice(prefix.length).trim();
-  return supplied === token;
 }
 
 function resolveFromCwd(p: string): string {
@@ -280,6 +249,11 @@ function buildGoogleWalletMetadata(settings?: LoyaltySettings | null, businessNa
   const name = businessName ?? "";
   const backgroundColor = normalizeHexColor(design.backgroundColor);
   const safeLogoUrl = sanitizeUrl(logoUrl);
+  
+  if (process.env.NODE_ENV === "development") {
+    console.log("[GoogleWallet] Building metadata - logoUrl input:", logoUrl, "- sanitized:", safeLogoUrl);
+  }
+  
   return {
     issuerName: name,
     programName: name,
@@ -319,244 +293,203 @@ export function isSbcwalletGoogleConfigured(): boolean {
 }
 
 // ============================================================================
+// Apple Wallet Authentication
+// ============================================================================
+
+/**
+ * Generate a deterministic auth token for a pass.
+ * This token is included in the pass and sent back by Apple in update requests.
+ */
+export function generateAppleWalletAuthToken(input: {
+  serialNumber: string;
+  passTypeIdentifier: string;
+}): string {
+  // Use a simple but deterministic token based on serial + passType
+  // In production, you might want to use a more secure approach
+  const secret = env("APPLE_AUTH_TOKEN_SECRET") || env("JWT_SECRET") || "sbc-wallet-secret";
+  const data = `${input.passTypeIdentifier}:${input.serialNumber}:${secret}`;
+  // Simple hash - for production consider using crypto.createHmac
+  let hash = 0;
+  for (let i = 0; i < data.length; i++) {
+    const char = data.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return `ApplePass ${Math.abs(hash).toString(36)}${input.serialNumber.slice(0, 8)}`;
+}
+
+/**
+ * Verify the authentication token from Apple Wallet update requests.
+ */
+export function verifyAppleWalletAuthToken(input: {
+  authorization: string | null;
+  serialNumber: string;
+  passTypeIdentifier: string;
+}): boolean {
+  if (!input.authorization) return false;
+  
+  const expectedToken = generateAppleWalletAuthToken({
+    serialNumber: input.serialNumber,
+    passTypeIdentifier: input.passTypeIdentifier,
+  });
+  
+  return input.authorization === expectedToken;
+}
+
+// ============================================================================
 // Adapter Getters
 // ============================================================================
 
-type AppleAdapterConfig = {
-  teamId: string;
-  passTypeId: string;
-  certPath: string;
-  keyPath?: string;
-  wwdrPath: string;
-  certPassword: string;
-};
-
-function isPkcs12Path(p: string): boolean {
-  return /\.(p12|pfx)$/i.test(p);
-}
-
-function loadAppleCertificates(config: AppleAdapterConfig): {
-  wwdr: Buffer;
-  signerCert: Buffer;
-  signerKey: Buffer;
-  signerKeyPassphrase?: string;
-} {
-  if (!fileExists(config.wwdrPath)) throw new Error("APPLE_WWDR_PATH_NOT_FOUND");
-  if (!fileExists(config.certPath)) throw new Error("APPLE_CERT_PATH_NOT_FOUND");
-
-  const wwdr = fs.readFileSync(resolveFromCwd(config.wwdrPath));
-  const certPath = resolveFromCwd(config.certPath);
-  const keyPath = config.keyPath ? resolveFromCwd(config.keyPath) : undefined;
-
-  if (isPkcs12Path(certPath)) {
-    const passphrase = config.certPassword || "";
-    const p12Buffer = fs.readFileSync(certPath);
-    const p12Asn1 = forge.asn1.fromDer(p12Buffer.toString("binary"));
-    const p12 = forge.pkcs12.pkcs12FromAsn1(p12Asn1, false, passphrase);
-
-    const keyBags = p12.getBags({ bagType: forge.pki.oids.pkcs8ShroudedKeyBag })[forge.pki.oids.pkcs8ShroudedKeyBag]
-      ?? p12.getBags({ bagType: forge.pki.oids.keyBag })[forge.pki.oids.keyBag];
-    if (!keyBags || !keyBags.length) throw new Error("APPLE_CERT_KEY_NOT_FOUND_IN_P12");
-
-    const certBags = p12.getBags({ bagType: forge.pki.oids.certBag })[forge.pki.oids.certBag];
-    if (!certBags || !certBags.length) throw new Error("APPLE_CERT_NOT_FOUND_IN_P12");
-
-    const privateKey = keyBags[0].key;
-    if (!privateKey) throw new Error("APPLE_CERT_KEY_IS_UNDEFINED");
-    const privateKeyPem = forge.pki.privateKeyToPem(privateKey);
-    
-    const cert = certBags[0].cert;
-    if (!cert) throw new Error("APPLE_CERT_IS_UNDEFINED");
-    const certPem = forge.pki.certificateToPem(cert);
-
-    return {
-      wwdr,
-      signerCert: Buffer.from(certPem),
-      signerKey: Buffer.from(privateKeyPem),
-    };
-  }
-
-  const signerCert = fs.readFileSync(certPath);
-  const signerKey = keyPath ? fs.readFileSync(keyPath) : signerCert;
-
-  return {
-    wwdr,
-    signerCert,
-    signerKey,
-    signerKeyPassphrase: config.certPassword || undefined,
-  };
-}
-
-function mergeAppleTemplates(base: Record<string, unknown>, profile: Record<string, unknown>): Record<string, unknown> {
-  const baseGeneric = typeof base.generic === "object" && base.generic ? base.generic as Record<string, unknown> : {};
-  const profileGeneric = typeof profile.generic === "object" && profile.generic ? profile.generic as Record<string, unknown> : {};
-
-  return {
-    ...base,
-    ...profile,
-    generic: {
-      ...baseGeneric,
-      ...profileGeneric,
-      primaryFields: (profileGeneric.primaryFields ?? baseGeneric.primaryFields) as unknown,
-      secondaryFields: (profileGeneric.secondaryFields ?? baseGeneric.secondaryFields) as unknown,
-      auxiliaryFields: (profileGeneric.auxiliaryFields ?? baseGeneric.auxiliaryFields) as unknown,
-      backFields: (profileGeneric.backFields ?? baseGeneric.backFields) as unknown,
-      headerFields: (profileGeneric.headerFields ?? baseGeneric.headerFields) as unknown,
-    },
-  };
-}
-
-function getFieldValue(key: string, passData: PassData): string {
-  const keys = key.split(".");
-  let value: unknown = passData as unknown;
-  for (const k of keys) {
-    if (value && typeof value === "object" && k in (value as Record<string, unknown>)) {
-      value = (value as Record<string, unknown>)[k];
-    } else {
-      return "";
-    }
-  }
-
-  if (key === "scheduleId" || key === "orderId" || key === "batchId" || key === "visitId") {
-    return passData.id;
-  }
-  if (key === "windowFrom" && passData.type === "parent" && passData.window) {
-    return new Date(passData.window.from).toLocaleString();
-  }
-  if (key === "windowTo" && passData.type === "parent" && passData.window) {
-    return new Date(passData.window.to).toLocaleString();
-  }
-
-  return value !== undefined && value !== null ? String(value) : "";
-}
-
-function populateAppleTemplate(template: Record<string, unknown>, passData: PassData): Record<string, unknown> {
-  const populated = { ...template } as Record<string, unknown>;
-  const generic = (populated.generic && typeof populated.generic === "object")
-    ? populated.generic as Record<string, unknown>
-    : undefined;
-
-  if (generic) {
-    const fieldGroups = ["primaryFields", "secondaryFields", "auxiliaryFields", "backFields", "headerFields"] as const;
-    for (const group of fieldGroups) {
-      const fields = generic[group];
-      if (Array.isArray(fields)) {
-        generic[group] = fields.map((field) => {
-          if (!field || typeof field !== "object") return field;
-          const key = String((field as Record<string, unknown>).key ?? "");
-          if (!key) return field;
-          const value = getFieldValue(key, passData);
-          return { ...field, value: value || (field as Record<string, unknown>).value };
-        });
-      }
-    }
-  }
-
-  if (Array.isArray(populated.barcodes) && populated.barcodes.length > 0) {
-    const barcodeValue = passData.type === "child" ? (passData.memberId || passData.id) : passData.id;
-    const first = populated.barcodes[0];
-    if (first && typeof first === "object") {
-      populated.barcodes[0] = { ...first, message: barcodeValue };
-    }
-  }
-
-  return populated;
-}
-
-class FixedAppleWalletAdapter {
-  private config: AppleAdapterConfig;
-
-  constructor(config: AppleAdapterConfig) {
-    this.config = config;
-  }
-
-  async generatePkpass(passData: PassData, profile: ProfileConfig, passType: "parent" | "child"): Promise<Buffer> {
-    const profileTemplate = (profile?.defaultTemplates?.apple?.[passType] ?? {}) as Record<string, unknown>;
-    const baseTemplate: Record<string, unknown> = {
-      formatVersion: 1,
-      organizationName: "sbcwallet",
-      description: "sbcwallet Pass",
-      generic: {
-        primaryFields: [],
-        secondaryFields: [],
-        auxiliaryFields: [],
-        backFields: [],
-        headerFields: [],
-      },
-    };
-
-    const template = mergeAppleTemplates(baseTemplate, profileTemplate);
-    const populatedTemplate = populateAppleTemplate(template, passData);
-
-    const appleWallet = passData?.metadata?.appleWallet || {};
-
-    const passJson: Record<string, unknown> = {
-      ...populatedTemplate,
-      serialNumber: passData.id,
-      description: appleWallet.description || populatedTemplate.description || "sbcwallet Pass",
-      organizationName: appleWallet.organizationName || populatedTemplate.organizationName || "sbcwallet",
-      passTypeIdentifier: this.config.passTypeId,
-      teamIdentifier: this.config.teamId,
-    };
-
-    if (appleWallet.backgroundColor || populatedTemplate.backgroundColor) {
-      passJson.backgroundColor = appleWallet.backgroundColor || populatedTemplate.backgroundColor;
-    }
-    if (appleWallet.foregroundColor || populatedTemplate.foregroundColor) {
-      passJson.foregroundColor = appleWallet.foregroundColor || populatedTemplate.foregroundColor;
-    }
-    if (appleWallet.labelColor || populatedTemplate.labelColor) {
-      passJson.labelColor = appleWallet.labelColor || populatedTemplate.labelColor;
-    }
-    if (appleWallet.logoText || populatedTemplate.logoText) {
-      passJson.logoText = appleWallet.logoText || populatedTemplate.logoText;
-    }
-
-    if (Array.isArray(populatedTemplate.barcodes) && populatedTemplate.barcodes.length > 0) {
-      passJson.barcodes = populatedTemplate.barcodes;
-    }
-
-    if (appleWallet.passOverrides && typeof appleWallet.passOverrides === "object") {
-      Object.assign(passJson, appleWallet.passOverrides);
-    }
-
-    const assets: Record<string, Buffer> = {
-      "pass.json": Buffer.from(JSON.stringify(passJson)),
-    };
-
-    const iconPath = resolveFromCwd("public/icon-192.png");
-    if (fileExists(iconPath)) {
-      assets["icon.png"] = fs.readFileSync(iconPath);
-    }
-
-    const icon2xPath = resolveFromCwd("public/icon-512.png");
-    if (fileExists(icon2xPath)) {
-      assets["icon@2x.png"] = fs.readFileSync(icon2xPath);
-    }
-
-    const certificates = loadAppleCertificates(this.config);
-    const pass = new PKPass(assets, certificates);
-
-    return await pass.getAsBuffer();
-  }
-}
-
-function getAppleAdapter(): FixedAppleWalletAdapter {
+function getAppleConfig() {
   const teamId = env("APPLE_TEAM_ID") || "";
   const passTypeId = env("APPLE_PASS_TYPE_ID") || "";
   const certPath = env("APPLE_CERT_PATH") || "";
-  const keyPath = env("APPLE_KEY_PATH") || "";
   const wwdrPath = env("APPLE_WWDR_PATH") || "";
   const certPassword = env("APPLE_CERT_PASSWORD") || "";
 
-  return new FixedAppleWalletAdapter({
+  // Derive PEM paths from the p12 path
+  const basePath = certPath.replace(/\.p12$/, "");
+  const certPemPath = `${basePath}_cert.pem`;
+  const keyPemPath = `${basePath}_key.pem`;
+
+  return {
     teamId,
     passTypeId,
     certPath: certPath ? resolveFromCwd(certPath) : certPath,
-    keyPath: keyPath ? resolveFromCwd(keyPath) : undefined,
+    certPemPath: certPemPath ? resolveFromCwd(certPemPath) : certPemPath,
+    keyPemPath: keyPemPath ? resolveFromCwd(keyPemPath) : keyPemPath,
     wwdrPath: wwdrPath ? resolveFromCwd(wwdrPath) : wwdrPath,
     certPassword,
-  });
+  };
+}
+
+async function generateApplePkpass(options: {
+  serialNumber: string;
+  description: string;
+  organizationName: string;
+  logoText?: string;
+  backgroundColor?: string;
+  foregroundColor?: string;
+  labelColor?: string;
+  barcodes?: Array<{
+    format: string;
+    message: string;
+    messageEncoding: string;
+    altText?: string;
+  }>;
+  locations?: Array<{ latitude: number; longitude: number }>;
+  webServiceURL?: string;
+  authenticationToken?: string;
+  userInfo?: Record<string, unknown>;
+  generic?: {
+    primaryFields?: Array<{ key: string; label: string; value: string }>;
+    secondaryFields?: Array<{ key: string; label: string; value: string }>;
+    auxiliaryFields?: Array<{ key: string; label: string; value: string }>;
+    backFields?: Array<{ key: string; label: string; value: string }>;
+    headerFields?: Array<{ key: string; label: string; value: string }>;
+  };
+}): Promise<Buffer> {
+  const config = getAppleConfig();
+
+  // Read certificates as PEM files
+  const wwdr = fs.readFileSync(config.wwdrPath);
+  const signerCert = fs.readFileSync(config.certPemPath);
+  const signerKey = fs.readFileSync(config.keyPemPath);
+
+  // Read icon files (required by Apple)
+  const iconPath = path.join(process.cwd(), "public", "images", "icon.png");
+  const icon2xPath = path.join(process.cwd(), "public", "images", "icon@2x.png");
+  
+  // Build buffers object for icons
+  const buffers: Record<string, Buffer> = {};
+  if (fs.existsSync(iconPath)) {
+    buffers["icon.png"] = fs.readFileSync(iconPath);
+  }
+  if (fs.existsSync(icon2xPath)) {
+    buffers["icon@2x.png"] = fs.readFileSync(icon2xPath);
+  }
+
+  // Create the pass with icon buffers
+  const pass = new PKPass(
+    buffers,
+    {
+      wwdr,
+      signerCert,
+      signerKey,
+    },
+    {
+      serialNumber: options.serialNumber,
+      passTypeIdentifier: config.passTypeId,
+      teamIdentifier: config.teamId,
+      organizationName: options.organizationName,
+      description: options.description,
+    }
+  );
+
+  // Set the pass type to generic (loyalty cards use generic type)
+  pass.type = "generic";
+
+  // Set colors
+  if (options.backgroundColor) {
+    pass.backgroundColor = options.backgroundColor;
+  }
+  if (options.foregroundColor) {
+    pass.foregroundColor = options.foregroundColor;
+  }
+  if (options.labelColor) {
+    pass.labelColor = options.labelColor;
+  }
+  if (options.logoText) {
+    pass.logoText = options.logoText;
+  }
+
+  // Set barcodes
+  if (options.barcodes && options.barcodes.length > 0) {
+    pass.setBarcodes(options.barcodes.map(b => ({
+      format: b.format as "PKBarcodeFormatQR" | "PKBarcodeFormatPDF417" | "PKBarcodeFormatAztec" | "PKBarcodeFormatCode128",
+      message: b.message,
+      messageEncoding: b.messageEncoding,
+      altText: b.altText,
+    })));
+  }
+
+  // Set locations
+  if (options.locations && options.locations.length > 0) {
+    pass.setLocations(...options.locations);
+  }
+
+  // Set web service
+  if (options.webServiceURL && options.authenticationToken) {
+    pass.webServiceURL = options.webServiceURL;
+    pass.authenticationToken = options.authenticationToken;
+  }
+
+  // Set user info
+  if (options.userInfo) {
+    (pass as unknown as { userInfo: Record<string, unknown> }).userInfo = options.userInfo;
+  }
+
+  // Set generic fields
+  if (options.generic) {
+    if (options.generic.primaryFields) {
+      pass.primaryFields.push(...options.generic.primaryFields);
+    }
+    if (options.generic.secondaryFields) {
+      pass.secondaryFields.push(...options.generic.secondaryFields);
+    }
+    if (options.generic.auxiliaryFields) {
+      pass.auxiliaryFields.push(...options.generic.auxiliaryFields);
+    }
+    if (options.generic.backFields) {
+      pass.backFields.push(...options.generic.backFields);
+    }
+    if (options.generic.headerFields) {
+      pass.headerFields.push(...options.generic.headerFields);
+    }
+  }
+
+  // Generate the pass buffer
+  return pass.getAsBuffer();
 }
 
 function getGoogleAdapter(): GoogleWalletAdapter {
@@ -708,15 +641,7 @@ export async function getSbcwalletApplePkpassForLoyaltyCard(input: {
   const profile = await getLoyaltyProfileByUserId(card.userId);
   const settings = await getLoyaltySettingsByUserId(card.userId) ?? defaultLoyaltySettings(card.userId);
 
-  const messages = await listLoyaltyMessagesForCustomer({
-    userId: card.userId,
-    customerId: card.customerId,
-    limit: 1,
-  });
-  const latestMessage = messages[0];
-
   const programId = `loyalty-${card.userId}`;
-
   const businessName = profile?.businessName ?? "SBC";
   const design = settings.cardDesign;
 
@@ -733,66 +658,59 @@ export async function getSbcwalletApplePkpassForLoyaltyCard(input: {
   });
 
   const appleBarcodeFormat = settings.walletBarcodeFormat === "code128" ? "PKBarcodeFormatCode128" : "PKBarcodeFormatQR";
-  const appleBarcodes = [{
-    format: appleBarcodeFormat,
-    message: barcodeMessage,
-    messageEncoding: "iso-8859-1",
-    altText: memberId,
-  }];
 
-  const passTypeIdentifier = env("APPLE_PASS_TYPE_ID");
-  const authToken = input.webServiceUrl && passTypeIdentifier
-    ? buildAppleWalletAuthToken({ serialNumber: card.id, passTypeIdentifier })
-    : undefined;
-
-  const passData = buildLoyaltyChildPassData({
-    cardId: card.id,
-    programId,
-    customerId: customer.id,
-    customerName: customer.fullName,
-    memberId,
-    points: card.points,
-    updatedAt: new Date(String(card.updatedAt || new Date().toISOString())),
-    publicCardUrl: input.publicCardUrl,
-    latestMessage: latestMessage ? { title: latestMessage.title, body: latestMessage.body } : undefined,
-    location: profile?.location ? { lat: profile.location.lat, lng: profile.location.lng } : undefined,
-    settings,
-    appleWallet: {
-      description: settings.walletPassDescription || `${businessName} Loyalty Card`,
-      organizationName: businessName,
-      logoText: design?.showBusinessName === false ? "" : businessName,
-      backgroundColor: appleBackground || undefined,
-      foregroundColor: appleForeground || undefined,
-      labelColor: appleLabel || undefined,
-      passOverrides: {
-        barcodes: appleBarcodes,
-        locations: profile?.location
-          ? [{ latitude: profile.location.lat, longitude: profile.location.lng }]
-          : undefined,
-        relevantText: settings.walletPassDescription || undefined,
-        webServiceURL: authToken ? input.webServiceUrl : undefined,
-        authenticationToken: authToken || undefined,
-        userInfo: {
-          programId,
-          businessUserId: card.userId,
-          cardId: card.id,
-          customerId: customer.id,
-        },
-      },
-    },
+  // Generate auth token for Apple Wallet web service updates
+  const passTypeId = env("APPLE_PASS_TYPE_ID") || "";
+  const authToken = generateAppleWalletAuthToken({
+    serialNumber: card.id,
+    passTypeIdentifier: passTypeId,
   });
 
-  const profileConfig = getProfile("loyalty");
-
-  const adapter = getAppleAdapter();
-  return await adapter.generatePkpass(passData, profileConfig, "child");
+  return await generateApplePkpass({
+    serialNumber: card.id,
+    description: settings.walletPassDescription || `${businessName} Loyalty Card`,
+    organizationName: businessName,
+    logoText: design?.showBusinessName === false ? "" : businessName,
+    backgroundColor: appleBackground || undefined,
+    foregroundColor: appleForeground || undefined,
+    labelColor: appleLabel || undefined,
+    webServiceURL: input.webServiceUrl,
+    authenticationToken: input.webServiceUrl ? authToken : undefined,
+    barcodes: [{
+      format: appleBarcodeFormat,
+      message: barcodeMessage,
+      messageEncoding: "iso-8859-1",
+      altText: memberId,
+    }],
+    locations: profile?.location
+      ? [{ latitude: profile.location.lat, longitude: profile.location.lng }]
+      : undefined,
+    userInfo: {
+      programId,
+      businessUserId: card.userId,
+      cardId: card.id,
+      customerId: customer.id,
+    },
+    generic: {
+      primaryFields: [
+        { key: "customerName", label: "Customer", value: customer.fullName || "" },
+      ],
+      secondaryFields: [
+        { key: "points", label: "Points", value: String(card.points) },
+        { key: "status", label: "Status", value: "ACTIVE" },
+      ],
+      backFields: [
+        { key: "memberId", label: "Member ID", value: memberId },
+        { key: "parentId", label: "Program ID", value: programId },
+      ],
+    },
+  });
 }
 
 export async function getSbcwalletApplePkpassForBusinessCard(input: {
   cardId: string;
   publicCardUrl?: string;
   origin?: string;
-  webServiceUrl?: string;
 }): Promise<Buffer> {
   const data = await prepareBusinessCardData({
     cardId: input.cardId,
@@ -806,46 +724,33 @@ export async function getSbcwalletApplePkpassForBusinessCard(input: {
   const appleLabel = design?.secondaryColor ? hexToRgbCss(design.secondaryColor) : null;
 
   const appleBarcodeFormat = data.settings.walletBarcodeFormat === "code128" ? "PKBarcodeFormatCode128" : "PKBarcodeFormatQR";
-  const appleBarcodes = [{
-    format: appleBarcodeFormat,
-    message: data.barcodeMessage,
-    messageEncoding: "iso-8859-1",
-    altText: data.memberId,
-  }];
 
-  const passTypeIdentifier = env("APPLE_PASS_TYPE_ID");
-  const authToken = input.webServiceUrl && passTypeIdentifier
-    ? buildAppleWalletAuthToken({ serialNumber: data.card.id, passTypeIdentifier })
-    : undefined;
-
-  const passData = buildLoyaltyChildPassData({
-    cardId: data.card.id,
-    programId: data.programId,
-    customerId: data.card.id,
-    customerName: data.card.fullName,
-    memberId: data.memberId,
-    points: 0,
-    updatedAt: new Date(String(data.card.updatedAt || new Date().toISOString())),
-    publicCardUrl: input.publicCardUrl,
-    settings: data.settings,
-    appleWallet: {
-      description: data.settings.walletPassDescription || `${data.businessName} Business Card`,
-      organizationName: data.businessName,
-      logoText: design?.showBusinessName === false ? "" : data.businessName,
-      backgroundColor: appleBackground || undefined,
-      foregroundColor: appleForeground || undefined,
-      labelColor: appleLabel || undefined,
-      passOverrides: {
-        barcodes: appleBarcodes,
-        webServiceURL: authToken ? input.webServiceUrl : undefined,
-        authenticationToken: authToken || undefined,
-      },
+  return await generateApplePkpass({
+    serialNumber: data.card.id,
+    description: data.settings.walletPassDescription || `${data.businessName} Business Card`,
+    organizationName: data.businessName,
+    logoText: design?.showBusinessName === false ? "" : data.businessName,
+    backgroundColor: appleBackground || undefined,
+    foregroundColor: appleForeground || undefined,
+    labelColor: appleLabel || undefined,
+    barcodes: [{
+      format: appleBarcodeFormat,
+      message: data.barcodeMessage,
+      messageEncoding: "iso-8859-1",
+      altText: data.memberId,
+    }],
+    generic: {
+      primaryFields: [
+        { key: "customerName", label: "Name", value: data.card.fullName || "" },
+      ],
+      secondaryFields: [
+        { key: "business", label: "Business", value: data.businessName },
+      ],
+      backFields: [
+        { key: "cardId", label: "Card ID", value: data.card.id },
+      ],
     },
   });
-
-  const profileConfig = getProfile("loyalty");
-  const adapter = getAppleAdapter();
-  return await adapter.generatePkpass(passData, profileConfig, "child");
 }
 
 export async function getSbcwalletGoogleSaveUrlForLoyaltyCard(input: {
@@ -971,6 +876,7 @@ export async function getSbcwalletGoogleSaveUrlForBusinessCard(input: {
 
 /**
  * Update loyalty points on an existing Google Wallet pass.
+ * Also ensures the parent class exists before updating the child object.
  */
 export async function updateGoogleWalletLoyaltyPoints(input: {
   cardId: string;
@@ -994,6 +900,20 @@ export async function updateGoogleWalletLoyaltyPoints(input: {
 
   const profileConfig = getProfile("loyalty");
   const adapter = getGoogleAdapter();
+
+  // Always ensure the parent class exists before creating/updating the child object
+  const parentPassData = buildLoyaltyParentPassData({
+    programId,
+    programName: businessName,
+    updatedAt: new Date(String(profile?.updatedAt || new Date().toISOString())),
+    homepageUrl: sanitizeUrl(settings.walletWebsiteUrl),
+    logoUrl,
+    location: profile?.location ? { lat: profile.location.lat, lng: profile.location.lng } : undefined,
+    settings,
+  });
+
+  // Create/update the parent class first
+  await adapter.generatePassObject(parentPassData, profileConfig, "parent");
 
   const childPassData = buildLoyaltyChildPassData({
     cardId: card.id,

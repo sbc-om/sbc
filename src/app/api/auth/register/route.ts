@@ -10,6 +10,7 @@ const registerSchema = z.object({
   fullName: z.string().min(2),
   phone: z.string().min(6),
   email: z.string().email(),
+  username: z.string().optional(),
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
@@ -43,6 +44,13 @@ const registerSchema = z.object({
  *                 type: string
  *                 format: email
  *                 example: newuser@example.com
+ *               username:
+ *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 30
+ *                 pattern: ^[a-z0-9_]+$
+ *                 example: john_doe
+ *                 description: Optional username (lowercase letters, numbers, and underscores)
  *               password:
  *                 type: string
  *                 format: password
@@ -79,11 +87,11 @@ const registerSchema = z.object({
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { email, phone, fullName, password } = registerSchema.parse(body);
+    const { email, phone, fullName, username, password } = registerSchema.parse(body);
 
     let user;
     try {
-      user = await createUser({ email, phone, fullName, password, role: 'user' });
+      user = await createUser({ email, phone, fullName, username, password, role: 'user' });
     } catch (error) {
       if (error instanceof Error && error.message === 'EMAIL_TAKEN') {
         return NextResponse.json(
@@ -94,6 +102,18 @@ export async function POST(req: Request) {
       if (error instanceof Error && error.message === 'PHONE_TAKEN') {
         return NextResponse.json(
           { ok: false, error: 'Phone already registered' },
+          { status: 400 }
+        );
+      }
+      if (error instanceof Error && error.message === 'USERNAME_TAKEN') {
+        return NextResponse.json(
+          { ok: false, error: 'Username already taken' },
+          { status: 400 }
+        );
+      }
+      if (error instanceof Error && error.message === 'INVALID_USERNAME') {
+        return NextResponse.json(
+          { ok: false, error: 'Invalid username format' },
           { status: 400 }
         );
       }

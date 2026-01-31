@@ -87,6 +87,8 @@ export type User = {
   id: string;
   email: string;
   phone: string;
+  /** Unique public username/slug for the user profile. */
+  username?: string;
   fullName: string;
   passwordHash: string;
   role: Role;

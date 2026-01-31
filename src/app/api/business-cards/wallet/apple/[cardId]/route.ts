@@ -52,12 +52,17 @@ export async function GET(
   });
   const body = new Uint8Array(pkpass);
 
+  const filename = `business-card-${card.id}.pkpass`;
+
   return new Response(body, {
     status: 200,
     headers: {
       "Content-Type": "application/vnd.apple.pkpass",
-      "Content-Disposition": `attachment; filename=business-card-${encodeURIComponent(card.id)}.pkpass`,
-      "Cache-Control": "no-store",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Length": String(body.length),
+      "Cache-Control": "no-store, no-cache, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
     },
   });
 }

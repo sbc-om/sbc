@@ -110,6 +110,11 @@ export async function getBusinessByUsername(username: string): Promise<Business 
   return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
 }
 
+export async function getBusinessByOwnerId(ownerId: string): Promise<Business | null> {
+  const result = await query(`SELECT * FROM businesses WHERE owner_id = $1 LIMIT 1`, [ownerId]);
+  return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
+}
+
 export function normalizeBusinessUsername(input: string): string | null {
   const normalized = input.trim().replace(/^@/, "").toLowerCase();
   const key = usernameSchema.safeParse(normalized);
@@ -127,7 +132,7 @@ export async function checkBusinessUsernameAvailability(
 
   const excludeId = options?.excludeBusinessId;
 
-  // Check username
+  // Check business username
   let result = await query(
     excludeId
       ? `SELECT id FROM businesses WHERE username = $1 AND id != $2`
@@ -138,13 +143,19 @@ export async function checkBusinessUsernameAvailability(
     return { available: false, normalized, reason: "TAKEN" };
   }
 
-  // Check slug
+  // Check business slug
   result = await query(
     excludeId
       ? `SELECT id FROM businesses WHERE slug = $1 AND id != $2`
       : `SELECT id FROM businesses WHERE slug = $1`,
     excludeId ? [normalized, excludeId] : [normalized]
   );
+  if (result.rows.length > 0) {
+    return { available: false, normalized, reason: "TAKEN" };
+  }
+
+  // Check user username (global uniqueness across system)
+  result = await query(`SELECT id FROM users WHERE username = $1`, [normalized]);
   if (result.rows.length > 0) {
     return { available: false, normalized, reason: "TAKEN" };
   }

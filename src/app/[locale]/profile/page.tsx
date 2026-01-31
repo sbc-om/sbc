@@ -39,6 +39,7 @@ export default async function ProfilePage({
     displayName: user.displayName ?? user.email.split("@")[0],
     bio: user.bio ?? "",
     avatarUrl: user.avatarUrl ?? null,
+    username: user.username ?? null,
     stats: {
       followedCategories: followedCategories.length,
       followers: followersCount,

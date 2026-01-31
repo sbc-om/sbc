@@ -1,16 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getConversationMessages, sendMessage, getOrCreateConversation } from "@/lib/db/chats";
+import { getConversationMessages, sendMessage, getOrCreateConversation, markMessagesAsRead, type MessageType } from "@/lib/db/chats";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { getBusinessBySlug } from "@/lib/db/businesses";
+import { getBusinessBySlug, getBusinessByUsername, getBusinessById } from "@/lib/db/businesses";
+import { getUserByUsername, getUserById, getUserByUsernameOrId } from "@/lib/db/users";
+import { broadcastToConversation } from "../stream/route";
+import { broadcastToUsers } from "../user-stream/route";
 
 const getSchema = z.object({
   conversationId: z.string().min(1),
 });
 
 const postSchema = z.object({
-  businessSlug: z.string().min(1),
-  text: z.string().trim().min(1).max(2000),
+  // Legacy: business chat by slug
+  businessSlug: z.string().min(1).optional(),
+  // New: direct chat with any participant (user or business) by their ID or username
+  participantId: z.string().min(1).optional(),
+  participantType: z.enum(["user", "business"]).optional(),
+  // Direct conversation ID
+  conversationId: z.string().min(1).optional(),
+  // Message content
+  text: z.string().trim().max(2000).optional(),
+  messageType: z.enum(["text", "image", "file", "voice", "location"]).optional(),
+  mediaUrl: z.string().optional(),
+  mediaType: z.string().optional(),
+  locationLat: z.number().optional(),
+  locationLng: z.number().optional(),
 });
 
 /**
@@ -89,21 +104,130 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = postSchema.parse(body);
 
-    const business = await getBusinessBySlug(data.businessSlug);
-    if (!business) {
-      return NextResponse.json({ ok: false, error: "Business not found" }, { status: 404 });
+    let conv;
+    let participantIds: string[] = [];
+
+    // If conversationId is provided, use it directly
+    if (data.conversationId) {
+      const { getConversationById } = await import("@/lib/db/chats");
+      conv = await getConversationById(data.conversationId);
+      if (!conv || !conv.participantIds.includes(user.id)) {
+        return NextResponse.json({ ok: false, error: "Conversation not found" }, { status: 404 });
+      }
+      participantIds = conv.participantIds;
+    } 
+    // New: Direct participant chat (user-to-user, user-to-business, etc.)
+    else if (data.participantId) {
+      let targetId: string | null = null;
+      
+      if (data.participantType === "user") {
+        // Find user by username or ID
+        const targetUser = await getUserByUsernameOrId(data.participantId);
+        if (!targetUser) {
+          return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
+        }
+        if (targetUser.id === user.id) {
+          return NextResponse.json({ ok: false, error: "Cannot chat with yourself" }, { status: 400 });
+        }
+        targetId = targetUser.id;
+      } else if (data.participantType === "business") {
+        // Find business by slug, username, or ID
+        let business = await getBusinessBySlug(data.participantId);
+        if (!business) {
+          business = await getBusinessByUsername(data.participantId);
+        }
+        if (!business) {
+          business = await getBusinessById(data.participantId);
+        }
+        if (!business) {
+          return NextResponse.json({ ok: false, error: "Business not found" }, { status: 404 });
+        }
+        // Use business owner if available, otherwise business ID
+        targetId = business.ownerId || business.id;
+      } else {
+        // Try to detect participant type automatically
+        // First check if it's a user
+        const targetUser = await getUserByUsernameOrId(data.participantId);
+        if (targetUser) {
+          if (targetUser.id === user.id) {
+            return NextResponse.json({ ok: false, error: "Cannot chat with yourself" }, { status: 400 });
+          }
+          targetId = targetUser.id;
+        } else {
+          // Try as business
+          let business = await getBusinessBySlug(data.participantId);
+          if (!business) {
+            business = await getBusinessByUsername(data.participantId);
+          }
+          if (!business) {
+            business = await getBusinessById(data.participantId);
+          }
+          if (business) {
+            targetId = business.ownerId || business.id;
+          }
+        }
+      }
+      
+      if (!targetId) {
+        return NextResponse.json({ ok: false, error: "Participant not found" }, { status: 404 });
+      }
+      
+      participantIds = [user.id, targetId];
+      conv = await getOrCreateConversation(participantIds);
+    }
+    // Legacy: business chat by slug
+    else if (data.businessSlug) {
+      // Try to find business by slug or username
+      let business = await getBusinessBySlug(data.businessSlug);
+      if (!business) {
+        business = await getBusinessByUsername(data.businessSlug);
+      }
+      if (!business) {
+        return NextResponse.json({ ok: false, error: "Business not found" }, { status: 404 });
+      }
+
+      // Get or create conversation between user and business owner
+      participantIds = business.ownerId 
+        ? [user.id, business.ownerId]
+        : [user.id, business.id];
+      conv = await getOrCreateConversation(participantIds);
+    } else {
+      return NextResponse.json({ ok: false, error: "businessSlug, participantId, or conversationId required" }, { status: 400 });
     }
 
-    // Get or create conversation between user and business owner
-    const participantIds = business.ownerId 
-      ? [user.id, business.ownerId]
-      : [user.id];
-    const conv = await getOrCreateConversation(participantIds);
+    // Validate message content
+    if (!data.text && !data.mediaUrl && data.messageType !== "location") {
+      return NextResponse.json({ ok: false, error: "Message content required" }, { status: 400 });
+    }
 
     const message = await sendMessage({
       conversationId: conv.id,
       senderId: user.id,
       text: data.text,
+      messageType: data.messageType as MessageType,
+      mediaUrl: data.mediaUrl,
+      mediaType: data.mediaType,
+      locationLat: data.locationLat,
+      locationLng: data.locationLng,
+    });
+
+    // Broadcast to conversation (for open chat windows)
+    broadcastToConversation(conv.id, {
+      type: "message",
+      message,
+    });
+
+    // Broadcast to all participants (for sidebar updates)
+    broadcastToUsers(participantIds, {
+      type: "new_message",
+      conversationId: conv.id,
+      message: {
+        id: message.id,
+        text: message.text,
+        senderId: message.senderId,
+        messageType: message.messageType,
+        createdAt: message.createdAt,
+      },
     });
 
     return NextResponse.json({ ok: true, message, conversation: conv });

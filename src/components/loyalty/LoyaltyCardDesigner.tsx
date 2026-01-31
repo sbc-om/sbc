@@ -792,8 +792,8 @@ export function LoyaltyCardDesigner({
 }
 
 // iOS Wallet Card Preview Component
-function DetailRow({ label, value }: { label: string; value: string }) {
-  const v = value.trim();
+function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
+  const v = (value ?? "").trim();
   if (!v) return null;
   return (
     <div className="flex items-start justify-between gap-3">

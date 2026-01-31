@@ -1,11 +1,8 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
-import { getUserConversations } from "@/lib/db/chats";
-import { getBusinessById } from "@/lib/db/businesses";
 
 export default async function ChatIndexPage({
   params,
@@ -15,26 +12,11 @@ export default async function ChatIndexPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const user = await requireUser(locale as Locale);
-  const conversations = await getUserConversations(user.id);
+  await requireUser(locale as Locale);
 
-  // If user has conversations, redirect to the most recent one
-  if (conversations.length > 0) {
-    // Find the other participant (the business) in the conversation
-    const otherParticipantId = conversations[0].participantIds.find(id => id !== user.id);
-    if (otherParticipantId) {
-      const business = await getBusinessById(otherParticipantId);
-      if (business) {
-        redirect(`/${locale}/chat/${business.slug}`);
-      }
-    }
-  }
-
-  // Otherwise, show empty state
-  const dict = await getDictionary(locale as Locale);
-
+  // Empty state - conversation list is in sidebar
   return (
-    <div className="h-screen flex items-center justify-center bg-background">
+    <div className="h-full flex items-center justify-center bg-background">
       <div className="text-center max-w-md px-6">
         <div className="mx-auto h-20 w-20 mb-6 rounded-full bg-(--chip-bg) flex items-center justify-center">
           <svg
@@ -52,12 +34,12 @@ export default async function ChatIndexPage({
           </svg>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight">
-          {locale === "ar" ? "لا توجد محادثات بعد" : "No conversations yet"}
+          {locale === "ar" ? "اختر محادثة" : "Select a conversation"}
         </h1>
         <p className="mt-2 text-sm text-(--muted-foreground)">
           {locale === "ar"
-            ? "ابدأ محادثة مع أي بيزنس من خلال زيارة صفحة البيزنس والضغط على زر الدردشة"
-            : "Start a conversation with any business by visiting their page and clicking the chat button"}
+            ? "اختر محادثة من القائمة أو ابدأ محادثة جديدة مع أي بيزنس"
+            : "Choose a conversation from the list or start a new one with any business"}
         </p>
       </div>
     </div>
