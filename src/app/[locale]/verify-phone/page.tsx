@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { isWhatsAppVerificationRequired } from "@/lib/db/settings";
 import { isWAHAEnabled } from "@/lib/waha/client";
+import { PublicPage } from "@/components/PublicPage";
 import type { Locale } from "@/lib/i18n/locales";
 import { VerifyPhoneClient } from "./VerifyPhoneClient";
 
@@ -19,25 +19,30 @@ export default async function VerifyPhonePage({
     redirect(`/${locale}/login`);
   }
 
-  // Check if verification is required
-  const wahaEnabled = isWAHAEnabled();
-  const verificationRequired = wahaEnabled ? await isWhatsAppVerificationRequired() : false;
+  // If user's phone is already verified, redirect to dashboard
+  if (user.isPhoneVerified) {
+    redirect(`/${locale}/dashboard`);
+  }
 
-  // If user already verified or verification not required, redirect to dashboard
-  if (user.isVerified || !verificationRequired) {
+  // Check if WAHA is enabled for OTP functionality
+  const wahaEnabled = isWAHAEnabled();
+  if (!wahaEnabled) {
+    // Can't verify without WAHA, redirect to dashboard
     redirect(`/${locale}/dashboard`);
   }
 
   const dict = await getDictionary(locale);
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center px-4">
-      <VerifyPhoneClient
-        locale={locale}
-        dict={dict}
-        phone={user.phone || ""}
-        userId={user.id}
-      />
-    </div>
+    <PublicPage>
+      <div className="mx-auto w-full max-w-md">
+        <VerifyPhoneClient
+          locale={locale}
+          dict={dict}
+          phone={user.phone || ""}
+          userId={user.id}
+        />
+      </div>
+    </PublicPage>
   );
 }

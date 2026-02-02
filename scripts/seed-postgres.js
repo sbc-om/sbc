@@ -400,9 +400,9 @@ async function seedAdminUser(client) {
   const now = new Date();
   
   await client.query(`
-    INSERT INTO users (id, email, phone, full_name, password_hash, role, is_active, is_verified, approval_status, created_at, updated_at)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
-  `, [id, adminEmail, '', 'Admin', passwordHash, 'admin', true, true, 'approved', now]);
+    INSERT INTO users (id, email, phone, full_name, password_hash, role, is_active, is_verified, is_phone_verified, approval_status, created_at, updated_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $11)
+  `, [id, adminEmail, '', 'Admin', passwordHash, 'admin', true, true, true, 'approved', now]);
   
   console.log(`   ✓ Created admin user: ${adminEmail}`);
   return id;

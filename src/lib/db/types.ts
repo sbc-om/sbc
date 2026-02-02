@@ -96,6 +96,8 @@ export type User = {
   isActive?: boolean;
   /** Verified/special account (blue check). */
   isVerified?: boolean;
+  /** Whether the phone number has been verified via WhatsApp OTP. */
+  isPhoneVerified?: boolean;
   createdAt: string;
   /** Approval status for new accounts or contact updates. */
   approvalStatus?: "pending" | "approved";

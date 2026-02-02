@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
@@ -18,20 +17,21 @@ interface VerifyPhoneClientProps {
 const texts = {
   en: {
     title: "Verify Your Phone",
-    subtitle: "We'll send a 6-digit code to your WhatsApp",
+    subtitle: "We'll send a 6-digit verification code to your WhatsApp",
     phoneLabel: "Phone Number",
     codeLabel: "Verification Code",
     codePlaceholder: "Enter 6-digit code",
-    sendCode: "Send Code",
+    sendCode: "Send Verification Code",
     resendCode: "Resend Code",
-    verify: "Verify",
+    verify: "Verify & Continue",
     skip: "Skip for now",
     sending: "Sending...",
     verifying: "Verifying...",
     codeSent: "Code sent! Check your WhatsApp",
     phoneUpdated: "Phone number updated",
-    editPhone: "Edit",
+    editPhone: "Change",
     savePhone: "Save",
+    cancel: "Cancel",
     errors: {
       invalid: "Invalid verification code",
       expired: "Code expired. Please request a new one",
@@ -43,20 +43,21 @@ const texts = {
   },
   ar: {
     title: "تحقق من رقم هاتفك",
-    subtitle: "سنرسل رمزًا من 6 أرقام إلى واتساب الخاص بك",
+    subtitle: "سنرسل رمز تحقق مكون من 6 أرقام إلى واتساب الخاص بك",
     phoneLabel: "رقم الهاتف",
     codeLabel: "رمز التحقق",
     codePlaceholder: "أدخل الرمز المكون من 6 أرقام",
-    sendCode: "إرسال الرمز",
+    sendCode: "إرسال رمز التحقق",
     resendCode: "إعادة إرسال الرمز",
-    verify: "تحقق",
+    verify: "تحقق والمتابعة",
     skip: "تخطي الآن",
     sending: "جاري الإرسال...",
     verifying: "جاري التحقق...",
     codeSent: "تم إرسال الرمز! تحقق من واتساب",
     phoneUpdated: "تم تحديث رقم الهاتف",
-    editPhone: "تعديل",
+    editPhone: "تغيير",
     savePhone: "حفظ",
+    cancel: "إلغاء",
     errors: {
       invalid: "رمز التحقق غير صالح",
       expired: "انتهت صلاحية الرمز. يرجى طلب رمز جديد",
@@ -232,45 +233,64 @@ export function VerifyPhoneClient({
   };
 
   return (
-    <div className="w-full max-w-md rounded-lg border border-(--border) bg-(--card) p-6 shadow-sm">
-      <h1 className="text-2xl font-bold text-center mb-2">{t.title}</h1>
-      <p className="text-sm text-(--muted-foreground) text-center mb-6">
-        {t.subtitle}
-      </p>
+    <div className="w-full max-w-md">
+      {/* Header */}
+      <div className="text-center mb-8 pb-6 border-b" style={{ borderColor: 'var(--surface-border)' }}>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 border" style={{ borderColor: 'var(--surface-border)' }}>
+          <svg className="h-7 w-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>
+        <p className="mt-2 text-sm text-(--muted-foreground)">
+          {t.subtitle}
+        </p>
+      </div>
 
-      {/* Phone Input */}
-      <div className="mb-4">
-        <label className="text-sm font-medium text-(--muted-foreground) mb-1 block">
+      {/* Phone Display/Edit */}
+      <div className="mb-6">
+        <label className="text-sm font-medium text-(--muted-foreground) mb-2 block">
           {t.phoneLabel}
         </label>
         {isEditingPhone ? (
-          <div className="flex gap-2">
+          <div className="sbc-card space-y-3 p-4 rounded-xl">
             <PhoneInput
               value={phone}
               onChange={setPhone}
-              className="flex-1"
+              className="w-full"
             />
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleUpdatePhone}
-              disabled={loading || phone === initialPhone}
-            >
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setIsEditingPhone(false);
+                  setPhone(initialPhone);
+                }}
+                className="flex-1"
+              >
+                {t.cancel}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleUpdatePhone}
+                disabled={loading || phone === initialPhone}
+                className="flex-1"
+              >
+                {loading ? "..." : t.savePhone}
+              </Button>
+            </div>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <div className="flex-1 px-3 py-2 rounded-md border border-(--border) bg-(--muted)/30">
-              {phone}
-            </div>
-            <Button
+          <div className="sbc-card flex items-center justify-between py-3 px-4 rounded-xl">
+            <span className="font-mono text-lg" dir="ltr">{phone}</span>
+            <button
               type="button"
-              variant="ghost"
               onClick={() => setIsEditingPhone(true)}
-              className="text-sm"
+              className="text-sm font-medium text-primary hover:text-primary/80 transition-colors"
             >
               {t.editPhone}
-            </Button>
+            </button>
           </div>
         )}
       </div>
@@ -280,7 +300,7 @@ export function VerifyPhoneClient({
         <Button
           onClick={handleSendCode}
           disabled={loading || !phone}
-          className="w-full mb-4"
+          className="w-full h-11"
         >
           {loading ? t.sending : t.sendCode}
         </Button>
@@ -288,67 +308,74 @@ export function VerifyPhoneClient({
 
       {/* Code Input - 6 boxes */}
       {codeSent && !isEditingPhone && (
-        <div className="mb-4">
-          <label className="text-sm font-medium text-(--muted-foreground) mb-2 block">
-            {t.codeLabel}
-          </label>
-          <div className="flex gap-2 justify-center mb-4" dir="ltr">
-            {[0, 1, 2, 3, 4, 5].map((index) => (
-              <input
-                key={index}
-                ref={(el) => { inputRefs.current[index] = el; }}
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                value={code[index] || ""}
-                onChange={(e) => handleCodeChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                className="w-10 h-12 text-center text-lg font-mono rounded-md border border-(--border) bg-(--background) focus:border-(--ring) focus:ring-1 focus:ring-(--ring) outline-none"
-              />
-            ))}
+        <div className="sbc-card space-y-6 p-5 rounded-xl">
+          <div>
+            <label className="text-sm font-medium text-(--muted-foreground) mb-3 block">
+              {t.codeLabel}
+            </label>
+            <div className="flex gap-2 sm:gap-3 justify-center" dir="ltr">
+              {[0, 1, 2, 3, 4, 5].map((index) => (
+                <input
+                  key={index}
+                  ref={(el) => { inputRefs.current[index] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={code[index] || ""}
+                  onChange={(e) => handleCodeChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-semibold rounded-lg border bg-(--background) focus:border-primary focus:ring-2 focus:ring-primary/30 outline-none transition-all"
+                  style={{ borderColor: 'var(--surface-border)' }}
+                />
+              ))}
+            </div>
           </div>
 
           {/* Verify Button */}
           <Button
             onClick={handleVerify}
             disabled={verifying || code.length !== 6}
-            className="w-full mb-2"
+            className="w-full h-11"
           >
             {verifying ? t.verifying : t.verify}
           </Button>
 
           {/* Resend Button */}
-          <Button
-            variant="ghost"
-            onClick={handleSendCode}
-            disabled={loading || countdown > 0}
-            className="w-full text-sm"
-          >
-            {countdown > 0 ? `${t.resendIn} ${countdown}s` : t.resendCode}
-          </Button>
+          <div className="text-center pt-2 border-t" style={{ borderColor: 'var(--surface-border)' }}>
+            <button
+              type="button"
+              onClick={handleSendCode}
+              disabled={loading || countdown > 0}
+              className="text-sm font-medium text-primary hover:text-primary/80 disabled:text-(--muted-foreground) disabled:cursor-not-allowed transition-colors"
+            >
+              {countdown > 0 ? `${t.resendIn} ${countdown}s` : t.resendCode}
+            </button>
+          </div>
         </div>
       )}
 
       {/* Messages */}
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400 text-center mb-4">
+        <div className="mt-4 p-3 rounded-lg border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 text-sm text-center">
           {error}
-        </p>
+        </div>
       )}
       {success && (
-        <p className="text-sm text-green-600 dark:text-green-400 text-center mb-4">
+        <div className="mt-4 p-3 rounded-lg border border-green-500/20 bg-green-500/10 text-green-600 dark:text-green-400 text-sm text-center">
           {success}
-        </p>
+        </div>
       )}
 
       {/* Skip Button */}
-      <Button
-        variant="ghost"
-        onClick={handleSkip}
-        className="w-full text-sm text-(--muted-foreground)"
-      >
-        {t.skip}
-      </Button>
+      <div className="mt-8 pt-6 border-t text-center" style={{ borderColor: 'var(--surface-border)' }}>
+        <button
+          type="button"
+          onClick={handleSkip}
+          className="text-sm text-(--muted-foreground) hover:text-foreground transition-colors"
+        >
+          {t.skip}
+        </button>
+      </div>
     </div>
   );
 }

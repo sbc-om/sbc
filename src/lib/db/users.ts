@@ -15,6 +15,7 @@ export type UserListItem = Pick<
   | "role"
   | "isActive"
   | "isVerified"
+  | "isPhoneVerified"
   | "createdAt"
   | "updatedAt"
   | "approvalStatus"
@@ -35,7 +36,8 @@ const phoneSchema = z.string().trim().min(6).max(40);
 const fullNameSchema = z.string().trim().min(2).max(120);
 
 function normalizePhone(value: string) {
-  return value.replace(/[\s\-()]+/g, "");
+  // Remove all non-digit characters (spaces, dashes, parentheses, plus sign, etc.)
+  return value.replace(/\D/g, "");
 }
 
 function rowToUser(row: any): User {
@@ -49,6 +51,7 @@ function rowToUser(row: any): User {
     role: row.role as Role,
     isActive: row.is_active ?? true,
     isVerified: row.is_verified ?? false,
+    isPhoneVerified: row.is_phone_verified ?? false,
     displayName: row.display_name,
     bio: row.bio,
     avatarUrl: row.avatar_url,
@@ -186,25 +189,30 @@ export async function updateUserContact(
   const current = await ensureUser(id);
   const currentEmail = current.email;
   const currentPhone = current.phone ?? "";
+  const currentPhoneNormalized = currentPhone ? normalizePhone(currentPhone) : "";
 
   const nextEmail =
     typeof patch.email === "string" ? emailSchema.parse(patch.email) : currentEmail;
   const nextPhone =
     typeof patch.phone === "string"
       ? normalizePhone(phoneSchema.parse(patch.phone))
-      : currentPhone;
+      : currentPhoneNormalized;
 
   if (nextEmail !== currentEmail) {
     const existing = await query(`SELECT id FROM users WHERE email = $1 AND id != $2`, [nextEmail, id]);
     if (existing.rows.length > 0) throw new Error("EMAIL_TAKEN");
   }
 
-  if (nextPhone !== currentPhone) {
-    const existing = await query(`SELECT id FROM users WHERE phone = $1 AND id != $2`, [nextPhone, id]);
+  if (nextPhone !== currentPhoneNormalized) {
+    // Compare normalized phones to handle formatting differences
+    const existing = await query(
+      `SELECT id FROM users WHERE REGEXP_REPLACE(phone, '[^0-9]', '', 'g') = $1 AND id != $2`,
+      [nextPhone.replace(/[^0-9]/g, ''), id]
+    );
     if (existing.rows.length > 0) throw new Error("PHONE_TAKEN");
   }
 
-  const hasChange = nextEmail !== currentEmail || nextPhone !== currentPhone;
+  const hasChange = nextEmail !== currentEmail || nextPhone !== currentPhoneNormalized;
   if (!hasChange) return current;
 
   const now = new Date();
@@ -355,6 +363,7 @@ export async function updateUserAdmin(
     bio?: string | null;
     role?: Role | null;
     isVerified?: boolean | null;
+    isPhoneVerified?: boolean | null;
     isActive?: boolean | null;
   }
 ): Promise<User> {
@@ -362,13 +371,14 @@ export async function updateUserAdmin(
     const currentRes = await client.query(`SELECT * FROM users WHERE id = $1 FOR UPDATE`, [id]);
     if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
     const current = rowToUser(currentRes.rows[0]);
+    const currentPhoneNormalized = current.phone ? normalizePhone(current.phone) : null;
 
     const nextEmail =
       typeof patch.email === "string" ? emailSchema.parse(patch.email) : current.email;
     const nextPhone =
       typeof patch.phone === "string"
         ? normalizePhone(phoneSchema.parse(patch.phone))
-        : current.phone;
+        : currentPhoneNormalized;
     const nextFullName =
       typeof patch.fullName === "string" ? fullNameSchema.parse(patch.fullName) : current.fullName;
 
@@ -377,8 +387,12 @@ export async function updateUserAdmin(
       if (existing.rows.length > 0) throw new Error("EMAIL_TAKEN");
     }
 
-    if (nextPhone && nextPhone !== current.phone) {
-      const existing = await client.query(`SELECT id FROM users WHERE phone = $1 AND id != $2`, [nextPhone, id]);
+    if (nextPhone && nextPhone !== currentPhoneNormalized) {
+      // Compare normalized phones to handle formatting differences
+      const existing = await client.query(
+        `SELECT id FROM users WHERE REGEXP_REPLACE(phone, '[^0-9]', '', 'g') = $1 AND id != $2`,
+        [nextPhone.replace(/[^0-9]/g, ''), id]
+      );
       if (existing.rows.length > 0) throw new Error("PHONE_TAKEN");
     }
 
@@ -403,9 +417,10 @@ export async function updateUserAdmin(
         bio = $5,
         role = $6,
         is_verified = $7,
-        is_active = $8,
-        updated_at = $9
-      WHERE id = $10
+        is_phone_verified = $8,
+        is_active = $9,
+        updated_at = $10
+      WHERE id = $11
       RETURNING *
     `, [
       nextEmail,
@@ -415,6 +430,7 @@ export async function updateUserAdmin(
       bio,
       patch.role ?? current.role,
       typeof patch.isVerified === "boolean" ? patch.isVerified : current.isVerified,
+      typeof patch.isPhoneVerified === "boolean" ? patch.isPhoneVerified : current.isPhoneVerified,
       typeof patch.isActive === "boolean" ? patch.isActive : current.isActive,
       new Date(),
       id
@@ -433,9 +449,18 @@ export async function setUserVerified(id: string, isVerified: boolean): Promise<
   return rowToUser(result.rows[0]);
 }
 
+export async function setUserPhoneVerified(id: string, isPhoneVerified: boolean): Promise<User> {
+  const result = await query(`
+    UPDATE users SET is_phone_verified = $1, updated_at = $2 WHERE id = $3 RETURNING *
+  `, [isPhoneVerified, new Date(), id]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToUser(result.rows[0]);
+}
+
 export async function listUsers(): Promise<UserListItem[]> {
   const result = await query(`
-    SELECT id, email, phone, full_name, role, is_active, is_verified, created_at, updated_at,
+    SELECT id, email, phone, full_name, role, is_active, is_verified, is_phone_verified, created_at, updated_at,
            approval_status, approval_reason, approval_requested_at, pending_email, pending_phone, approved_at
     FROM users
     ORDER BY created_at DESC
@@ -449,6 +474,7 @@ export async function listUsers(): Promise<UserListItem[]> {
     role: row.role as Role,
     isActive: row.is_active ?? true,
     isVerified: row.is_verified,
+    isPhoneVerified: row.is_phone_verified ?? false,
     createdAt: row.created_at?.toISOString() || "",
     updatedAt: row.updated_at?.toISOString(),
     approvalStatus: row.approval_status,

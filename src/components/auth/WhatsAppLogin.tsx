@@ -137,8 +137,12 @@ export function WhatsAppLogin({ locale, next }: WhatsAppLoginProps) {
         return;
       }
 
-      // Redirect on success
-      router.push(next || `/${locale}/dashboard`);
+      // Redirect to verify-phone if phone not verified, otherwise to dashboard
+      if (data.needsVerification) {
+        router.push(`/${locale}/verify-phone`);
+      } else {
+        router.push(next || `/${locale}/dashboard`);
+      }
       router.refresh();
     } catch (err) {
       setError("Network error. Please try again.");

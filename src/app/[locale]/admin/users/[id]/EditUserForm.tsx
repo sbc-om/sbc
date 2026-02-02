@@ -21,6 +21,7 @@ export function EditUserForm({
   const [role, setRole] = useState<Role>(user.role);
   const [phone, setPhone] = useState<string>(user.phone ?? "");
   const [isVerified, setIsVerified] = useState<boolean>(user.isVerified ?? false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState<boolean>(user.isPhoneVerified ?? false);
   const [isActive, setIsActive] = useState<boolean>(user.isActive ?? true);
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -36,6 +37,7 @@ export function EditUserForm({
       const formData = new FormData(event.currentTarget);
       formData.set("role", role);
       formData.set("isVerified", String(isVerified));
+      formData.set("isPhoneVerified", String(isPhoneVerified));
       formData.set("isActive", String(isActive));
 
       await updateUserAdminAction(locale, user.id, formData);
@@ -94,7 +96,8 @@ export function EditUserForm({
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Role */}
           <div className="grid gap-2">
             <span className="text-sm font-semibold text-foreground">{locale === "ar" ? "الدور" : "Role"}</span>
             <RoleSelect
@@ -105,29 +108,92 @@ export function EditUserForm({
             />
           </div>
 
-          <label className="flex items-center gap-3 text-sm font-semibold">
-            <input
-              type="checkbox"
-              checked={isVerified}
-              onChange={(e) => setIsVerified(e.target.checked)}
-              className="h-4 w-4 accent-blue-600"
-            />
-            <span className={isVerified ? "text-blue-600" : "text-(--muted-foreground)"}>
-              {isVerified ? (locale === "ar" ? "موثق" : "Verified") : (locale === "ar" ? "غير موثق" : "Unverified")}
+          {/* Phone Verification (WhatsApp OTP) */}
+          <div className="grid gap-2">
+            <span className="text-sm font-semibold text-foreground">
+              {locale === "ar" ? "توثيق الهاتف" : "Phone Verified"}
             </span>
-          </label>
+            <button
+              type="button"
+              onClick={() => setIsPhoneVerified(!isPhoneVerified)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isPhoneVerified
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "bg-(--muted)/50 text-(--muted-foreground)"
+              }`}
+            >
+              {isPhoneVerified ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                </svg>
+              )}
+              {isPhoneVerified 
+                ? (locale === "ar" ? "موثق" : "Verified") 
+                : (locale === "ar" ? "غير موثق" : "Not Verified")}
+            </button>
+          </div>
 
-          <label className="flex items-center gap-3 text-sm font-semibold">
-            <input
-              type="checkbox"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="h-4 w-4 accent-emerald-600"
-            />
-            <span className={isActive ? "text-emerald-600" : "text-(--muted-foreground)"}>
-              {isActive ? (locale === "ar" ? "نشط" : "Active") : (locale === "ar" ? "غير نشط" : "Inactive")}
+          {/* Blue Check Badge */}
+          <div className="grid gap-2">
+            <span className="text-sm font-semibold text-foreground">
+              {locale === "ar" ? "العلامة الزرقاء" : "Blue Badge"}
             </span>
-          </label>
+            <button
+              type="button"
+              onClick={() => setIsVerified(!isVerified)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isVerified
+                  ? "bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                  : "bg-(--muted)/50 text-(--muted-foreground)"
+              }`}
+            >
+              {isVerified ? (
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              )}
+              {isVerified 
+                ? (locale === "ar" ? "مفعل" : "Enabled") 
+                : (locale === "ar" ? "معطل" : "Disabled")}
+            </button>
+          </div>
+
+          {/* Account Status */}
+          <div className="grid gap-2">
+            <span className="text-sm font-semibold text-foreground">
+              {locale === "ar" ? "حالة الحساب" : "Account Status"}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsActive(!isActive)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                isActive
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "bg-red-500/10 text-red-600 dark:text-red-400"
+              }`}
+            >
+              {isActive ? (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                </svg>
+              )}
+              {isActive 
+                ? (locale === "ar" ? "نشط" : "Active") 
+                : (locale === "ar" ? "معطل" : "Suspended")}
+            </button>
+          </div>
         </div>
       </div>
 

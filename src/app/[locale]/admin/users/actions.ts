@@ -86,25 +86,40 @@ export async function updateUserAdminAction(
   const bio = String(formData.get("bio") || "").trim() || null;
   const role = String(formData.get("role") || "").trim() || null;
   const isVerifiedRaw = String(formData.get("isVerified") || "").trim();
+  const isPhoneVerifiedRaw = String(formData.get("isPhoneVerified") || "").trim();
   const isActiveRaw = String(formData.get("isActive") || "").trim();
 
   const isVerified = isVerifiedRaw ? isVerifiedRaw === "true" : null;
+  const isPhoneVerified = isPhoneVerifiedRaw ? isPhoneVerifiedRaw === "true" : null;
   const isActive = isActiveRaw ? isActiveRaw === "true" : null;
 
   if (role && role !== "admin" && role !== "user") {
     throw new Error("INVALID_ROLE");
   }
 
-  updateUserAdmin(userId, {
-    email,
-    phone,
-    fullName,
-    displayName,
-    bio,
-    role: role as Role | null,
-    isVerified,
-    isActive,
-  });
+  try {
+    await updateUserAdmin(userId, {
+      email,
+      phone,
+      fullName,
+      displayName,
+      bio,
+      role: role as Role | null,
+      isVerified,
+      isPhoneVerified,
+      isActive,
+    });
+  } catch (e) {
+    if (e instanceof Error) {
+      if (e.message === "PHONE_TAKEN") {
+        throw new Error(locale === "ar" ? "رقم الهاتف مستخدم بالفعل" : "Phone number is already in use");
+      }
+      if (e.message === "EMAIL_TAKEN") {
+        throw new Error(locale === "ar" ? "البريد الإلكتروني مستخدم بالفعل" : "Email is already in use");
+      }
+    }
+    throw e;
+  }
 
   revalidatePath(`/${locale}/admin/users`);
   revalidatePath(`/${locale}/admin/users/${userId}`);

@@ -31,9 +31,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { z } from "zod";
 import { verifyOTP, type OTPPurpose } from "@/lib/db/otp";
-import { getUserByPhone, getUserById } from "@/lib/db/users";
+import { getUserByPhone, getUserById, setUserPhoneVerified } from "@/lib/db/users";
 import { signAuthToken, getAuthCookieName } from "@/lib/auth/jwt";
-import { isWhatsAppLoginEnabled } from "@/lib/db/settings";
+import { isWhatsAppLoginEnabled, isWhatsAppVerificationRequired } from "@/lib/db/settings";
 import { sendLoginNotification, isWAHAEnabled } from "@/lib/waha/client";
 
 const verifyOTPSchema = z.object({
@@ -108,6 +108,11 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // If user logged in via WhatsApp OTP, mark their phone as verified
+      if (!user.isPhoneVerified) {
+        await setUserPhoneVerified(user.id, true);
+      }
+
       // Create JWT token
       const token = await signAuthToken({
         sub: user.id,
@@ -131,6 +136,7 @@ export async function POST(request: NextRequest) {
         sendLoginNotification(user.phone, "en").catch(console.error);
       }
 
+      // Phone is now verified since user logged in with WhatsApp OTP
       return NextResponse.json({
         ok: true,
         message: "Login successful",
@@ -139,7 +145,10 @@ export async function POST(request: NextRequest) {
           email: user.email,
           displayName: user.displayName || user.fullName,
           role: user.role,
+          isVerified: user.isVerified,
+          isPhoneVerified: true, // Always true after WhatsApp OTP login
         },
+        needsVerification: false, // No longer needed since WhatsApp login auto-verifies phone
       });
     }
 
