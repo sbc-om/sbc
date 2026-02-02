@@ -208,6 +208,21 @@ export async function updateUserContact(
   if (!hasChange) return current;
 
   const now = new Date();
+
+  // Admins don't need approval for contact changes - apply directly
+  if (current.role === "admin") {
+    const result = await query(`
+      UPDATE users SET
+        email = $1,
+        phone = $2,
+        updated_at = $3
+      WHERE id = $4
+      RETURNING *
+    `, [nextEmail, nextPhone || null, now, id]);
+    return rowToUser(result.rows[0]);
+  }
+
+  // Non-admin users need approval
   const approvalReason =
     current.approvalStatus === "pending" && current.approvalReason === "new"
       ? "new"

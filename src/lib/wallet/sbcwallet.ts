@@ -423,50 +423,36 @@ async function generateApplePkpass(options: {
       teamIdentifier: config.teamId,
       organizationName: options.organizationName,
       description: options.description,
+      ...(options.backgroundColor && { backgroundColor: options.backgroundColor }),
+      ...(options.foregroundColor && { foregroundColor: options.foregroundColor }),
+      ...(options.labelColor && { labelColor: options.labelColor }),
+      ...(options.logoText && { logoText: options.logoText }),
+      ...(options.webServiceURL && options.authenticationToken && {
+        webServiceURL: options.webServiceURL,
+        authenticationToken: options.authenticationToken,
+      }),
+      ...(options.userInfo && { userInfo: options.userInfo }),
     }
   );
 
   // Set the pass type to generic (loyalty cards use generic type)
   pass.type = "generic";
 
-  // Set colors
-  if (options.backgroundColor) {
-    pass.backgroundColor = options.backgroundColor;
-  }
-  if (options.foregroundColor) {
-    pass.foregroundColor = options.foregroundColor;
-  }
-  if (options.labelColor) {
-    pass.labelColor = options.labelColor;
-  }
-  if (options.logoText) {
-    pass.logoText = options.logoText;
-  }
-
   // Set barcodes
   if (options.barcodes && options.barcodes.length > 0) {
-    pass.setBarcodes(options.barcodes.map(b => ({
-      format: b.format as "PKBarcodeFormatQR" | "PKBarcodeFormatPDF417" | "PKBarcodeFormatAztec" | "PKBarcodeFormatCode128",
-      message: b.message,
-      messageEncoding: b.messageEncoding,
-      altText: b.altText,
-    })));
+    pass.setBarcodes(
+      ...options.barcodes.map(b => ({
+        format: b.format as "PKBarcodeFormatQR" | "PKBarcodeFormatPDF417" | "PKBarcodeFormatAztec" | "PKBarcodeFormatCode128",
+        message: b.message,
+        messageEncoding: b.messageEncoding,
+        altText: b.altText,
+      }))
+    );
   }
 
   // Set locations
   if (options.locations && options.locations.length > 0) {
     pass.setLocations(...options.locations);
-  }
-
-  // Set web service
-  if (options.webServiceURL && options.authenticationToken) {
-    pass.webServiceURL = options.webServiceURL;
-    pass.authenticationToken = options.authenticationToken;
-  }
-
-  // Set user info
-  if (options.userInfo) {
-    (pass as unknown as { userInfo: Record<string, unknown> }).userInfo = options.userInfo;
   }
 
   // Set generic fields

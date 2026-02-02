@@ -16,7 +16,8 @@ export default async function HandlePage({
   const { locale, username } = await params;
   if (!isLocale(locale)) notFound();
 
-  const handle = username.replace(/^@/, "").trim().toLowerCase();
+  const decodedUsername = decodeURIComponent(username);
+  const handle = decodedUsername.replace(/^@/, "").trim().toLowerCase();
   
   // Try business first
   const business = await getBusinessByUsername(handle);
