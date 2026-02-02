@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { AppPage } from "@/components/AppPage";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -26,23 +27,25 @@ export default async function AdminSettingsPage({
   const wahaConfigured = isWAHAEnabled();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">
-          {locale === "ar" ? "إعدادات النظام" : "System Settings"}
-        </h1>
-        <p className="text-sm text-(--muted-foreground)">
-          {locale === "ar"
-            ? "إدارة إعدادات المصادقة والتطبيق"
-            : "Manage authentication and application settings"}
-        </p>
-      </div>
+    <AppPage>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-semibold">
+            {locale === "ar" ? "إعدادات النظام" : "System Settings"}
+          </h1>
+          <p className="text-sm text-(--muted-foreground)">
+            {locale === "ar"
+              ? "إدارة إعدادات المصادقة والتطبيق"
+              : "Manage authentication and application settings"}
+          </p>
+        </div>
 
-      <SettingsForm
-        locale={locale as Locale}
-        initialSettings={settings}
-        wahaConfigured={wahaConfigured}
-      />
-    </div>
+        <SettingsForm
+          locale={locale as Locale}
+          initialSettings={settings}
+          wahaConfigured={wahaConfigured}
+        />
+      </div>
+    </AppPage>
   );
 }

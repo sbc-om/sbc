@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 
 import { getLoyaltyCardById, listAppleWalletRegistrationsForDevice } from "@/lib/db/loyalty";
-import { buildAppleWalletAuthToken } from "@/lib/wallet/sbcwallet";
+import { generateAppleWalletAuthToken } from "@/lib/wallet/sbcwallet";
 
 export const runtime = "nodejs";
 
@@ -34,7 +34,7 @@ export async function GET(
   );
 
   const authorized = registrations.some((r) => {
-    const token = buildAppleWalletAuthToken({ serialNumber: r.serialNumber, passTypeIdentifier });
+    const token = generateAppleWalletAuthToken({ serialNumber: r.serialNumber, passTypeIdentifier });
     return token ? authHeader.trim() === `ApplePass ${token}` : false;
   });
 

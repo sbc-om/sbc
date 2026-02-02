@@ -42,8 +42,7 @@ export default async function RegisterPage({
             },
           }}
           next={next}
-          challengeQuestion={challenge.question}
-          challengeAnswer={challenge.answer}
+          challenge={challenge}
         />
       </div>
     </PublicPage>

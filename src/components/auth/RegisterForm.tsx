@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { HumanChallenge } from "./HumanChallenge";
 import { PhoneVerification } from "./PhoneVerification";
 import type { Locale } from "@/lib/i18n/locales";
+import type { HumanChallenge as HumanChallengeType } from "@/lib/auth/humanChallenge";
 
 interface RegisterFormProps {
   locale: Locale;
@@ -23,8 +25,7 @@ interface RegisterFormProps {
     };
   };
   next?: string;
-  challengeQuestion: string;
-  challengeAnswer: string;
+  challenge: HumanChallengeType;
 }
 
 const texts = {
@@ -66,8 +67,7 @@ export function RegisterForm({
   locale,
   dict,
   next,
-  challengeQuestion,
-  challengeAnswer,
+  challenge,
 }: RegisterFormProps) {
   const router = useRouter();
   const t = texts[locale];
@@ -78,7 +78,6 @@ export function RegisterForm({
     phone: "",
     email: "",
     password: "",
-    humanAnswer: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -114,15 +113,9 @@ export function RegisterForm({
     setLoading(true);
 
     try {
-      const form = new FormData();
+      const formEl = e.target as HTMLFormElement;
+      const form = new FormData(formEl);
       form.append("locale", locale);
-      form.append("fullName", formData.fullName);
-      form.append("username", formData.username);
-      form.append("phone", formData.phone);
-      form.append("email", formData.email);
-      form.append("password", formData.password);
-      form.append("humanAnswer", formData.humanAnswer);
-      form.append("humanExpected", challengeAnswer);
       if (next) form.append("next", next);
       if (phoneVerified) form.append("phoneVerified", "true");
 
@@ -245,19 +238,7 @@ export function RegisterForm({
           <span className="text-xs text-(--muted-foreground)">{t.passwordHint}</span>
         </label>
 
-        <label className="grid gap-1">
-          <span className="text-sm font-medium text-(--muted-foreground)">
-            {t.humanCheck}: {challengeQuestion}
-          </span>
-          <Input
-            name="humanAnswer"
-            type="text"
-            required
-            autoComplete="off"
-            value={formData.humanAnswer}
-            onChange={handleChange}
-          />
-        </label>
+        <HumanChallenge locale={locale} challenge={challenge} />
 
         {error && (
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>

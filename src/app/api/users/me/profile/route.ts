@@ -43,15 +43,20 @@ export async function PATCH(req: Request) {
       email?: string | null;
       phone?: string | null;
     };
+
+    // Normalize empty strings to undefined (no change) to avoid validation errors
+    const normalizeString = (v: string | null | undefined) =>
+      typeof v === "string" && v.trim() === "" ? undefined : v;
+
     const next = await updateUserProfile(auth.id, {
-      displayName: typeof body.displayName === "undefined" ? undefined : body.displayName,
-      bio: typeof body.bio === "undefined" ? undefined : body.bio,
-      fullName: typeof body.fullName === "undefined" ? undefined : body.fullName,
+      displayName: normalizeString(body.displayName),
+      bio: normalizeString(body.bio),
+      fullName: normalizeString(body.fullName),
     });
 
     const nextWithContact = await updateUserContact(auth.id, {
-      email: typeof body.email === "undefined" ? undefined : body.email,
-      phone: typeof body.phone === "undefined" ? undefined : body.phone,
+      email: normalizeString(body.email),
+      phone: normalizeString(body.phone),
     });
 
     return Response.json({

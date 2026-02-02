@@ -145,7 +145,7 @@ export async function updateUserProfile(
     values.push(val);
   }
 
-  if (patch.fullName !== undefined && patch.fullName !== null) {
+  if (patch.fullName !== undefined && patch.fullName !== null && patch.fullName.trim() !== "") {
     const val = fullNameSchema.parse(patch.fullName);
     updates.push(`full_name = $${paramIdx++}`);
     values.push(val);
