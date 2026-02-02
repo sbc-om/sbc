@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { HumanChallenge } from "./HumanChallenge";
 import { PasskeyLoginButton } from "./PasskeyLoginButton";
+import { loginAction } from "@/app/[locale]/auth/actions";
 import type { Locale } from "@/lib/i18n/locales";
 import type { HumanChallenge as HumanChallengeType } from "@/lib/auth/humanChallenge";
 
@@ -38,7 +40,7 @@ const texts = {
     },
     whatsapp: {
       phoneLabel: "Phone number",
-      phonePlaceholder: "+968 XXXX XXXX",
+      phonePlaceholder: "91234567",
       sendCode: "Send Code",
       otpLabel: "Verification code",
       otpPlaceholder: "Enter 6-digit code",
@@ -66,7 +68,7 @@ const texts = {
     },
     whatsapp: {
       phoneLabel: "رقم الهاتف",
-      phonePlaceholder: "+968 XXXX XXXX",
+      phonePlaceholder: "91234567",
       sendCode: "إرسال الرمز",
       otpLabel: "رمز التحقق",
       otpPlaceholder: "أدخل الرمز المكون من 6 أرقام",
@@ -213,7 +215,7 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
 
       {/* Password Login Tab */}
       {activeTab === "password" && (
-        <form action={`/${locale}/auth/login`} method="POST" className="space-y-4">
+        <form action={loginAction} className="space-y-4">
           <input type="hidden" name="locale" value={locale} />
           {next && <input type="hidden" name="next" value={next} />}
 
@@ -269,14 +271,12 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
                 <span className="text-sm font-medium text-(--muted-foreground)">
                   {t.whatsapp.phoneLabel}
                 </span>
-                <Input
-                  type="tel"
+                <PhoneInput
                   required
                   autoComplete="tel"
                   placeholder={t.whatsapp.phonePlaceholder}
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  dir="ltr"
+                  onChange={setPhone}
                 />
               </label>
 

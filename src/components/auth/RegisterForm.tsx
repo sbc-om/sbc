@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { HumanChallenge } from "./HumanChallenge";
-import { PhoneVerification } from "./PhoneVerification";
+import { registerAction } from "@/app/[locale]/auth/actions";
 import type { Locale } from "@/lib/i18n/locales";
 import type { HumanChallenge as HumanChallengeType } from "@/lib/auth/humanChallenge";
 
@@ -81,19 +82,6 @@ export function RegisterForm({
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [showVerification, setShowVerification] = useState(false);
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [verificationRequired, setVerificationRequired] = useState(false);
-
-  // Check if phone verification is required
-  useEffect(() => {
-    fetch("/api/auth/otp/status")
-      .then((res) => res.json())
-      .then((data) => {
-        setVerificationRequired(data.ok && data.whatsapp?.verificationRequired);
-      })
-      .catch(() => setVerificationRequired(false));
-  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -103,13 +91,6 @@ export function RegisterForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
-    // If phone verification is required and not verified, show verification modal
-    if (verificationRequired && !phoneVerified && formData.phone) {
-      setShowVerification(true);
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -117,42 +98,20 @@ export function RegisterForm({
       const form = new FormData(formEl);
       form.append("locale", locale);
       if (next) form.append("next", next);
-      if (phoneVerified) form.append("phoneVerified", "true");
 
-      const res = await fetch(`/${locale}/auth/register`, {
-        method: "POST",
-        body: form,
-      });
-
-      if (res.redirected) {
-        router.push(res.url);
-        return;
-      }
-
-      const url = new URL(res.url);
-      const errorParam = url.searchParams.get("error");
-      if (errorParam) {
-        setError(t.errors[errorParam as keyof typeof t.errors] || errorParam);
-      }
+      await registerAction(form);
     } catch (err) {
+      // Server action redirects throw NEXT_REDIRECT which we should not catch as error
+      if (err instanceof Error && err.message === "NEXT_REDIRECT") {
+        throw err;
+      }
       setError(t.errors.network);
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePhoneVerified = () => {
-    setPhoneVerified(true);
-    setShowVerification(false);
-    // Auto-submit the form after verification
-    setTimeout(() => {
-      const form = document.getElementById("register-form") as HTMLFormElement;
-      if (form) form.requestSubmit();
-    }, 100);
-  };
-
   return (
-    <>
       <form id="register-form" onSubmit={handleSubmit} className="mt-6 grid gap-3">
         <label className="grid gap-1">
           <span className="text-sm font-medium text-(--muted-foreground)">
@@ -189,22 +148,13 @@ export function RegisterForm({
         <label className="grid gap-1">
           <span className="text-sm font-medium text-(--muted-foreground)">
             {dict.auth.phone}
-            {verificationRequired && (
-              <span className="ml-2 text-xs text-green-600">
-                {phoneVerified ? "✓" : "(WhatsApp verification required)"}
-              </span>
-            )}
           </span>
-          <Input
+          <PhoneInput
             name="phone"
-            type="tel"
             required
             autoComplete="tel"
             value={formData.phone}
-            onChange={(e) => {
-              handleChange(e);
-              setPhoneVerified(false); // Reset verification if phone changes
-            }}
+            onChange={(val) => setFormData((prev) => ({ ...prev, phone: val }))}
           />
         </label>
 
@@ -258,15 +208,5 @@ export function RegisterForm({
           </Link>
         </p>
       </form>
-
-      {showVerification && (
-        <PhoneVerification
-          locale={locale}
-          phone={formData.phone}
-          onVerified={handlePhoneVerified}
-          onCancel={() => setShowVerification(false)}
-        />
-      )}
-    </>
   );
 }

@@ -7,6 +7,7 @@ import type { Role, User } from "@/lib/db/types";
 import { updateUserAdminAction } from "@/app/[locale]/admin/users/actions";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { RoleSelect } from "@/components/ui/RoleSelect";
 import { Button } from "@/components/ui/Button";
 
@@ -18,6 +19,7 @@ export function EditUserForm({
   user: User;
 }) {
   const [role, setRole] = useState<Role>(user.role);
+  const [phone, setPhone] = useState<string>(user.phone ?? "");
   const [isVerified, setIsVerified] = useState<boolean>(user.isVerified ?? false);
   const [isActive, setIsActive] = useState<boolean>(user.isActive ?? true);
   const [saving, setSaving] = useState(false);
@@ -69,7 +71,7 @@ export function EditUserForm({
 
           <label className="grid gap-2">
             <span className="text-sm font-semibold text-foreground">{locale === "ar" ? "رقم الهاتف" : "Phone"}</span>
-            <Input name="phone" defaultValue={user.phone} required />
+            <PhoneInput name="phone" value={phone} onChange={setPhone} required />
           </label>
 
           <label className="grid gap-2">

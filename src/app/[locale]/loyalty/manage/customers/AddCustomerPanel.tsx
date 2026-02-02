@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { cn } from "@/lib/cn";
 
 export function AddCustomerPanel({
@@ -16,6 +17,7 @@ export function AddCustomerPanel({
   returnTo: string;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [phone, setPhone] = React.useState("");
   const nameRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
@@ -65,7 +67,7 @@ export function AddCustomerPanel({
                 placeholder={ar ? "اسم العميل" : "Customer full name"}
                 required
               />
-              <Input name="phone" placeholder={ar ? "الهاتف" : "Phone"} required />
+              <PhoneInput name="phone" value={phone} onChange={setPhone} placeholder="91234567" required />
             </div>
             <div className="grid gap-4 sm:grid-cols-2 p-1">
               <Input name="email" placeholder={ar ? "البريد (اختياري)" : "Email (optional)"} />

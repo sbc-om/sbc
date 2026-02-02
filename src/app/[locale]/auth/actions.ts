@@ -4,9 +4,11 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
-import { createUser, verifyUserPassword } from "@/lib/db/users";
+import { createUser, verifyUserPassword, getUserById } from "@/lib/db/users";
 import { getAuthCookieName, signAuthToken } from "@/lib/auth/jwt";
 import { verifyHumanChallenge } from "@/lib/auth/humanChallenge";
+import { isWhatsAppVerificationRequired } from "@/lib/db/settings";
+import { isWAHAEnabled } from "@/lib/waha/client";
 import type { Locale } from "@/lib/i18n/locales";
 
 const loginSchema = z.object({
@@ -54,6 +56,13 @@ export async function loginAction(formData: FormData) {
     secure,
     path: "/",
   });
+
+  // Check if phone verification is required and user is not verified
+  const wahaEnabled = isWAHAEnabled();
+  const verificationRequired = wahaEnabled ? await isWhatsAppVerificationRequired() : false;
+  if (verificationRequired && !user.isVerified) {
+    redirect(`/${locale}/verify-phone`);
+  }
 
   if (next && next.startsWith(`/${locale}/`)) {
     redirect(next);
@@ -129,6 +138,13 @@ export async function registerAction(formData: FormData) {
     secure,
     path: "/",
   });
+
+  // Check if phone verification is required and redirect to verify page
+  const wahaEnabled = isWAHAEnabled();
+  const verificationRequired = wahaEnabled ? await isWhatsAppVerificationRequired() : false;
+  if (verificationRequired && phone) {
+    redirect(`/${locale}/verify-phone`);
+  }
 
   if (next && next.startsWith(`/${locale}/`)) {
     redirect(next);

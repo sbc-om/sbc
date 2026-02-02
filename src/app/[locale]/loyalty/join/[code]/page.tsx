@@ -2,14 +2,13 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { PublicPage } from "@/components/PublicPage";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getLoyaltyProfileByJoinCode } from "@/lib/db/loyalty";
 import { isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 
 import { joinLoyaltyByCodeAction } from "./actions";
+import { JoinLoyaltyForm } from "./JoinLoyaltyForm";
 
 export const runtime = "nodejs";
 
@@ -78,34 +77,11 @@ export default async function LoyaltyJoinPage({
               {ar ? "هذا البرنامج غير متاح حالياً." : "This loyalty program is not available right now."}
             </div>
           ) : (
-            <form
+            <JoinLoyaltyForm
+              ar={ar}
               action={joinLoyaltyByCodeAction.bind(null, locale as Locale, profile.joinCode)}
-              className="mt-6 grid gap-4"
-            >
-              {error ? (
-                <div className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">
-                  {error === "PHONE_REQUIRED"
-                    ? ar
-                      ? "رقم الهاتف مطلوب."
-                      : "Phone number is required."
-                    : ar
-                      ? "البيانات غير صالحة. حاول مرة أخرى."
-                      : "Invalid input. Please try again."}
-                </div>
-              ) : null}
-
-              <Input name="fullName" required placeholder={ar ? "الاسم الكامل" : "Full name"} />
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Input name="phone" required placeholder={ar ? "الهاتف" : "Phone"} />
-                <Input name="email" placeholder={ar ? "البريد (اختياري)" : "Email (optional)"} />
-              </div>
-
-              <div className="flex justify-end">
-                <Button type="submit" variant="primary">
-                  {ar ? "انضم الآن" : "Join now"}
-                </Button>
-              </div>
-            </form>
+              error={error}
+            />
           )}
         </div>
       </div>

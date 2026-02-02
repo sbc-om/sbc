@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import type { Locale } from "@/lib/i18n/locales";
 
 interface WhatsAppLoginProps {
@@ -17,7 +18,7 @@ const texts = {
   en: {
     title: "Login with WhatsApp",
     phoneLabel: "Phone number",
-    phonePlaceholder: "+968 XXXX XXXX",
+    phonePlaceholder: "91234567",
     sendCode: "Send Code",
     otpLabel: "Verification code",
     otpPlaceholder: "Enter 6-digit code",
@@ -34,7 +35,7 @@ const texts = {
   ar: {
     title: "تسجيل الدخول بواتساب",
     phoneLabel: "رقم الهاتف",
-    phonePlaceholder: "+968 XXXX XXXX",
+    phonePlaceholder: "91234567",
     sendCode: "إرسال الرمز",
     otpLabel: "رمز التحقق",
     otpPlaceholder: "أدخل الرمز المكون من 6 أرقام",
@@ -184,13 +185,11 @@ export function WhatsAppLogin({ locale, next }: WhatsAppLoginProps) {
             <span className="text-sm font-medium text-(--muted-foreground)">
               {t.phoneLabel}
             </span>
-            <Input
-              type="tel"
+            <PhoneInput
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={setPhone}
               placeholder={t.phonePlaceholder}
               required
-              dir="ltr"
             />
           </label>
 

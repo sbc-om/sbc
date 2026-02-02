@@ -110,7 +110,7 @@ export async function createUser(input: {
   const result = await query(`
     INSERT INTO users (id, email, phone, full_name, username, password_hash, role, is_active, is_verified,
       display_name, approval_status, approval_reason, approval_requested_at, created_at, updated_at)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, true, false, $4, 'pending', 'new', $8, $8, $8)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, true, false, $4, 'approved', NULL, $8, $8, $8)
     RETURNING *
   `, [id, email, phone, fullName, validatedUsername, passwordHash, input.role, now]);
 

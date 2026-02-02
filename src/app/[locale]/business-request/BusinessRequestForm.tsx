@@ -9,6 +9,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import type { Category } from "@/lib/db/types";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { Button } from "@/components/ui/Button";
 import { CategorySelectField } from "@/components/CategorySelectField";
 
@@ -173,11 +174,10 @@ export function BusinessRequestForm({
             <label className="block text-sm font-medium mb-2">
               {ar ? "الهاتف" : "Phone"}
             </label>
-            <Input
+            <PhoneInput
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder={ar ? "رقم الهاتف" : "Phone number"}
-              type="tel"
+              onChange={(val) => setFormData({ ...formData, phone: val })}
+              placeholder="91234567"
             />
           </div>
         </div>

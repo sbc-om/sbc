@@ -30,6 +30,16 @@ export interface SendTextOptions {
   linkPreview?: boolean;
 }
 
+export interface SendImageOptions {
+  chatId: string;
+  imageUrl?: string;
+  imageBase64?: string;
+  mimetype?: string;
+  filename?: string;
+  caption?: string;
+  replyTo?: string | null;
+}
+
 /**
  * Check if WAHA is enabled and configured
  */
@@ -78,6 +88,52 @@ export async function sendText(options: SendTextOptions): Promise<WAHAResponse> 
   if (!response.ok) {
     const error = await response.text();
     console.error("[WAHA] Send error:", error);
+    throw new Error(`WAHA API error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Send an image via WhatsApp
+ */
+export async function sendImage(options: SendImageOptions): Promise<WAHAResponse> {
+  if (!isWAHAEnabled()) {
+    throw new Error("WAHA is not enabled or not configured");
+  }
+
+  const file: Record<string, string> = {
+    mimetype: options.mimetype || "image/jpeg",
+    filename: options.filename || "image.jpg",
+  };
+
+  if (options.imageUrl) {
+    file.url = options.imageUrl;
+  } else if (options.imageBase64) {
+    file.data = options.imageBase64;
+  } else {
+    throw new Error("Either imageUrl or imageBase64 must be provided");
+  }
+
+  const response = await fetch(`${WAHA_API_URL}/sendImage`, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+      "Content-Type": "application/json",
+      "X-Api-Key": WAHA_API_KEY,
+    },
+    body: JSON.stringify({
+      chatId: options.chatId,
+      file,
+      reply_to: options.replyTo ?? null,
+      caption: options.caption || "",
+      session: WAHA_SESSION,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error("[WAHA] Send image error:", error);
     throw new Error(`WAHA API error: ${response.status}`);
   }
 

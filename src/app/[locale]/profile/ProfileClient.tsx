@@ -8,6 +8,7 @@ import { browserSupportsWebAuthn, startRegistration } from "@simplewebauthn/brow
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import { UserPushOptIn } from "@/components/push/UserPushOptIn";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -559,10 +560,9 @@ export function ProfileClient({
             <div>
               <label className="block text-sm font-medium">{t.phone}</label>
               <div className="mt-2">
-                <Input
+                <PhoneInput
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  type="tel"
+                  onChange={setPhone}
                   autoComplete="tel"
                 />
               </div>
