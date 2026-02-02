@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { HumanChallenge } from "@/components/auth/HumanChallenge";
 import { PasskeyLoginButton } from "@/components/auth/PasskeyLoginButton";
+import { WhatsAppLogin } from "@/components/auth/WhatsAppLogin";
 
 export const runtime = "nodejs";
 
@@ -100,6 +101,8 @@ export default async function LoginPage({
         </Button>
 
         <PasskeyLoginButton locale={locale as Locale} next={next} />
+
+        <WhatsAppLogin locale={locale as Locale} next={next} />
 
         <p className="mt-2 text-sm text-(--muted-foreground)">
           {locale === "ar" ? "ليس لديك حساب؟" : "No account?"}{" "}

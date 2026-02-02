@@ -485,6 +485,38 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
         ALTER TABLE users ADD COLUMN username TEXT UNIQUE;
       END IF;
     END $$;
+
+    -- OTP codes table for WhatsApp authentication
+    CREATE TABLE IF NOT EXISTS otp_codes (
+      id TEXT PRIMARY KEY,
+      phone TEXT NOT NULL,
+      code TEXT NOT NULL,
+      purpose TEXT NOT NULL DEFAULT 'login',
+      attempts INTEGER DEFAULT 0,
+      max_attempts INTEGER DEFAULT 3,
+      verified BOOLEAN DEFAULT false,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_otp_codes_phone ON otp_codes(phone);
+    CREATE INDEX IF NOT EXISTS idx_otp_codes_expires_at ON otp_codes(expires_at);
+
+    -- App settings table for admin configurations
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key TEXT PRIMARY KEY,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- Insert default settings if not exists
+    INSERT INTO app_settings (key, value) 
+    VALUES ('whatsapp_login_enabled', 'true'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
+
+    INSERT INTO app_settings (key, value) 
+    VALUES ('whatsapp_registration_verification', 'true'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
   `);
 }
 

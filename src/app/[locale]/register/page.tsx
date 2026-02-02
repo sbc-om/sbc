@@ -1,14 +1,10 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PublicPage } from "@/components/PublicPage";
-import { registerAction } from "@/app/[locale]/auth/actions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { createHumanChallenge } from "@/lib/auth/humanChallenge";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { HumanChallenge } from "@/components/auth/HumanChallenge";
+import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export const runtime = "nodejs";
 
@@ -24,132 +20,31 @@ export default async function RegisterPage({
   const dict = await getDictionary(locale as Locale);
   const challenge = createHumanChallenge(locale as Locale);
 
-  const { error, next } = await searchParams;
+  const { next } = await searchParams;
 
   return (
     <PublicPage>
       <div className="mx-auto w-full max-w-md">
         <h1 className="text-2xl font-semibold tracking-tight">{dict.nav.register}</h1>
 
-      {error === "taken" ? (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-          {locale === "ar" ? "هذا البريد مستخدم بالفعل" : "That email is already in use."}
-        </p>
-      ) : null}
-
-      {error === "phone" ? (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-          {locale === "ar" ? "رقم الهاتف مستخدم بالفعل" : "That phone number is already in use."}
-        </p>
-      ) : null}
-
-      {error === "human" ? (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-          {locale === "ar"
-            ? "يرجى إكمال التحقق البشري بشكل صحيح."
-            : "Please complete the human check correctly."}
-        </p>
-      ) : null}
-
-      {error === "approval" ? (
-        <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-          {locale === "ar"
-            ? "تم إنشاء الحساب وهو قيد المراجعة من الإدارة."
-            : "Your account has been created and is pending admin approval."}
-        </p>
-      ) : null}
-
-      {error === "username" ? (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-          {locale === "ar" ? "اسم المستخدم مستخدم بالفعل" : "That username is already taken."}
-        </p>
-      ) : null}
-
-      {error === "invalid-username" ? (
-        <p className="mt-2 text-sm text-red-600 dark:text-red-400">
-          {locale === "ar"
-            ? "اسم المستخدم غير صالح. استخدم أحرف صغيرة وأرقام وشرطة سفلية فقط (3-30 حرفًا)"
-            : "Invalid username. Use only lowercase letters, numbers, and underscores (3-30 characters)"}
-        </p>
-      ) : null}
-
-      <form action={registerAction} className="mt-6 grid gap-3">
-        <input type="hidden" name="locale" value={locale} />
-        {next ? <input type="hidden" name="next" value={next} /> : null}
-
-        <label className="grid gap-1">
-          <span className="text-sm font-medium text-(--muted-foreground)">
-            {dict.auth.fullName}
-          </span>
-          <Input name="fullName" type="text" required autoComplete="name" />
-        </label>
-
-        <label className="grid gap-1">
-          <span className="text-sm font-medium text-(--muted-foreground)">
-            {locale === "ar" ? "اسم المستخدم (اختياري)" : "Username (optional)"}
-          </span>
-          <Input 
-            name="username" 
-            type="text" 
-            autoComplete="username"
-            pattern="[a-z0-9_]+"
-            minLength={3}
-            maxLength={30}
-            placeholder={locale === "ar" ? "اسم_المستخدم" : "username_here"}
-          />
-          <span className="text-xs text-(--muted-foreground)">
-            {locale === "ar" 
-              ? "أحرف صغيرة وأرقام وشرطة سفلية فقط" 
-              : "Lowercase letters, numbers, and underscores only"}
-          </span>
-        </label>
-
-        <label className="grid gap-1">
-          <span className="text-sm font-medium text-(--muted-foreground)">
-            {dict.auth.phone}
-          </span>
-          <Input name="phone" type="tel" required autoComplete="tel" />
-        </label>
-
-        <label className="grid gap-1">
-          <span className="text-sm font-medium text-(--muted-foreground)">
-            {dict.auth.email}
-          </span>
-          <Input name="email" type="email" required autoComplete="email" />
-        </label>
-
-        <label className="grid gap-1">
-          <span className="text-sm font-medium text-(--muted-foreground)">
-            {dict.auth.password}
-          </span>
-          <Input
-            name="password"
-            type="password"
-            required
-            minLength={8}
-            autoComplete="new-password"
-          />
-          <span className="text-xs text-(--muted-foreground)">
-            {locale === "ar" ? "8 أحرف على الأقل" : "At least 8 characters"}
-          </span>
-        </label>
-
-        <HumanChallenge locale={locale} challenge={challenge} />
-
-        <Button type="submit" className="mt-2">
-          {dict.auth.signUp}
-        </Button>
-
-        <p className="mt-2 text-sm text-(--muted-foreground)">
-          {locale === "ar" ? "لديك حساب بالفعل؟" : "Already have an account?"}{" "}
-          <Link
-            href={`/${locale}/login`}
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-          >
-            {dict.nav.login}
-          </Link>
-        </p>
-      </form>
+        <RegisterForm
+          locale={locale as Locale}
+          dict={{
+            auth: {
+              fullName: dict.auth.fullName,
+              phone: dict.auth.phone,
+              email: dict.auth.email,
+              password: dict.auth.password,
+              signUp: dict.auth.signUp,
+            },
+            nav: {
+              login: dict.nav.login,
+            },
+          }}
+          next={next}
+          challengeQuestion={challenge.question}
+          challengeAnswer={challenge.answer}
+        />
       </div>
     </PublicPage>
   );
