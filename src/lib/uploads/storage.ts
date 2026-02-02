@@ -269,3 +269,31 @@ export async function storeUserUpload(params: {
     originalName: file.name,
   };
 }
+
+/**
+ * Generic save function that takes a buffer and saves to a specified folder.
+ * Used for stories and other uploads that don't fit the business upload model.
+ */
+export async function saveUpload(buffer: Buffer, options: {
+  folder: string;
+  filename: string;
+}): Promise<string> {
+  const { folder, filename } = options;
+  
+  const now = new Date();
+  const yyyy = String(now.getUTCFullYear());
+  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+  
+  const uniqueFilename = `${nanoid()}_${filename}`;
+  const relDir = path.posix.join(folder, yyyy, mm);
+  const relPath = path.posix.join(relDir, uniqueFilename);
+  
+  const root = resolveUploadsRoot();
+  const absDir = path.join(root, relDir);
+  const absPath = path.join(root, relPath);
+  
+  await fs.mkdir(absDir, { recursive: true });
+  await fs.writeFile(absPath, buffer);
+  
+  return mediaUrlFromRelativePath(relPath);
+}

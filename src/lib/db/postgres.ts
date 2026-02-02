@@ -173,6 +173,21 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    -- Business stories (Instagram-like, 24-hour expiry)
+    CREATE TABLE IF NOT EXISTS stories (
+      id TEXT PRIMARY KEY,
+      business_id TEXT REFERENCES businesses(id) ON DELETE CASCADE,
+      media_url TEXT NOT NULL,
+      media_type TEXT NOT NULL DEFAULT 'image',
+      caption TEXT,
+      view_count INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_stories_business_id ON stories(business_id);
+    CREATE INDEX IF NOT EXISTS idx_stories_expires_at ON stories(expires_at);
+
     -- Business cards table
     CREATE TABLE IF NOT EXISTS business_cards (
       id TEXT PRIMARY KEY,

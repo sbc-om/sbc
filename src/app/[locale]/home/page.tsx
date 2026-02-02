@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinesses, listBusinessesByOwner } from "@/lib/db/businesses";
 import { getUserFollowedCategoryIds } from "@/lib/db/follows";
 import { getCategoryById } from "@/lib/db/categories";
+import { listBusinessesWithActiveStories } from "@/lib/db/stories";
 import {
   getBusinessLikeCount,
   hasUserLikedBusiness,
@@ -17,6 +18,7 @@ import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "./actions";
 import { AppPage } from "@/components/AppPage";
 import { BusinessFeedCard } from "@/components/BusinessFeedCard";
 import { FeedProfileHeader } from "@/components/FeedProfileHeader";
+import { StoriesContainer } from "@/components/stories";
 
 async function FollowedCategoriesDisplay({
   categoryIds,
@@ -77,6 +79,7 @@ export default async function HomeFollowedPage({
 
   const followedCategoryIds = new Set(await getUserFollowedCategoryIds(user.id));
   const allBusinesses = await listBusinesses();
+  const businessesWithStories = await listBusinessesWithActiveStories();
 
   const businesses = allBusinesses.filter((b) =>
     b.categoryId ? followedCategoryIds.has(b.categoryId) : false,
@@ -103,6 +106,16 @@ export default async function HomeFollowedPage({
   return (
     <AppPage>
       <FeedProfileHeader user={viewUser} locale={locale as Locale} />
+
+      {/* Stories Section */}
+      {businessesWithStories.length > 0 && (
+        <div className="my-6 -mx-4 sm:-mx-6">
+          <StoriesContainer
+            initialBusinesses={businessesWithStories}
+            locale={locale as Locale}
+          />
+        </div>
+      )}
 
         <div className="flex items-end justify-between gap-4">
           <div>

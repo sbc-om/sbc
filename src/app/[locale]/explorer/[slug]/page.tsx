@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { getBusinessBySlug, getBusinessByUsername, listBusinesses } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { getUserById } from "@/lib/db/users";
+import { getActiveStoriesByBusiness } from "@/lib/db/stories";
 import {
   getBusinessLikeCount,
   hasUserLikedBusiness,
@@ -65,6 +66,10 @@ export default async function ExplorerBusinessDetailPage({
 
   const allBusinesses = await listBusinesses();
 
+  // Fetch stories for this business
+  const stories = await getActiveStoriesByBusiness(business.id);
+  const isOwner = !!business.ownerId && business.ownerId === user.id;
+
   return (
     <AppPage>
       <div className="flex items-start justify-between gap-6">
@@ -93,6 +98,8 @@ export default async function ExplorerBusinessDetailPage({
         pendingForModeration={pendingForModeration}
         canModerate={canModerate}
         usersById={usersById}
+        isOwner={isOwner}
+        stories={stories}
       />
 
       <div className="mt-8">

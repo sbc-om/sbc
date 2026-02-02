@@ -10,7 +10,9 @@ import { BusinessEngagement } from "@/components/business/BusinessEngagement";
 import { ShareActionButton } from "@/components/ShareActionButton";
 import { BusinessContentLanguageToggle } from "./BusinessContentLanguageToggle";
 import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
+import { StoryUpload } from "@/components/stories/StoryUpload";
 import type { Business, Category } from "@/lib/db/types";
+import type { Story } from "@/lib/db/stories";
 import type { Locale } from "@/lib/i18n/locales";
 
 type ContentLanguage = "en" | "ar";
@@ -31,6 +33,8 @@ interface ExplorerBusinessViewProps {
   pendingForModeration: any[];
   canModerate: boolean;
   usersById: Record<string, { displayName?: string; email?: string } | undefined>;
+  isOwner?: boolean;
+  stories?: Story[];
 }
 
 export function ExplorerBusinessView({
@@ -49,6 +53,8 @@ export function ExplorerBusinessView({
   pendingForModeration,
   canModerate,
   usersById,
+  isOwner = false,
+  stories = [],
 }: ExplorerBusinessViewProps) {
   const [contentLang, setContentLang] = useState<ContentLanguage>(siteLocale);
   const CategoryIcon = getCategoryIconComponent(categoryIconId);
@@ -262,6 +268,17 @@ export function ExplorerBusinessView({
               usersById={usersById}
             />
           </div>
+
+          {/* Story Upload for Business Owners */}
+          {isOwner ? (
+            <div className="mt-6">
+              <StoryUpload
+                businessId={business.id}
+                locale={locale}
+                existingStories={stories}
+              />
+            </div>
+          ) : null}
         </div>
 
         {/* Sidebar */}
