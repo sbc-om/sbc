@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { RoleSelect } from "@/components/ui/RoleSelect";
 import { buttonVariants } from "@/components/ui/Button";
-import { approveUserAction, updateUserActiveAction, updateUserRoleAction, updateUserVerifiedAction } from "./actions";
+import { approveUserAction, restoreUserAction, updateUserActiveAction, updateUserRoleAction, updateUserVerifiedAction } from "./actions";
 import type { Role } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
 import type { UserListItem } from "@/lib/db/users";
 
 interface UserRoleManagementProps {
   users: UserListItem[];
+  archivedCount: number;
+  showArchived: boolean;
   locale: Locale;
   currentUserId: string;
 }
@@ -28,7 +31,8 @@ function formatDate(iso: string, locale: Locale) {
   }
 }
 
-export function UserRoleManagement({ users, locale, currentUserId }: UserRoleManagementProps) {
+export function UserRoleManagement({ users, archivedCount, showArchived, locale, currentUserId }: UserRoleManagementProps) {
+  const router = useRouter();
   const [roleOverrides, setRoleOverrides] = useState<Record<string, Role>>({});
   const [verifiedOverrides, setVerifiedOverrides] = useState<Record<string, boolean>>({});
   const [activeOverrides, setActiveOverrides] = useState<Record<string, boolean>>({});
@@ -36,6 +40,7 @@ export function UserRoleManagement({ users, locale, currentUserId }: UserRoleMan
   const [savingVerifiedUserId, setSavingVerifiedUserId] = useState<string | null>(null);
   const [savingActiveUserId, setSavingActiveUserId] = useState<string | null>(null);
   const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
+  const [restoringUserId, setRestoringUserId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | Role>("all");
   const [verifiedFilter, setVerifiedFilter] = useState<"all" | "verified" | "unverified">("all");
@@ -116,6 +121,16 @@ export function UserRoleManagement({ users, locale, currentUserId }: UserRoleMan
       await approveUserAction(locale, userId);
     } finally {
       setApprovingUserId(null);
+    }
+  };
+
+  const restoreUser = async (userId: string) => {
+    setRestoringUserId(userId);
+    try {
+      await restoreUserAction(locale, userId);
+      router.refresh();
+    } finally {
+      setRestoringUserId(null);
     }
   };
 
@@ -261,15 +276,29 @@ export function UserRoleManagement({ users, locale, currentUserId }: UserRoleMan
 
       {users.length > 0 ? (
         <div className="sbc-card rounded-2xl overflow-hidden">
-          <div className="px-5 py-4 border-b" style={{ borderColor: "var(--surface-border)" }}>
-            <h2 className="text-lg font-semibold">
-              {locale === "ar" ? "قائمة المستخدمين" : "All users"}
-            </h2>
-            <p className="mt-1 text-sm text-(--muted-foreground)">
-              {locale === "ar"
-                ? `${approvedUsers.length} مستخدم معتمد`
-                : `${approvedUsers.length} approved users`}
-            </p>
+          <div className="px-5 py-4 border-b flex items-center justify-between gap-4" style={{ borderColor: "var(--surface-border)" }}>
+            <div>
+              <h2 className="text-lg font-semibold">
+                {showArchived 
+                  ? (locale === "ar" ? "جميع المستخدمين (شامل المؤرشف)" : "All users (including archived)")
+                  : (locale === "ar" ? "قائمة المستخدمين" : "All users")}
+              </h2>
+              <p className="mt-1 text-sm text-(--muted-foreground)">
+                {locale === "ar"
+                  ? `${approvedUsers.length} مستخدم معتمد`
+                  : `${approvedUsers.length} approved users`}
+              </p>
+            </div>
+            {archivedCount > 0 && (
+              <Link
+                href={showArchived ? `/${locale}/admin/users` : `/${locale}/admin/users?archived=true`}
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                {showArchived 
+                  ? (locale === "ar" ? "إخفاء المؤرشفين" : "Hide archived")
+                  : (locale === "ar" ? `عرض المؤرشفين (${archivedCount})` : `Show archived (${archivedCount})`)}
+              </Link>
+            )}
           </div>
 
           <div className="px-5 py-4 border-b" style={{ borderColor: "var(--surface-border)" }}>
@@ -383,6 +412,11 @@ export function UserRoleManagement({ users, locale, currentUserId }: UserRoleMan
                                 </span>
                               ) : null}
                             </div>
+                            {u.isArchived ? (
+                              <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-xs font-semibold text-red-600">
+                                {locale === "ar" ? "مؤرشف" : "Archived"}
+                              </span>
+                            ) : null}
                             {isCurrentUser ? (
                               <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">
                                 {locale === "ar" ? "أنت" : "You"}
@@ -470,12 +504,32 @@ export function UserRoleManagement({ users, locale, currentUserId }: UserRoleMan
                         </label>
                       </td>
                       <td className="px-5 py-4">
-                        <Link
-                          href={`/${locale}/admin/users/${u.id}`}
-                          className={buttonVariants({ variant: "secondary", size: "sm" })}
-                        >
-                          {locale === "ar" ? "تعديل" : "Edit"}
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          {u.isArchived ? (
+                            <button
+                              type="button"
+                              onClick={() => restoreUser(u.id)}
+                              disabled={restoringUserId === u.id}
+                              className={buttonVariants({ variant: "secondary", size: "sm" })}
+                            >
+                              {restoringUserId === u.id ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <span className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full" />
+                                  {locale === "ar" ? "استعادة..." : "Restoring..."}
+                                </span>
+                              ) : (
+                                locale === "ar" ? "استعادة" : "Restore"
+                              )}
+                            </button>
+                          ) : (
+                            <Link
+                              href={`/${locale}/admin/users/${u.id}`}
+                              className={buttonVariants({ variant: "secondary", size: "sm" })}
+                            >
+                              {locale === "ar" ? "تعديل" : "Edit"}
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

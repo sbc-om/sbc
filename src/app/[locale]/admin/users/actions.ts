@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { approveUserAccount, setUserActive, setUserVerified, updateUserAdmin, updateUserRole } from "@/lib/db/users";
+import { approveUserAccount, archiveUser, restoreUser, setUserActive, setUserVerified, updateUserAdmin, updateUserRole } from "@/lib/db/users";
 import type { Role } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
 import { getCurrentUser } from "@/lib/auth/currentUser";
@@ -123,5 +123,38 @@ export async function updateUserAdminAction(
 
   revalidatePath(`/${locale}/admin/users`);
   revalidatePath(`/${locale}/admin/users/${userId}`);
+  return { success: true };
+}
+
+export async function deleteUserAction(
+  locale: Locale,
+  userId: string,
+) {
+  const auth = await getCurrentUser();
+  if (!auth || auth.role !== "admin") {
+    throw new Error("UNAUTHORIZED");
+  }
+
+  // Prevent admin from archiving themselves
+  if (auth.id === userId) {
+    throw new Error(locale === "ar" ? "لا يمكنك حذف حسابك" : "Cannot archive your own account");
+  }
+
+  await archiveUser(userId);
+  revalidatePath(`/${locale}/admin/users`);
+  return { success: true };
+}
+
+export async function restoreUserAction(
+  locale: Locale,
+  userId: string,
+) {
+  const auth = await getCurrentUser();
+  if (!auth || auth.role !== "admin") {
+    throw new Error("UNAUTHORIZED");
+  }
+
+  await restoreUser(userId);
+  revalidatePath(`/${locale}/admin/users`);
   return { success: true };
 }

@@ -4,8 +4,9 @@ import { useState } from "react";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { Role, User } from "@/lib/db/types";
-import { updateUserAdminAction } from "@/app/[locale]/admin/users/actions";
+import { updateUserAdminAction, deleteUserAction } from "@/app/[locale]/admin/users/actions";
 import { Input } from "@/components/ui/Input";
+import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/ui/Textarea";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { RoleSelect } from "@/components/ui/RoleSelect";
@@ -24,8 +25,11 @@ export function EditUserForm({
   const [isPhoneVerified, setIsPhoneVerified] = useState<boolean>(user.isPhoneVerified ?? false);
   const [isActive, setIsActive] = useState<boolean>(user.isActive ?? true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -47,6 +51,22 @@ export function EditUserForm({
       setError(locale === "ar" ? "تعذر حفظ التغييرات" : "Could not save changes");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onDelete = async () => {
+    setDeleting(true);
+    setError(null);
+
+    try {
+      await deleteUserAction(locale, user.id);
+      router.push(`/${locale}/admin/users`);
+    } catch (e) {
+      console.error(e);
+      setError(e instanceof Error ? e.message : (locale === "ar" ? "تعذر حذف المستخدم" : "Could not delete user"));
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -198,7 +218,7 @@ export function EditUserForm({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={saving}>
+        <Button type="submit" disabled={saving || deleting}>
           {saving
             ? locale === "ar"
               ? "جارٍ الحفظ..."
@@ -207,6 +227,16 @@ export function EditUserForm({
               ? "حفظ التغييرات"
               : "Save changes"}
         </Button>
+        
+        <Button
+          type="button"
+          variant="destructive"
+          disabled={saving || deleting}
+          onClick={() => setShowDeleteConfirm(true)}
+        >
+          {locale === "ar" ? "حذف المستخدم" : "Delete User"}
+        </Button>
+
         {success ? (
           <span className="text-sm text-emerald-600">
             {locale === "ar" ? "تم حفظ التغييرات" : "Changes saved"}
@@ -216,6 +246,42 @@ export function EditUserForm({
           <span className="text-sm text-red-600 dark:text-red-400">{error}</span>
         ) : null}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="sbc-card rounded-2xl p-6 max-w-md mx-4 space-y-4">
+            <h3 className="text-lg font-semibold text-red-600 dark:text-red-400">
+              {locale === "ar" ? "تأكيد الحذف" : "Confirm Deletion"}
+            </h3>
+            <p className="text-sm text-(--muted-foreground)">
+              {locale === "ar" 
+                ? `هل أنت متأكد من حذف "${user.fullName}"؟ لا يمكن التراجع عن هذا الإجراء.`
+                : `Are you sure you want to delete "${user.fullName}"? This action cannot be undone.`}
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleting}
+              >
+                {locale === "ar" ? "إلغاء" : "Cancel"}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={onDelete}
+                disabled={deleting}
+              >
+                {deleting
+                  ? (locale === "ar" ? "جارٍ الحذف..." : "Deleting...")
+                  : (locale === "ar" ? "نعم، احذف" : "Yes, Delete")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

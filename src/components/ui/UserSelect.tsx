@@ -6,6 +6,8 @@ import { createPortal } from "react-dom";
 interface User {
   id: string;
   email: string;
+  fullName?: string;
+  phone?: string;
   role: "admin" | "user";
 }
 
@@ -44,7 +46,7 @@ export function UserSelect({
 
   const selected = users.find((u) => u.id === value);
   const displayText = selected 
-    ? selected.email
+    ? selected.fullName || selected.email
     : value === "" && allowEmpty
       ? emptyLabel || placeholder
       : placeholder;
@@ -55,7 +57,8 @@ export function UserSelect({
       const searchLower = search.toLowerCase();
       return (
         u.email.toLowerCase().includes(searchLower) ||
-        u.id.toLowerCase().includes(searchLower)
+        (u.fullName && u.fullName.toLowerCase().includes(searchLower)) ||
+        (u.phone && u.phone.includes(search))
       );
     });
   }, [users, search]);
@@ -287,7 +290,7 @@ export function UserSelect({
                     >
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <div className="truncate font-medium">{user.email}</div>
+                          <div className="truncate font-medium">{user.fullName || user.email}</div>
                           <div className="mt-0.5 text-xs opacity-70 truncate">
                             {user.role === "admin"
                               ? locale === "ar"
@@ -295,7 +298,7 @@ export function UserSelect({
                                 : "Admin"
                               : locale === "ar"
                                 ? "مستخدم"
-                                : "User"} • {user.id}
+                                : "User"}{user.phone ? ` • ${user.phone}` : ""}{user.fullName ? ` • ${user.email}` : ""}
                           </div>
                         </div>
                         {isSelected && (

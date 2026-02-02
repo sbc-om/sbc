@@ -24,7 +24,6 @@ const texts = {
     sendCode: "Send Verification Code",
     resendCode: "Resend Code",
     verify: "Verify & Continue",
-    skip: "Skip for now",
     sending: "Sending...",
     verifying: "Verifying...",
     codeSent: "Code sent! Check your WhatsApp",
@@ -50,7 +49,6 @@ const texts = {
     sendCode: "إرسال رمز التحقق",
     resendCode: "إعادة إرسال الرمز",
     verify: "تحقق والمتابعة",
-    skip: "تخطي الآن",
     sending: "جاري الإرسال...",
     verifying: "جاري التحقق...",
     codeSent: "تم إرسال الرمز! تحقق من واتساب",
@@ -196,10 +194,6 @@ export function VerifyPhoneClient({
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSkip = () => {
-    router.push(`/${locale}/dashboard`);
   };
 
   // Handle code input - split into 6 boxes
@@ -365,17 +359,6 @@ export function VerifyPhoneClient({
           {success}
         </div>
       )}
-
-      {/* Skip Button */}
-      <div className="mt-8 pt-6 border-t text-center" style={{ borderColor: 'var(--surface-border)' }}>
-        <button
-          type="button"
-          onClick={handleSkip}
-          className="text-sm text-(--muted-foreground) hover:text-foreground transition-colors"
-        >
-          {t.skip}
-        </button>
-      </div>
     </div>
   );
 }

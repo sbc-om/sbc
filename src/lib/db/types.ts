@@ -98,6 +98,10 @@ export type User = {
   isVerified?: boolean;
   /** Whether the phone number has been verified via WhatsApp OTP. */
   isPhoneVerified?: boolean;
+  /** Whether the user account is archived (soft delete). */
+  isArchived?: boolean;
+  /** When the account was archived. */
+  archivedAt?: string;
   createdAt: string;
   /** Approval status for new accounts or contact updates. */
   approvalStatus?: "pending" | "approved";

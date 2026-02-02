@@ -112,7 +112,7 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
           {ar ? "المزايا:" : "Features:"}
         </div>
         <ul className="space-y-1">
-          {(ar ? product.features.ar : product.features.en).map((feature: string, idx: number) => (
+          {(ar ? product.features?.ar : product.features?.en)?.map((feature: string, idx: number) => (
             <li key={idx} className="text-sm flex items-start gap-2">
               <svg className="h-5 w-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -123,7 +123,7 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
         </ul>
       </div>
 
-      <div className="pt-4 border-t border-(--border) text-xs text-(--muted-foreground) mb-4">
+      <div className="pt-4 border-t text-xs text-(--muted-foreground) mb-4" style={{ borderColor: "var(--surface-border)" }}>
         <div>{ar ? "المدة:" : "Duration:"} {product.durationDays} {ar ? "يوم" : "days"}</div>
         <div className="mt-1">{ar ? "الباقة:" : "Plan:"} {product.plan}</div>
         <div className="mt-1">{ar ? "الرمز:" : "Slug:"} {product.slug}</div>

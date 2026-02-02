@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { getUserById } from "@/lib/db/users";
 
 const LOCALES = ["en", "ar"] as const;
 const DEFAULT_LOCALE = "en";
@@ -112,8 +113,12 @@ export async function proxy(req: NextRequest) {
 
   const isDashboard = section === "dashboard";
   const isAdmin = section === "admin";
+  const isProfile = section === "profile";
+  const isSettings = section === "settings";
+  const isVerifyPhone = section === "verify-phone";
 
-  if (isDashboard || isAdmin) {
+  // Protected areas that require authentication
+  if (isDashboard || isAdmin || isProfile || isSettings || isVerifyPhone) {
     const cookieName = process.env.AUTH_COOKIE_NAME || "sbc_auth";
     const token = req.cookies.get(cookieName)?.value;
     const secret = process.env.AUTH_JWT_SECRET;
@@ -135,11 +140,26 @@ export async function proxy(req: NextRequest) {
         new TextEncoder().encode(secret)
       );
       const role = payload.role;
+      const userId = payload.sub as string;
 
       if (isAdmin && role !== "admin") {
         const url = req.nextUrl.clone();
         url.pathname = `/${locale}/dashboard`;
         return NextResponse.redirect(url);
+      }
+
+      // Check phone verification for non-verify-phone pages
+      // Skip verification check for admins
+      if (!isVerifyPhone && role !== "admin") {
+        const wahaEnabled = process.env.WAHA_URL && process.env.WAHA_SESSION;
+        if (wahaEnabled && userId) {
+          const user = await getUserById(userId);
+          if (user && !user.isPhoneVerified) {
+            const url = req.nextUrl.clone();
+            url.pathname = `/${locale}/verify-phone`;
+            return NextResponse.redirect(url);
+          }
+        }
       }
     } catch {
       return redirectToLogin();

@@ -16,6 +16,8 @@ export type UserListItem = Pick<
   | "isActive"
   | "isVerified"
   | "isPhoneVerified"
+  | "isArchived"
+  | "archivedAt"
   | "createdAt"
   | "updatedAt"
   | "approvalStatus"
@@ -52,6 +54,8 @@ function rowToUser(row: any): User {
     isActive: row.is_active ?? true,
     isVerified: row.is_verified ?? false,
     isPhoneVerified: row.is_phone_verified ?? false,
+    isArchived: row.is_archived ?? false,
+    archivedAt: row.archived_at?.toISOString(),
     displayName: row.display_name,
     bio: row.bio,
     avatarUrl: row.avatar_url,
@@ -458,11 +462,57 @@ export async function setUserPhoneVerified(id: string, isPhoneVerified: boolean)
   return rowToUser(result.rows[0]);
 }
 
-export async function listUsers(): Promise<UserListItem[]> {
+export async function archiveUser(id: string): Promise<User> {
+  const now = new Date().toISOString();
+  
+  // Archive the user (soft delete)
   const result = await query(`
-    SELECT id, email, phone, full_name, role, is_active, is_verified, is_phone_verified, created_at, updated_at,
+    UPDATE users 
+    SET is_archived = true, archived_at = $1, is_active = false, updated_at = $2 
+    WHERE id = $3 AND is_archived = false 
+    RETURNING *
+  `, [now, now, id]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  
+  // Archive related businesses
+  await query(`
+    UPDATE businesses 
+    SET is_approved = false, updated_at = $1 
+    WHERE owner_id = $2
+  `, [now, id]);
+
+  // Archive business cards
+  await query(`
+    UPDATE business_cards 
+    SET is_approved = false, updated_at = $1 
+    WHERE owner_id = $2
+  `, [now, id]);
+
+  return rowToUser(result.rows[0]);
+}
+
+export async function restoreUser(id: string): Promise<User> {
+  const now = new Date().toISOString();
+  
+  const result = await query(`
+    UPDATE users 
+    SET is_archived = false, archived_at = NULL, is_active = true, updated_at = $1 
+    WHERE id = $2 AND is_archived = true 
+    RETURNING *
+  `, [now, id]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToUser(result.rows[0]);
+}
+
+export async function listUsers(includeArchived = false): Promise<UserListItem[]> {
+  const result = await query(`
+    SELECT id, email, phone, full_name, role, is_active, is_verified, is_phone_verified, 
+           is_archived, archived_at, created_at, updated_at,
            approval_status, approval_reason, approval_requested_at, pending_email, pending_phone, approved_at
     FROM users
+    ${includeArchived ? '' : 'WHERE is_archived = false'}
     ORDER BY created_at DESC
   `);
 
@@ -475,6 +525,40 @@ export async function listUsers(): Promise<UserListItem[]> {
     isActive: row.is_active ?? true,
     isVerified: row.is_verified,
     isPhoneVerified: row.is_phone_verified ?? false,
+    isArchived: row.is_archived ?? false,
+    archivedAt: row.archived_at?.toISOString(),
+    createdAt: row.created_at?.toISOString() || "",
+    updatedAt: row.updated_at?.toISOString(),
+    approvalStatus: row.approval_status,
+    approvalReason: row.approval_reason,
+    approvalRequestedAt: row.approval_requested_at?.toISOString(),
+    pendingEmail: row.pending_email,
+    pendingPhone: row.pending_phone,
+    approvedAt: row.approved_at?.toISOString(),
+  }));
+}
+
+export async function listArchivedUsers(): Promise<UserListItem[]> {
+  const result = await query(`
+    SELECT id, email, phone, full_name, role, is_active, is_verified, is_phone_verified, 
+           is_archived, archived_at, created_at, updated_at,
+           approval_status, approval_reason, approval_requested_at, pending_email, pending_phone, approved_at
+    FROM users
+    WHERE is_archived = true
+    ORDER BY archived_at DESC
+  `);
+
+  return result.rows.map((row: any) => ({
+    id: row.id,
+    email: row.email,
+    phone: row.phone ?? "",
+    fullName: row.full_name ?? row.email.split("@")[0],
+    role: row.role as Role,
+    isActive: row.is_active ?? true,
+    isVerified: row.is_verified,
+    isPhoneVerified: row.is_phone_verified ?? false,
+    isArchived: row.is_archived ?? false,
+    archivedAt: row.archived_at?.toISOString(),
     createdAt: row.created_at?.toISOString() || "",
     updatedAt: row.updated_at?.toISOString(),
     approvalStatus: row.approval_status,
