@@ -399,7 +399,12 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="flex items-center gap-2 min-w-0">
-                              <div className="truncate text-sm font-semibold text-foreground">{u.fullName}</div>
+                              <Link 
+                                href={`/${locale}/admin/users/${u.id}`}
+                                className="truncate text-sm font-semibold text-foreground hover:text-accent transition-colors"
+                              >
+                                {u.fullName}
+                              </Link>
                               {isVerified ? (
                                 <span
                                   className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-blue-600"
