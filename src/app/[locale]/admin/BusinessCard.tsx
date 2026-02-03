@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -24,6 +25,7 @@ export function BusinessCard({
   const [deleting, setDeleting] = useState(false);
   const [approving, setApproving] = useState(false);
   const isApproved = business.isApproved ?? business.isVerified ?? false;
+  const coverImage = business.media?.cover || business.media?.logo || business.media?.banner;
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -48,8 +50,25 @@ export function BusinessCard({
   };
 
   return (
-    <div className="sbc-card sbc-card--interactive p-5 sm:flex sm:flex-row sm:items-center sm:justify-between">
-      <div className="min-w-0 flex-1">
+    <div className="sbc-card sbc-card--interactive p-4 sm:flex sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Cover Thumbnail */}
+      <div className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-(--surface)">
+        {coverImage ? (
+          <Image
+            src={coverImage}
+            alt=""
+            fill
+            sizes="64px"
+            className="object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-xl font-bold text-(--muted-foreground) bg-(--chip-bg)">
+            {(ar ? business.name.ar : business.name.en).charAt(0).toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1 mt-3 sm:mt-0">
         <div className="flex items-center gap-2 min-w-0">
           <div className="truncate text-sm font-semibold text-foreground">
             {ar ? business.name.ar : business.name.en}
