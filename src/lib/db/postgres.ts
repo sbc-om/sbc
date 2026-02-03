@@ -535,6 +535,14 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       END IF;
     END $$;
 
+    -- Migrations: Add show_similar_businesses column to businesses table if not exists
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'show_similar_businesses') THEN
+        ALTER TABLE businesses ADD COLUMN show_similar_businesses BOOLEAN DEFAULT true;
+      END IF;
+    END $$;
+
     -- OTP codes table for WhatsApp authentication
     CREATE TABLE IF NOT EXISTS otp_codes (
       id TEXT PRIMARY KEY,

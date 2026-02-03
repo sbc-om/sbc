@@ -60,6 +60,8 @@ export type Business = {
   };
   /** Which avatar to display in listings/profile: category icon (default) or uploaded logo. */
   avatarMode?: "icon" | "logo";
+  /** Whether to show AI-powered similar business recommendations on this business page. Defaults to true. */
+  showSimilarBusinesses?: boolean;
   createdAt: string;
   updatedAt: string;
 };

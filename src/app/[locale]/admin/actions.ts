@@ -222,6 +222,9 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
   const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
 
+  const showSimilarBusinessesRaw = String(formData.get("showSimilarBusinesses") || "").trim();
+  const showSimilarBusinesses = showSimilarBusinessesRaw === "true";
+
   const usernameRaw = String(formData.get("username") || "").trim();
   const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
 
@@ -250,6 +253,7 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
     longitude,
     tags,
     avatarMode,
+    showSimilarBusinesses,
   });
 
   // Process and upload images
@@ -285,7 +289,8 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
   revalidatePath(`/${locale}/businesses`);
   revalidatePath(`/${locale}/businesses/${next.slug}`);
   revalidatePath(`/${locale}/admin`);
-  redirect(`/${locale}/admin`);
+  revalidatePath(`/${locale}/admin/businesses`);
+  redirect(`/${locale}/admin/businesses`);
 }
 
 export async function deleteBusinessAction(locale: Locale, id: string) {

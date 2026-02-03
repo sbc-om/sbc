@@ -178,6 +178,7 @@ export function OwnerEditBusinessForm({
   const ar = locale === "ar";
   const [selectedCategory, setSelectedCategory] = useState(business.categoryId || "");
   const [avatarMode, setAvatarMode] = useState<"icon" | "logo">(business.avatarMode ?? "icon");
+  const [showSimilarBusinesses, setShowSimilarBusinesses] = useState(business.showSimilarBusinesses !== false);
   const [usernameValue, setUsernameValue] = useState(business.username ?? "");
   const [nameEnValue, setNameEnValue] = useState(business.name.en ?? "");
   const [slugValue, setSlugValue] = useState(business.slug ?? "");
@@ -341,6 +342,7 @@ export function OwnerEditBusinessForm({
       <form onSubmit={handleSubmit} className="grid gap-8">
         <input type="hidden" name="categoryId" value={selectedCategory} />
         <input type="hidden" name="avatarMode" value={avatarMode} />
+        <input type="hidden" name="showSimilarBusinesses" value={showSimilarBusinesses ? "true" : "false"} />
 
         <div className="sbc-card relative z-20 overflow-visible p-6">
           <h2 className="text-lg font-semibold text-foreground mb-1">
@@ -541,6 +543,30 @@ export function OwnerEditBusinessForm({
                   disabled={logoPreview.length === 0}
                 />
                 {ar ? "استخدم الشعار (صورة)" : "Use logo (image)"}
+              </label>
+            </div>
+          </div>
+
+          {/* Show Similar Businesses Setting */}
+          <div className="mb-6 rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4">
+            <div className="text-sm font-semibold text-foreground">
+              {ar ? "عرض الأنشطة التجارية المشابهة" : "Show Similar Businesses"}
+            </div>
+            <p className="mt-1 text-xs text-(--muted-foreground)">
+              {ar
+                ? "السماح بعرض اقتراحات الأنشطة التجارية المشابهة في أسفل صفحتك."
+                : "Allow AI-powered similar business recommendations to appear at the bottom of your page."}
+            </p>
+
+            <div className="mt-3">
+              <label className="flex items-center gap-3 text-sm cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showSimilarBusinesses}
+                  onChange={(e) => setShowSimilarBusinesses(e.target.checked)}
+                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                {ar ? "عرض 'مشابه بواسطة AI' و 'قد يعجبك أيضاً'" : "Show 'Similar by AI' and 'You might also like'"}
               </label>
             </div>
           </div>

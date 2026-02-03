@@ -53,6 +53,9 @@ export async function updateOwnerBusinessAction(
   const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
   const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
 
+  const showSimilarBusinessesRaw = String(formData.get("showSimilarBusinesses") || "").trim();
+  const showSimilarBusinesses = showSimilarBusinessesRaw === "true";
+
   const usernameRaw = String(formData.get("username") || "").trim();
   const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
 
@@ -71,6 +74,7 @@ export async function updateOwnerBusinessAction(
     longitude,
     tags,
     avatarMode,
+    showSimilarBusinesses,
     isApproved: false,
   });
 

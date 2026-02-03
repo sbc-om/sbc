@@ -16,11 +16,14 @@ export function AIRecommendations({ currentBusiness, allBusinesses, locale }: AI
   const [recommendations, setRecommendations] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Respect business owner's choice to hide similar recommendations
+  const showSimilar = currentBusiness.showSimilarBusinesses !== false;
+
   useEffect(() => {
     let mounted = true;
 
     async function loadRecommendations() {
-      if (!isReady) return;
+      if (!isReady || !showSimilar) return;
 
       setIsLoading(true);
       try {
@@ -42,7 +45,12 @@ export function AIRecommendations({ currentBusiness, allBusinesses, locale }: AI
     return () => {
       mounted = false;
     };
-  }, [isReady, currentBusiness, allBusinesses, locale, getRecommendations]);
+  }, [isReady, showSimilar, currentBusiness, allBusinesses, locale, getRecommendations]);
+
+  // If business owner disabled similar recommendations, don't render anything
+  if (!showSimilar) {
+    return null;
+  }
 
   if (!isReady || isLoading) {
     return (

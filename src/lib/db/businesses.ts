@@ -45,6 +45,7 @@ export const businessInputSchema = z.object({
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   avatarMode: z.enum(["icon", "logo"]).optional(),
+  showSimilarBusinesses: z.boolean().optional(),
 });
 
 export type BusinessInput = z.infer<typeof businessInputSchema>;
@@ -77,6 +78,7 @@ function rowToBusiness(row: any): Business {
     latitude: row.latitude,
     longitude: row.longitude,
     avatarMode: row.avatar_mode,
+    showSimilarBusinesses: row.show_similar_businesses ?? true,
     media: row.media || {},
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
@@ -197,9 +199,9 @@ export async function createBusiness(input: BusinessInput): Promise<Business> {
       id, slug, username, owner_id, name_en, name_ar, description_en, description_ar,
       is_approved, is_verified, is_special, homepage_featured, homepage_top,
       category, category_id, city, address, phone, website, email, tags,
-      latitude, longitude, avatar_mode, media, created_at, updated_at
+      latitude, longitude, avatar_mode, show_similar_businesses, media, created_at, updated_at
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $26
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $27
     ) RETURNING *
   `, [
     id, data.slug, data.username, data.ownerId,
@@ -209,6 +211,7 @@ export async function createBusiness(input: BusinessInput): Promise<Business> {
     data.homepageFeatured ?? false, data.homepageTop ?? false,
     data.category, data.categoryId, data.city, data.address, data.phone, data.website, data.email,
     data.tags || [], data.latitude, data.longitude, data.avatarMode || 'icon',
+    data.showSimilarBusinesses ?? true,
     JSON.stringify({}), now
   ]);
 
@@ -264,8 +267,9 @@ export async function updateBusiness(id: string, input: Partial<BusinessInput>):
         latitude = $21,
         longitude = $22,
         avatar_mode = COALESCE($23, avatar_mode),
-        updated_at = $24
-      WHERE id = $25
+        show_similar_businesses = COALESCE($24, show_similar_businesses),
+        updated_at = $25
+      WHERE id = $26
       RETURNING *
     `, [
       data.slug,
@@ -291,6 +295,7 @@ export async function updateBusiness(id: string, input: Partial<BusinessInput>):
       data.latitude !== undefined ? data.latitude : current.latitude,
       data.longitude !== undefined ? data.longitude : current.longitude,
       data.avatarMode,
+      data.showSimilarBusinesses,
       new Date(),
       id
     ]);
