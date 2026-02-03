@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Native/optional-dep packages are best required at runtime, not bundled.
   serverExternalPackages: [],
+  // Increase body size limit for file uploads (stories, images, etc.)
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
   images: {
     // We intentionally use a small allowlist for remote images.
     // These are used on public marketing/product pages.

@@ -26,6 +26,7 @@ export function BusinessCard({
   const [approving, setApproving] = useState(false);
   const isApproved = business.isApproved ?? business.isVerified ?? false;
   const coverImage = business.media?.cover || business.media?.logo || business.media?.banner;
+  const logo = business.media?.logo;
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -70,6 +71,11 @@ export function BusinessCard({
 
       <div className="min-w-0 flex-1 mt-3 sm:mt-0">
         <div className="flex items-center gap-2 min-w-0">
+          {logo && (
+            <div className="relative w-6 h-6 shrink-0 rounded-full overflow-hidden ring-1 ring-(--surface-border)">
+              <Image src={logo} alt="" fill sizes="24px" className="object-cover" />
+            </div>
+          )}
           <div className="truncate text-sm font-semibold text-foreground">
             {ar ? business.name.ar : business.name.en}
           </div>

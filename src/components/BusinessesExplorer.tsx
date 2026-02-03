@@ -582,6 +582,7 @@ export function BusinessesExplorer({
           const name = locale === "ar" ? b.name.ar : b.name.en;
           const description = b.description ? (locale === "ar" ? b.description.ar : b.description.en) : "";
           const img = b.media?.cover || b.media?.banner || b.media?.logo;
+          const logo = b.media?.logo;
 
           const href = b.username 
             ? `/@${b.username}` 
@@ -601,6 +602,13 @@ export function BusinessesExplorer({
                 <div className="absolute inset-0 bg-linear-to-t from-black/45 via-black/10 to-transparent" />
                 <div className="absolute bottom-3 left-3 right-3">
                   <div className="flex items-center gap-2 min-w-0">
+                    {/* Business Logo */}
+                    {logo && (
+                      <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-white/30 shadow-lg">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={logo} alt={name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
                     <div className="truncate text-base font-semibold text-white drop-shadow">
                       {name}
                     </div>

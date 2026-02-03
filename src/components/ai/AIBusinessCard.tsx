@@ -32,6 +32,7 @@ export function AIBusinessCard({ business, locale }: AIBusinessCardProps) {
     : "";
 
   const coverImage = business.media?.cover || business.media?.banner;
+  const logo = business.media?.logo;
   const detailPath = business.username
     ? `/@${business.username}`
     : `/${locale}/businesses/${business.slug}`;
@@ -71,8 +72,13 @@ export function AIBusinessCard({ business, locale }: AIBusinessCardProps) {
         {/* Content */}
         <div className="relative p-5">
           <div className="mt-2">
-            {/* Title */}
+            {/* Title with Logo */}
             <div className="mb-2 flex items-center gap-2 min-w-0">
+              {logo && (
+                <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-(--surface-border)">
+                  <Image src={logo} alt={name} fill className="object-cover" sizes="32px" />
+                </div>
+              )}
               <h3 className="min-w-0 text-xl font-bold text-foreground truncate group-hover:text-accent transition-colors">
                 {name}
               </h3>
