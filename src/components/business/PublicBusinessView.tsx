@@ -7,6 +7,7 @@ import { FiPhone, FiMail, FiGlobe, FiMapPin, FiTag } from "react-icons/fi";
 import { buttonVariants } from "@/components/ui/Button";
 import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
 import { ShareActionButton } from "@/components/ShareActionButton";
+import { FollowBusinessButton } from "@/components/business/FollowBusinessButton";
 import { BusinessContentLanguageToggle } from "./BusinessContentLanguageToggle";
 import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
 import type { Business, Category } from "@/lib/db/types";
@@ -74,6 +75,11 @@ export function PublicBusinessView({
                 locale === "ar" ? "left-4" : "right-4"
               } flex items-center gap-2`}
             >
+              <FollowBusinessButton
+                businessId={business.id}
+                locale={locale}
+                compact
+              />
               <Link
                 href={`/${locale}/login?redirect=${encodeURIComponent(business.username ? `/${locale}/chat/@${business.username}` : `/${locale}/chat/${business.slug}`)}`}
                 aria-label={locale === "ar" ? "دردشة" : "Chat"}

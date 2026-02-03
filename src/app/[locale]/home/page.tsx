@@ -5,7 +5,7 @@ import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinesses, listBusinessesByOwner } from "@/lib/db/businesses";
-import { getUserFollowedCategoryIds } from "@/lib/db/follows";
+import { getUserFollowedCategoryIds, getUserFollowedBusinessIds, getUserUnfollowedBusinessIds } from "@/lib/db/follows";
 import { getCategoryById } from "@/lib/db/categories";
 import { listBusinessesWithActiveStories } from "@/lib/db/stories";
 import {
@@ -78,15 +78,30 @@ export default async function HomeFollowedPage({
   };
 
   const followedCategoryIds = new Set(await getUserFollowedCategoryIds(user.id));
+  const followedBusinessIds = new Set(await getUserFollowedBusinessIds(user.id));
+  const unfollowedBusinessIds = new Set(await getUserUnfollowedBusinessIds(user.id));
   const allBusinesses = await listBusinesses();
   const businessesWithStories = await listBusinessesWithActiveStories();
   
   // Create a Set of business IDs that have stories for quick lookup
   const businessIdsWithStories = new Set(businessesWithStories.map(b => b.businessId));
 
-  const businesses = allBusinesses.filter((b) =>
-    b.categoryId ? followedCategoryIds.has(b.categoryId) : false,
-  );
+  // Filter businesses:
+  // 1. Include if user directly follows the business
+  // 2. Include if business's category is followed AND business is not unfollowed
+  // 3. Exclude if business is in the unfollowed list
+  const businesses = allBusinesses.filter((b) => {
+    // Always exclude unfollowed businesses
+    if (unfollowedBusinessIds.has(b.id)) return false;
+    
+    // Include if directly following this business
+    if (followedBusinessIds.has(b.id)) return true;
+    
+    // Include if following the category
+    if (b.categoryId && followedCategoryIds.has(b.categoryId)) return true;
+    
+    return false;
+  });
 
   // Prepare engagement data for each business
   const businessesWithEngagement = await Promise.all(
@@ -136,15 +151,15 @@ export default async function HomeFollowedPage({
           </div>
         </div>
 
-        {followedCategoryIds.size === 0 ? (
+        {followedCategoryIds.size === 0 && followedBusinessIds.size === 0 ? (
           <div className="mt-8 sbc-card rounded-2xl p-6">
             <div className="font-semibold">
-              {locale === "ar" ? "ابدأ بمتابعة التصنيفات" : "Start by following categories"}
+              {locale === "ar" ? "ابدأ بمتابعة التصنيفات أو الأنشطة التجارية" : "Start by following categories or businesses"}
             </div>
             <p className="mt-2 text-sm text-(--muted-foreground)">
               {locale === "ar"
-                ? "اذهب إلى صفحة التصنيفات واختر ما يناسبك."
-                : "Go to Categories and follow what you like."}
+                ? "اذهب إلى صفحة التصنيفات واختر ما يناسبك، أو تابع أنشطة تجارية محددة."
+                : "Go to Categories and follow what you like, or follow specific businesses."}
             </p>
           </div>
         ) : null}
@@ -169,11 +184,11 @@ export default async function HomeFollowedPage({
           ))}
         </div>
 
-        {followedCategoryIds.size > 0 && businessesWithEngagement.length === 0 ? (
+        {(followedCategoryIds.size > 0 || followedBusinessIds.size > 0) && businessesWithEngagement.length === 0 ? (
           <div className="mt-10 text-center text-(--muted-foreground)">
             {locale === "ar"
-              ? "لا توجد أعمال في التصنيفات التي تتابعها حالياً."
-              : "No businesses yet in the categories you follow."}
+              ? "لا توجد أعمال في التصنيفات أو الأنشطة التي تتابعها حالياً."
+              : "No businesses yet in the categories or businesses you follow."}
           </div>
         ) : null}
 

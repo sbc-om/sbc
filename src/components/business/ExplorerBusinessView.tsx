@@ -8,6 +8,7 @@ import { buttonVariants } from "@/components/ui/Button";
 import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
 import { BusinessEngagement } from "@/components/business/BusinessEngagement";
 import { ShareActionButton } from "@/components/ShareActionButton";
+import { FollowBusinessButton } from "@/components/business/FollowBusinessButton";
 import { BusinessContentLanguageToggle } from "./BusinessContentLanguageToggle";
 import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
 import { StoryUpload } from "@/components/stories/StoryUpload";
@@ -96,6 +97,11 @@ export function ExplorerBusinessView({
                 locale === "ar" ? "left-4" : "right-4"
               } flex items-center gap-2`}
             >
+              <FollowBusinessButton
+                businessId={business.id}
+                locale={locale}
+                compact
+              />
               <Link
                 href={business.username ? `/${locale}/chat/@${business.username}` : `/${locale}/chat/${business.slug}`}
                 aria-label={locale === "ar" ? "دردشة" : "Chat"}

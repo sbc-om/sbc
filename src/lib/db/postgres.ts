@@ -265,6 +265,22 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       PRIMARY KEY (user_id, business_id)
     );
 
+    -- User business follows (follow individual businesses)
+    CREATE TABLE IF NOT EXISTS user_business_follows (
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      business_id TEXT REFERENCES businesses(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (user_id, business_id)
+    );
+
+    -- User business unfollows (hide specific businesses even if following their category)
+    CREATE TABLE IF NOT EXISTS user_business_unfollows (
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      business_id TEXT REFERENCES businesses(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (user_id, business_id)
+    );
+
     -- Business comments
     CREATE TABLE IF NOT EXISTS business_comments (
       id TEXT PRIMARY KEY,
@@ -526,6 +542,10 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_id ON chat_messages(conversation_id);
     CREATE INDEX IF NOT EXISTS idx_user_business_likes_business_id ON user_business_likes(business_id);
     CREATE INDEX IF NOT EXISTS idx_user_business_saves_business_id ON user_business_saves(business_id);
+    CREATE INDEX IF NOT EXISTS idx_user_business_follows_business_id ON user_business_follows(business_id);
+    CREATE INDEX IF NOT EXISTS idx_user_business_follows_user_id ON user_business_follows(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_business_unfollows_business_id ON user_business_unfollows(business_id);
+    CREATE INDEX IF NOT EXISTS idx_user_business_unfollows_user_id ON user_business_unfollows(user_id);
 
     -- Migrations: Add username column to users table if not exists
     DO $$ 
