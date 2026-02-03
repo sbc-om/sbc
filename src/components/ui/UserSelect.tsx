@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import * as React from "react";
 import { createPortal } from "react-dom";
+import { cn } from "@/lib/cn";
+import { HiChevronDown, HiCheck, HiX, HiUser } from "react-icons/hi";
 
 interface User {
   id: string;
@@ -16,7 +18,7 @@ interface UserSelectProps {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
-  searchPlaceholder: string;
+  searchPlaceholder?: string;
   locale: "en" | "ar";
   required?: boolean;
   allowEmpty?: boolean;
@@ -28,21 +30,43 @@ export function UserSelect({
   value,
   onChange,
   placeholder,
-  searchPlaceholder,
   locale,
   required,
   allowEmpty,
   emptyLabel,
 }: UserSelectProps) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
-  const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [isMounted, setIsMounted] = React.useState(false);
+  const buttonRef = React.useRef<HTMLButtonElement>(null);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  const canPortal = typeof document !== "undefined";
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Close on escape key
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsOpen(false);
+    };
+    
+    if (isOpen) {
+      document.addEventListener("keydown", handleEscape);
+      return () => {
+        document.removeEventListener("keydown", handleEscape);
+      };
+    }
+  }, [isOpen]);
+
+  // Prevent body scroll when modal is open
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = "";
+      };
+    }
+  }, [isOpen]);
 
   const selected = users.find((u) => u.id === value);
   const displayText = selected 
@@ -51,280 +75,139 @@ export function UserSelect({
       ? emptyLabel || placeholder
       : placeholder;
 
-  const filtered = useMemo(() => {
-    return users.filter((u) => {
-      if (!search) return true;
-      const searchLower = search.toLowerCase();
-      return (
-        u.email.toLowerCase().includes(searchLower) ||
-        (u.fullName && u.fullName.toLowerCase().includes(searchLower)) ||
-        (u.phone && u.phone.includes(search))
-      );
-    });
-  }, [users, search]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    // Avoid the browser scrolling the page when focusing an element appended to <body>.
-    // (This can happen on the first open after refresh.)
-    const id = window.requestAnimationFrame(() => {
-      searchInputRef.current?.focus({ preventScroll: true });
-    });
-    return () => window.cancelAnimationFrame(id);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const updatePosition = () => {
-      const triggerEl = triggerRef.current;
-      if (!triggerEl) return;
-
-      const rect = triggerEl.getBoundingClientRect();
-      const viewportPadding = 8;
-      const gap = 8;
-      const width = rect.width;
-      const top = Math.max(
-        viewportPadding,
-        Math.min(rect.bottom + gap, window.innerHeight - viewportPadding)
-      );
-
-      if (locale === "ar") {
-        const right = Math.max(viewportPadding, window.innerWidth - rect.right);
-        setPanelStyle({
-          position: "fixed",
-          top,
-          right,
-          width,
-          zIndex: 99999,
-        });
-        return;
-      }
-
-      const left = Math.max(
-        viewportPadding,
-        Math.min(rect.left, window.innerWidth - width - viewportPadding)
-      );
-      setPanelStyle({
-        position: "fixed",
-        top,
-        left,
-        width,
-        zIndex: 99999,
-      });
-    };
-
-    updatePosition();
-    window.addEventListener("resize", updatePosition);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-    };
-  }, [open, locale]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    // Close on any scroll outside the dropdown (prevents the "sticky" feel).
-    // We still allow scrolling inside the dropdown list itself.
-    const handleAnyScroll = (e: Event) => {
-      const target = e.target as Node | null;
-      if (target && panelRef.current?.contains(target)) return;
-      setOpen(false);
-      setSearch("");
-    };
-
-    window.addEventListener("scroll", handleAnyScroll, true);
-    return () => window.removeEventListener("scroll", handleAnyScroll, true);
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const handlePointerDownOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (containerRef.current?.contains(target)) return;
-      if (panelRef.current?.contains(target)) return;
-      setOpen(false);
-      setSearch("");
-    };
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      setOpen(false);
-      setSearch("");
-    };
-
-    document.addEventListener("mousedown", handlePointerDownOutside);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDownOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open]);
-
   const handleSelect = (userId: string) => {
     onChange(userId);
-    setOpen(false);
-    setSearch("");
+    setIsOpen(false);
   };
 
+  const isRTL = locale === "ar";
+
   return (
-    <div ref={containerRef} className="relative">
+    <div className="relative">
       {/* Hidden input for form submission */}
       <input type="hidden" name="ownerId" value={value} required={required && !allowEmpty} />
       
       {/* Trigger Button */}
       <button
+        ref={buttonRef}
         type="button"
-        onClick={() => setOpen(!open)}
-        ref={triggerRef}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className="h-11 w-full rounded-xl border border-(--surface-border) bg-(--surface) px-4 text-sm text-foreground shadow-(--shadow) outline-none backdrop-blur transition focus:border-accent flex items-center justify-between cursor-pointer hover:bg-(--chip-bg)"
+        onClick={() => setIsOpen(true)}
+        className={cn(
+          "h-11 w-full rounded-xl flex items-center justify-between px-4",
+          "border border-[var(--surface-border)] bg-[var(--surface)]",
+          "hover:bg-[var(--chip-bg)] transition-colors cursor-pointer",
+          "text-sm"
+        )}
       >
-        <span className={!selected && value !== "" ? "text-(--muted-foreground)" : ""}>
-          {displayText}
-        </span>
-        <svg
-          className={`h-4 w-4 text-(--muted-foreground) transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
+        <div className="flex items-center gap-2 min-w-0">
+          <HiUser className="h-4 w-4 text-[var(--muted-foreground)] shrink-0" />
+          <span className={!selected && value !== "" ? "text-[var(--muted-foreground)]" : "truncate"}>
+            {displayText}
+          </span>
+        </div>
+        <HiChevronDown className="h-4 w-4 text-[var(--muted-foreground)] shrink-0" />
       </button>
 
-      {/* Dropdown Panel (portaled to <body> to avoid clipping/stacking issues) */}
-      {open && canPortal &&
-        createPortal(
-          <div
-            ref={panelRef}
-            style={panelStyle}
-            role="listbox"
-            className="sbc-card overflow-hidden"
+      {/* Modal */}
+      {isOpen && isMounted && createPortal(
+        <div 
+          className="fixed inset-0 z-[99999] flex items-end sm:items-center justify-center"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsOpen(false);
+          }}
+        >
+          <div className="absolute inset-0 bg-black/50 -z-10" />
+          
+          <div 
+            ref={dropdownRef}
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              "relative w-full sm:w-[28rem] sm:max-w-[calc(100vw-2rem)]",
+              "bg-[var(--background)] sm:rounded-2xl rounded-t-2xl",
+              "shadow-2xl max-h-[70vh] sm:max-h-[60vh]",
+              "flex flex-col overflow-hidden"
+            )}
           >
-            {/* Search Input */}
-            <div className="p-3 border-b border-(--surface-border)">
-              <div className="relative">
-                <svg
-                  className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-(--muted-foreground)"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={searchPlaceholder}
-                  className="h-10 w-full rounded-lg border border-(--surface-border) bg-background ps-9 pe-3 text-sm text-foreground outline-none placeholder:text-(--muted-foreground) focus:border-accent"
-                  ref={searchInputRef}
-                />
-              </div>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-[var(--surface-border)]">
+              <span className="font-semibold">
+                {isRTL ? "اختر المالك" : "Select Owner"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 rounded-lg hover:bg-[var(--surface)] transition-colors"
+              >
+                <HiX className="h-5 w-5" />
+              </button>
             </div>
-
-            {/* Options List */}
-            <div className="max-h-60 overflow-y-auto p-2 flex flex-col gap-1">
+            
+            {/* List */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
               {/* Empty Option */}
               {allowEmpty && (
                 <button
                   type="button"
                   onClick={() => handleSelect("")}
-                  className={`w-full text-start rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                    value === ""
-                      ? "bg-accent text-(--accent-foreground) font-medium"
-                      : "text-foreground hover:bg-(--chip-bg)"
-                  }`}
+                  className={cn(
+                    "w-full px-4 py-3 flex items-center gap-3",
+                    "hover:bg-[var(--surface)] active:bg-accent/10 transition-colors",
+                    "border-b border-[var(--surface-border)]",
+                    value === "" && "bg-accent/5"
+                  )}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-(--muted-foreground) italic">
-                      {emptyLabel || (locale === "ar" ? "بدون صاحب" : "No owner")}
-                    </span>
-                    {value === "" && (
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2.5}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    )}
+                  <div className="h-10 w-10 rounded-full bg-[var(--chip-bg)] flex items-center justify-center shrink-0">
+                    <HiX className="h-5 w-5 text-[var(--muted-foreground)]" />
                   </div>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium text-sm text-[var(--muted-foreground)] italic">
+                      {emptyLabel || (isRTL ? "بدون صاحب" : "No owner")}
+                    </div>
+                  </div>
+                  {value === "" && (
+                    <HiCheck className="h-5 w-5 text-accent shrink-0" />
+                  )}
                 </button>
               )}
 
-              {filtered.length === 0 ? (
-                <div className="px-3 py-6 text-center text-sm text-(--muted-foreground)">
-                  {locale === "ar" ? "لا توجد نتائج" : "No results found"}
-                </div>
-              ) : (
-                filtered.map((user) => {
-                  const isSelected = user.id === value;
-
-                  return (
-                    <button
-                      key={user.id}
-                      type="button"
-                      onClick={() => handleSelect(user.id)}
-                      className={`w-full text-start rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                        isSelected
-                          ? "bg-accent text-(--accent-foreground) font-medium"
-                          : "text-foreground hover:bg-(--chip-bg)"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate font-medium">{user.fullName || user.email}</div>
-                          <div className="mt-0.5 text-xs opacity-70 truncate">
-                            {user.role === "admin"
-                              ? locale === "ar"
-                                ? "مدير"
-                                : "Admin"
-                              : locale === "ar"
-                                ? "مستخدم"
-                                : "User"}{user.phone ? ` • ${user.phone}` : ""}{user.fullName ? ` • ${user.email}` : ""}
-                          </div>
-                        </div>
-                        {isSelected && (
-                          <svg
-                            className="h-4 w-4 shrink-0"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2.5}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        )}
+              {users.map((user) => {
+                const isSelected = user.id === value;
+                return (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() => handleSelect(user.id)}
+                    className={cn(
+                      "w-full px-4 py-3 flex items-center gap-3",
+                      "hover:bg-[var(--surface)] active:bg-accent/10 transition-colors",
+                      "border-b border-[var(--surface-border)] last:border-b-0",
+                      isSelected && "bg-accent/5"
+                    )}
+                  >
+                    <div className="h-10 w-10 rounded-full bg-[var(--chip-bg)] flex items-center justify-center shrink-0">
+                      <HiUser className="h-5 w-5 text-[var(--muted-foreground)]" />
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="font-medium text-sm truncate">
+                        {user.fullName || user.email}
                       </div>
-                    </button>
-                  );
-                })
-              )}
+                      <div className="text-xs text-[var(--muted-foreground)] truncate">
+                        {user.role === "admin" ? (isRTL ? "مدير" : "Admin") : (isRTL ? "مستخدم" : "User")}
+                        {user.phone ? ` • ${user.phone}` : ""}
+                        {user.fullName ? ` • ${user.email}` : ""}
+                      </div>
+                    </div>
+                    {isSelected && (
+                      <HiCheck className="h-5 w-5 text-accent shrink-0" />
+                    )}
+                  </button>
+                );
+              })}
             </div>
-          </div>,
-          document.body
-        )}
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
