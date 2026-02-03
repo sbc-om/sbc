@@ -9,6 +9,7 @@ import { listBusinessRequests } from "@/lib/db/businessRequests";
 import { listAllBusinessCards } from "@/lib/db/businessCards";
 import { listUnreadContactMessages } from "@/lib/db/contactMessages";
 import { listLoyaltyProfiles } from "@/lib/db/loyalty";
+import { getAllWithdrawalRequests } from "@/lib/db/wallet";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
@@ -94,6 +95,7 @@ export default async function AdminPage({
   const loyaltyProfiles = await listLoyaltyProfiles();
   const businessCards = await listAllBusinessCards();
   const unreadContactMessages = (await listUnreadContactMessages()).length;
+  const pendingWithdrawals = await getAllWithdrawalRequests("pending", 100, 0);
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
   const pendingCards = businessCards.filter((c) => !(c.isApproved ?? false));
@@ -156,6 +158,18 @@ export default async function AdminPage({
       color: "indigo",
     },
     {
+      href: `/${locale}/admin/withdrawals`,
+      icon: (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      label: ar ? "طلبات السحب" : "Withdrawals",
+      color: "rose",
+      badge: pendingWithdrawals.length > 0 ? pendingWithdrawals.length : undefined,
+      badgeType: "warning" as const,
+    },
+    {
       href: `/${locale}/admin/business-cards`,
       icon: (
         <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -175,7 +189,7 @@ export default async function AdminPage({
         </svg>
       ),
       label: ar ? "الرسائل" : "Messages",
-      color: "rose",
+      color: "pink",
       badge: unreadContactMessages > 0 ? unreadContactMessages : undefined,
       badgeType: "warning" as const,
     },

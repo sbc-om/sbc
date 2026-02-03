@@ -579,6 +579,46 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_otp_codes_phone ON otp_codes(phone);
     CREATE INDEX IF NOT EXISTS idx_otp_codes_expires_at ON otp_codes(expires_at);
 
+    -- Wallets table (account_number is user's phone)
+    CREATE TABLE IF NOT EXISTS wallets (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      balance DECIMAL(15, 3) NOT NULL DEFAULT 0,
+      account_number TEXT UNIQUE NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_wallets_account_number ON wallets(account_number);
+
+    -- Wallet transactions table
+    CREATE TABLE IF NOT EXISTS wallet_transactions (
+      id TEXT PRIMARY KEY,
+      wallet_user_id TEXT REFERENCES wallets(user_id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      amount DECIMAL(15, 3) NOT NULL,
+      balance_before DECIMAL(15, 3) NOT NULL,
+      balance_after DECIMAL(15, 3) NOT NULL,
+      related_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      related_phone TEXT,
+      description TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_wallet_transactions_wallet_user_id ON wallet_transactions(wallet_user_id);
+    CREATE INDEX IF NOT EXISTS idx_wallet_transactions_created_at ON wallet_transactions(created_at DESC);
+
+    -- Withdrawal requests table
+    CREATE TABLE IF NOT EXISTS withdrawal_requests (
+      id TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      amount DECIMAL(15, 3) NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      admin_message TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_withdrawal_requests_user_id ON withdrawal_requests(user_id);
+    CREATE INDEX IF NOT EXISTS idx_withdrawal_requests_status ON withdrawal_requests(status);
+    CREATE INDEX IF NOT EXISTS idx_withdrawal_requests_created_at ON withdrawal_requests(created_at DESC);
+
     -- App settings table for admin configurations
     CREATE TABLE IF NOT EXISTS app_settings (
       key TEXT PRIMARY KEY,

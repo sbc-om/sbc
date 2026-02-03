@@ -24,6 +24,8 @@ import {
   HiChartSquareBar,
   HiOutlineChartSquareBar,
   HiOutlineLogout,
+  HiCash,
+  HiOutlineCash,
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
 
@@ -274,6 +276,21 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
                 })()}
                 <span className="min-w-0 truncate">
                   {locale === "ar" ? "المحفوظات" : "Saved"}
+                </span>
+              </Link>
+
+              <Link
+                role="menuitem"
+                href={`/${locale}/wallet`}
+                onClick={() => setProfileMenuOpen(false)}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              >
+                {(() => {
+                  const WalletIcon = isActive("/wallet") ? HiCash : HiOutlineCash;
+                  return <WalletIcon className="h-5 w-5 shrink-0" />;
+                })()}
+                <span className="min-w-0 truncate">
+                  {locale === "ar" ? "المحفظة" : "Wallet"}
                 </span>
               </Link>
 

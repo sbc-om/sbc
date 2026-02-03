@@ -1,0 +1,988 @@
+/**
+ * Wallet Database Functions
+ * Handles wallet operations: balance, deposit, withdraw, transfer
+ */
+import { nanoid } from "nanoid";
+import { query, transaction } from "./postgres";
+
+export type WalletTransactionType = "deposit" | "withdraw" | "transfer_in" | "transfer_out";
+
+export interface Wallet {
+  userId: string;
+  balance: number;
+  accountNumber: string; // Same as user phone
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface WalletTransaction {
+  id: string;
+  walletUserId: string;
+  type: WalletTransactionType;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  relatedUserId: string | null;
+  relatedPhone: string | null;
+  description: string | null;
+  createdAt: Date;
+}
+
+/**
+ * Get user wallet (creates one if it doesn't exist)
+ */
+export async function getUserWallet(userId: string): Promise<Wallet | null> {
+  const result = await query<{
+    user_id: string;
+    balance: string;
+    account_number: string;
+    created_at: Date;
+    updated_at: Date;
+  }>(
+    `SELECT w.user_id, w.balance, w.account_number, w.created_at, w.updated_at
+     FROM wallets w
+     WHERE w.user_id = $1`,
+    [userId]
+  );
+
+  if (result.rows.length === 0) {
+    return null;
+  }
+
+  const row = result.rows[0];
+  return {
+    userId: row.user_id,
+    balance: parseFloat(row.balance),
+    accountNumber: row.account_number,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Get wallet by account number (phone)
+ */
+export async function getWalletByAccountNumber(accountNumber: string): Promise<Wallet | null> {
+  // Normalize phone number - remove leading zeros and add country code if needed
+  const normalizedPhone = normalizePhoneNumber(accountNumber);
+  
+  const result = await query<{
+    user_id: string;
+    balance: string;
+    account_number: string;
+    created_at: Date;
+    updated_at: Date;
+  }>(
+    `SELECT w.user_id, w.balance, w.account_number, w.created_at, w.updated_at
+     FROM wallets w
+     WHERE w.account_number = $1`,
+    [normalizedPhone]
+  );
+
+  if (result.rows.length === 0) {
+    // Try without normalization
+    const result2 = await query<{
+      user_id: string;
+      balance: string;
+      account_number: string;
+      created_at: Date;
+      updated_at: Date;
+    }>(
+      `SELECT w.user_id, w.balance, w.account_number, w.created_at, w.updated_at
+       FROM wallets w
+       WHERE w.account_number = $1`,
+      [accountNumber]
+    );
+    
+    if (result2.rows.length === 0) return null;
+    
+    const row = result2.rows[0];
+    return {
+      userId: row.user_id,
+      balance: parseFloat(row.balance),
+      accountNumber: row.account_number,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  const row = result.rows[0];
+  return {
+    userId: row.user_id,
+    balance: parseFloat(row.balance),
+    accountNumber: row.account_number,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Create a wallet for a user
+ */
+export async function createWallet(userId: string, phone: string): Promise<Wallet> {
+  const normalizedPhone = normalizePhoneNumber(phone);
+  
+  const result = await query<{
+    user_id: string;
+    balance: string;
+    account_number: string;
+    created_at: Date;
+    updated_at: Date;
+  }>(
+    `INSERT INTO wallets (user_id, balance, account_number, created_at, updated_at)
+     VALUES ($1, 0, $2, NOW(), NOW())
+     ON CONFLICT (user_id) DO UPDATE SET updated_at = NOW()
+     RETURNING user_id, balance, account_number, created_at, updated_at`,
+    [userId, normalizedPhone]
+  );
+
+  const row = result.rows[0];
+  return {
+    userId: row.user_id,
+    balance: parseFloat(row.balance),
+    accountNumber: row.account_number,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Ensure user has a wallet (create if not exists)
+ */
+export async function ensureWallet(userId: string, phone: string): Promise<Wallet> {
+  const existing = await getUserWallet(userId);
+  if (existing) return existing;
+  return createWallet(userId, phone);
+}
+
+/**
+ * Deposit funds to wallet (admin only)
+ */
+export async function depositToWallet(
+  userId: string,
+  amount: number,
+  description?: string
+): Promise<{ wallet: Wallet; transaction: WalletTransaction }> {
+  if (amount <= 0) {
+    throw new Error("Amount must be positive");
+  }
+
+  return transaction(async (client) => {
+    // Lock the wallet row for update
+    const walletResult = await client.query<{
+      user_id: string;
+      balance: string;
+      account_number: string;
+      created_at: Date;
+      updated_at: Date;
+    }>(
+      `SELECT user_id, balance, account_number, created_at, updated_at
+       FROM wallets
+       WHERE user_id = $1
+       FOR UPDATE`,
+      [userId]
+    );
+
+    if (walletResult.rows.length === 0) {
+      throw new Error("Wallet not found");
+    }
+
+    const currentBalance = parseFloat(walletResult.rows[0].balance);
+    const newBalance = currentBalance + amount;
+
+    // Update balance
+    await client.query(
+      `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE user_id = $2`,
+      [newBalance, userId]
+    );
+
+    // Create transaction record
+    const txId = nanoid();
+    const txResult = await client.query<{
+      id: string;
+      wallet_user_id: string;
+      type: string;
+      amount: string;
+      balance_before: string;
+      balance_after: string;
+      related_user_id: string | null;
+      related_phone: string | null;
+      description: string | null;
+      created_at: Date;
+    }>(
+      `INSERT INTO wallet_transactions 
+       (id, wallet_user_id, type, amount, balance_before, balance_after, description, created_at)
+       VALUES ($1, $2, 'deposit', $3, $4, $5, $6, NOW())
+       RETURNING *`,
+      [txId, userId, amount, currentBalance, newBalance, description || "Wallet deposit"]
+    );
+
+    const txRow = txResult.rows[0];
+
+    return {
+      wallet: {
+        userId: walletResult.rows[0].user_id,
+        balance: newBalance,
+        accountNumber: walletResult.rows[0].account_number,
+        createdAt: walletResult.rows[0].created_at,
+        updatedAt: new Date(),
+      },
+      transaction: {
+        id: txRow.id,
+        walletUserId: txRow.wallet_user_id,
+        type: txRow.type as WalletTransactionType,
+        amount: parseFloat(txRow.amount),
+        balanceBefore: parseFloat(txRow.balance_before),
+        balanceAfter: parseFloat(txRow.balance_after),
+        relatedUserId: txRow.related_user_id,
+        relatedPhone: txRow.related_phone,
+        description: txRow.description,
+        createdAt: txRow.created_at,
+      },
+    };
+  });
+}
+
+/**
+ * Withdraw funds from wallet
+ */
+export async function withdrawFromWallet(
+  userId: string,
+  amount: number,
+  description?: string
+): Promise<{ wallet: Wallet; transaction: WalletTransaction }> {
+  if (amount <= 0) {
+    throw new Error("Amount must be positive");
+  }
+
+  return transaction(async (client) => {
+    // Lock the wallet row for update
+    const walletResult = await client.query<{
+      user_id: string;
+      balance: string;
+      account_number: string;
+      created_at: Date;
+      updated_at: Date;
+    }>(
+      `SELECT user_id, balance, account_number, created_at, updated_at
+       FROM wallets
+       WHERE user_id = $1
+       FOR UPDATE`,
+      [userId]
+    );
+
+    if (walletResult.rows.length === 0) {
+      throw new Error("Wallet not found");
+    }
+
+    const currentBalance = parseFloat(walletResult.rows[0].balance);
+    
+    if (currentBalance < amount) {
+      throw new Error("Insufficient balance");
+    }
+
+    const newBalance = currentBalance - amount;
+
+    // Update balance
+    await client.query(
+      `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE user_id = $2`,
+      [newBalance, userId]
+    );
+
+    // Create transaction record
+    const txId = nanoid();
+    const txResult = await client.query<{
+      id: string;
+      wallet_user_id: string;
+      type: string;
+      amount: string;
+      balance_before: string;
+      balance_after: string;
+      related_user_id: string | null;
+      related_phone: string | null;
+      description: string | null;
+      created_at: Date;
+    }>(
+      `INSERT INTO wallet_transactions 
+       (id, wallet_user_id, type, amount, balance_before, balance_after, description, created_at)
+       VALUES ($1, $2, 'withdraw', $3, $4, $5, $6, NOW())
+       RETURNING *`,
+      [txId, userId, amount, currentBalance, newBalance, description || "Wallet withdrawal"]
+    );
+
+    const txRow = txResult.rows[0];
+
+    return {
+      wallet: {
+        userId: walletResult.rows[0].user_id,
+        balance: newBalance,
+        accountNumber: walletResult.rows[0].account_number,
+        createdAt: walletResult.rows[0].created_at,
+        updatedAt: new Date(),
+      },
+      transaction: {
+        id: txRow.id,
+        walletUserId: txRow.wallet_user_id,
+        type: txRow.type as WalletTransactionType,
+        amount: parseFloat(txRow.amount),
+        balanceBefore: parseFloat(txRow.balance_before),
+        balanceAfter: parseFloat(txRow.balance_after),
+        relatedUserId: txRow.related_user_id,
+        relatedPhone: txRow.related_phone,
+        description: txRow.description,
+        createdAt: txRow.created_at,
+      },
+    };
+  });
+}
+
+/**
+ * Transfer funds between wallets
+ */
+export async function transferFunds(
+  fromUserId: string,
+  toAccountNumber: string,
+  amount: number,
+  description?: string
+): Promise<{
+  fromWallet: Wallet;
+  toWallet: Wallet;
+  outTransaction: WalletTransaction;
+  inTransaction: WalletTransaction;
+}> {
+  if (amount <= 0) {
+    throw new Error("Amount must be positive");
+  }
+
+  return transaction(async (client) => {
+    // Get sender wallet
+    const senderResult = await client.query<{
+      user_id: string;
+      balance: string;
+      account_number: string;
+      created_at: Date;
+      updated_at: Date;
+    }>(
+      `SELECT user_id, balance, account_number, created_at, updated_at
+       FROM wallets
+       WHERE user_id = $1
+       FOR UPDATE`,
+      [fromUserId]
+    );
+
+    if (senderResult.rows.length === 0) {
+      throw new Error("Sender wallet not found");
+    }
+
+    const senderBalance = parseFloat(senderResult.rows[0].balance);
+    
+    if (senderBalance < amount) {
+      throw new Error("Insufficient balance");
+    }
+
+    // Find receiver by account number (phone)
+    const normalizedPhone = normalizePhoneNumber(toAccountNumber);
+    let receiverResult = await client.query<{
+      user_id: string;
+      balance: string;
+      account_number: string;
+      created_at: Date;
+      updated_at: Date;
+    }>(
+      `SELECT user_id, balance, account_number, created_at, updated_at
+       FROM wallets
+       WHERE account_number = $1
+       FOR UPDATE`,
+      [normalizedPhone]
+    );
+
+    // Try without normalization if not found
+    if (receiverResult.rows.length === 0) {
+      receiverResult = await client.query<{
+        user_id: string;
+        balance: string;
+        account_number: string;
+        created_at: Date;
+        updated_at: Date;
+      }>(
+        `SELECT user_id, balance, account_number, created_at, updated_at
+         FROM wallets
+         WHERE account_number = $1
+         FOR UPDATE`,
+        [toAccountNumber]
+      );
+    }
+
+    if (receiverResult.rows.length === 0) {
+      throw new Error("Receiver wallet not found");
+    }
+
+    if (receiverResult.rows[0].user_id === fromUserId) {
+      throw new Error("Cannot transfer to yourself");
+    }
+
+    const receiverBalance = parseFloat(receiverResult.rows[0].balance);
+
+    // Calculate new balances
+    const newSenderBalance = senderBalance - amount;
+    const newReceiverBalance = receiverBalance + amount;
+
+    // Update sender balance
+    await client.query(
+      `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE user_id = $2`,
+      [newSenderBalance, fromUserId]
+    );
+
+    // Update receiver balance
+    await client.query(
+      `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE user_id = $2`,
+      [newReceiverBalance, receiverResult.rows[0].user_id]
+    );
+
+    // Create outgoing transaction for sender
+    const outTxId = nanoid();
+    const outTxResult = await client.query<{
+      id: string;
+      wallet_user_id: string;
+      type: string;
+      amount: string;
+      balance_before: string;
+      balance_after: string;
+      related_user_id: string | null;
+      related_phone: string | null;
+      description: string | null;
+      created_at: Date;
+    }>(
+      `INSERT INTO wallet_transactions 
+       (id, wallet_user_id, type, amount, balance_before, balance_after, related_user_id, related_phone, description, created_at)
+       VALUES ($1, $2, 'transfer_out', $3, $4, $5, $6, $7, $8, NOW())
+       RETURNING *`,
+      [
+        outTxId,
+        fromUserId,
+        amount,
+        senderBalance,
+        newSenderBalance,
+        receiverResult.rows[0].user_id,
+        receiverResult.rows[0].account_number,
+        description || `Transfer to ${receiverResult.rows[0].account_number}`,
+      ]
+    );
+
+    // Create incoming transaction for receiver
+    const inTxId = nanoid();
+    const inTxResult = await client.query<{
+      id: string;
+      wallet_user_id: string;
+      type: string;
+      amount: string;
+      balance_before: string;
+      balance_after: string;
+      related_user_id: string | null;
+      related_phone: string | null;
+      description: string | null;
+      created_at: Date;
+    }>(
+      `INSERT INTO wallet_transactions 
+       (id, wallet_user_id, type, amount, balance_before, balance_after, related_user_id, related_phone, description, created_at)
+       VALUES ($1, $2, 'transfer_in', $3, $4, $5, $6, $7, $8, NOW())
+       RETURNING *`,
+      [
+        inTxId,
+        receiverResult.rows[0].user_id,
+        amount,
+        receiverBalance,
+        newReceiverBalance,
+        fromUserId,
+        senderResult.rows[0].account_number,
+        description || `Received from ${senderResult.rows[0].account_number}`,
+      ]
+    );
+
+    const outTx = outTxResult.rows[0];
+    const inTx = inTxResult.rows[0];
+
+    return {
+      fromWallet: {
+        userId: senderResult.rows[0].user_id,
+        balance: newSenderBalance,
+        accountNumber: senderResult.rows[0].account_number,
+        createdAt: senderResult.rows[0].created_at,
+        updatedAt: new Date(),
+      },
+      toWallet: {
+        userId: receiverResult.rows[0].user_id,
+        balance: newReceiverBalance,
+        accountNumber: receiverResult.rows[0].account_number,
+        createdAt: receiverResult.rows[0].created_at,
+        updatedAt: new Date(),
+      },
+      outTransaction: {
+        id: outTx.id,
+        walletUserId: outTx.wallet_user_id,
+        type: outTx.type as WalletTransactionType,
+        amount: parseFloat(outTx.amount),
+        balanceBefore: parseFloat(outTx.balance_before),
+        balanceAfter: parseFloat(outTx.balance_after),
+        relatedUserId: outTx.related_user_id,
+        relatedPhone: outTx.related_phone,
+        description: outTx.description,
+        createdAt: outTx.created_at,
+      },
+      inTransaction: {
+        id: inTx.id,
+        walletUserId: inTx.wallet_user_id,
+        type: inTx.type as WalletTransactionType,
+        amount: parseFloat(inTx.amount),
+        balanceBefore: parseFloat(inTx.balance_before),
+        balanceAfter: parseFloat(inTx.balance_after),
+        relatedUserId: inTx.related_user_id,
+        relatedPhone: inTx.related_phone,
+        description: inTx.description,
+        createdAt: inTx.created_at,
+      },
+    };
+  });
+}
+
+/**
+ * Get wallet transactions
+ */
+export async function getWalletTransactions(
+  userId: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<WalletTransaction[]> {
+  const result = await query<{
+    id: string;
+    wallet_user_id: string;
+    type: string;
+    amount: string;
+    balance_before: string;
+    balance_after: string;
+    related_user_id: string | null;
+    related_phone: string | null;
+    description: string | null;
+    created_at: Date;
+  }>(
+    `SELECT id, wallet_user_id, type, amount, balance_before, balance_after,
+            related_user_id, related_phone, description, created_at
+     FROM wallet_transactions
+     WHERE wallet_user_id = $1
+     ORDER BY created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [userId, limit, offset]
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    walletUserId: row.wallet_user_id,
+    type: row.type as WalletTransactionType,
+    amount: parseFloat(row.amount),
+    balanceBefore: parseFloat(row.balance_before),
+    balanceAfter: parseFloat(row.balance_after),
+    relatedUserId: row.related_user_id,
+    relatedPhone: row.related_phone,
+    description: row.description,
+    createdAt: row.created_at,
+  }));
+}
+
+/**
+ * Get user info by phone (for transfer validation)
+ */
+export async function getUserByPhone(phone: string): Promise<{ id: string; displayName: string; phone: string } | null> {
+  const variants = getPhoneVariants(phone);
+  
+  // Search for user with any of the phone variants
+  const result = await query<{
+    id: string;
+    display_name: string | null;
+    full_name: string;
+    phone: string;
+  }>(
+    `SELECT id, display_name, full_name, phone
+     FROM users
+     WHERE phone = ANY($1)`,
+    [variants]
+  );
+
+  if (result.rows.length === 0) return null;
+
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    displayName: row.display_name || row.full_name,
+    phone: row.phone,
+  };
+}
+
+// ============================================
+// Withdrawal Request Functions
+// ============================================
+
+export type WithdrawalRequestStatus = "pending" | "approved" | "rejected";
+
+export interface WithdrawalRequest {
+  id: string;
+  userId: string;
+  amount: number;
+  status: WithdrawalRequestStatus;
+  adminMessage: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  // Joined fields
+  userDisplayName?: string;
+  userPhone?: string;
+  userBalance?: number;
+}
+
+/**
+ * Create a withdrawal request
+ */
+export async function createWithdrawalRequest(
+  userId: string,
+  amount: number
+): Promise<WithdrawalRequest> {
+  if (amount <= 0) {
+    throw new Error("Amount must be positive");
+  }
+
+  // Check balance first
+  const wallet = await getUserWallet(userId);
+  if (!wallet) {
+    throw new Error("Wallet not found");
+  }
+
+  if (wallet.balance < amount) {
+    throw new Error("Insufficient balance");
+  }
+
+  const id = nanoid();
+  const result = await query<{
+    id: string;
+    user_id: string;
+    amount: string;
+    status: string;
+    admin_message: string | null;
+    created_at: Date;
+    updated_at: Date;
+  }>(
+    `INSERT INTO withdrawal_requests (id, user_id, amount, status, created_at, updated_at)
+     VALUES ($1, $2, $3, 'pending', NOW(), NOW())
+     RETURNING *`,
+    [id, userId, amount]
+  );
+
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    userId: row.user_id,
+    amount: parseFloat(row.amount),
+    status: row.status as WithdrawalRequestStatus,
+    adminMessage: row.admin_message,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Get user's withdrawal requests
+ */
+export async function getUserWithdrawalRequests(
+  userId: string,
+  limit: number = 50,
+  offset: number = 0
+): Promise<WithdrawalRequest[]> {
+  const result = await query<{
+    id: string;
+    user_id: string;
+    amount: string;
+    status: string;
+    admin_message: string | null;
+    created_at: Date;
+    updated_at: Date;
+  }>(
+    `SELECT * FROM withdrawal_requests
+     WHERE user_id = $1
+     ORDER BY created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [userId, limit, offset]
+  );
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    amount: parseFloat(row.amount),
+    status: row.status as WithdrawalRequestStatus,
+    adminMessage: row.admin_message,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
+
+/**
+ * Get all pending withdrawal requests (admin only)
+ */
+export async function getAllWithdrawalRequests(
+  status?: WithdrawalRequestStatus,
+  limit: number = 100,
+  offset: number = 0
+): Promise<WithdrawalRequest[]> {
+  let queryStr = `
+    SELECT wr.*, 
+           u.display_name, u.full_name, u.phone,
+           w.balance
+    FROM withdrawal_requests wr
+    JOIN users u ON wr.user_id = u.id
+    LEFT JOIN wallets w ON wr.user_id = w.user_id
+  `;
+  const params: (string | number)[] = [];
+  
+  if (status) {
+    queryStr += ` WHERE wr.status = $1`;
+    params.push(status);
+  }
+  
+  queryStr += ` ORDER BY wr.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+  params.push(limit, offset);
+
+  const result = await query<{
+    id: string;
+    user_id: string;
+    amount: string;
+    status: string;
+    admin_message: string | null;
+    created_at: Date;
+    updated_at: Date;
+    display_name: string | null;
+    full_name: string;
+    phone: string;
+    balance: string | null;
+  }>(queryStr, params);
+
+  return result.rows.map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    amount: parseFloat(row.amount),
+    status: row.status as WithdrawalRequestStatus,
+    adminMessage: row.admin_message,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    userDisplayName: row.display_name || row.full_name,
+    userPhone: row.phone,
+    userBalance: row.balance ? parseFloat(row.balance) : undefined,
+  }));
+}
+
+/**
+ * Approve a withdrawal request (admin only)
+ * This will deduct the amount from user's wallet
+ */
+export async function approveWithdrawalRequest(
+  requestId: string,
+  adminMessage?: string
+): Promise<{ request: WithdrawalRequest; transaction: WalletTransaction }> {
+  return transaction(async (client) => {
+    // Lock the request
+    const reqResult = await client.query<{
+      id: string;
+      user_id: string;
+      amount: string;
+      status: string;
+      admin_message: string | null;
+      created_at: Date;
+      updated_at: Date;
+    }>(
+      `SELECT * FROM withdrawal_requests WHERE id = $1 FOR UPDATE`,
+      [requestId]
+    );
+
+    if (reqResult.rows.length === 0) {
+      throw new Error("Request not found");
+    }
+
+    const req = reqResult.rows[0];
+    if (req.status !== "pending") {
+      throw new Error("Request already processed");
+    }
+
+    const amount = parseFloat(req.amount);
+
+    // Lock the wallet
+    const walletResult = await client.query<{
+      user_id: string;
+      balance: string;
+      account_number: string;
+      created_at: Date;
+      updated_at: Date;
+    }>(
+      `SELECT * FROM wallets WHERE user_id = $1 FOR UPDATE`,
+      [req.user_id]
+    );
+
+    if (walletResult.rows.length === 0) {
+      throw new Error("Wallet not found");
+    }
+
+    const currentBalance = parseFloat(walletResult.rows[0].balance);
+    if (currentBalance < amount) {
+      throw new Error("Insufficient balance");
+    }
+
+    const newBalance = currentBalance - amount;
+
+    // Update wallet balance
+    await client.query(
+      `UPDATE wallets SET balance = $1, updated_at = NOW() WHERE user_id = $2`,
+      [newBalance, req.user_id]
+    );
+
+    // Create transaction record
+    const txId = nanoid();
+    const txResult = await client.query<{
+      id: string;
+      wallet_user_id: string;
+      type: string;
+      amount: string;
+      balance_before: string;
+      balance_after: string;
+      related_user_id: string | null;
+      related_phone: string | null;
+      description: string | null;
+      created_at: Date;
+    }>(
+      `INSERT INTO wallet_transactions 
+       (id, wallet_user_id, type, amount, balance_before, balance_after, description, created_at)
+       VALUES ($1, $2, 'withdraw', $3, $4, $5, $6, NOW())
+       RETURNING *`,
+      [txId, req.user_id, amount, currentBalance, newBalance, adminMessage || "Wallet withdrawal"]
+    );
+
+    // Update request status
+    const updatedReq = await client.query<{
+      id: string;
+      user_id: string;
+      amount: string;
+      status: string;
+      admin_message: string | null;
+      created_at: Date;
+      updated_at: Date;
+    }>(
+      `UPDATE withdrawal_requests 
+       SET status = 'approved', admin_message = $2, updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [requestId, adminMessage]
+    );
+
+    const updatedRow = updatedReq.rows[0];
+    const txRow = txResult.rows[0];
+
+    return {
+      request: {
+        id: updatedRow.id,
+        userId: updatedRow.user_id,
+        amount: parseFloat(updatedRow.amount),
+        status: updatedRow.status as WithdrawalRequestStatus,
+        adminMessage: updatedRow.admin_message,
+        createdAt: updatedRow.created_at,
+        updatedAt: updatedRow.updated_at,
+      },
+      transaction: {
+        id: txRow.id,
+        walletUserId: txRow.wallet_user_id,
+        type: txRow.type as WalletTransactionType,
+        amount: parseFloat(txRow.amount),
+        balanceBefore: parseFloat(txRow.balance_before),
+        balanceAfter: parseFloat(txRow.balance_after),
+        relatedUserId: txRow.related_user_id,
+        relatedPhone: txRow.related_phone,
+        description: txRow.description,
+        createdAt: txRow.created_at,
+      },
+    };
+  });
+}
+
+/**
+ * Reject a withdrawal request (admin only)
+ */
+export async function rejectWithdrawalRequest(
+  requestId: string,
+  adminMessage?: string
+): Promise<WithdrawalRequest> {
+  const result = await query<{
+    id: string;
+    user_id: string;
+    amount: string;
+    status: string;
+    admin_message: string | null;
+    created_at: Date;
+    updated_at: Date;
+  }>(
+    `UPDATE withdrawal_requests 
+     SET status = 'rejected', admin_message = $2, updated_at = NOW()
+     WHERE id = $1 AND status = 'pending'
+     RETURNING *`,
+    [requestId, adminMessage]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Request not found or already processed");
+  }
+
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    userId: row.user_id,
+    amount: parseFloat(row.amount),
+    status: row.status as WithdrawalRequestStatus,
+    adminMessage: row.admin_message,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Normalize phone number - removes +, leading zeros, adds country code if needed
+ */
+function normalizePhoneNumber(phone: string): string {
+  // Remove all non-digit characters (including +)
+  let cleaned = phone.replace(/\D/g, "");
+  
+  // Remove leading zeros
+  cleaned = cleaned.replace(/^0+/, "");
+  
+  // If it starts with country code (like 968), keep it, otherwise assume it needs one
+  // For Oman, country code is 968
+  if (cleaned.length === 8) {
+    cleaned = "968" + cleaned;
+  }
+  
+  return cleaned;
+}
+
+/**
+ * Get all possible phone formats for lookup
+ */
+function getPhoneVariants(phone: string): string[] {
+  const normalized = normalizePhoneNumber(phone);
+  const variants = new Set<string>();
+  
+  // Add normalized version
+  variants.add(normalized);
+  
+  // Add with + prefix
+  variants.add("+" + normalized);
+  
+  // Add original
+  variants.add(phone);
+  
+  // If it starts with country code, also try without it
+  if (normalized.startsWith("968") && normalized.length === 11) {
+    variants.add(normalized.slice(3));
+  }
+  
+  return Array.from(variants);
+}
