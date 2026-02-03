@@ -32,15 +32,21 @@ const businessRequestSchema = z.object({
   businessName: z.string().trim().min(1).max(200),
   nameEn: z.string().trim().max(200).optional(),
   nameAr: z.string().trim().max(200).optional(),
+  descEn: z.string().trim().max(2000).optional(),
+  descAr: z.string().trim().max(2000).optional(),
   category: z.string().trim().max(100).optional(),
   categoryId: z.string().optional(),
   description: z.string().trim().max(2000).optional(),
   city: z.string().trim().max(100).optional(),
+  address: z.string().trim().max(500).optional(),
   phone: z.string().trim().max(50).optional(),
-  email: z.string().email().optional(),
-  website: z.string().url().optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  website: z.string().url().optional().or(z.literal("")),
   contactEmail: z.string().email().optional(),
   contactPhone: z.string().trim().max(50).optional(),
+  tags: z.string().trim().max(500).optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 });
 
 export type BusinessRequestInput = z.infer<typeof businessRequestSchema>;
@@ -80,14 +86,15 @@ export async function createBusinessRequest(input: BusinessRequestInput): Promis
 
   const result = await query(`
     INSERT INTO business_requests (
-      id, user_id, business_name, name_en, name_ar, category, category_id, description, 
-      city, phone, email, website, contact_email, contact_phone, status, created_at, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending', $15, $15)
+      id, user_id, business_name, name_en, name_ar, desc_en, desc_ar, category, category_id, description, 
+      city, address, phone, email, website, contact_email, contact_phone, tags, latitude, longitude, status, created_at, updated_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 'pending', $21, $21)
     RETURNING *
   `, [
     id, data.userId, data.businessName, data.nameEn || data.businessName, data.nameAr || data.businessName,
-    data.category, data.categoryId, data.description, data.city, data.phone, data.email, data.website,
-    data.contactEmail, data.contactPhone, now
+    data.descEn, data.descAr, data.category, data.categoryId, data.description, data.city, data.address,
+    data.phone, data.email || null, data.website || null, data.contactEmail, data.contactPhone, data.tags,
+    data.latitude, data.longitude, now
   ]);
 
   return rowToRequest(result.rows[0]);

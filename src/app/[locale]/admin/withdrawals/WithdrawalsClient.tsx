@@ -49,6 +49,7 @@ export function WithdrawalsClient({
     pending: isRTL ? "قيد الانتظار" : "Pending",
     approved: isRTL ? "موافق عليه" : "Approved",
     rejected: isRTL ? "مرفوض" : "Rejected",
+    cancelled: isRTL ? "ملغى" : "Cancelled",
     approve: isRTL ? "موافقة" : "Approve",
     reject: isRTL ? "رفض" : "Reject",
     noRequests: isRTL ? "لا توجد طلبات سحب" : "No withdrawal requests",
@@ -62,6 +63,9 @@ export function WithdrawalsClient({
     confirmReject: isRTL ? "هل أنت متأكد من رفض هذا الطلب؟" : "Are you sure you want to reject this request?",
     rejectReason: isRTL ? "سبب الرفض (اختياري)" : "Reason for rejection (optional)",
     yesReject: isRTL ? "نعم، رفض" : "Yes, Reject",
+    available: isRTL ? "متاح" : "Available",
+    optionalMessage: isRTL ? "رسالة اختيارية..." : "Optional message...",
+    reasonPlaceholder: isRTL ? "سبب الرفض..." : "Reason for rejection...",
   };
 
   const formatAmount = (amount: number) => {
@@ -237,7 +241,7 @@ export function WithdrawalsClient({
                       </div>
                       {req.userBalance !== undefined && (
                         <div>
-                          <span className="text-sm text-(--muted-foreground)">{isRTL ? "متاح:" : "Available:"} </span>
+                          <span className="text-sm text-(--muted-foreground)">{texts.available}: </span>
                           <span className={`font-medium ${req.userBalance < req.amount ? "text-red-500" : "text-green-600"}`}>
                             {formatAmount(req.userBalance)} {texts.currency}
                           </span>
@@ -265,16 +269,20 @@ export function WithdrawalsClient({
                   <div className="flex flex-col items-end gap-2">
                     {/* Status Badge */}
                     <div className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm font-medium ${
-                      req.status === "pending" ? "bg-yellow-500/10 text-yellow-600" :
                       req.status === "approved" ? "bg-green-500/10 text-green-600" :
-                      "bg-red-500/10 text-red-600"
+                      req.status === "rejected" ? "bg-red-500/10 text-red-600" :
+                      req.status === "cancelled" ? "bg-gray-500/10 text-gray-600" :
+                      "bg-yellow-500/10 text-yellow-600"
                     }`}>
-                      {req.status === "pending" && <HiOutlineClock className="h-4 w-4" />}
-                      {req.status === "approved" && <HiOutlineCheckCircle className="h-4 w-4" />}
-                      {req.status === "rejected" && <HiOutlineXCircle className="h-4 w-4" />}
-                      {req.status === "pending" && texts.pending}
-                      {req.status === "approved" && texts.approved}
-                      {req.status === "rejected" && texts.rejected}
+                      {req.status === "approved" ? (
+                        <><HiOutlineCheckCircle className="h-4 w-4" />{texts.approved}</>
+                      ) : req.status === "rejected" ? (
+                        <><HiOutlineXCircle className="h-4 w-4" />{texts.rejected}</>
+                      ) : req.status === "cancelled" ? (
+                        <><HiOutlineXCircle className="h-4 w-4" />{texts.cancelled}</>
+                      ) : (
+                        <><HiOutlineClock className="h-4 w-4" />{texts.pending}</>
+                      )}
                     </div>
 
                     {/* Action Buttons (only for pending) */}
@@ -309,7 +317,7 @@ export function WithdrawalsClient({
                       type="text"
                       value={messageInput[req.id] || ""}
                       onChange={(e) => setMessageInput(prev => ({ ...prev, [req.id]: e.target.value }))}
-                      placeholder={isRTL ? "رسالة اختيارية..." : "Optional message..."}
+                      placeholder={texts.optionalMessage}
                       className="w-full px-4 py-2 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-accent mb-3"
                       style={{ borderColor: "var(--surface-border)" }}
                     />
@@ -348,7 +356,7 @@ export function WithdrawalsClient({
                       type="text"
                       value={rejectMessage[req.id] || ""}
                       onChange={(e) => setRejectMessage(prev => ({ ...prev, [req.id]: e.target.value }))}
-                      placeholder={isRTL ? "سبب الرفض..." : "Reason for rejection..."}
+                      placeholder={texts.reasonPlaceholder}
                       className="w-full px-4 py-2 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-red-500 mb-3"
                       style={{ borderColor: "var(--surface-border)" }}
                     />

@@ -11,7 +11,8 @@ import { createBusinessDraftAction, type CreateBusinessDraftResult } from "@/app
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { CategorySelect } from "@/components/ui/CategorySelect";
+import { PhoneInput } from "@/components/ui/PhoneInput";
+import { CategorySelectField } from "@/components/CategorySelectField";
 import { UserSelect } from "@/components/ui/UserSelect";
 
 const OsmLocationPicker = dynamic(
@@ -33,7 +34,7 @@ function getUsernameFormatError(value: string, ar: boolean) {
   if (!USERNAME_REGEX.test(normalized)) {
     return ar
       ? "مسموح فقط أحرف إنجليزية وأرقام والشرطة (-) ولا يمكن أن تبدأ أو تنتهي بشرطة."
-      : "Use only English letters, digits, and hyphens. Hyphen can’t be first or last.";
+      : "Use only English letters, digits, and hyphens. Hyphen can't be first or last.";
   }
   return null;
 }
@@ -48,124 +49,6 @@ function slugifyEnglish(input: string) {
     .replace(/^-+|-+$/g, "");
 }
 
-function Field({
-  label,
-  name,
-  placeholder,
-  required,
-}: {
-  label: string;
-  name: string;
-  placeholder?: string;
-  required?: boolean;
-}) {
-  return (
-    <label className="group grid gap-2">
-      <span className="text-sm font-semibold text-foreground">
-        {label}
-        {required && <span className="text-red-500 ms-1">*</span>}
-      </span>
-      <Input name={name} placeholder={placeholder} required={required} />
-    </label>
-  );
-}
-
-function TextArea({
-  label,
-  name,
-  placeholder,
-  required,
-}: {
-  label: string;
-  name: string;
-  placeholder?: string;
-  required?: boolean;
-}) {
-  return (
-    <label className="group grid gap-2">
-      <span className="text-sm font-semibold text-foreground">
-        {label}
-        {required && <span className="text-red-500 ms-1">*</span>}
-      </span>
-      <Textarea name={name} placeholder={placeholder} required={required} />
-    </label>
-  );
-}
-
-function MediaUploadBox({
-  label,
-  description,
-  accept,
-  multiple,
-  onChange,
-  previewUrls,
-  onRemove,
-}: {
-  label: string;
-  description: string;
-  accept: string;
-  multiple?: boolean;
-  onChange: (files: FileList | null) => void;
-  previewUrls: string[];
-  onRemove: (url: string) => void;
-}) {
-  return (
-    <div className="grid gap-3">
-      <div>
-        <h4 className="text-sm font-semibold text-foreground">{label}</h4>
-        <p className="text-xs text-(--muted-foreground) mt-0.5">{description}</p>
-      </div>
-      
-      <label className="group relative cursor-pointer">
-        <input
-          type="file"
-          accept={accept}
-          multiple={multiple}
-          onChange={(e) => onChange(e.target.files)}
-          className="sr-only"
-        />
-        <div className="flex items-center justify-center h-32 rounded-xl border-2 border-dashed border-(--surface-border) bg-(--chip-bg) transition hover:border-accent hover:bg-(--surface)">
-          <div className="text-center">
-            <svg className="mx-auto h-8 w-8 text-(--muted-foreground)" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-            <p className="mt-2 text-xs text-(--muted-foreground)">
-              {multiple ? "Click to select files" : "Click to select file"}
-            </p>
-          </div>
-        </div>
-      </label>
-
-      {previewUrls.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {previewUrls.map((url) => (
-            <div key={url} className="relative group">
-              <div className="aspect-square rounded-lg overflow-hidden border border-(--surface-border) bg-(--surface)">
-                <Image
-                  src={url}
-                  alt="Preview"
-                  width={200}
-                  height={200}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => onRemove(url)}
-                className="absolute top-1 right-1 h-6 w-6 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition flex items-center justify-center"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function NewBusinessWizard({
   locale,
   emailLabel,
@@ -178,23 +61,40 @@ export function NewBusinessWizard({
   users: Array<{ id: string; email: string; fullName?: string; phone?: string; role: "admin" | "user" }>;
 }) {
   const ar = locale === "ar";
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedOwner, setSelectedOwner] = useState("");
-  const [avatarMode, setAvatarMode] = useState<"icon" | "logo">("icon");
+  
+  // Form data state
+  const [formData, setFormData] = useState({
+    username: "",
+    name_en: "",
+    name_ar: "",
+    desc_en: "",
+    desc_ar: "",
+    categoryId: "",
+    ownerId: "",
+    city: "",
+    phone: "",
+    address: "",
+    website: "",
+    email: "",
+    tags: "",
+  });
+  
+  // Username validation
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [usernameMessage, setUsernameMessage] = useState("");
+  const usernameCheckRef = useRef(0);
+  
+  // Slug
+  const [slugValue, setSlugValue] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
+  
+  // Checkboxes
   const [isApproved, setIsApproved] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [isSpecial, setIsSpecial] = useState(false);
   const [homepageFeatured, setHomepageFeatured] = useState(false);
   const [homepageTop, setHomepageTop] = useState(false);
-  const [usernameValue, setUsernameValue] = useState("");
-  const [nameEnValue, setNameEnValue] = useState("");
-  const [slugValue, setSlugValue] = useState("");
-  const [slugTouched, setSlugTouched] = useState(false);
-  const [usernameStatus, setUsernameStatus] = useState<
-    "idle" | "checking" | "available" | "taken" | "invalid"
-  >("idle");
-  const [usernameMessage, setUsernameMessage] = useState("");
-  const usernameCheckRef = useRef(0);
+  const [avatarMode, setAvatarMode] = useState<"icon" | "logo">("icon");
   
   // Media states
   const [coverPreview, setCoverPreview] = useState<string[]>([]);
@@ -212,14 +112,15 @@ export function NewBusinessWizard({
         ? "text-(--muted-foreground)"
         : "text-red-600";
 
+  // Username validation effect
   useEffect(() => {
-    if (!usernameValue) {
+    if (!formData.username) {
       setUsernameStatus("idle");
       setUsernameMessage("");
       return;
     }
 
-    const normalized = usernameValue.trim().toLowerCase();
+    const normalized = formData.username.trim().toLowerCase();
     const formatError = getUsernameFormatError(normalized, ar);
     if (formatError) {
       setUsernameStatus("invalid");
@@ -233,9 +134,7 @@ export function NewBusinessWizard({
     const requestId = ++usernameCheckRef.current;
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(
-          `/api/businesses/username/${encodeURIComponent(normalized)}`
-        );
+        const res = await fetch(`/api/businesses/username/${encodeURIComponent(normalized)}`);
         const data = await res.json();
         if (requestId !== usernameCheckRef.current) return;
 
@@ -260,13 +159,14 @@ export function NewBusinessWizard({
     }, 350);
 
     return () => clearTimeout(timer);
-  }, [usernameValue, ar]);
+  }, [formData.username, ar]);
 
+  // Auto slug generation
   useEffect(() => {
     if (slugTouched) return;
-    const next = slugifyEnglish(nameEnValue);
+    const next = slugifyEnglish(formData.name_en);
     setSlugValue(next);
-  }, [nameEnValue, slugTouched]);
+  }, [formData.name_en, slugTouched]);
 
   const handleFileSelect = (
     files: FileList | null,
@@ -295,6 +195,7 @@ export function NewBusinessWizard({
     null,
   );
 
+  // Success state
   if (state?.ok) {
     return (
       <div className="mt-8">
@@ -342,9 +243,33 @@ export function NewBusinessWizard({
   }
 
   return (
-    <div className="mt-8">
-      {state && !state.ok ? (
-        <div className="mb-6 sbc-card border-red-500/20 bg-red-500/5 p-4">
+    <form action={formAction} className="mt-6 space-y-6">
+      {/* Hidden inputs */}
+      <input type="hidden" name="categoryId" value={formData.categoryId} />
+      <input type="hidden" name="ownerId" value={formData.ownerId} />
+      <input type="hidden" name="avatarMode" value={avatarMode} />
+      <input type="hidden" name="username" value={formData.username} />
+      <input type="hidden" name="slug" value={slugValue} />
+      <input type="hidden" name="name_en" value={formData.name_en} />
+      <input type="hidden" name="name_ar" value={formData.name_ar} />
+      <input type="hidden" name="desc_en" value={formData.desc_en} />
+      <input type="hidden" name="desc_ar" value={formData.desc_ar} />
+      <input type="hidden" name="city" value={formData.city} />
+      <input type="hidden" name="phone" value={formData.phone} />
+      <input type="hidden" name="address" value={formData.address} />
+      <input type="hidden" name="website" value={formData.website} />
+      <input type="hidden" name="email" value={formData.email} />
+      <input type="hidden" name="tags" value={formData.tags} />
+      {location && (
+        <>
+          <input type="hidden" name="latitude" value={String(location.lat)} />
+          <input type="hidden" name="longitude" value={String(location.lng)} />
+        </>
+      )}
+
+      {/* Error display */}
+      {state && !state.ok && (
+        <div className="sbc-card border-red-500/20 bg-red-500/5 p-4">
           <div className="flex items-start gap-3">
             <svg className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -354,453 +279,604 @@ export function NewBusinessWizard({
             </div>
           </div>
         </div>
-      ) : null}
+      )}
 
-      <form action={formAction} className="grid gap-8">
-        {/* Hidden inputs for state-controlled values */}
-        <input type="hidden" name="categoryId" value={selectedCategory} />
-        <input type="hidden" name="ownerId" value={selectedOwner} />
-        <input type="hidden" name="avatarMode" value={avatarMode} />
-        
-        {/* Basic Info Section */}
-        <div className="sbc-card p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "المعلومات الأساسية" : "Basic Information"}
-          </h2>
-          <p className="text-sm text-(--muted-foreground) mb-6">
-            {ar ? "أدخل التفاصيل الأساسية للنشاط التجاري" : "Enter the core details of your business"}
-          </p>
-          
-          <div className="grid gap-6">
-            <div className="grid gap-6 sm:grid-cols-2 items-start">
-              <label className="group grid gap-2">
-                <span className="text-sm font-semibold text-foreground">
-                  {ar ? "اسم المستخدم" : "Username"}
-                </span>
-                <Input
-                  name="username"
-                  placeholder="username"
-                  value={usernameValue}
-                  onChange={(e) => setUsernameValue(e.target.value.toLowerCase())}
-                />
-                <span className={`min-h-4 text-xs ${usernameStatusClass}`}>
-                  {usernameMessage || " "}
-                </span>
-              </label>
-              <label className="group grid gap-2">
-                <span className="text-sm font-semibold text-foreground">
-                  {ar ? "التصنيف" : "Category"}
-                  <span className="text-red-500 ms-1">*</span>
-                </span>
-                <CategorySelect
-                  categories={categories}
-                  value={selectedCategory}
-                  onChange={setSelectedCategory}
-                  placeholder={ar ? "اختر تصنيفاً" : "Select a category"}
-                  searchPlaceholder={ar ? "ابحث..." : "Search..."}
-                  locale={locale}
-                  required
-                />
-              </label>
-            </div>
+      {/* Basic Information */}
+      <div className="sbc-card p-6 space-y-4">
+        <h3 className="text-lg font-semibold">
+          {ar ? "المعلومات الأساسية" : "Basic Information"}
+        </h3>
 
-            <div className="grid gap-6 sm:grid-cols-2">
-              <label className="group grid gap-2">
-                <span className="text-sm font-semibold text-foreground">
-                  {ar ? "الاسم (EN)" : "Name (EN)"}
-                  <span className="text-red-500 ms-1">*</span>
-                </span>
-                <Input
-                  name="name_en"
-                  required
-                  placeholder={ar ? "Coffee Paradise" : "Coffee Paradise"}
-                  value={nameEnValue}
-                  onChange={(e) => setNameEnValue(e.target.value)}
-                />
-              </label>
-              <Field 
-                label={ar ? "الاسم (AR)" : "Name (AR)"} 
-                name="name_ar" 
-                required 
-                placeholder={ar ? "جنة القهوة" : "جنة القهوة"}
-              />
-            </div>
-
-            {slugValue || nameEnValue ? (
-              <div className="grid gap-6">
-                <label className="group grid gap-2">
-                  <span className="text-sm font-semibold text-foreground">
-                    {ar ? "المسار (Slug)" : "Slug"}
-                    <span className="text-red-500 ms-1">*</span>
-                  </span>
-                  <Input
-                    name="slug"
-                    required
-                    placeholder="my-coffee-shop"
-                    value={slugValue}
-                    onChange={(e) => {
-                      setSlugTouched(true);
-                      setSlugValue(slugifyEnglish(e.target.value));
-                    }}
-                  />
-                </label>
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {/* Description Section */}
-        <div className="sbc-card p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "الوصف" : "Description"}
-          </h2>
-          <p className="text-sm text-(--muted-foreground) mb-6">
-            {ar ? "اكتب وصفاً جذاباً يوضح ما يميز نشاطك التجاري" : "Write a compelling description that highlights what makes your business unique"}
-          </p>
-          
-          <div className="grid gap-6 sm:grid-cols-2">
-            <TextArea 
-              label={ar ? "الوصف (EN)" : "Description (EN)"} 
-              name="desc_en" 
-              placeholder={ar ? "Describe your business..." : "Describe your business..."}
-            />
-            <TextArea 
-              label={ar ? "الوصف (AR)" : "Description (AR)"} 
-              name="desc_ar" 
-              placeholder={ar ? "اوصف نشاطك التجاري..." : "اوصف نشاطك التجاري..."}
-            />
-          </div>
-        </div>
-
-        {/* Contact & Location Section */}
-        <div className="sbc-card p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "معلومات الاتصال والموقع" : "Contact & Location"}
-          </h2>
-          <p className="text-sm text-(--muted-foreground) mb-6">
-            {ar ? "ساعد العملاء في العثور عليك والتواصل معك" : "Help customers find and reach you"}
-          </p>
-          
-          <div className="grid gap-6">
-            <div className="grid gap-6 sm:grid-cols-2">
-              <Field label={ar ? "المدينة" : "City"} name="city" placeholder="Muscat" />
-              <Field label={ar ? "الهاتف" : "Phone"} name="phone" placeholder="+968 9123 4567" />
-            </div>
-
-            <Field label={ar ? "العنوان" : "Address"} name="address" placeholder="Al Qurum Street, Building 123" />
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              <Field label={ar ? "الموقع الإلكتروني" : "Website"} name="website" placeholder="https://example.com" />
-              <Field label={emailLabel} name="email" placeholder="info@example.com" />
-            </div>
-
-            <label className="group grid gap-2">
-              <span className="text-sm font-semibold text-foreground">
-                {ar ? "صاحب النشاط التجاري" : "Business Owner"}
-              </span>
-              <UserSelect
-                users={users}
-                value={selectedOwner}
-                onChange={setSelectedOwner}
-                placeholder={ar ? "اختر صاحب النشاط" : "Select business owner"}
-                searchPlaceholder={ar ? "ابحث بالبريد الإلكتروني..." : "Search by email..."}
-                locale={locale}
-                allowEmpty
-                emptyLabel={ar ? "بدون صاحب (اختياري)" : "No owner (optional)"}
-              />
-              <p className="text-xs text-(--muted-foreground)">
-                {ar
-                  ? "اختياري: اربط هذا النشاط بمستخدم موجود."
-                  : "Optional: link this business to an existing user."}
-              </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "اسم المستخدم" : "Username"}
             </label>
+            <Input
+              value={formData.username}
+              onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
+              placeholder="username"
+            />
+            <span className={`block mt-1 min-h-4 text-xs ${usernameStatusClass}`}>
+              {usernameMessage || " "}
+            </span>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "التصنيف *" : "Category *"}
+            </label>
+            <CategorySelectField
+              categories={categories}
+              locale={locale}
+              value={formData.categoryId}
+              onChange={(value: string) => setFormData({ ...formData, categoryId: value })}
+              placeholder={ar ? "اختر تصنيفاً" : "Choose a category"}
+              searchPlaceholder={ar ? "ابحث عن تصنيف..." : "Search categories..."}
+              required
+            />
           </div>
         </div>
 
-        {/* Location Section */}
-        <div className="sbc-card p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-1">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "الاسم (EN) *" : "Name (EN) *"}
+            </label>
+            <Input
+              value={formData.name_en}
+              onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+              placeholder="Coffee Paradise"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "الاسم (AR) *" : "Name (AR) *"}
+            </label>
+            <Input
+              value={formData.name_ar}
+              onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+              placeholder="جنة القهوة"
+              required
+            />
+          </div>
+        </div>
+
+        {(slugValue || formData.name_en) && (
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "المسار (Slug) *" : "Slug *"}
+            </label>
+            <Input
+              value={slugValue}
+              onChange={(e) => {
+                setSlugTouched(true);
+                setSlugValue(slugifyEnglish(e.target.value));
+              }}
+              placeholder="my-coffee-shop"
+              required
+            />
+          </div>
+        )}
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "الوصف (EN)" : "Description (EN)"}
+            </label>
+            <Textarea
+              value={formData.desc_en}
+              onChange={(e) => setFormData({ ...formData, desc_en: e.target.value })}
+              placeholder={ar ? "Describe your business..." : "Describe your business..."}
+              rows={4}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "الوصف (AR)" : "Description (AR)"}
+            </label>
+            <Textarea
+              value={formData.desc_ar}
+              onChange={(e) => setFormData({ ...formData, desc_ar: e.target.value })}
+              placeholder={ar ? "اوصف نشاطك التجاري..." : "اوصف نشاطك التجاري..."}
+              rows={4}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Contact Information */}
+      <div className="sbc-card p-6 space-y-4">
+        <h3 className="text-lg font-semibold">
+          {ar ? "معلومات الاتصال" : "Contact Information"}
+        </h3>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "المدينة" : "City"}
+            </label>
+            <Input
+              value={formData.city}
+              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+              placeholder="Muscat"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "الهاتف" : "Phone"}
+            </label>
+            <PhoneInput
+              value={formData.phone}
+              onChange={(val) => setFormData({ ...formData, phone: val })}
+              placeholder="91234567"
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {emailLabel}
+            </label>
+            <Input
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="info@example.com"
+              type="email"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "الموقع الإلكتروني" : "Website"}
+            </label>
+            <Input
+              value={formData.website}
+              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+              placeholder="https://example.com"
+              type="url"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {ar ? "صاحب النشاط التجاري" : "Business Owner"}
+          </label>
+          <UserSelect
+            users={users}
+            value={formData.ownerId}
+            onChange={(val) => setFormData({ ...formData, ownerId: val })}
+            placeholder={ar ? "اختر صاحب النشاط" : "Select business owner"}
+            searchPlaceholder={ar ? "ابحث بالبريد الإلكتروني..." : "Search by email..."}
+            locale={locale}
+            allowEmpty
+            emptyLabel={ar ? "بدون صاحب (اختياري)" : "No owner (optional)"}
+          />
+          <p className="mt-1 text-xs text-(--muted-foreground)">
+            {ar
+              ? "اختياري: اربط هذا النشاط بمستخدم موجود."
+              : "Optional: link this business to an existing user."}
+          </p>
+        </div>
+      </div>
+
+      {/* Geographic Location */}
+      <div className="sbc-card p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold">
             {ar ? "الموقع الجغرافي" : "Geographic Location"}
-          </h2>
-          <p className="text-sm text-(--muted-foreground) mb-6">
+          </h3>
+          <p className="text-sm text-(--muted-foreground) mt-1">
             {ar ? "حدد الموقع الدقيق للنشاط على الخريطة" : "Mark the exact business location on the map"}
           </p>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                {ar ? "حدد موقعك على الخريطة" : "Select your location on the map"}
-              </label>
-              <p className="text-sm text-(--muted-foreground) mb-3">
-                {ar 
-                  ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك التجاري"
-                  : "Click on the map to mark your exact business location"}
-              </p>
-              <div className="rounded-lg overflow-hidden ">
-                <OsmLocationPicker
-                  value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
-                  onChange={(next) => {
-                    setLocation(next ? { lat: next.lat, lng: next.lng } : null);
-                  }}
-                  locale={locale}
-                  hideRadius
-                />
-              </div>
-              {location && (
-                <>
-                  <p className="mt-2 text-xs text-(--muted-foreground)">
-                    {ar ? "الموقع المحدد:" : "Selected location:"} {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
-                  </p>
-                  <input type="hidden" name="latitude" value={String(location.lat)} />
-                  <input type="hidden" name="longitude" value={String(location.lng)} />
-                </>
-              )}
-            </div>
-          </div>
         </div>
 
-        {/* Additional Info Section */}
-        <div className="sbc-card p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "معلومات إضافية" : "Additional Details"}
-          </h2>
-          <p className="text-sm text-(--muted-foreground) mb-6">
-            {ar ? "أضف وسوماً لمساعدة الزوار في العثور على نشاطك" : "Add tags to help visitors discover your business"}
-          </p>
-          
-          <Field
-            label={ar ? "الوسوم (مفصولة بفواصل)" : "Tags (comma-separated)"}
-            name="tags"
-            placeholder={ar ? "قهوة، واي فاي، إفطار" : "coffee, wifi, breakfast"}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {ar ? "العنوان" : "Address"}
+          </label>
+          <Textarea
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            placeholder={ar ? "العنوان التفصيلي" : "Detailed address"}
+            rows={2}
           />
         </div>
 
-        {/* Approval, Verification & Homepage */}
-        <div className="sbc-card p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "الاعتماد والتوثيق والظهور في الرئيسية" : "Approval, Verification & Homepage"}
-          </h2>
-          <p className="text-sm text-(--muted-foreground) mb-6">
-            {ar
-              ? "حدد اعتماد الظهور في القوائم، الشارة الزرقاء، والحالة الخاصة ومواضع الظهور في الصفحة الرئيسية."
-              : "Control listing approval, the blue check, special status, and homepage placements."}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {ar ? "حدد موقعك على الخريطة" : "Select your location on the map"}
+          </label>
+          <p className="text-sm text-(--muted-foreground) mb-3">
+            {ar 
+              ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك"
+              : "Click on the map to mark your exact business location"}
           </p>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
-              <input
-                type="checkbox"
-                name="isApproved"
-                checked={isApproved}
-                onChange={(e) => setIsApproved(e.target.checked)}
-                className="mt-1 h-4 w-4 accent-emerald-600"
-              />
-              <div>
-                <div className="text-sm font-semibold text-foreground">
-                  {ar ? "اعتماد الظهور في القوائم" : "Approved for listings"}
-                </div>
-                <div className="mt-1 text-xs text-(--muted-foreground)">
-                  {ar
-                    ? "السماح بظهور النشاط في قوائم الأنشطة وصفحات الاستكشاف."
-                    : "Allow this business to appear in public listings and discovery pages."}
-                </div>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
-              <input
-                type="checkbox"
-                name="isVerified"
-                checked={isVerified}
-                onChange={(e) => setIsVerified(e.target.checked)}
-                className="mt-1 h-4 w-4 accent-blue-600"
-              />
-              <div>
-                <div className="text-sm font-semibold text-foreground">
-                  {ar ? "تفعيل التوثيق (تِك أزرق)" : "Verified (blue check)"}
-                </div>
-                <div className="mt-1 text-xs text-(--muted-foreground)">
-                  {ar ? "يظهر بجانب اسم النشاط في القوائم والصفحة." : "Shown next to the business name across the app."}
-                </div>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
-              <input
-                type="checkbox"
-                name="isSpecial"
-                checked={isSpecial}
-                onChange={(e) => setIsSpecial(e.target.checked)}
-                className="mt-1 h-4 w-4 accent-amber-500"
-              />
-              <div>
-                <div className="text-sm font-semibold text-foreground">
-                  {ar ? "حساب خاص / مميّز" : "Special / VIP"}
-                </div>
-                <div className="mt-1 text-xs text-(--muted-foreground)">
-                  {ar ? "تمييز إضافي لعرضه كبزنس خاص." : "Highlights the business as a special listing."}
-                </div>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
-              <input
-                type="checkbox"
-                name="homepageFeatured"
-                checked={homepageFeatured}
-                onChange={(e) => setHomepageFeatured(e.target.checked)}
-                className="mt-1 h-4 w-4 accent-emerald-500"
-              />
-              <div>
-                <div className="text-sm font-semibold text-foreground">
-                  {ar ? "عرض في قائمة الـ 12 الرئيسية" : "Show in homepage 12"}
-                </div>
-                <div className="mt-1 text-xs text-(--muted-foreground)">
-                  {ar
-                    ? "إضافة هذا النشاط إلى قائمة الـ 12 في الصفحة الرئيسية."
-                    : "Pins this business in the homepage 12 list."}
-                </div>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
-              <input
-                type="checkbox"
-                name="homepageTop"
-                checked={homepageTop}
-                onChange={(e) => {
-                  const next = e.target.checked;
-                  setHomepageTop(next);
-                  if (next) setHomepageFeatured(true);
-                }}
-                className="mt-1 h-4 w-4 accent-emerald-500"
-              />
-              <div>
-                <div className="text-sm font-semibold text-foreground">
-                  {ar ? "ضمن أفضل 3 في الرئيسية" : "Top 3 on homepage"}
-                </div>
-                <div className="mt-1 text-xs text-(--muted-foreground)">
-                  {ar
-                    ? "يظهر ضمن أول 3 أنشطة في الصفحة الرئيسية."
-                    : "Show in the top 3 slot on the homepage."}
-                </div>
-              </div>
-            </label>
+          <div className="rounded-lg overflow-hidden">
+            <OsmLocationPicker
+              value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
+              onChange={(next) => {
+                setLocation(next ? { lat: next.lat, lng: next.lng } : null);
+              }}
+              locale={locale}
+              hideRadius
+            />
           </div>
-        </div>
-
-        {/* Media Upload Section */}
-        <div className="sbc-card p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "الصور والوسائط" : "Images & Media"}
-          </h2>
-          <p className="text-sm text-(--muted-foreground) mb-6">
-            {ar ? "ارفع صور نشاطك التجاري لجعله أكثر جاذبية" : "Upload images to make your business more appealing"}
-          </p>
-
-          <div className="mb-6 rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4">
-            <div className="text-sm font-semibold text-foreground">
-              {ar ? "صورة الملف / الأيقونة" : "Profile image / icon"}
-            </div>
-            <p className="mt-1 text-xs text-(--muted-foreground)">
-              {ar
-                ? "الافتراضي: أيقونة التصنيف. يمكنك اختيار استخدام الشعار إن قمت برفعه."
-                : "Default: category icon. You can choose to use the logo if you upload one."}
+          {location && (
+            <p className="mt-2 text-xs text-(--muted-foreground)">
+              {ar ? "الموقع المحدد:" : "Selected location:"} {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
             </p>
+          )}
+        </div>
+      </div>
 
-            <div className="mt-3 flex flex-wrap gap-3">
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="__avatarMode"
-                  checked={avatarMode === "icon"}
-                  onChange={() => setAvatarMode("icon")}
-                />
-                {ar ? "استخدم أيقونة التصنيف" : "Use category icon"}
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="__avatarMode"
-                  checked={avatarMode === "logo"}
-                  onChange={() => setAvatarMode("logo")}
-                  disabled={logoPreview.length === 0}
-                />
-                {ar ? "استخدم الشعار (صورة)" : "Use logo (image)"}
-              </label>
+      {/* Additional Details */}
+      <div className="sbc-card p-6 space-y-4">
+        <h3 className="text-lg font-semibold">
+          {ar ? "معلومات إضافية" : "Additional Details"}
+        </h3>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {ar ? "الوسوم (مفصولة بفواصل)" : "Tags (comma-separated)"}
+          </label>
+          <Input
+            value={formData.tags}
+            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+            placeholder={ar ? "قهوة، واي فاي، إفطار" : "coffee, wifi, breakfast"}
+          />
+        </div>
+      </div>
+
+      {/* Approval, Verification & Homepage */}
+      <div className="sbc-card p-6 space-y-4">
+        <div>
+          <h3 className="text-lg font-semibold">
+            {ar ? "الاعتماد والتوثيق والظهور" : "Approval, Verification & Homepage"}
+          </h3>
+          <p className="text-sm text-(--muted-foreground) mt-1">
+            {ar
+              ? "حدد اعتماد الظهور في القوائم، الشارة الزرقاء، والحالة الخاصة."
+              : "Control listing approval, the blue check, and special status."}
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+            <input
+              type="checkbox"
+              name="isApproved"
+              checked={isApproved}
+              onChange={(e) => setIsApproved(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-emerald-600"
+            />
+            <div>
+              <div className="text-sm font-semibold text-foreground">
+                {ar ? "اعتماد الظهور في القوائم" : "Approved for listings"}
+              </div>
+              <div className="mt-1 text-xs text-(--muted-foreground)">
+                {ar
+                  ? "السماح بظهور النشاط في قوائم الأنشطة."
+                  : "Allow this business to appear in public listings."}
+              </div>
             </div>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+            <input
+              type="checkbox"
+              name="isVerified"
+              checked={isVerified}
+              onChange={(e) => setIsVerified(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-blue-600"
+            />
+            <div>
+              <div className="text-sm font-semibold text-foreground">
+                {ar ? "تفعيل التوثيق (تِك أزرق)" : "Verified (blue check)"}
+              </div>
+              <div className="mt-1 text-xs text-(--muted-foreground)">
+                {ar ? "يظهر بجانب اسم النشاط." : "Shown next to the business name."}
+              </div>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+            <input
+              type="checkbox"
+              name="isSpecial"
+              checked={isSpecial}
+              onChange={(e) => setIsSpecial(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-amber-500"
+            />
+            <div>
+              <div className="text-sm font-semibold text-foreground">
+                {ar ? "حساب خاص / مميّز" : "Special / VIP"}
+              </div>
+              <div className="mt-1 text-xs text-(--muted-foreground)">
+                {ar ? "تمييز إضافي لعرضه كبزنس خاص." : "Highlights the business as special."}
+              </div>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+            <input
+              type="checkbox"
+              name="homepageFeatured"
+              checked={homepageFeatured}
+              onChange={(e) => setHomepageFeatured(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-emerald-500"
+            />
+            <div>
+              <div className="text-sm font-semibold text-foreground">
+                {ar ? "عرض في قائمة الـ 12 الرئيسية" : "Show in homepage 12"}
+              </div>
+              <div className="mt-1 text-xs text-(--muted-foreground)">
+                {ar
+                  ? "إضافة هذا النشاط إلى قائمة الـ 12 في الصفحة الرئيسية."
+                  : "Pins this business in the homepage 12 list."}
+              </div>
+            </div>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+            <input
+              type="checkbox"
+              name="homepageTop"
+              checked={homepageTop}
+              onChange={(e) => {
+                const next = e.target.checked;
+                setHomepageTop(next);
+                if (next) setHomepageFeatured(true);
+              }}
+              className="mt-1 h-4 w-4 accent-emerald-500"
+            />
+            <div>
+              <div className="text-sm font-semibold text-foreground">
+                {ar ? "ضمن أفضل 3 في الرئيسية" : "Top 3 on homepage"}
+              </div>
+              <div className="mt-1 text-xs text-(--muted-foreground)">
+                {ar
+                  ? "يظهر ضمن أول 3 أنشطة في الصفحة الرئيسية."
+                  : "Show in the top 3 slot on the homepage."}
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      {/* Images & Media */}
+      <div className="sbc-card p-6 space-y-6">
+        <h3 className="text-lg font-semibold">
+          {ar ? "الصور والوسائط" : "Images & Media"}
+        </h3>
+
+        {/* Avatar Mode */}
+        <div className="rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4">
+          <div className="text-sm font-semibold text-foreground">
+            {ar ? "صورة الملف / الأيقونة" : "Profile image / icon"}
           </div>
-          
-          <div className="grid gap-6">
-            <MediaUploadBox
-              label={ar ? "الصورة الرئيسية" : "Cover Image"}
-              description={ar ? "الصورة الأساسية التي تمثل نشاطك" : "Main image representing your business"}
-              accept="image/*"
-              onChange={(files) => handleFileSelect(files, setCoverPreview, false)}
-              previewUrls={coverPreview}
-              onRemove={(url) => handleRemovePreview(url, setCoverPreview)}
-            />
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              <MediaUploadBox
-                label={ar ? "الشعار" : "Logo"}
-                description={ar ? "شعار نشاطك التجاري" : "Your business logo"}
-                accept="image/*"
-                onChange={(files) => handleFileSelect(files, setLogoPreview, false)}
-                previewUrls={logoPreview}
-                onRemove={(url) => handleRemovePreview(url, setLogoPreview)}
+          <p className="mt-1 text-xs text-(--muted-foreground)">
+            {ar
+              ? "الافتراضي: أيقونة التصنيف. يمكنك اختيار استخدام الشعار إن قمت برفعه."
+              : "Default: category icon. You can choose to use the logo if you upload one."}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="__avatarMode"
+                checked={avatarMode === "icon"}
+                onChange={() => setAvatarMode("icon")}
               />
-
-              <MediaUploadBox
-                label={ar ? "البنر" : "Banner"}
-                description={ar ? "صورة البنر العريضة" : "Wide banner image"}
-                accept="image/*"
-                onChange={(files) => handleFileSelect(files, setBannerPreview, false)}
-                previewUrls={bannerPreview}
-                onRemove={(url) => handleRemovePreview(url, setBannerPreview)}
+              {ar ? "استخدم أيقونة التصنيف" : "Use category icon"}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                name="__avatarMode"
+                checked={avatarMode === "logo"}
+                onChange={() => setAvatarMode("logo")}
+                disabled={logoPreview.length === 0}
               />
-            </div>
-
-            <MediaUploadBox
-              label={ar ? "معرض الصور" : "Gallery"}
-              description={ar ? "صور إضافية لنشاطك (يمكنك اختيار عدة صور)" : "Additional images (you can select multiple)"}
-              accept="image/*"
-              multiple
-              onChange={(files) => handleFileSelect(files, setGalleryPreview, true)}
-              previewUrls={galleryPreview}
-              onRemove={(url) => handleRemovePreview(url, setGalleryPreview)}
-            />
+              {ar ? "استخدم الشعار (صورة)" : "Use logo (image)"}
+            </label>
           </div>
         </div>
 
-        {/* Submit Button */}
-        <div className="flex items-center justify-end gap-3 border-t border-(--surface-border) pt-6">
-          <Link
-            href={`/${locale}/admin`}
-            className={buttonVariants({ variant: "ghost" })}
-          >
-            {ar ? "إلغاء" : "Cancel"}
-          </Link>
-          <Button type="submit" disabled={pending} className="min-w-45">
-            {pending ? (
-              <>
-                <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                {ar ? "جارٍ الحفظ..." : "Saving..."}
-              </>
-            ) : (
-              <>
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                {ar ? "حفظ ونشر" : "Save & Publish"}
-              </>
+        {/* Cover Image */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {ar ? "صورة الغلاف" : "Cover Image"}
+          </label>
+          <p className="text-sm text-(--muted-foreground) mb-3">
+            {ar ? "صورة عريضة للخلفية (مقترح: 1200×400)" : "Wide background image (suggested: 1200×400)"}
+          </p>
+          <div className="space-y-3">
+            {coverPreview.length > 0 && (
+              <div className="relative rounded-lg overflow-hidden">
+                <Image
+                  src={coverPreview[0]}
+                  alt="Cover preview"
+                  width={1200}
+                  height={400}
+                  className="w-full h-48 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemovePreview(coverPreview[0], setCoverPreview)}
+                  className="absolute top-2 end-2 p-2 rounded-full bg-red-500 text-white hover:bg-red-600"
+                >
+                  ×
+                </button>
+              </div>
             )}
-          </Button>
+            {coverPreview.length === 0 && (
+              <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+                <span className="text-sm text-(--muted-foreground)">
+                  {ar ? "اختر صورة الغلاف" : "Choose cover image"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files, setCoverPreview, false)}
+                />
+              </label>
+            )}
+          </div>
         </div>
-      </form>
-    </div>
+
+        {/* Logo */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {ar ? "الشعار" : "Logo"}
+          </label>
+          <p className="text-sm text-(--muted-foreground) mb-3">
+            {ar ? "شعار مربع للعلامة التجارية (مقترح: 400×400)" : "Square brand logo (suggested: 400×400)"}
+          </p>
+          <div className="space-y-3">
+            {logoPreview.length > 0 && (
+              <div className="relative inline-block">
+                <Image
+                  src={logoPreview[0]}
+                  alt="Logo preview"
+                  width={200}
+                  height={200}
+                  className="w-32 h-32 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemovePreview(logoPreview[0], setLogoPreview)}
+                  className="absolute -top-2 -end-2 p-1.5 rounded-full bg-red-500 text-white hover:bg-red-600"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            {logoPreview.length === 0 && (
+              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+                <span className="text-xs text-(--muted-foreground) text-center px-2">
+                  {ar ? "اختر شعار" : "Choose logo"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files, setLogoPreview, false)}
+                />
+              </label>
+            )}
+          </div>
+        </div>
+
+        {/* Banner */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {ar ? "صورة البانر" : "Banner Image"}
+          </label>
+          <p className="text-sm text-(--muted-foreground) mb-3">
+            {ar ? "صورة ترويجية (مقترح: 1200×600)" : "Promotional image (suggested: 1200×600)"}
+          </p>
+          <div className="space-y-3">
+            {bannerPreview.length > 0 && (
+              <div className="relative rounded-lg overflow-hidden">
+                <Image
+                  src={bannerPreview[0]}
+                  alt="Banner preview"
+                  width={1200}
+                  height={600}
+                  className="w-full h-64 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemovePreview(bannerPreview[0], setBannerPreview)}
+                  className="absolute top-2 end-2 p-2 rounded-full bg-red-500 text-white hover:bg-red-600"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            {bannerPreview.length === 0 && (
+              <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+                <span className="text-sm text-(--muted-foreground)">
+                  {ar ? "اختر صورة البانر" : "Choose banner image"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => handleFileSelect(e.target.files, setBannerPreview, false)}
+                />
+              </label>
+            )}
+          </div>
+        </div>
+
+        {/* Gallery */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {ar ? "معرض الصور" : "Image Gallery"}
+          </label>
+          <p className="text-sm text-(--muted-foreground) mb-3">
+            {ar ? "صور إضافية للنشاط (يمكن اختيار عدة صور)" : "Additional business images (multiple selection allowed)"}
+          </p>
+          <div className="space-y-3">
+            {galleryPreview.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {galleryPreview.map((url, index) => (
+                  <div key={index} className="relative rounded-lg overflow-hidden">
+                    <Image
+                      src={url}
+                      alt={`Gallery ${index + 1}`}
+                      width={300}
+                      height={300}
+                      className="w-full h-32 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePreview(url, setGalleryPreview)}
+                      className="absolute top-1 end-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 text-sm"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+              <span className="text-sm text-(--muted-foreground)">
+                {ar ? "اختر صور المعرض" : "Choose gallery images"}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => handleFileSelect(e.target.files, setGalleryPreview, true)}
+              />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Submit */}
+      <div className="flex justify-end gap-3">
+        <Link
+          href={`/${locale}/admin`}
+          className={buttonVariants({ variant: "ghost" })}
+        >
+          {ar ? "إلغاء" : "Cancel"}
+        </Link>
+        <Button type="submit" disabled={pending} variant="primary">
+          {pending ? (ar ? "جاري الحفظ..." : "Saving...") : (ar ? "حفظ ونشر" : "Save & Publish")}
+        </Button>
+      </div>
+    </form>
   );
 }

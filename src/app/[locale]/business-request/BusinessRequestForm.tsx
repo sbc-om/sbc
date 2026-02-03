@@ -37,14 +37,17 @@ export function BusinessRequestForm({
   const [galleryPreview, setGalleryPreview] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
+    name_en: "",
+    name_ar: "",
+    desc_en: "",
+    desc_ar: "",
     categoryId: "",
     city: "",
     address: "",
     phone: "",
     email: "",
     website: "",
+    tags: "",
   });
 
   const handleFileSelect = (
@@ -72,7 +75,7 @@ export function BusinessRequestForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.categoryId) {
+    if (!formData.name_en || !formData.name_ar || !formData.categoryId) {
       alert(ar ? "الرجاء ملء الحقول المطلوبة" : "Please fill required fields");
       return;
     }
@@ -108,33 +111,36 @@ export function BusinessRequestForm({
 
   return (
     <form onSubmit={handleSubmit} className="mt-6 space-y-6">
+      {/* Basic Information */}
       <div className="sbc-card p-6 space-y-4">
         <h3 className="text-lg font-semibold">
           {ar ? "المعلومات الأساسية" : "Basic Information"}
         </h3>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {ar ? "اسم النشاط *" : "Business Name *"}
-          </label>
-          <Input
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            placeholder={ar ? "اسم النشاط التجاري" : "Your business name"}
-            required
-          />
-        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "الاسم (EN) *" : "Name (EN) *"}
+            </label>
+            <Input
+              value={formData.name_en}
+              onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+              placeholder="Coffee Paradise"
+              required
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {ar ? "الوصف" : "Description"}
-          </label>
-          <Textarea
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            placeholder={ar ? "وصف تفصيلي عن نشاطك التجاري" : "Detailed description of your business"}
-            rows={5}
-          />
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "الاسم (AR) *" : "Name (AR) *"}
+            </label>
+            <Input
+              value={formData.name_ar}
+              onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+              placeholder="جنة القهوة"
+              required
+            />
+          </div>
         </div>
 
         <div>
@@ -151,8 +157,35 @@ export function BusinessRequestForm({
             required
           />
         </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "الوصف (EN)" : "Description (EN)"}
+            </label>
+            <Textarea
+              value={formData.desc_en}
+              onChange={(e) => setFormData({ ...formData, desc_en: e.target.value })}
+              placeholder={ar ? "Describe your business..." : "Describe your business..."}
+              rows={4}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              {ar ? "الوصف (AR)" : "Description (AR)"}
+            </label>
+            <Textarea
+              value={formData.desc_ar}
+              onChange={(e) => setFormData({ ...formData, desc_ar: e.target.value })}
+              placeholder={ar ? "اوصف نشاطك التجاري..." : "اوصف نشاطك التجاري..."}
+              rows={4}
+            />
+          </div>
+        </div>
       </div>
 
+      {/* Contact Information */}
       <div className="sbc-card p-6 space-y-4">
         <h3 className="text-lg font-semibold">
           {ar ? "معلومات الاتصال" : "Contact Information"}
@@ -209,6 +242,7 @@ export function BusinessRequestForm({
         </div>
       </div>
 
+      {/* Geographic Location */}
       <div className="sbc-card p-6 space-y-4">
         <div>
           <h3 className="text-lg font-semibold">
@@ -240,7 +274,7 @@ export function BusinessRequestForm({
               ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك"
               : "Click on the map to mark your exact business location"}
           </p>
-          <div className="rounded-lg overflow-hidden ">
+          <div className="rounded-lg overflow-hidden">
             <OsmLocationPicker
               value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
               onChange={(next) => {
@@ -258,6 +292,25 @@ export function BusinessRequestForm({
         </div>
       </div>
 
+      {/* Additional Details */}
+      <div className="sbc-card p-6 space-y-4">
+        <h3 className="text-lg font-semibold">
+          {ar ? "معلومات إضافية" : "Additional Details"}
+        </h3>
+
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            {ar ? "الوسوم (مفصولة بفواصل)" : "Tags (comma-separated)"}
+          </label>
+          <Input
+            value={formData.tags}
+            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+            placeholder={ar ? "قهوة، واي فاي، إفطار" : "coffee, wifi, breakfast"}
+          />
+        </div>
+      </div>
+
+      {/* Images & Media */}
       <div className="sbc-card p-6 space-y-6">
         <h3 className="text-lg font-semibold">
           {ar ? "الصور والوسائط" : "Images & Media"}
