@@ -103,5 +103,10 @@ export const en = {
     receiverNotFound: "User not found",
     currency: "OMR",
     manageWallet: "Manage your wallet",
+    withdrawalRequests: "Withdrawal Requests",
+    noRequests: "No withdrawal requests yet",
+    pending: "Pending",
+    approved: "Approved",
+    rejected: "Rejected",
   },
 } as const;

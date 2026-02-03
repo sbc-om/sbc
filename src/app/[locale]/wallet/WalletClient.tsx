@@ -411,13 +411,15 @@ export function WalletClient({
 
         {/* Transactions Tab */}
         {activeTab === "transactions" && (
-          transactions.length === 0 ? (
-            <div className="text-center py-8 text-(--muted-foreground)">
-              {walletDict.noTransactions}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {transactions.map((tx) => (
+          <>
+            <h3 className="text-lg font-semibold mb-4">{walletDict.transactions}</h3>
+            {transactions.length === 0 ? (
+              <div className="text-center py-8 text-(--muted-foreground)">
+                {walletDict.noTransactions}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {transactions.map((tx) => (
                 <div
                   key={tx.id}
                   className="flex items-center gap-3 p-3 rounded-xl bg-(--surface) hover:bg-(--surface-hover) transition-colors"
@@ -437,18 +439,21 @@ export function WalletClient({
                 </div>
               ))}
             </div>
-          )
+            )}
+          </>
         )}
 
         {/* Withdrawal Requests Tab */}
         {activeTab === "requests" && (
-          withdrawalRequests.length === 0 ? (
-            <div className="text-center py-8 text-(--muted-foreground)">
-              {walletDict.noRequests}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {withdrawalRequests.map((req) => (
+          <>
+            <h3 className="text-lg font-semibold mb-4">{walletDict.withdrawalRequests}</h3>
+            {withdrawalRequests.length === 0 ? (
+              <div className="text-center py-8 text-(--muted-foreground)">
+                {walletDict.noRequests}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {withdrawalRequests.map((req) => (
                 <div
                   key={req.id}
                   className="flex items-center gap-3 p-3 rounded-xl bg-(--surface) hover:bg-(--surface-hover) transition-colors"
@@ -483,7 +488,8 @@ export function WalletClient({
                 </div>
               ))}
             </div>
-          )
+            )}
+          </>
         )}
       </div>
 

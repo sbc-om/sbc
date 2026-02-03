@@ -103,5 +103,10 @@ export const ar = {
     receiverNotFound: "المستخدم غير موجود",
     currency: "ر.ع",
     manageWallet: "إدارة محفظتك",
+    withdrawalRequests: "طلبات السحب",
+    noRequests: "لا توجد طلبات سحب بعد",
+    pending: "قيد الانتظار",
+    approved: "تمت الموافقة",
+    rejected: "مرفوض",
   },
 } as const;
