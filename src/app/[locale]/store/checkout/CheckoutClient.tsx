@@ -1,9 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import React from "react";
-import { HiCreditCard, HiArrowRight, HiCheckCircle, HiXCircle, HiTrash } from "react-icons/hi";
+import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useRef } from "react";
+import { 
+  HiCheckCircle, 
+  HiXCircle, 
+  HiTrash, 
+  HiExclamationCircle,
+  HiRefresh
+} from "react-icons/hi";
+import { RiWallet3Fill } from "react-icons/ri";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { StoreProduct } from "@/lib/store/types";
@@ -23,6 +30,22 @@ function cartTotalOMR(locale: Locale, slugs: string[], products: StoreProduct[])
   return formatStorePrice({ amount: total, currency: "OMR" }, locale);
 }
 
+function cartTotalAmount(slugs: string[], products: StoreProduct[]) {
+  let total = 0;
+  for (const slug of slugs) {
+    const p = products.find((x) => x.slug === slug);
+    if (!p) continue;
+    total += p.price.amount;
+  }
+  return total;
+}
+
+interface WalletInfo {
+  balance: number;
+  availableBalance: number;
+  pendingWithdrawals: number;
+}
+
 export function CheckoutClient({
   locale,
   products,
@@ -32,110 +55,159 @@ export function CheckoutClient({
 }) {
   const router = useRouter();
   const { state, clear, remove } = useCart();
-  const searchParams = useSearchParams();
-  const payment = searchParams.get("payment");
+  
+  const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
+  const [loadingWallet, setLoadingWallet] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const processingRef = useRef(false); // Prevent double submission
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<{
+    orderId: string;
+    orderNumber: string;
+    newBalance: number;
+  } | null>(null);
 
   const rtl = localeDir(locale) === "rtl";
   const ar = locale === "ar";
 
   const slugs = state.items.map((it) => it.slug);
-  const total = cartTotalOMR(locale, slugs, products);
+  const totalFormatted = cartTotalOMR(locale, slugs, products);
+  const totalAmount = cartTotalAmount(slugs, products);
 
   const copy = {
     cartEmpty: ar ? "سلتك فارغة." : "Your cart is empty.",
     backToStore: ar ? "العودة للمتجر" : "Back to store",
-    pay: ar ? "الدفع عبر البوابة" : "Pay with gateway",
-    redirecting: ar ? "جارٍ تحويلك…" : "Redirecting…",
-    success: ar ? "تم الدفع بنجاح (بوابة افتراضية)." : "Payment successful (fake gateway).",
-    cancel: ar ? "تم إلغاء الدفع." : "Payment canceled.",
+    payWithWallet: ar ? "الدفع من المحفظة" : "Pay with Wallet",
+    processing: ar ? "جارٍ المعالجة..." : "Processing...",
+    success: ar ? "تم الدفع بنجاح!" : "Payment successful!",
+    orderNumber: ar ? "رقم الطلب" : "Order number",
+    newBalance: ar ? "الرصيد الجديد" : "New balance",
     totalLabel: ar ? "الإجمالي" : "Total",
-    removeHint: ar ? "يمكنك إزالة العناصر من السلة." : "You can remove items from the cart.",
+    walletBalance: ar ? "رصيد المحفظة" : "Wallet Balance",
+    availableBalance: ar ? "الرصيد المتاح" : "Available Balance",
+    insufficientBalance: ar ? "رصيد غير كافٍ" : "Insufficient balance",
     clear: ar ? "مسح السلة" : "Clear cart",
+    goDashboard: ar ? "لوحة التحكم" : "Go to dashboard",
+    goStore: ar ? "متابعة التسوق" : "Continue shopping",
+    chargeWallet: ar ? "شحن المحفظة" : "Top up wallet",
+    loadingWallet: ar ? "جارٍ التحميل..." : "Loading wallet...",
+    errorOccurred: ar ? "حدث خطأ" : "An error occurred",
+    tryAgain: ar ? "حاول مرة أخرى" : "Try again",
+    activatedNote: ar 
+      ? "تم تفعيل حزمك الآن. يمكنك استخدامها من لوحة التحكم." 
+      : "Your packages are now active. You can use them from the dashboard.",
+    securePayment: ar ? "دفع آمن عبر المحفظة" : "Secure wallet payment",
+    items: ar ? "المشتريات" : "Items",
+    view: ar ? "عرض" : "View",
+    remove: ar ? "حذف" : "Remove",
+    failedLoadWallet: ar ? "تعذر تحميل المحفظة" : "Failed to load wallet",
+    pending: ar ? "قيد السحب:" : "Pending:",
   };
 
-  // Finalize purchase on successful return (fake gateway) and then clear cart.
-  React.useEffect(() => {
-    let cancelled = false;
-
-    async function finalizeIfNeeded() {
-      if (payment !== "success") return;
-      if (state.items.length === 0) {
-        router.replace(`/${locale}/store/checkout`);
-        return;
-      }
-
+  // Fetch wallet info
+  useEffect(() => {
+    async function fetchWallet() {
       try {
-        const res = await fetch("/api/store/checkout/finalize", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ slugs: state.items.map((i) => i.slug) }),
-        });
-
-        if (!res.ok) {
-          // keep cart so user can retry; just strip params
-          if (!cancelled) router.replace(`/${locale}/store/checkout`);
-          return;
+        const res = await fetch("/api/wallet/balance");
+        if (res.ok) {
+          const data = await res.json();
+          setWalletInfo({
+            balance: data.balance || 0,
+            availableBalance: data.availableBalance || data.balance || 0,
+            pendingWithdrawals: data.pendingWithdrawals || 0,
+          });
         }
-
-        if (!cancelled) {
-          clear();
-          // remove query params after success so refresh doesn't re-trigger.
-          router.replace(`/${locale}/store/checkout`);
-        }
-      } catch {
-        // keep cart so user can retry
-        if (!cancelled) router.replace(`/${locale}/store/checkout`);
+      } catch (e) {
+        console.error("Failed to fetch wallet:", e);
+      } finally {
+        setLoadingWallet(false);
       }
     }
+    fetchWallet();
+  }, []);
 
-    void finalizeIfNeeded();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payment]);
+  const hasEnoughBalance = walletInfo && walletInfo.availableBalance >= totalAmount;
 
-  const returnUrl = `/${locale}/store/checkout`;
+  const handlePayment = async () => {
+    // Prevent double submission
+    if (slugs.length === 0 || !hasEnoughBalance || processingRef.current) return;
+    
+    processingRef.current = true;
+    setProcessing(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/store/checkout/wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slugs, locale }),
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        clear();
+        // Redirect to dashboard after successful payment
+        router.push(`/${locale}/dashboard?order=${data.orderNumber}`);
+      } else {
+        setError(data.error || "Payment failed");
+        processingRef.current = false;
+      }
+    } catch (e) {
+      setError(ar ? "خطأ في الشبكة" : "Network error");
+      processingRef.current = false;
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Success state
+  if (success) {
+    return (
+      <div className="mt-6">
+        <div className="sbc-card rounded-2xl p-8 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+            <HiCheckCircle className="h-10 w-10 text-emerald-500" />
+          </div>
+          
+          <h2 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+            {copy.success}
+          </h2>
+          
+          <div className="mt-4 space-y-2 text-sm text-(--muted-foreground)">
+            <p>{copy.orderNumber}: <span className="font-mono font-semibold text-(--foreground)">{success.orderNumber}</span></p>
+            <p>{copy.newBalance}: <span className="font-semibold text-(--foreground)">{formatStorePrice({ amount: success.newBalance, currency: "OMR" }, locale)}</span></p>
+          </div>
+
+          <p className="mt-4 text-sm text-(--muted-foreground)">
+            {copy.activatedNote}
+          </p>
+
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href={`/${locale}/dashboard`}
+              className={buttonVariants({ variant: "primary", size: "md" })}
+            >
+              {copy.goDashboard}
+            </Link>
+            <Link
+              href={`/${locale}/store`}
+              className={buttonVariants({ variant: "secondary", size: "md" })}
+            >
+              {copy.goStore}
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-3">
+      {/* Cart Items */}
       <div className="lg:col-span-2 sbc-card rounded-2xl p-6">
-        {payment === "success" ? (
-          <div className="flex items-start gap-3 rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
-            <HiCheckCircle className="h-6 w-6 text-emerald-500" />
-            <div>
-              <div className="text-sm font-semibold">{copy.success}</div>
-              <div className="mt-1 text-sm text-(--muted-foreground)">
-                {ar
-                  ? "تمت محاكاة عملية الدفع بنجاح. تم تفعيل حزمك الآن."
-                  : "This is a simulated payment flow. Your packages are now active."}
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <Link
-                  href={`/${locale}/dashboard`}
-                  className={buttonVariants({ variant: "secondary", size: "sm" })}
-                >
-                  {ar ? "لوحة التحكم" : "Go to dashboard"}
-                </Link>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {payment === "cancel" ? (
-          <div className="flex items-start gap-3 rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
-            <HiXCircle className="h-6 w-6 text-red-500" />
-            <div>
-              <div className="text-sm font-semibold">{copy.cancel}</div>
-              <div className="mt-1 text-sm text-(--muted-foreground)">
-                {ar ? "يمكنك المحاولة مرة أخرى." : "You can try again."}
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        <div className="mt-6 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">{ar ? "المشتريات" : "Items"}</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">{copy.items}</h2>
           <Link
             href={`/${locale}/store`}
             className={buttonVariants({ variant: "ghost", size: "sm" })}
@@ -143,6 +215,29 @@ export function CheckoutClient({
             {copy.backToStore}
           </Link>
         </div>
+
+        {error && (
+          <div className="mt-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30">
+            <HiXCircle className="h-6 w-6 shrink-0 text-red-500" />
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-red-700 dark:text-red-400">
+                {copy.errorOccurred}
+              </div>
+              <div className="mt-1 text-sm text-red-600 dark:text-red-300">
+                {error}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setError(null)}
+              className="shrink-0"
+            >
+              <HiRefresh className="h-4 w-4" />
+              {copy.tryAgain}
+            </Button>
+          </div>
+        )}
 
         {slugs.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-(--surface-border) bg-(--surface) p-4 text-sm text-(--muted-foreground)">
@@ -170,13 +265,13 @@ export function CheckoutClient({
                       href={`/${locale}/store/${p.slug}`}
                       className={buttonVariants({ variant: "secondary", size: "xs" })}
                     >
-                      {ar ? "عرض" : "View"}
+                      {copy.view}
                     </Link>
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={ar ? "حذف" : "Remove"}
-                      title={ar ? "حذف" : "Remove"}
+                      aria-label={copy.remove}
+                      title={copy.remove}
                       className="text-(--muted-foreground) hover:text-foreground"
                       onClick={() => remove(slug)}
                     >
@@ -189,43 +284,93 @@ export function CheckoutClient({
           </div>
         )}
 
-        {slugs.length > 0 ? (
+        {slugs.length > 0 && (
           <div className="mt-4 flex items-center justify-between">
             <Button variant="ghost" size="sm" onClick={() => clear()}>
               {copy.clear}
             </Button>
             <div className="text-sm font-semibold">
-              {copy.totalLabel}: {total}
+              {copy.totalLabel}: {totalFormatted}
             </div>
           </div>
-        ) : null}
+        )}
       </div>
 
+      {/* Payment Sidebar */}
       <aside className="sbc-card rounded-2xl p-6">
         <div className="text-sm text-(--muted-foreground)">{copy.totalLabel}</div>
-        <div className="mt-1 text-2xl font-semibold">{total}</div>
+        <div className="mt-1 text-2xl font-semibold">{totalFormatted}</div>
 
+        {/* Wallet Balance */}
+        <div className="mt-4 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <RiWallet3Fill className="h-5 w-5 text-blue-500" />
+            {copy.walletBalance}
+          </div>
+          
+          {loadingWallet ? (
+            <div className="mt-2 text-sm text-(--muted-foreground)">
+              {copy.loadingWallet}
+            </div>
+          ) : walletInfo ? (
+            <div className="mt-2">
+              <div className="text-xl font-bold">
+                {formatStorePrice({ amount: walletInfo.availableBalance, currency: "OMR" }, locale)}
+              </div>
+              {walletInfo.pendingWithdrawals > 0 && (
+                <div className="mt-1 text-xs text-(--muted-foreground)">
+                  {copy.pending} {formatStorePrice({ amount: walletInfo.pendingWithdrawals, currency: "OMR" }, locale)}
+                </div>
+              )}
+              
+              {!hasEnoughBalance && slugs.length > 0 && (
+                <div className="mt-3 flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+                  <HiExclamationCircle className="h-5 w-5 shrink-0" />
+                  <span>{copy.insufficientBalance}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-2 text-sm text-red-500">
+              {copy.failedLoadWallet}
+            </div>
+          )}
+
+          {walletInfo && !hasEnoughBalance && slugs.length > 0 && (
+            <Link
+              href={`/${locale}/wallet`}
+              className={cn(buttonVariants({ variant: "secondary", size: "sm" }), "mt-3 w-full")}
+            >
+              {copy.chargeWallet}
+            </Link>
+          )}
+        </div>
+
+        {/* Pay Button */}
         <div className="mt-4 grid gap-3">
           <Button
             variant="primary"
-            size="md"
+            size="lg"
             className="w-full"
-            disabled={slugs.length === 0}
-            onClick={() => {
-              const gatewayUrl = `/${locale}/store/gateway?return=${encodeURIComponent(returnUrl)}`;
-              // Simulate a real external redirect.
-              window.location.href = gatewayUrl;
-            }}
+            disabled={slugs.length === 0 || !hasEnoughBalance || processing || loadingWallet}
+            onClick={handlePayment}
           >
-            <HiCreditCard className="h-5 w-5" />
-            {copy.pay}
-            <HiArrowRight className={cn("h-5 w-5", rtl ? "rotate-180" : "")} />
+            {processing ? (
+              <>
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                {copy.processing}
+              </>
+            ) : (
+              <>
+                <RiWallet3Fill className="h-5 w-5" />
+                {copy.payWithWallet}
+              </>
+            )}
           </Button>
 
-          <div className="text-xs text-(--muted-foreground)">
-            {ar
-              ? "هذه بوابة دفع افتراضية لأغراض العرض فقط."
-              : "This is a fake payment gateway for demo purposes."}
+          <div className="flex items-center justify-center gap-2 text-xs text-(--muted-foreground)">
+            <HiCheckCircle className="h-4 w-4 text-emerald-500" />
+            {copy.securePayment}
           </div>
         </div>
       </aside>

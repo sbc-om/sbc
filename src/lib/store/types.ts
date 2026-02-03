@@ -6,7 +6,7 @@ export type StoreProductPrice = {
   /** numeric amount, for formatting */
   amount: number;
   /** ISO currency code */
-  currency: "USD" | "OMR";
+  currency: "OMR";
   /** If set, displayed as recurring */
   interval?: "month" | "year" | "6mo";
 };

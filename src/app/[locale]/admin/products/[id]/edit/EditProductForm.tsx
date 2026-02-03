@@ -231,7 +231,7 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
             className="w-full px-3 py-2 border rounded-lg bg-(--background) border-(--border)"
           >
             <option value="OMR">OMR</option>
-            <option value="USD">USD</option>
+
           </select>
         </div>
         <div>

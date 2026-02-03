@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { HumanChallenge } from "./HumanChallenge";
-import { PasskeyLoginButton } from "./PasskeyLoginButton";
 import { loginAction } from "@/app/[locale]/auth/actions";
 import type { Locale } from "@/lib/i18n/locales";
 import type { HumanChallenge as HumanChallengeType } from "@/lib/auth/humanChallenge";
@@ -23,13 +23,14 @@ interface LoginTabsProps {
   };
 }
 
-type TabId = "password" | "whatsapp";
+type TabId = "password" | "whatsapp" | "passkey";
 
 const texts = {
   en: {
     tabs: {
-      password: "Email & Password",
+      password: "Password",
       whatsapp: "WhatsApp",
+      passkey: "Passkey",
     },
     noAccount: "No account?",
     errors: {
@@ -53,11 +54,22 @@ const texts = {
       verifying: "Verifying...",
       notEnabled: "WhatsApp login is not enabled",
     },
+    passkey: {
+      title: "Sign in with Passkey",
+      description: "Use your fingerprint, face, or device PIN to sign in securely.",
+      button: "Continue with Passkey",
+      notSupported: "Passkeys aren't supported on this device.",
+      failed: "Passkey sign-in failed. Please try again.",
+      authenticating: "Authenticating...",
+      noPasskeys: "No passkeys registered. Please login with password first, then add a passkey in settings.",
+      cancelled: "Authentication was cancelled.",
+    },
   },
   ar: {
     tabs: {
-      password: "البريد وكلمة المرور",
+      password: "كلمة المرور",
       whatsapp: "واتساب",
+      passkey: "مفتاح المرور",
     },
     noAccount: "ليس لديك حساب؟",
     errors: {
@@ -80,6 +92,16 @@ const texts = {
       sending: "جاري الإرسال...",
       verifying: "جاري التحقق...",
       notEnabled: "تسجيل الدخول بواتساب غير مفعّل",
+    },
+    passkey: {
+      title: "تسجيل الدخول بمفتاح المرور",
+      description: "استخدم بصمة الإصبع أو الوجه أو رمز PIN للدخول بأمان.",
+      button: "المتابعة بمفتاح المرور",
+      notSupported: "مفاتيح المرور غير مدعومة على هذا الجهاز.",
+      failed: "فشل تسجيل الدخول بمفتاح المرور. حاول مرة أخرى.",
+      authenticating: "جاري المصادقة...",
+      noPasskeys: "لا توجد مفاتيح مرور مسجلة. سجل الدخول بكلمة المرور أولاً ثم أضف مفتاح مرور في الإعدادات.",
+      cancelled: "تم إلغاء المصادقة.",
     },
   },
 };
@@ -115,6 +137,81 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
       return () => clearTimeout(timer);
     }
   }, [countdown]);
+
+  // Passkey state
+  const [passkeySupported, setPasskeySupported] = useState(false);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+  const [passkeyError, setPasskeyError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPasskeySupported(browserSupportsWebAuthn());
+  }, []);
+
+  async function handlePasskeyLogin() {
+    if (!passkeySupported) {
+      setPasskeyError(t.passkey.notSupported);
+      return;
+    }
+
+    setPasskeyError(null);
+    setPasskeyBusy(true);
+
+    try {
+      const optionsRes = await fetch("/api/auth/passkey/authentication/options", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      const optionsJson = (await optionsRes.json()) as
+        | { ok: true; options: any; requestId: string }
+        | { ok: false; error: string };
+
+      if (!optionsRes.ok || !optionsJson.ok) {
+        const errCode = !optionsJson.ok ? optionsJson.error : "OPTIONS_FAILED";
+        if (errCode === "NO_PASSKEYS" || errCode === "NOT_FOUND") {
+          setPasskeyError(t.passkey.noPasskeys);
+        } else {
+          setPasskeyError(t.passkey.failed);
+        }
+        setPasskeyBusy(false);
+        return;
+      }
+
+      const assertion = await startAuthentication(optionsJson.options);
+
+      const verifyRes = await fetch("/api/auth/passkey/authentication/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId: optionsJson.requestId, response: assertion }),
+      });
+
+      const verifyJson = (await verifyRes.json()) as
+        | { ok: true }
+        | { ok: false; error: string };
+
+      if (!verifyRes.ok || !verifyJson.ok) {
+        throw new Error(verifyJson.ok ? "VERIFY_FAILED" : verifyJson.error);
+      }
+
+      if (next && next.startsWith(`/${locale}/`)) {
+        router.push(next);
+      } else {
+        router.push(`/${locale}/dashboard`);
+      }
+      router.refresh();
+    } catch (e: any) {
+      // User cancelled or closed the prompt
+      if (e?.name === "NotAllowedError" || e?.message?.includes("cancelled")) {
+        setPasskeyError(t.passkey.cancelled);
+      } else {
+        console.error("Passkey login error:", e);
+        setPasskeyError(t.passkey.failed);
+      }
+    } finally {
+      setPasskeyBusy(false);
+    }
+  }
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,12 +267,17 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
     {
       id: "password",
       label: t.tabs.password,
-      icon: <MailIcon className="h-4 w-4" />,
+      icon: <LockIcon className="h-4 w-4" />,
     },
     {
       id: "whatsapp",
       label: t.tabs.whatsapp,
-      icon: <WhatsAppIcon className="h-4 w-4 text-green-600" />,
+      icon: <WhatsAppIcon className="h-4 w-4" />,
+    },
+    {
+      id: "passkey",
+      label: t.tabs.passkey,
+      icon: <FingerprintIcon className="h-4 w-4" />,
     },
   ];
 
@@ -183,31 +285,31 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
     <div className="space-y-6">
       {/* Error Messages */}
       {error && (
-        <div className={`rounded-lg p-3 text-sm ${
+        <div className={`rounded-xl p-3 text-sm ${
           error === "approval" || error === "inactive"
-            ? "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200"
-            : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200"
+            ? "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800"
+            : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800"
         }`}>
           {t.errors[error as keyof typeof t.errors] || error}
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="border-b border-(--surface-border)">
-        <nav className="flex gap-4" aria-label="Tabs">
+      {/* Professional Full-Width Tabs */}
+      <div className="rounded-xl bg-(--surface) border border-(--surface-border) p-1">
+        <nav className="grid grid-cols-3 gap-1" aria-label="Tabs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-medium transition-colors ${
+              className={`flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-medium transition-all duration-200 ${
                 activeTab === tab.id
-                  ? "border-accent text-accent"
-                  : "border-transparent text-(--muted-foreground) hover:border-(--surface-border) hover:text-foreground"
+                  ? "bg-accent text-white shadow-md"
+                  : "text-(--muted-foreground) hover:bg-(--chip-bg) hover:text-foreground"
               }`}
             >
-              {tab.icon}
-              {tab.label}
+              <span className={activeTab === tab.id ? "text-white" : tab.id === "whatsapp" ? "text-green-600" : ""}>{tab.icon}</span>
+              <span>{tab.label}</span>
             </button>
           ))}
         </nav>
@@ -249,8 +351,6 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
           <Button type="submit" className="w-full">
             {dict.auth.signIn}
           </Button>
-
-          <PasskeyLoginButton locale={locale} next={next} />
         </form>
       )}
 
@@ -349,6 +449,52 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
         </div>
       )}
 
+      {/* Passkey Login Tab */}
+      {activeTab === "passkey" && (
+        <div className="space-y-6">
+          <div className="text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-lg">
+              <FingerprintIcon className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-semibold">{t.passkey.title}</h3>
+            <p className="mt-2 text-sm text-(--muted-foreground)">
+              {t.passkey.description}
+            </p>
+          </div>
+
+          {passkeyError && (
+            <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">
+              {passkeyError}
+            </div>
+          )}
+
+          {!passkeySupported ? (
+            <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-700 dark:text-amber-300">
+              {t.passkey.notSupported}
+            </div>
+          ) : (
+            <Button
+              type="button"
+              className="w-full"
+              onClick={handlePasskeyLogin}
+              disabled={passkeyBusy}
+            >
+              {passkeyBusy ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  {t.passkey.authenticating}
+                </span>
+              ) : (
+                t.passkey.button
+              )}
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Register Link */}
       <p className="text-center text-sm text-(--muted-foreground)">
         {t.noAccount}{" "}
@@ -363,11 +509,27 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
   );
 }
 
-function MailIcon({ className }: { className?: string }) {
+function LockIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="20" height="16" x="2" y="4" rx="2" />
-      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function FingerprintIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4" />
+      <path d="M14 13.12c0 2.38 0 6.38-1 8.88" />
+      <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02" />
+      <path d="M2 12a10 10 0 0 1 18-6" />
+      <path d="M2 16h.01" />
+      <path d="M21.8 16c.2-2 .131-5.354 0-6" />
+      <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2" />
+      <path d="M8.65 22c.21-.66.45-1.32.57-2" />
+      <path d="M9 6.8a6 6 0 0 1 9 5.2v2" />
     </svg>
   );
 }

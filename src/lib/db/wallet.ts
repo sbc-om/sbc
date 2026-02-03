@@ -60,6 +60,34 @@ export async function getUserWallet(userId: string): Promise<Wallet | null> {
 }
 
 /**
+ * Get total pending withdrawal amount for a user
+ */
+export async function getPendingWithdrawalsTotal(userId: string): Promise<number> {
+  const result = await query<{ total: string }>(
+    `SELECT COALESCE(SUM(amount), 0) as total
+     FROM withdrawal_requests
+     WHERE user_id = $1 AND status = 'pending'`,
+    [userId]
+  );
+  return parseFloat(result.rows[0].total);
+}
+
+/**
+ * Get available balance (total balance - pending withdrawals)
+ */
+export async function getAvailableBalance(userId: string): Promise<{ balance: number; pendingWithdrawals: number; availableBalance: number } | null> {
+  const wallet = await getUserWallet(userId);
+  if (!wallet) return null;
+  
+  const pendingWithdrawals = await getPendingWithdrawalsTotal(userId);
+  return {
+    balance: wallet.balance,
+    pendingWithdrawals,
+    availableBalance: wallet.balance - pendingWithdrawals,
+  };
+}
+
+/**
  * Get wallet by account number (phone)
  */
 export async function getWalletByAccountNumber(accountNumber: string): Promise<Wallet | null> {
@@ -376,8 +404,18 @@ export async function transferFunds(
 
     const senderBalance = parseFloat(senderResult.rows[0].balance);
     
-    if (senderBalance < amount) {
-      throw new Error("Insufficient balance");
+    // Check available balance (balance - pending withdrawals)
+    const pendingResult = await client.query<{ total: string }>(
+      `SELECT COALESCE(SUM(amount), 0) as total
+       FROM withdrawal_requests
+       WHERE user_id = $1 AND status = 'pending'`,
+      [fromUserId]
+    );
+    const pendingAmount = parseFloat(pendingResult.rows[0].total);
+    const availableBalance = senderBalance - pendingAmount;
+    
+    if (availableBalance < amount) {
+      throw new Error("Insufficient available balance");
     }
 
     // Find receiver by account number (phone)
@@ -621,7 +659,7 @@ export async function getUserByPhone(phone: string): Promise<{ id: string; displ
 // Withdrawal Request Functions
 // ============================================
 
-export type WithdrawalRequestStatus = "pending" | "approved" | "rejected";
+export type WithdrawalRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 
 export interface WithdrawalRequest {
   id: string;
@@ -648,14 +686,14 @@ export async function createWithdrawalRequest(
     throw new Error("Amount must be positive");
   }
 
-  // Check balance first
-  const wallet = await getUserWallet(userId);
-  if (!wallet) {
+  // Check available balance (balance - pending withdrawals)
+  const balanceInfo = await getAvailableBalance(userId);
+  if (!balanceInfo) {
     throw new Error("Wallet not found");
   }
 
-  if (wallet.balance < amount) {
-    throw new Error("Insufficient balance");
+  if (balanceInfo.availableBalance < amount) {
+    throw new Error("Insufficient available balance");
   }
 
   const id = nanoid();
@@ -732,7 +770,12 @@ export async function getAllWithdrawalRequests(
   let queryStr = `
     SELECT wr.*, 
            u.display_name, u.full_name, u.phone,
-           w.balance
+           w.balance,
+           COALESCE((
+             SELECT SUM(amount) 
+             FROM withdrawal_requests 
+             WHERE user_id = wr.user_id AND status = 'pending'
+           ), 0) as pending_amount
     FROM withdrawal_requests wr
     JOIN users u ON wr.user_id = u.id
     LEFT JOIN wallets w ON wr.user_id = w.user_id
@@ -759,20 +802,30 @@ export async function getAllWithdrawalRequests(
     full_name: string;
     phone: string;
     balance: string | null;
+    pending_amount: string;
   }>(queryStr, params);
 
-  return result.rows.map((row) => ({
-    id: row.id,
-    userId: row.user_id,
-    amount: parseFloat(row.amount),
-    status: row.status as WithdrawalRequestStatus,
-    adminMessage: row.admin_message,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    userDisplayName: row.display_name || row.full_name,
-    userPhone: row.phone,
-    userBalance: row.balance ? parseFloat(row.balance) : undefined,
-  }));
+  return result.rows.map((row) => {
+    const balance = row.balance ? parseFloat(row.balance) : 0;
+    const pendingAmount = parseFloat(row.pending_amount);
+    // For this specific request, available = balance - (pending - this request's amount if pending)
+    const thisAmount = parseFloat(row.amount);
+    const otherPending = row.status === 'pending' ? pendingAmount - thisAmount : pendingAmount;
+    const availableForApproval = balance - otherPending;
+    
+    return {
+      id: row.id,
+      userId: row.user_id,
+      amount: thisAmount,
+      status: row.status as WithdrawalRequestStatus,
+      adminMessage: row.admin_message,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      userDisplayName: row.display_name || row.full_name,
+      userPhone: row.phone,
+      userBalance: availableForApproval,  // This is available balance for approval
+    };
+  });
 }
 
 /**
@@ -930,6 +983,45 @@ export async function rejectWithdrawalRequest(
 
   if (result.rows.length === 0) {
     throw new Error("Request not found or already processed");
+  }
+
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    userId: row.user_id,
+    amount: parseFloat(row.amount),
+    status: row.status as WithdrawalRequestStatus,
+    adminMessage: row.admin_message,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Cancel a withdrawal request (by user - only pending requests)
+ */
+export async function cancelWithdrawalRequest(
+  requestId: string,
+  userId: string
+): Promise<WithdrawalRequest> {
+  const result = await query<{
+    id: string;
+    user_id: string;
+    amount: string;
+    status: string;
+    admin_message: string | null;
+    created_at: Date;
+    updated_at: Date;
+  }>(
+    `UPDATE withdrawal_requests 
+     SET status = 'cancelled', updated_at = NOW()
+     WHERE id = $1 AND user_id = $2 AND status = 'pending'
+     RETURNING *`,
+    [requestId, userId]
+  );
+
+  if (result.rows.length === 0) {
+    throw new Error("Request not found, not yours, or already processed");
   }
 
   const row = result.rows[0];

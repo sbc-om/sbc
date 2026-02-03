@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { WalletClient } from "./WalletClient";
-import { getUserWallet, ensureWallet, getWalletTransactions, getUserWithdrawalRequests } from "@/lib/db/wallet";
+import { getUserWallet, ensureWallet, getWalletTransactions, getUserWithdrawalRequests, getPendingWithdrawalsTotal } from "@/lib/db/wallet";
 
 export const runtime = "nodejs";
 
@@ -31,10 +31,11 @@ export default async function WalletPage({
     wallet = await ensureWallet(user.id, user.phone);
   }
 
-  // Get recent transactions and withdrawal requests
-  const [transactions, withdrawalRequests] = await Promise.all([
+  // Get recent transactions, withdrawal requests, and pending amount
+  const [transactions, withdrawalRequests, pendingWithdrawals] = await Promise.all([
     getWalletTransactions(user.id, 20, 0),
     getUserWithdrawalRequests(user.id, 20, 0),
+    getPendingWithdrawalsTotal(user.id),
   ]);
 
   return (
@@ -51,6 +52,8 @@ export default async function WalletPage({
         initialWallet={{
           balance: wallet.balance,
           accountNumber: wallet.accountNumber,
+          pendingWithdrawals,
+          availableBalance: wallet.balance - pendingWithdrawals,
         }}
         initialTransactions={transactions}
         initialWithdrawalRequests={withdrawalRequests}

@@ -50,7 +50,7 @@ function rowToSubscription(row: any): ProgramSubscription {
     paymentId: row.payment_id,
     paymentMethod: row.payment_method,
     amount: parseFloat(row.amount) || 0,
-    currency: row.currency || "USD",
+    currency: row.currency || "OMR",
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };

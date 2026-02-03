@@ -30,9 +30,11 @@ export default async function AdminWithdrawalsPage({
 
   const dict = await getDictionary(locale as Locale);
 
-  // Get withdrawal requests (filter by status if provided)
-  const validStatus = status === "pending" || status === "approved" || status === "rejected" ? status : undefined;
-  const requests = await getAllWithdrawalRequests(validStatus, 100, 0);
+  // Get withdrawal requests (filter by status - default to pending)
+  const validStatuses = ["pending", "approved", "rejected", "all"] as const;
+  const requestedStatus = validStatuses.includes(status as any) ? status : "pending";
+  const filterStatus = requestedStatus === "all" ? undefined : requestedStatus as "pending" | "approved" | "rejected";
+  const requests = await getAllWithdrawalRequests(filterStatus, 100, 0);
 
   return (
     <AppPage>
@@ -40,7 +42,7 @@ export default async function AdminWithdrawalsPage({
         locale={locale as Locale}
         dict={dict}
         initialRequests={requests}
-        currentStatus={validStatus}
+        currentStatus={requestedStatus as "pending" | "approved" | "rejected" | "all"}
       />
     </AppPage>
   );

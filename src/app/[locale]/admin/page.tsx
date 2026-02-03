@@ -10,6 +10,7 @@ import { listAllBusinessCards } from "@/lib/db/businessCards";
 import { listUnreadContactMessages } from "@/lib/db/contactMessages";
 import { listLoyaltyProfiles } from "@/lib/db/loyalty";
 import { getAllWithdrawalRequests } from "@/lib/db/wallet";
+import { getOrderSummary } from "@/lib/db/orders";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
@@ -96,6 +97,7 @@ export default async function AdminPage({
   const businessCards = await listAllBusinessCards();
   const unreadContactMessages = (await listUnreadContactMessages()).length;
   const pendingWithdrawals = await getAllWithdrawalRequests("pending", 100, 0);
+  const orderSummary = await getOrderSummary();
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
   const pendingCards = businessCards.filter((c) => !(c.isApproved ?? false));
@@ -168,6 +170,17 @@ export default async function AdminPage({
       color: "rose",
       badge: pendingWithdrawals.length > 0 ? pendingWithdrawals.length : undefined,
       badgeType: "warning" as const,
+    },
+    {
+      href: `/${locale}/admin/sales`,
+      icon: (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+      label: ar ? "المبيعات" : "Sales",
+      color: "emerald",
+      badge: orderSummary.totalOrders > 0 ? orderSummary.totalOrders : undefined,
     },
     {
       href: `/${locale}/admin/business-cards`,

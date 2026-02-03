@@ -7,7 +7,7 @@ import { z } from "zod";
 import { createUser, verifyUserPassword, getUserById } from "@/lib/db/users";
 import { getAuthCookieName, signAuthToken } from "@/lib/auth/jwt";
 import { verifyHumanChallenge } from "@/lib/auth/humanChallenge";
-import { isWAHAEnabled } from "@/lib/waha/client";
+import { isWAHAEnabled, sendLoginNotification } from "@/lib/waha/client";
 import type { Locale } from "@/lib/i18n/locales";
 
 const loginSchema = z.object({
@@ -55,6 +55,11 @@ export async function loginAction(formData: FormData) {
     secure,
     path: "/",
   });
+
+  // Send login notification
+  if (user.phone && isWAHAEnabled()) {
+    sendLoginNotification(user.phone, locale as "en" | "ar", "password").catch(console.error);
+  }
 
   // Check if phone verification is required and user is not verified
   const wahaEnabled = isWAHAEnabled();

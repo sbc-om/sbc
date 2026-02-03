@@ -1,0 +1,4 @@
+ id | order_number | user_id | status | payment_method | subtotal | total | currency | wallet_transaction_id | notes | created_at | updated_at 
+----+--------------+---------+--------+----------------+----------+-------+----------+-----------------------+-------+------------+------------
+(0 rows)
+

@@ -21,7 +21,7 @@ interface WithdrawalsClientProps {
   locale: Locale;
   dict: Dictionary;
   initialRequests: WithdrawalRequest[];
-  currentStatus?: "pending" | "approved" | "rejected";
+  currentStatus?: "pending" | "approved" | "rejected" | "all";
 }
 
 export function WithdrawalsClient({
@@ -36,6 +36,9 @@ export function WithdrawalsClient({
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState<{ [key: string]: string }>({});
   const [showMessageInput, setShowMessageInput] = useState<string | null>(null);
+  const [showRejectConfirm, setShowRejectConfirm] = useState<string | null>(null);
+  const [rejectMessage, setRejectMessage] = useState<{ [key: string]: string }>({});
+  const [activeStatus, setActiveStatus] = useState<string>(currentStatus || "pending");
 
   const isRTL = locale === "ar";
 
@@ -56,6 +59,9 @@ export function WithdrawalsClient({
     send: isRTL ? "إرسال" : "Send",
     cancel: isRTL ? "إلغاء" : "Cancel",
     insufficientBalance: isRTL ? "رصيد غير كافٍ" : "Insufficient balance",
+    confirmReject: isRTL ? "هل أنت متأكد من رفض هذا الطلب؟" : "Are you sure you want to reject this request?",
+    rejectReason: isRTL ? "سبب الرفض (اختياري)" : "Reason for rejection (optional)",
+    yesReject: isRTL ? "نعم، رفض" : "Yes, Reject",
   };
 
   const formatAmount = (amount: number) => {
@@ -79,8 +85,8 @@ export function WithdrawalsClient({
   const refreshRequests = useCallback(async () => {
     setLoading(true);
     try {
-      const url = currentStatus 
-        ? `/api/admin/wallet/withdrawals?status=${currentStatus}`
+      const url = activeStatus && activeStatus !== "all"
+        ? `/api/admin/wallet/withdrawals?status=${activeStatus}`
         : "/api/admin/wallet/withdrawals";
       const res = await fetch(url);
       const data = await res.json();
@@ -92,10 +98,12 @@ export function WithdrawalsClient({
     } finally {
       setLoading(false);
     }
-  }, [currentStatus]);
+  }, [activeStatus]);
 
   const handleAction = async (requestId: string, action: "approve" | "reject") => {
-    const message = messageInput[requestId] || "";
+    const message = action === "approve" 
+      ? (messageInput[requestId] || "") 
+      : (rejectMessage[requestId] || "");
     setProcessingId(requestId);
     
     try {
@@ -114,7 +122,9 @@ export function WithdrawalsClient({
             : req
         ));
         setShowMessageInput(null);
+        setShowRejectConfirm(null);
         setMessageInput(prev => ({ ...prev, [requestId]: "" }));
+        setRejectMessage(prev => ({ ...prev, [requestId]: "" }));
       } else {
         alert(data.error || "Failed to process request");
       }
@@ -126,11 +136,25 @@ export function WithdrawalsClient({
     }
   };
 
-  const handleStatusFilter = (status: string | null) => {
-    const url = status 
-      ? `/${locale}/admin/withdrawals?status=${status}`
-      : `/${locale}/admin/withdrawals`;
-    router.push(url);
+  const handleStatusFilter = async (status: string) => {
+    setActiveStatus(status);
+    setLoading(true);
+    try {
+      const url = status === "all"
+        ? "/api/admin/wallet/withdrawals"
+        : `/api/admin/wallet/withdrawals?status=${status}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data.ok) {
+        setRequests(data.requests);
+      }
+    } catch (error) {
+      console.error("Failed to filter requests:", error);
+    } finally {
+      setLoading(false);
+    }
+    // Update URL without full page reload
+    router.replace(`/${locale}/admin/withdrawals?status=${status}`, { scroll: false });
   };
 
   return (
@@ -159,16 +183,17 @@ export function WithdrawalsClient({
       {/* Status Filter */}
       <div className="flex gap-2 flex-wrap">
         {[
-          { key: null, label: texts.all },
           { key: "pending", label: texts.pending },
           { key: "approved", label: texts.approved },
           { key: "rejected", label: texts.rejected },
+          { key: "all", label: texts.all },
         ].map(({ key, label }) => (
           <button
-            key={key || "all"}
+            key={key}
             onClick={() => handleStatusFilter(key)}
-            className={`px-4 py-2 rounded-xl transition-colors ${
-              currentStatus === key || (!currentStatus && key === null)
+            disabled={loading}
+            className={`px-4 py-2 rounded-xl transition-colors disabled:opacity-70 ${
+              activeStatus === key
                 ? "bg-accent text-white"
                 : "bg-(--surface) hover:bg-(--surface-hover)"
             }`}
@@ -203,7 +228,7 @@ export function WithdrawalsClient({
                     </div>
 
                     {/* Amount & Balance */}
-                    <div className="flex items-center gap-4 mb-2">
+                    <div className="flex items-center gap-4 mb-2 flex-wrap">
                       <div>
                         <span className="text-sm text-(--muted-foreground)">{texts.amount}: </span>
                         <span className="font-semibold text-red-600">
@@ -212,7 +237,7 @@ export function WithdrawalsClient({
                       </div>
                       {req.userBalance !== undefined && (
                         <div>
-                          <span className="text-sm text-(--muted-foreground)">{texts.balance}: </span>
+                          <span className="text-sm text-(--muted-foreground)">{isRTL ? "متاح:" : "Available:"} </span>
                           <span className={`font-medium ${req.userBalance < req.amount ? "text-red-500" : "text-green-600"}`}>
                             {formatAmount(req.userBalance)} {texts.currency}
                           </span>
@@ -257,15 +282,15 @@ export function WithdrawalsClient({
                       <div className="flex gap-2">
                         <button
                           onClick={() => setShowMessageInput(showMessageInput === req.id ? null : req.id)}
-                          disabled={processingId === req.id}
+                          disabled={processingId === req.id || (req.userBalance !== undefined && req.userBalance < req.amount)}
                           className="p-2 rounded-lg bg-green-500/10 text-green-600 hover:bg-green-500/20 transition-colors disabled:opacity-50"
                           title={texts.approve}
                         >
                           <HiOutlineCheck className="h-5 w-5" />
                         </button>
                         <button
-                          onClick={() => handleAction(req.id, "reject")}
-                          disabled={processingId === req.id || (req.userBalance !== undefined && req.userBalance < req.amount)}
+                          onClick={() => setShowRejectConfirm(showRejectConfirm === req.id ? null : req.id)}
+                          disabled={processingId === req.id}
                           className="p-2 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                           title={texts.reject}
                         >
@@ -305,6 +330,45 @@ export function WithdrawalsClient({
                           <HiOutlineRefresh className="h-5 w-5 animate-spin" />
                         ) : (
                           texts.approve
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reject Confirmation */}
+                {showRejectConfirm === req.id && req.status === "pending" && (
+                  <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--surface-border)" }}>
+                    <div className="flex items-center gap-2 mb-3 text-red-600">
+                      <HiOutlineXCircle className="h-5 w-5" />
+                      <span className="font-medium">{texts.confirmReject}</span>
+                    </div>
+                    <label className="block text-sm font-medium mb-2">{texts.rejectReason}</label>
+                    <input
+                      type="text"
+                      value={rejectMessage[req.id] || ""}
+                      onChange={(e) => setRejectMessage(prev => ({ ...prev, [req.id]: e.target.value }))}
+                      placeholder={isRTL ? "سبب الرفض..." : "Reason for rejection..."}
+                      className="w-full px-4 py-2 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-red-500 mb-3"
+                      style={{ borderColor: "var(--surface-border)" }}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => setShowRejectConfirm(null)}
+                        className="px-4 py-2 rounded-xl border hover:bg-(--surface) transition-colors"
+                        style={{ borderColor: "var(--surface-border)" }}
+                      >
+                        {texts.cancel}
+                      </button>
+                      <button
+                        onClick={() => handleAction(req.id, "reject")}
+                        disabled={processingId === req.id}
+                        className="px-4 py-2 rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                      >
+                        {processingId === req.id ? (
+                          <HiOutlineRefresh className="h-5 w-5 animate-spin" />
+                        ) : (
+                          texts.yesReject
                         )}
                       </button>
                     </div>

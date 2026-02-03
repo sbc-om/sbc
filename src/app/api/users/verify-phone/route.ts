@@ -19,7 +19,7 @@
  */
 import { NextResponse, NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { setUserVerified } from "@/lib/db/users";
+import { setUserPhoneVerified } from "@/lib/db/users";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await setUserVerified(userId, true);
+    await setUserPhoneVerified(userId, true);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

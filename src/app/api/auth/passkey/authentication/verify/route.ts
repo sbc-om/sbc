@@ -7,6 +7,7 @@ import { consumePasskeyChallenge, getPasskeyById, updatePasskeyCounter } from "@
 import { base64UrlToBuffer, resolvePasskeyOrigin, resolvePasskeyRpId } from "@/lib/auth/passkeyConfig";
 import { getUserById } from "@/lib/db/users";
 import { getAuthCookieName, signAuthToken } from "@/lib/auth/jwt";
+import { sendLoginNotification, isWAHAEnabled } from "@/lib/waha/client";
 
 export const runtime = "nodejs";
 
@@ -82,6 +83,11 @@ export async function POST(req: Request) {
     secure,
     path: "/",
   });
+
+  // Send login notification
+  if (user.phone && isWAHAEnabled()) {
+    sendLoginNotification(user.phone, "en", "passkey").catch(console.error);
+  }
 
   return NextResponse.json({
     ok: true,

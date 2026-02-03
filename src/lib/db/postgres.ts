@@ -22,7 +22,7 @@ export function getPool(): pg.Pool {
       connectionString,
       max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      connectionTimeoutMillis: 10000, // Increased from 2s to 10s for cold starts
     });
   }
   return globalThis.__sbcPgPool;
@@ -345,7 +345,7 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       description_en TEXT,
       description_ar TEXT,
       price DECIMAL(10,2) NOT NULL,
-      currency TEXT DEFAULT 'USD',
+      currency TEXT DEFAULT 'OMR',
       program TEXT NOT NULL,
       plan TEXT DEFAULT 'basic',
       duration_days INTEGER,
@@ -370,7 +370,7 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       payment_id TEXT,
       payment_method TEXT,
       amount DECIMAL(10,2) DEFAULT 0,
-      currency TEXT DEFAULT 'USD',
+      currency TEXT DEFAULT 'OMR',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -626,6 +626,42 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    -- Store orders table
+    CREATE TABLE IF NOT EXISTS store_orders (
+      id TEXT PRIMARY KEY,
+      order_number TEXT UNIQUE NOT NULL,
+      user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      payment_method TEXT NOT NULL DEFAULT 'wallet',
+      subtotal DECIMAL(15, 3) NOT NULL DEFAULT 0,
+      total DECIMAL(15, 3) NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'OMR',
+      wallet_transaction_id TEXT,
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_store_orders_user_id ON store_orders(user_id);
+    CREATE INDEX IF NOT EXISTS idx_store_orders_status ON store_orders(status);
+    CREATE INDEX IF NOT EXISTS idx_store_orders_created_at ON store_orders(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_store_orders_order_number ON store_orders(order_number);
+
+    -- Store order items table
+    CREATE TABLE IF NOT EXISTS store_order_items (
+      id TEXT PRIMARY KEY,
+      order_id TEXT REFERENCES store_orders(id) ON DELETE CASCADE,
+      product_id TEXT,
+      product_slug TEXT NOT NULL,
+      product_name TEXT NOT NULL,
+      quantity INTEGER NOT NULL DEFAULT 1,
+      unit_price DECIMAL(15, 3) NOT NULL,
+      total DECIMAL(15, 3) NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'OMR',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_store_order_items_order_id ON store_order_items(order_id);
+    CREATE INDEX IF NOT EXISTS idx_store_order_items_product_id ON store_order_items(product_id);
+
     -- Insert default settings if not exists
     INSERT INTO app_settings (key, value) 
     VALUES ('whatsapp_login_enabled', 'true'::jsonb)
@@ -634,6 +670,16 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     INSERT INTO app_settings (key, value) 
     VALUES ('whatsapp_registration_verification', 'true'::jsonb)
     ON CONFLICT (key) DO NOTHING;
+
+    -- Create SBC Treasury system user if not exists
+    INSERT INTO users (id, email, phone, full_name, password_hash, role, is_active, is_verified, display_name, approval_status, created_at, updated_at)
+    VALUES ('sbc-treasury', 'treasury@sbc.om', 'sbc', 'SBC Treasury', '$2b$10$placeholder', 'system', true, true, 'SBC Treasury', 'approved', NOW(), NOW())
+    ON CONFLICT (id) DO NOTHING;
+
+    -- Create SBC Treasury wallet if not exists
+    INSERT INTO wallets (user_id, balance, account_number, created_at, updated_at)
+    VALUES ('sbc-treasury', 0, 'sbc', NOW(), NOW())
+    ON CONFLICT (user_id) DO NOTHING;
   `);
 }
 

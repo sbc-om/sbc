@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
 
       // Send login notification (non-blocking)
       if (isWAHAEnabled() && user.phone) {
-        sendLoginNotification(user.phone, "en").catch(console.error);
+        sendLoginNotification(user.phone, "en", "whatsapp").catch(console.error);
       }
 
       // Phone is now verified since user logged in with WhatsApp OTP

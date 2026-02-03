@@ -39,7 +39,7 @@ const productSchema = z.object({
   name: localizedStringSchema,
   description: localizedStringSchema.optional(),
   price: z.number().min(0),
-  currency: z.string().default("USD"),
+  currency: z.string().default("OMR"),
   program: z.string().min(1),
   plan: z.string().default("basic"),
   durationDays: z.number().int().positive().optional(),
@@ -60,7 +60,7 @@ function rowToProduct(row: any): Product {
       ? { en: row.description_en || "", ar: row.description_ar || "" }
       : undefined,
     price: parseFloat(row.price) || 0,
-    currency: row.currency || "USD",
+    currency: row.currency || "OMR",
     program: row.program,
     plan: row.plan || "basic",
     durationDays: row.duration_days,

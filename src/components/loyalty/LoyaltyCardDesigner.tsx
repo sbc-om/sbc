@@ -503,7 +503,7 @@ export function LoyaltyCardDesigner({
                   {ar ? "الوصف" : "Description"}
                 </label>
                 <textarea
-                  value={wallet.walletPassDescription}
+                  value={wallet.walletPassDescription ?? ""}
                   onChange={(e) => updateWallet({ walletPassDescription: e.target.value })}
                   rows={3}
                   className="w-full rounded-lg border border-(--surface-border) bg-(--surface) px-3 py-2 text-sm"
@@ -515,7 +515,7 @@ export function LoyaltyCardDesigner({
                   {ar ? "الشروط" : "Terms"}
                 </label>
                 <textarea
-                  value={wallet.walletPassTerms}
+                  value={wallet.walletPassTerms ?? ""}
                   onChange={(e) => updateWallet({ walletPassTerms: e.target.value })}
                   rows={4}
                   className="w-full rounded-lg border border-(--surface-border) bg-(--surface) px-3 py-2 text-sm"
@@ -529,7 +529,7 @@ export function LoyaltyCardDesigner({
                   </label>
                   <input
                     type="url"
-                    value={wallet.walletWebsiteUrl}
+                    value={wallet.walletWebsiteUrl ?? ""}
                     onChange={(e) => updateWallet({ walletWebsiteUrl: e.target.value })}
                     placeholder="https://..."
                     className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
@@ -541,7 +541,7 @@ export function LoyaltyCardDesigner({
                   </label>
                   <input
                     type="tel"
-                    value={wallet.walletSupportPhone}
+                    value={wallet.walletSupportPhone ?? ""}
                     onChange={(e) => updateWallet({ walletSupportPhone: e.target.value })}
                     placeholder={ar ? "+966..." : "+1..."}
                     className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
@@ -553,7 +553,7 @@ export function LoyaltyCardDesigner({
                   </label>
                   <input
                     type="email"
-                    value={wallet.walletSupportEmail}
+                    value={wallet.walletSupportEmail ?? ""}
                     onChange={(e) => updateWallet({ walletSupportEmail: e.target.value })}
                     placeholder="support@..."
                     className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
@@ -565,7 +565,7 @@ export function LoyaltyCardDesigner({
                   </label>
                   <input
                     type="text"
-                    value={wallet.walletAddress}
+                    value={wallet.walletAddress ?? ""}
                     onChange={(e) => updateWallet({ walletAddress: e.target.value })}
                     placeholder={ar ? "المدينة، الشارع..." : "City, street..."}
                     className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
@@ -608,7 +608,7 @@ export function LoyaltyCardDesigner({
                 </label>
                 <input
                   type="text"
-                  value={wallet.walletBarcodeMessage}
+                  value={wallet.walletBarcodeMessage ?? ""}
                   onChange={(e) => updateWallet({ walletBarcodeMessage: e.target.value })}
                   className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
                 />
@@ -646,7 +646,7 @@ export function LoyaltyCardDesigner({
                 </label>
                 <input
                   type="text"
-                  value={wallet.walletNotificationTitle}
+                  value={wallet.walletNotificationTitle ?? ""}
                   onChange={(e) => updateWallet({ walletNotificationTitle: e.target.value })}
                   className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm"
                 />
@@ -656,7 +656,7 @@ export function LoyaltyCardDesigner({
                   {ar ? "نص الإشعار" : "Body"}
                 </label>
                 <textarea
-                  value={wallet.walletNotificationBody}
+                  value={wallet.walletNotificationBody ?? ""}
                   onChange={(e) => updateWallet({ walletNotificationBody: e.target.value })}
                   rows={3}
                   className="w-full rounded-lg border border-(--surface-border) bg-(--surface) px-3 py-2 text-sm"

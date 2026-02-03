@@ -30,7 +30,7 @@ function toStoreProduct(product: Product): StoreProduct {
     description: product.description ?? { en: "", ar: "" },
     price: {
       amount: product.price,
-      currency: (product.currency as "USD" | "OMR") || "USD",
+      currency: "OMR",
     },
     badges: product.badges,
     features: {

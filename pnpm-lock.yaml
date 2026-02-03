@@ -65,6 +65,9 @@ importers:
       overlayscrollbars:
         specifier: ^2.13.0
         version: 2.13.0
+      passkit-generator:
+        specifier: ^3.5.7
+        version: 3.5.7
       pg:
         specifier: ^8.14.1
         version: 8.18.0

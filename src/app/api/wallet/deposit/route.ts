@@ -7,6 +7,8 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { depositToWallet, ensureWallet, getWalletByAccountNumber, getUserByPhone } from "@/lib/db/wallet";
 import { broadcastWalletEvent } from "@/app/api/wallet/stream/route";
+import { sendText, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
+import { getUserById } from "@/lib/db/users";
 
 const depositSchema = z.object({
   accountNumber: z.string().min(1, "Account number required"),
@@ -67,6 +69,31 @@ export async function POST(request: NextRequest) {
       balance: result.wallet.balance,
       description: description || "Wallet deposit",
     });
+
+    // Send WhatsApp notification
+    if (isWAHAEnabled()) {
+      const targetUser = await getUserById(wallet.userId);
+      if (targetUser?.phone) {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("en-OM", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+        const message = `💰 *Wallet Deposit - SBC*
+
+📥 Amount Deposited: *${amount.toFixed(3)} OMR*
+💵 New Balance: *${result.wallet.balance.toFixed(3)} OMR*
+📅 Date: ${dateStr}
+${description ? `📝 Note: ${description}` : ""}
+
+https://sbc.om`;
+        sendText({ chatId: formatChatId(targetUser.phone), text: message }).catch(console.error);
+      }
+    }
 
     return NextResponse.json({
       ok: true,

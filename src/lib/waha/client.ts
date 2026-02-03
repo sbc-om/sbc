@@ -177,13 +177,46 @@ export async function sendWelcome(phone: string, name: string, locale: "en" | "a
 /**
  * Send login notification
  */
-export async function sendLoginNotification(phone: string, locale: "en" | "ar" = "en"): Promise<WAHAResponse> {
+export async function sendLoginNotification(
+  phone: string, 
+  locale: "en" | "ar" = "en",
+  method: "password" | "whatsapp" | "passkey" = "password"
+): Promise<WAHAResponse> {
   const chatId = formatChatId(phone);
-  const now = new Date().toLocaleString(locale === "ar" ? "ar-OM" : "en-US");
+  const now = new Date();
+  const dateStr = now.toLocaleDateString(locale === "ar" ? "ar-OM" : "en-OM", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  
+  const methodNames: Record<string, { en: string; ar: string }> = {
+    password: { en: "Password", ar: "كلمة المرور" },
+    whatsapp: { en: "WhatsApp OTP", ar: "رمز واتساب" },
+    passkey: { en: "Passkey", ar: "مفتاح المرور" },
+  };
+  
+  const methodName = locale === "ar" ? methodNames[method]?.ar : methodNames[method]?.en;
   
   const messages = {
-    en: `🔔 New login to your SBC account\n\nTime: ${now}\n\nIf this wasn't you, please secure your account immediately.`,
-    ar: `🔔 تسجيل دخول جديد إلى حسابك في SBC\n\nالوقت: ${now}\n\nإذا لم تكن أنت، يرجى تأمين حسابك فوراً.`,
+    en: `🔐 *New Login - SBC*
+
+📅 Date: ${dateStr}
+🔑 Login Method: ${methodName}
+
+If you didn't perform this login, please change your password immediately.
+
+https://sbc.om`,
+    ar: `🔐 *تسجيل دخول جديد - SBC*
+
+📅 التاريخ: ${dateStr}
+🔑 طريقة الدخول: ${methodName}
+
+إذا لم تقم بهذا الدخول، يرجى تغيير كلمة المرور فوراً.
+
+https://sbc.om`,
   };
 
   return sendText({

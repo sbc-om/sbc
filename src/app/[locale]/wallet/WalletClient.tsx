@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
 import type { WalletTransaction, WithdrawalRequest } from "@/lib/db/wallet";
@@ -16,6 +17,8 @@ import {
   HiOutlineCheckCircle,
   HiOutlineXCircle,
   HiOutlineBell,
+  HiOutlineEye,
+  HiOutlineEyeOff,
 } from "react-icons/hi";
 
 // Notification sound (simple beep using Web Audio API)
@@ -66,6 +69,8 @@ interface WalletClientProps {
   initialWallet: {
     balance: number;
     accountNumber: string;
+    pendingWithdrawals: number;
+    availableBalance: number;
   };
   initialTransactions: WalletTransaction[];
   initialWithdrawalRequests?: WithdrawalRequest[];
@@ -89,7 +94,16 @@ export function WalletClient({
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"transactions" | "requests">("transactions");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [hideBalance, setHideBalance] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("wallet_hide_balance") === "true";
+    }
+    return false;
+  });
   const eventSourceRef = useRef<EventSource | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastBalanceRef = useRef<number>(initialWallet.balance);
+  const sseConnectedRef = useRef<boolean>(false);
 
   const isRTL = locale === "ar";
   const isAdmin = user.role === "admin";
@@ -125,8 +139,14 @@ export function WalletClient({
     pending: isRTL ? "قيد الانتظار" : "Pending",
     approved: isRTL ? "موافق عليه" : "Approved",
     rejected: isRTL ? "مرفوض" : "Rejected",
+    cancelled: isRTL ? "ملغى" : "Cancelled",
     noRequests: isRTL ? "لا توجد طلبات سحب" : "No withdrawal requests",
     requestSubmitted: isRTL ? "تم تقديم طلب السحب" : "Withdrawal request submitted",
+    requestCancelled: isRTL ? "تم إلغاء طلب السحب" : "Withdrawal request cancelled",
+    availableBalance: isRTL ? "الرصيد المتاح" : "Available Balance",
+    pendingAmount: isRTL ? "قيد الانتظار" : "Pending",
+    max: isRTL ? "الحد الأقصى" : "Max",
+    cancelRequest: isRTL ? "إلغاء" : "Cancel",
   };
 
   const copyAccountNumber = useCallback(() => {
@@ -135,8 +155,8 @@ export function WalletClient({
     setTimeout(() => setCopied(false), 2000);
   }, [wallet.accountNumber]);
 
-  const refreshWallet = useCallback(async () => {
-    setLoading(true);
+  const refreshWallet = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const [walletRes, requestsRes] = await Promise.all([
         fetch("/api/wallet"),
@@ -146,9 +166,37 @@ export function WalletClient({
       const requestsData = await requestsRes.json();
       
       if (walletData.ok) {
+        const newBalance = walletData.wallet.balance;
+        const oldBalance = lastBalanceRef.current;
+        
+        // Check if balance changed (for polling fallback notification)
+        if (!sseConnectedRef.current && newBalance !== oldBalance) {
+          const diff = newBalance - oldBalance;
+          playNotificationSound();
+          
+          if (diff > 0) {
+            showToast(
+              isRTL
+                ? `تم استلام ${diff.toFixed(3)} ر.ع`
+                : `Received ${diff.toFixed(3)} OMR`,
+              "success"
+            );
+          } else {
+            showToast(
+              isRTL
+                ? `تم إرسال ${Math.abs(diff).toFixed(3)} ر.ع`
+                : `Sent ${Math.abs(diff).toFixed(3)} OMR`,
+              "info"
+            );
+          }
+        }
+        
+        lastBalanceRef.current = newBalance;
         setWallet({
-          balance: walletData.wallet.balance,
+          balance: newBalance,
           accountNumber: walletData.wallet.accountNumber,
+          pendingWithdrawals: walletData.wallet.pendingWithdrawals || 0,
+          availableBalance: walletData.wallet.availableBalance ?? newBalance,
         });
         setTransactions(walletData.transactions);
       }
@@ -159,12 +207,33 @@ export function WalletClient({
     } catch (error) {
       console.error("Failed to refresh wallet:", error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  }, []);
+  }, [isRTL, showToast]);
 
-  // Connect to SSE for real-time updates
+  // Cancel withdrawal request
+  const cancelWithdrawalRequest = useCallback(async (requestId: string) => {
+    try {
+      const res = await fetch(`/api/wallet/withdraw?id=${requestId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      
+      if (data.ok) {
+        showToast(walletDict.requestCancelled, "success");
+        refreshWallet();
+      } else {
+        showToast(data.error || walletDict.error, "error");
+      }
+    } catch {
+      showToast(walletDict.error, "error");
+    }
+  }, [showToast, walletDict, refreshWallet]);
+
+  // Connect to SSE for real-time updates with polling fallback
   useEffect(() => {
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+    
     const connectSSE = () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
@@ -173,12 +242,21 @@ export function WalletClient({
       const eventSource = new EventSource("/api/wallet/stream");
       eventSourceRef.current = eventSource;
 
+      eventSource.onopen = () => {
+        console.log("Wallet SSE connected");
+        sseConnectedRef.current = true;
+        // Stop polling when SSE is connected
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      };
+
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           
           if (data.type === "connected") {
-            console.log("Wallet SSE connected");
             return;
           }
 
@@ -187,7 +265,12 @@ export function WalletClient({
 
           // Update balance if provided
           if (data.balance !== undefined) {
-            setWallet(prev => ({ ...prev, balance: data.balance }));
+            lastBalanceRef.current = data.balance;
+            setWallet(prev => ({ 
+              ...prev, 
+              balance: data.balance,
+              availableBalance: data.balance - prev.pendingWithdrawals,
+            }));
           }
 
           // Show appropriate toast message
@@ -236,18 +319,27 @@ export function WalletClient({
               break;
           }
 
-          // Refresh data
-          refreshWallet();
+          // Refresh data to get full transaction details
+          refreshWallet(true);
         } catch (e) {
           console.error("Error parsing SSE message:", e);
         }
       };
 
       eventSource.onerror = () => {
-        console.log("Wallet SSE error, reconnecting...");
+        console.log("Wallet SSE error, starting polling fallback...");
+        sseConnectedRef.current = false;
         eventSource.close();
-        // Reconnect after 3 seconds
-        setTimeout(connectSSE, 3000);
+        
+        // Start polling as fallback
+        if (!pollingIntervalRef.current) {
+          pollingIntervalRef.current = setInterval(() => {
+            refreshWallet(true);
+          }, 5000); // Poll every 5 seconds
+        }
+        
+        // Try to reconnect SSE after 10 seconds
+        reconnectTimeout = setTimeout(connectSSE, 10000);
       };
     };
 
@@ -256,6 +348,12 @@ export function WalletClient({
     return () => {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
+      }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
       }
     };
   }, [isRTL, showToast, refreshWallet]);
@@ -317,7 +415,7 @@ export function WalletClient({
           </p>
         </div>
         <button
-          onClick={refreshWallet}
+          onClick={() => refreshWallet()}
           disabled={loading}
           className="p-2 rounded-lg hover:bg-(--surface) transition-colors disabled:opacity-50"
           aria-label="Refresh"
@@ -328,11 +426,59 @@ export function WalletClient({
 
       {/* Balance Card */}
       <div className="rounded-2xl border p-6 bg-gradient-to-br from-accent/10 to-accent-2/10" style={{ borderColor: "var(--surface-border)" }}>
-        <div className="text-sm text-(--muted-foreground) mb-1">{walletDict.balance}</div>
+        {/* Main Balance */}
+        <div className="flex items-center justify-between mb-1">
+          <div className="text-sm text-(--muted-foreground)">{walletDict.balance}</div>
+          <button
+            onClick={() => {
+              const newValue = !hideBalance;
+              setHideBalance(newValue);
+              localStorage.setItem("wallet_hide_balance", String(newValue));
+            }}
+            className="p-1.5 rounded-lg hover:bg-(--surface) transition-colors text-(--muted-foreground) hover:text-foreground"
+            aria-label={hideBalance ? "Show balance" : "Hide balance"}
+          >
+            {hideBalance ? <HiOutlineEyeOff className="h-5 w-5" /> : <HiOutlineEye className="h-5 w-5" />}
+          </button>
+        </div>
         <div className="text-4xl font-bold text-accent mb-4">
-          {formatAmount(wallet.balance)} <span className="text-lg">{walletDict.currency}</span>
+          {hideBalance ? "***" : formatAmount(wallet.balance)} <span className="text-lg">{walletDict.currency}</span>
         </div>
         
+        {/* Available Balance Info - Only show if there are pending withdrawals */}
+        {wallet.pendingWithdrawals > 0 && (
+          <div className="mb-4 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-700/50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                  <HiOutlineClock className="h-4 w-4 text-amber-600" />
+                </div>
+                <span className="font-medium text-amber-700 dark:text-amber-400">
+                  {isRTL ? "مبلغ محجوز" : "Reserved Amount"}
+                </span>
+              </div>
+              <span className="font-bold text-amber-700 dark:text-amber-400">
+                {hideBalance ? "***" : `-${formatAmount(wallet.pendingWithdrawals)}`} {walletDict.currency}
+              </span>
+            </div>
+            <div className="h-px bg-amber-200 dark:bg-amber-700/50 my-2" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <HiOutlineCash className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="font-medium text-green-700 dark:text-green-400">
+                  {isRTL ? "المتاح للاستخدام" : "Available to Use"}
+                </span>
+              </div>
+              <span className="font-bold text-green-700 dark:text-green-400 text-lg">
+                {hideBalance ? "***" : formatAmount(wallet.availableBalance)} {walletDict.currency}
+              </span>
+            </div>
+          </div>
+        )}
+        
+        {/* Account Number */}
         <div className="flex items-center gap-2 text-sm">
           <span className="text-(--muted-foreground)">{walletDict.accountNumber}:</span>
           <code className="font-mono bg-(--surface) px-2 py-1 rounded">{wallet.accountNumber}</code>
@@ -462,6 +608,7 @@ export function WalletClient({
                     {req.status === "pending" && <HiOutlineClock className="h-5 w-5 text-yellow-500" />}
                     {req.status === "approved" && <HiOutlineCheckCircle className="h-5 w-5 text-green-500" />}
                     {req.status === "rejected" && <HiOutlineXCircle className="h-5 w-5 text-red-500" />}
+                    {req.status === "cancelled" && <HiOutlineXCircle className="h-5 w-5 text-gray-500" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-medium">
@@ -476,14 +623,28 @@ export function WalletClient({
                       </div>
                     )}
                   </div>
-                  <div className={`text-sm font-medium px-2 py-1 rounded-lg ${
-                    req.status === "pending" ? "bg-yellow-500/10 text-yellow-600" :
-                    req.status === "approved" ? "bg-green-500/10 text-green-600" :
-                    "bg-red-500/10 text-red-600"
-                  }`}>
-                    {req.status === "pending" && walletDict.pending}
-                    {req.status === "approved" && walletDict.approved}
-                    {req.status === "rejected" && walletDict.rejected}
+                  <div className="flex items-center gap-2">
+                    {/* Cancel button for pending requests */}
+                    {req.status === "pending" && (
+                      <button
+                        onClick={() => cancelWithdrawalRequest(req.id)}
+                        className="text-xs px-2 py-1 rounded-lg bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors"
+                      >
+                        {walletDict.cancelRequest}
+                      </button>
+                    )}
+                    {/* Status badge */}
+                    <div className={`text-sm font-medium px-2 py-1 rounded-lg ${
+                      req.status === "pending" ? "bg-yellow-500/10 text-yellow-600" :
+                      req.status === "approved" ? "bg-green-500/10 text-green-600" :
+                      req.status === "cancelled" ? "bg-gray-500/10 text-gray-600" :
+                      "bg-red-500/10 text-red-600"
+                    }`}>
+                      {req.status === "pending" && walletDict.pending}
+                      {req.status === "approved" && walletDict.approved}
+                      {req.status === "rejected" && walletDict.rejected}
+                      {req.status === "cancelled" && walletDict.cancelled}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -501,15 +662,16 @@ export function WalletClient({
           walletDict={walletDict}
           isAdmin={isAdmin}
           currentBalance={wallet.balance}
+          availableBalance={wallet.availableBalance}
           onClose={() => setModalType(null)}
-          onSuccess={refreshWallet}
+          onSuccess={() => refreshWallet()}
         />
       )}
 
-      {/* Toast Notification */}
-      {toast && (
+      {/* Toast Notification - Portal to body */}
+      {toast && typeof document !== 'undefined' && createPortal(
         <div 
-          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4 fade-in duration-300 ${
+          className={`fixed bottom-4 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-bottom-4 fade-in duration-300 ${
             toast.type === "success" 
               ? "bg-green-500 text-white" 
               : toast.type === "error" 
@@ -525,7 +687,8 @@ export function WalletClient({
           >
             <HiOutlineXCircle className="h-4 w-4" />
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -538,6 +701,7 @@ function WalletModal({
   walletDict,
   isAdmin,
   currentBalance,
+  availableBalance,
   onClose,
   onSuccess,
 }: {
@@ -546,6 +710,7 @@ function WalletModal({
   walletDict: Record<string, string>;
   isAdmin: boolean;
   currentBalance: number;
+  availableBalance: number;
   onClose: () => void;
   onSuccess: () => void;
 }) {
@@ -594,7 +759,7 @@ function WalletModal({
       return;
     }
 
-    if (type === "withdraw" && amountNum > currentBalance) {
+    if ((type === "withdraw" || type === "transfer") && amountNum > availableBalance) {
       setError(walletDict.insufficientBalance);
       return;
     }
@@ -720,21 +885,34 @@ function WalletModal({
               <label className="block text-sm font-medium mb-1">
                 {walletDict.amount} ({walletDict.currency})
               </label>
-              <input
-                type="number"
-                step="0.001"
-                min="0.001"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                className="w-full px-4 py-2 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-accent"
-                style={{ borderColor: "var(--surface-border)" }}
-                dir="ltr"
-                required
-              />
-              {type === "withdraw" && (
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0.001"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.00"
+                  className="flex-1 px-4 py-2 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-accent"
+                  style={{ borderColor: "var(--surface-border)" }}
+                  dir="ltr"
+                  required
+                />
+                {/* Max button for withdraw and transfer */}
+                {(type === "withdraw" || type === "transfer") && (
+                  <button
+                    type="button"
+                    onClick={() => setAmount(availableBalance.toFixed(3))}
+                    disabled={availableBalance <= 0}
+                    className="px-4 py-2 rounded-xl bg-accent/10 text-accent hover:bg-accent/20 transition-colors disabled:opacity-50 font-medium text-sm"
+                  >
+                    {walletDict.max || "Max"}
+                  </button>
+                )}
+              </div>
+              {(type === "withdraw" || type === "transfer") && (
                 <div className="mt-1 text-xs text-(--muted-foreground)">
-                  {isRTL ? "الرصيد المتاح:" : "Available:"} {currentBalance.toFixed(3)} {walletDict.currency}
+                  {isRTL ? "الرصيد المتاح:" : "Available:"} {availableBalance.toFixed(3)} {walletDict.currency}
                 </div>
               )}
             </div>

@@ -142,6 +142,88 @@ export async function listBusinessesWithActiveStories(): Promise<BusinessWithSto
 }
 
 /**
+ * Get businesses with active stories filtered by user follows
+ * Returns stories only from businesses that user follows directly or from followed categories
+ */
+export async function listFollowedBusinessesWithActiveStories(
+  followedBusinessIds: Set<string>,
+  followedCategoryIds: Set<string>,
+  unfollowedBusinessIds: Set<string>
+): Promise<BusinessWithStories[]> {
+  const allStories = await listBusinessesWithActiveStories();
+  
+  // Filter stories to only include followed businesses
+  return allStories.filter((businessWithStories) => {
+    const businessId = businessWithStories.businessId;
+    
+    // Exclude unfollowed businesses
+    if (unfollowedBusinessIds.has(businessId)) return false;
+    
+    // Include if directly following this business
+    if (followedBusinessIds.has(businessId)) return true;
+    
+    // Need to check if business category is followed - fetch business info
+    // For now, we can't easily get category from this data, so we need a different approach
+    return false;
+  });
+}
+
+/**
+ * Get businesses with active stories filtered by user follows (with category check)
+ */
+export async function listFollowedBusinessesWithActiveStoriesWithCategory(
+  userId: string
+): Promise<BusinessWithStories[]> {
+  // Get stories with business category info
+  const result = await query(`
+    SELECT s.*, b.name_en, b.name_ar, b.media, b.username, b.category_id,
+           EXISTS(SELECT 1 FROM user_business_follows WHERE user_id = $1 AND business_id = b.id) as is_followed,
+           EXISTS(SELECT 1 FROM user_business_unfollows WHERE user_id = $1 AND business_id = b.id) as is_unfollowed,
+           EXISTS(SELECT 1 FROM user_category_follows WHERE user_id = $1 AND category_id = b.category_id) as category_followed
+    FROM stories s
+    JOIN businesses b ON s.business_id = b.id
+    WHERE s.expires_at > NOW() AND b.is_approved = true
+    ORDER BY s.created_at DESC
+  `, [userId]);
+  
+  // Filter: include if (followed OR category_followed) AND NOT unfollowed
+  const filteredRows = result.rows.filter((row: any) => {
+    if (row.is_unfollowed) return false;
+    return row.is_followed || row.category_followed;
+  });
+  
+  // Group by business
+  const businessMap = new Map<string, BusinessWithStories>();
+  
+  for (const row of filteredRows) {
+    const story = rowToStoryWithBusiness(row);
+    
+    if (!businessMap.has(story.businessId)) {
+      businessMap.set(story.businessId, {
+        businessId: story.businessId,
+        businessName: story.businessName,
+        businessAvatar: story.businessAvatar,
+        businessUsername: story.businessUsername,
+        stories: [],
+        hasUnviewed: true,
+      });
+    }
+    businessMap.get(story.businessId)!.stories.push({
+      id: story.id,
+      businessId: story.businessId,
+      mediaUrl: story.mediaUrl,
+      mediaType: story.mediaType,
+      caption: story.caption,
+      createdAt: story.createdAt,
+      expiresAt: story.expiresAt,
+      viewCount: story.viewCount,
+    });
+  }
+  
+  return Array.from(businessMap.values());
+}
+
+/**
  * Delete a story
  */
 export async function deleteStory(id: string): Promise<boolean> {

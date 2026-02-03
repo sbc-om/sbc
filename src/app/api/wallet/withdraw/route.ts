@@ -5,7 +5,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { createWithdrawalRequest, getUserWithdrawalRequests, getUserWallet } from "@/lib/db/wallet";
+import { createWithdrawalRequest, getUserWithdrawalRequests, getUserWallet, cancelWithdrawalRequest } from "@/lib/db/wallet";
+import { sendText, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
 
 const withdrawSchema = z.object({
   amount: z.number().positive("Amount must be positive"),
@@ -58,6 +59,29 @@ export async function POST(request: NextRequest) {
     // Create withdrawal request
     const withdrawalRequest = await createWithdrawalRequest(user.id, amount);
 
+    // Send WhatsApp notification
+    if (isWAHAEnabled() && user.phone) {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("en-OM", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      const message = `📤 *Withdrawal Request - SBC*
+
+💸 Amount: *${amount.toFixed(3)} OMR*
+📋 Status: Pending Review
+📅 Date: ${dateStr}
+
+Your withdrawal request has been submitted and is pending admin approval.
+
+https://sbc.om`;
+      sendText({ chatId: formatChatId(user.phone), text: message }).catch(console.error);
+    }
+
     return NextResponse.json({
       ok: true,
       request: withdrawalRequest,
@@ -92,6 +116,42 @@ export async function GET() {
     console.error("Get withdrawal requests error:", error);
     return NextResponse.json(
       { ok: false, error: "Failed to get withdrawal requests" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/wallet/withdraw - Cancel a withdrawal request
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const requestId = searchParams.get("id");
+
+    if (!requestId) {
+      return NextResponse.json(
+        { ok: false, error: "Request ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const cancelledRequest = await cancelWithdrawalRequest(requestId, user.id);
+
+    return NextResponse.json({
+      ok: true,
+      request: cancelledRequest,
+      message: "Withdrawal request cancelled",
+    });
+  } catch (error) {
+    console.error("Cancel withdrawal request error:", error);
+    return NextResponse.json(
+      { ok: false, error: error instanceof Error ? error.message : "Failed to cancel request" },
       { status: 500 }
     );
   }

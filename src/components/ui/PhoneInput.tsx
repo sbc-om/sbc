@@ -79,10 +79,13 @@ export function formatPhoneDisplay(countryCode: string, localNumber: string): st
 
 /**
  * Combine country code and local number into full phone
+ * Outputs phone without "+" prefix (e.g., "96899668993")
  */
 export function combinePhone(countryCode: string, localNumber: string): string {
-  const cleaned = localNumber.replace(/\D/g, "");
-  return `${countryCode}${cleaned}`;
+  // Remove + from country code and non-digits from local number
+  const cleanedCountryCode = countryCode.replace(/\D/g, "");
+  const cleanedLocalNumber = localNumber.replace(/\D/g, "");
+  return `${cleanedCountryCode}${cleanedLocalNumber}`;
 }
 
 const inputBase =

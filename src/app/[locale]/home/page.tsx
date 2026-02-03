@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinesses, listBusinessesByOwner } from "@/lib/db/businesses";
 import { getUserFollowedCategoryIds, getUserFollowedBusinessIds, getUserUnfollowedBusinessIds } from "@/lib/db/follows";
 import { getCategoryById } from "@/lib/db/categories";
-import { listBusinessesWithActiveStories } from "@/lib/db/stories";
+import { listBusinessesWithActiveStories, listFollowedBusinessesWithActiveStoriesWithCategory } from "@/lib/db/stories";
 import {
   getBusinessLikeCount,
   hasUserLikedBusiness,
@@ -81,10 +81,15 @@ export default async function HomeFollowedPage({
   const followedBusinessIds = new Set(await getUserFollowedBusinessIds(user.id));
   const unfollowedBusinessIds = new Set(await getUserUnfollowedBusinessIds(user.id));
   const allBusinesses = await listBusinesses();
-  const businessesWithStories = await listBusinessesWithActiveStories();
+  
+  // Get stories from followed businesses/categories only for home page
+  const [allBusinessesWithStories, followedBusinessesWithStories] = await Promise.all([
+    listBusinessesWithActiveStories(),
+    listFollowedBusinessesWithActiveStoriesWithCategory(user.id),
+  ]);
   
   // Create a Set of business IDs that have stories for quick lookup
-  const businessIdsWithStories = new Set(businessesWithStories.map(b => b.businessId));
+  const businessIdsWithStories = new Set(allBusinessesWithStories.map(b => b.businessId));
 
   // Filter businesses:
   // 1. Include if user directly follows the business
@@ -126,11 +131,11 @@ export default async function HomeFollowedPage({
     <AppPage>
       <FeedProfileHeader user={viewUser} locale={locale as Locale} />
 
-      {/* Stories Section */}
-      {businessesWithStories.length > 0 && (
+      {/* Stories Section - Only from followed businesses/categories */}
+      {followedBusinessesWithStories.length > 0 && (
         <div className="my-6 -mx-4 sm:-mx-6">
           <StoriesContainer
-            initialBusinesses={businessesWithStories}
+            initialBusinesses={followedBusinessesWithStories}
             locale={locale as Locale}
             currentUserId={user.id}
             ownedBusinessIds={ownedBusinesses.map(b => b.id)}

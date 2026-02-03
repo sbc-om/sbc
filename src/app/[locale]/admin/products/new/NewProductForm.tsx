@@ -22,7 +22,7 @@ export function NewProductForm({ locale }: { locale: Locale }) {
     descriptionEn: "",
     descriptionAr: "",
     priceAmount: 0,
-    priceCurrency: "OMR" as "OMR" | "USD",
+    priceCurrency: "OMR",
     priceInterval: "" as "" | "month" | "year" | "6mo",
     featuresEn: "",
     featuresAr: "",
@@ -230,7 +230,7 @@ export function NewProductForm({ locale }: { locale: Locale }) {
             className="w-full px-3 py-2 border rounded-lg bg-(--background) border-(--border)"
           >
             <option value="OMR">OMR</option>
-            <option value="USD">USD</option>
+
           </select>
         </div>
         <div>

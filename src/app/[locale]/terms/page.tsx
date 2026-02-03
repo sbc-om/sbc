@@ -206,7 +206,7 @@ export default async function TermsPage({
                 <li>
                   {locale === "ar"
                     ? "جميع الأسعار بالدولار الأمريكي ما لم يُذكر خلاف ذلك"
-                    : "All prices are in USD unless otherwise stated"}
+                    : "All prices are in OMR unless otherwise stated"}
                 </li>
                 <li>
                   {locale === "ar"

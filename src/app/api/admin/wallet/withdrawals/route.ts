@@ -14,6 +14,8 @@ import {
   type WithdrawalRequestStatus,
 } from "@/lib/db/wallet";
 import { broadcastWalletEvent } from "@/app/api/wallet/stream/route";
+import { sendText, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
+import { getUserById } from "@/lib/db/users";
 
 /**
  * GET /api/admin/wallet/withdrawals - Get all withdrawal requests
@@ -79,6 +81,33 @@ export async function POST(request: NextRequest) {
         balance: result.transaction.balanceAfter,
         message: message || "Withdrawal approved",
       });
+
+      // Send WhatsApp notification
+      if (isWAHAEnabled()) {
+        const targetUser = await getUserById(result.request.userId);
+        if (targetUser?.phone) {
+          const now = new Date();
+          const dateStr = now.toLocaleDateString("en-OM", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+          const whatsappMsg = `✅ *Withdrawal Approved - SBC*
+
+💸 Amount: *${result.request.amount.toFixed(3)} OMR*
+💵 New Balance: *${result.transaction.balanceAfter.toFixed(3)} OMR*
+📅 Date: ${dateStr}
+${message ? `📝 Admin Note: ${message}` : ""}
+
+Your withdrawal has been processed successfully.
+
+https://sbc.om`;
+          sendText({ chatId: formatChatId(targetUser.phone), text: whatsappMsg }).catch(console.error);
+        }
+      }
       
       return NextResponse.json({
         ok: true,
@@ -98,6 +127,32 @@ export async function POST(request: NextRequest) {
         balance: wallet?.balance,
         message: message || "Withdrawal rejected",
       });
+
+      // Send WhatsApp notification
+      if (isWAHAEnabled()) {
+        const targetUser = await getUserById(result.userId);
+        if (targetUser?.phone) {
+          const now = new Date();
+          const dateStr = now.toLocaleDateString("en-OM", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+
+          const whatsappMsg = `❌ *Withdrawal Rejected - SBC*
+
+💸 Amount: *${result.amount.toFixed(3)} OMR*
+📅 Date: ${dateStr}
+${message ? `📝 Reason: ${message}` : ""}
+
+Your withdrawal request has been rejected. Your balance remains unchanged.
+
+https://sbc.om`;
+          sendText({ chatId: formatChatId(targetUser.phone), text: whatsappMsg }).catch(console.error);
+        }
+      }
       
       return NextResponse.json({
         ok: true,

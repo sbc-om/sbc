@@ -22,16 +22,16 @@ export function getStoreProductText(product: StoreProduct, locale: Locale) {
  * Format product price with currency and interval
  */
 export function formatStorePrice(price: StoreProductPrice, locale: Locale): string {
-  // OMR uses 3 minor units; default Intl formatting is correct but we pin it for consistency.
+  // OMR uses 3 minor units
   const fractionDigits = price.currency === "OMR" ? 3 : 0;
   const nf = new Intl.NumberFormat(locale === "ar" ? "ar-OM" : "en-OM", {
-    style: "currency",
-    currency: price.currency,
+    style: "decimal",
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   });
 
-  const base = nf.format(price.amount);
+  // Format as "100.000 OMR" (number first, then currency)
+  const base = `${nf.format(price.amount)} ${price.currency}`;
   if (!price.interval) return base;
 
   const suffix =

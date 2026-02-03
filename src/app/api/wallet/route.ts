@@ -4,7 +4,7 @@
  */
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { getUserWallet, ensureWallet, getWalletTransactions } from "@/lib/db/wallet";
+import { getUserWallet, ensureWallet, getWalletTransactions, getPendingWithdrawalsTotal } from "@/lib/db/wallet";
 
 export async function GET() {
   try {
@@ -26,14 +26,19 @@ export async function GET() {
       wallet = await ensureWallet(user.id, user.phone);
     }
 
-    // Get recent transactions
-    const transactions = await getWalletTransactions(user.id, 20, 0);
+    // Get recent transactions and pending withdrawals
+    const [transactions, pendingWithdrawals] = await Promise.all([
+      getWalletTransactions(user.id, 20, 0),
+      getPendingWithdrawalsTotal(user.id),
+    ]);
 
     return NextResponse.json({
       ok: true,
       wallet: {
         balance: wallet.balance,
         accountNumber: wallet.accountNumber,
+        pendingWithdrawals,
+        availableBalance: wallet.balance - pendingWithdrawals,
         createdAt: wallet.createdAt,
       },
       transactions,

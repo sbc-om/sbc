@@ -7,6 +7,8 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { transferFunds, getUserWallet, getWalletByAccountNumber, getUserByPhone } from "@/lib/db/wallet";
 import { broadcastWalletEvent } from "@/app/api/wallet/stream/route";
+import { sendText, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
+import { getUserById } from "@/lib/db/users";
 
 const transferSchema = z.object({
   toAccountNumber: z.string().min(1, "Account number required"),
@@ -88,6 +90,47 @@ export async function POST(request: NextRequest) {
       fromUser: result.fromWallet.accountNumber,
       description: description || `Received from ${result.fromWallet.accountNumber}`,
     });
+
+    // Send WhatsApp notifications
+    if (isWAHAEnabled()) {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString("en-OM", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      // Notify sender
+      if (user.phone) {
+        const senderMsg = `💸 *Wallet Transfer - SBC*
+
+📤 Amount Sent: *${amount.toFixed(3)} OMR*
+📍 To: ${result.toWallet.accountNumber}
+💵 New Balance: *${result.fromWallet.balance.toFixed(3)} OMR*
+📅 Date: ${dateStr}
+${description ? `📝 Note: ${description}` : ""}
+
+https://sbc.om`;
+        sendText({ chatId: formatChatId(user.phone), text: senderMsg }).catch(console.error);
+      }
+
+      // Notify receiver
+      const receiverUser = await getUserById(result.toWallet.userId);
+      if (receiverUser?.phone) {
+        const receiverMsg = `💰 *Wallet Received - SBC*
+
+📥 Amount Received: *${amount.toFixed(3)} OMR*
+📍 From: ${result.fromWallet.accountNumber}
+💵 New Balance: *${result.toWallet.balance.toFixed(3)} OMR*
+📅 Date: ${dateStr}
+${description ? `📝 Note: ${description}` : ""}
+
+https://sbc.om`;
+        sendText({ chatId: formatChatId(receiverUser.phone), text: receiverMsg }).catch(console.error);
+      }
+    }
 
     return NextResponse.json({
       ok: true,
