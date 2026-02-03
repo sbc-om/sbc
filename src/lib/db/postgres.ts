@@ -188,6 +188,40 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_stories_business_id ON stories(business_id);
     CREATE INDEX IF NOT EXISTS idx_stories_expires_at ON stories(expires_at);
 
+    -- Story views (track who viewed each story)
+    CREATE TABLE IF NOT EXISTS story_views (
+      id TEXT PRIMARY KEY,
+      story_id TEXT REFERENCES stories(id) ON DELETE CASCADE,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      viewed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(story_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_story_views_story_id ON story_views(story_id);
+    CREATE INDEX IF NOT EXISTS idx_story_views_user_id ON story_views(user_id);
+
+    -- Story likes
+    CREATE TABLE IF NOT EXISTS story_likes (
+      id TEXT PRIMARY KEY,
+      story_id TEXT REFERENCES stories(id) ON DELETE CASCADE,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(story_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_story_likes_story_id ON story_likes(story_id);
+    CREATE INDEX IF NOT EXISTS idx_story_likes_user_id ON story_likes(user_id);
+
+    -- Story comments
+    CREATE TABLE IF NOT EXISTS story_comments (
+      id TEXT PRIMARY KEY,
+      story_id TEXT REFERENCES stories(id) ON DELETE CASCADE,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      text TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_story_comments_story_id ON story_comments(story_id);
+    CREATE INDEX IF NOT EXISTS idx_story_comments_user_id ON story_comments(user_id);
+
     -- Business cards table
     CREATE TABLE IF NOT EXISTS business_cards (
       id TEXT PRIMARY KEY,

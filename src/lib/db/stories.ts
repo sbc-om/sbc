@@ -182,3 +182,335 @@ export async function getActiveStoryCountByBusiness(businessId: string): Promise
   `, [businessId]);
   return parseInt(result.rows[0]?.count || "0", 10);
 }
+
+// ============================================
+// Story Views
+// ============================================
+
+export type StoryView = {
+  id: string;
+  storyId: string;
+  userId: string;
+  viewedAt: string;
+  // Joined user data
+  userFullName?: string;
+  userAvatar?: string;
+  userUsername?: string;
+};
+
+function rowToStoryView(row: any): StoryView {
+  return {
+    id: row.id,
+    storyId: row.story_id,
+    userId: row.user_id,
+    viewedAt: row.viewed_at?.toISOString() || new Date().toISOString(),
+    userFullName: row.full_name,
+    userAvatar: row.avatar_url,
+    userUsername: row.username,
+  };
+}
+
+/**
+ * Record a view for a story (idempotent - won't duplicate)
+ */
+export async function recordStoryView(storyId: string, userId: string): Promise<void> {
+  const id = nanoid();
+  await query(`
+    INSERT INTO story_views (id, story_id, user_id, viewed_at)
+    VALUES ($1, $2, $3, NOW())
+    ON CONFLICT (story_id, user_id) DO NOTHING
+  `, [id, storyId, userId]);
+  
+  // Also increment the total view count
+  await incrementStoryViewCount(storyId);
+}
+
+/**
+ * Get viewers for a story with user info
+ */
+export async function getStoryViewers(storyId: string): Promise<StoryView[]> {
+  const result = await query(`
+    SELECT sv.*, u.full_name, u.avatar_url, u.username
+    FROM story_views sv
+    JOIN users u ON sv.user_id = u.id
+    WHERE sv.story_id = $1
+    ORDER BY sv.viewed_at DESC
+  `, [storyId]);
+  return result.rows.map(rowToStoryView);
+}
+
+/**
+ * Get view count for a story (unique viewers)
+ */
+export async function getStoryViewCount(storyId: string): Promise<number> {
+  const result = await query(`
+    SELECT COUNT(*) as count FROM story_views WHERE story_id = $1
+  `, [storyId]);
+  return parseInt(result.rows[0]?.count || "0", 10);
+}
+
+/**
+ * Check if user has viewed a story
+ */
+export async function hasUserViewedStory(storyId: string, userId: string): Promise<boolean> {
+  const result = await query(`
+    SELECT 1 FROM story_views WHERE story_id = $1 AND user_id = $2
+  `, [storyId, userId]);
+  return result.rows.length > 0;
+}
+
+// ============================================
+// Story Likes
+// ============================================
+
+export type StoryLike = {
+  id: string;
+  storyId: string;
+  userId: string;
+  createdAt: string;
+  // Joined user data
+  userFullName?: string;
+  userAvatar?: string;
+  userUsername?: string;
+};
+
+function rowToStoryLike(row: any): StoryLike {
+  return {
+    id: row.id,
+    storyId: row.story_id,
+    userId: row.user_id,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    userFullName: row.full_name,
+    userAvatar: row.avatar_url,
+    userUsername: row.username,
+  };
+}
+
+/**
+ * Like a story
+ */
+export async function likeStory(storyId: string, userId: string): Promise<boolean> {
+  const id = nanoid();
+  const result = await query(`
+    INSERT INTO story_likes (id, story_id, user_id, created_at)
+    VALUES ($1, $2, $3, NOW())
+    ON CONFLICT (story_id, user_id) DO NOTHING
+    RETURNING id
+  `, [id, storyId, userId]);
+  return result.rows.length > 0;
+}
+
+/**
+ * Unlike a story
+ */
+export async function unlikeStory(storyId: string, userId: string): Promise<boolean> {
+  const result = await query(`
+    DELETE FROM story_likes WHERE story_id = $1 AND user_id = $2
+  `, [storyId, userId]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+/**
+ * Get likers for a story with user info
+ */
+export async function getStoryLikers(storyId: string): Promise<StoryLike[]> {
+  const result = await query(`
+    SELECT sl.*, u.full_name, u.avatar_url, u.username
+    FROM story_likes sl
+    JOIN users u ON sl.user_id = u.id
+    WHERE sl.story_id = $1
+    ORDER BY sl.created_at DESC
+  `, [storyId]);
+  return result.rows.map(rowToStoryLike);
+}
+
+/**
+ * Get like count for a story
+ */
+export async function getStoryLikeCount(storyId: string): Promise<number> {
+  const result = await query(`
+    SELECT COUNT(*) as count FROM story_likes WHERE story_id = $1
+  `, [storyId]);
+  return parseInt(result.rows[0]?.count || "0", 10);
+}
+
+/**
+ * Check if user has liked a story
+ */
+export async function hasUserLikedStory(storyId: string, userId: string): Promise<boolean> {
+  const result = await query(`
+    SELECT 1 FROM story_likes WHERE story_id = $1 AND user_id = $2
+  `, [storyId, userId]);
+  return result.rows.length > 0;
+}
+
+// ============================================
+// Story Comments
+// ============================================
+
+export type StoryComment = {
+  id: string;
+  storyId: string;
+  userId: string;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+  // Joined user data
+  userFullName?: string;
+  userAvatar?: string;
+  userUsername?: string;
+};
+
+function rowToStoryComment(row: any): StoryComment {
+  return {
+    id: row.id,
+    storyId: row.story_id,
+    userId: row.user_id,
+    text: row.text,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    userFullName: row.full_name,
+    userAvatar: row.avatar_url,
+    userUsername: row.username,
+  };
+}
+
+/**
+ * Add a comment to a story
+ */
+export async function addStoryComment(storyId: string, userId: string, text: string): Promise<StoryComment> {
+  const id = nanoid();
+  await query(`
+    INSERT INTO story_comments (id, story_id, user_id, text, created_at, updated_at)
+    VALUES ($1, $2, $3, $4, NOW(), NOW())
+  `, [id, storyId, userId, text]);
+  
+  // Fetch the comment with user info
+  const result = await query(`
+    SELECT sc.*, u.full_name, u.avatar_url, u.username
+    FROM story_comments sc
+    JOIN users u ON sc.user_id = u.id
+    WHERE sc.id = $1
+  `, [id]);
+  
+  return rowToStoryComment(result.rows[0]);
+}
+
+/**
+ * Delete a comment (only by comment owner or story business owner)
+ */
+export async function deleteStoryComment(commentId: string): Promise<boolean> {
+  const result = await query(`
+    DELETE FROM story_comments WHERE id = $1
+  `, [commentId]);
+  return (result.rowCount ?? 0) > 0;
+}
+
+/**
+ * Get a comment by ID with user info
+ */
+export async function getStoryCommentById(commentId: string): Promise<StoryComment | null> {
+  const result = await query(`
+    SELECT sc.*, u.full_name, u.avatar_url, u.username
+    FROM story_comments sc
+    JOIN users u ON sc.user_id = u.id
+    WHERE sc.id = $1
+  `, [commentId]);
+  return result.rows.length > 0 ? rowToStoryComment(result.rows[0]) : null;
+}
+
+/**
+ * Get comments for a story with user info
+ */
+export async function getStoryComments(storyId: string): Promise<StoryComment[]> {
+  const result = await query(`
+    SELECT sc.*, u.full_name, u.avatar_url, u.username
+    FROM story_comments sc
+    JOIN users u ON sc.user_id = u.id
+    WHERE sc.story_id = $1
+    ORDER BY sc.created_at ASC
+  `, [storyId]);
+  return result.rows.map(rowToStoryComment);
+}
+
+/**
+ * Get comment count for a story
+ */
+export async function getStoryCommentCount(storyId: string): Promise<number> {
+  const result = await query(`
+    SELECT COUNT(*) as count FROM story_comments WHERE story_id = $1
+  `, [storyId]);
+  return parseInt(result.rows[0]?.count || "0", 10);
+}
+
+// ============================================
+// Story Stats (for business owner dashboard)
+// ============================================
+
+export type StoryStats = {
+  storyId: string;
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  viewers: StoryView[];
+  likers: StoryLike[];
+  comments: StoryComment[];
+};
+
+/**
+ * Get full stats for a story (viewers, likers, comments)
+ */
+export async function getStoryStats(storyId: string): Promise<StoryStats> {
+  const [viewers, likers, comments] = await Promise.all([
+    getStoryViewers(storyId),
+    getStoryLikers(storyId),
+    getStoryComments(storyId),
+  ]);
+
+  return {
+    storyId,
+    viewCount: viewers.length,
+    likeCount: likers.length,
+    commentCount: comments.length,
+    viewers,
+    likers,
+    comments,
+  };
+}
+
+/**
+ * Get stats summary for all stories of a business
+ */
+export async function getBusinessStoriesStats(businessId: string): Promise<{
+  stories: Array<Story & { stats: { viewCount: number; likeCount: number; commentCount: number } }>;
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
+}> {
+  const stories = await getActiveStoriesByBusiness(businessId);
+  
+  const storiesWithStats = await Promise.all(
+    stories.map(async (story) => {
+      const [viewCount, likeCount, commentCount] = await Promise.all([
+        getStoryViewCount(story.id),
+        getStoryLikeCount(story.id),
+        getStoryCommentCount(story.id),
+      ]);
+      return {
+        ...story,
+        stats: { viewCount, likeCount, commentCount },
+      };
+    })
+  );
+
+  const totalViews = storiesWithStats.reduce((sum, s) => sum + s.stats.viewCount, 0);
+  const totalLikes = storiesWithStats.reduce((sum, s) => sum + s.stats.likeCount, 0);
+  const totalComments = storiesWithStats.reduce((sum, s) => sum + s.stats.commentCount, 0);
+
+  return {
+    stories: storiesWithStats,
+    totalViews,
+    totalLikes,
+    totalComments,
+  };
+}

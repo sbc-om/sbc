@@ -11,9 +11,16 @@ import { StoryViewer } from "./StoryViewer";
 interface StoriesContainerProps {
   initialBusinesses: BusinessWithStories[];
   locale: Locale;
+  currentUserId?: string;
+  ownedBusinessIds?: string[];
 }
 
-export function StoriesContainer({ initialBusinesses, locale }: StoriesContainerProps) {
+export function StoriesContainer({ 
+  initialBusinesses, 
+  locale,
+  currentUserId,
+  ownedBusinessIds = [],
+}: StoriesContainerProps) {
   const [businesses, setBusinesses] = useState(initialBusinesses);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
@@ -36,6 +43,11 @@ export function StoriesContainer({ initialBusinesses, locale }: StoriesContainer
     document.body.style.overflow = "";
   };
 
+  // Check if current user owns the selected business
+  const isBusinessOwner = selectedBusinessId 
+    ? ownedBusinessIds.includes(selectedBusinessId)
+    : false;
+
   // Don't render anything if no stories
   if (businesses.length === 0) {
     return null;
@@ -55,6 +67,8 @@ export function StoriesContainer({ initialBusinesses, locale }: StoriesContainer
           initialBusinessId={selectedBusinessId}
           locale={locale}
           onClose={handleCloseViewer}
+          currentUserId={currentUserId}
+          isBusinessOwner={isBusinessOwner}
         />,
         document.body
       )}

@@ -113,6 +113,8 @@ export default async function HomeFollowedPage({
           <StoriesContainer
             initialBusinesses={businessesWithStories}
             locale={locale as Locale}
+            currentUserId={user.id}
+            ownedBusinessIds={ownedBusinesses.map(b => b.id)}
           />
         </div>
       )}

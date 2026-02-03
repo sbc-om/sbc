@@ -4,7 +4,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { listBusinesses } from "@/lib/db/businesses";
+import { listBusinesses, listBusinessesByOwner } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
 import { listBusinessesWithActiveStories } from "@/lib/db/stories";
 import { BusinessesExplorer } from "@/components/BusinessesExplorer";
@@ -23,10 +23,11 @@ export default async function ExplorerPage({
   const user = await getCurrentUser();
 
   const dict = await getDictionary(locale as Locale);
-  const [businesses, categories, businessesWithStories] = await Promise.all([
+  const [businesses, categories, businessesWithStories, ownedBusinesses] = await Promise.all([
     listBusinesses(),
     listCategories(),
     listBusinessesWithActiveStories(),
+    user ? listBusinessesByOwner(user.id) : Promise.resolve([]),
   ]);
 
   const Wrapper = user ? AppPage : PublicPage;
@@ -40,6 +41,8 @@ export default async function ExplorerPage({
           <StoriesContainer
             initialBusinesses={businessesWithStories}
             locale={locale as Locale}
+            currentUserId={user?.id}
+            ownedBusinessIds={ownedBusinesses.map(b => b.id)}
           />
         </div>
       )}

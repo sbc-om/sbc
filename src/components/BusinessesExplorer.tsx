@@ -55,21 +55,21 @@ export function BusinessesExplorer({
 }) {
   // Unified search state
   const [searchQuery, setSearchQuery] = useState("");
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [city, setCity] = useState("");
   const [tags, setTags] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
   const [sortBy, setSortBy] = useState<string>("relevance");
   const [aiResults, setAiResults] = useState<Business[] | null>(null);
   
+  // Active search mode - only one can be active at a time
+  type SearchMode = "none" | "advanced" | "image" | "chat";
+  const [activeMode, setActiveMode] = useState<SearchMode>("none");
+  
   // AI Search
   const { isReady, searchSimilar, findVisuallySimilar } = useAISearch();
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Chat interface
-  const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState<Array<{role: "user" | "assistant", content: string}>>([]);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -91,9 +91,24 @@ export function BusinessesExplorer({
     }
   };
 
+  // Toggle search mode - ensures only one panel is open at a time
+  const toggleMode = (mode: SearchMode) => {
+    if (activeMode === mode) {
+      setActiveMode("none");
+    } else {
+      setActiveMode(mode);
+      // Clear image when switching away from image mode
+      if (mode !== "image" && uploadedImage) {
+        setUploadedImage(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setActiveMode("image");
     setUploadedImage(file);
     setIsAiSearching(true);
     try {
@@ -112,6 +127,7 @@ export function BusinessesExplorer({
     setTags("");
     setCategoryId("");
     setSortBy("relevance");
+    setActiveMode("none");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -285,13 +301,14 @@ export function BusinessesExplorer({
               </Button>
             </div>
 
-            {/* Quick Action Buttons */}
+            {/* Quick Action Buttons - Toggle Group */}
             <div className="flex gap-2 flex-wrap">
               <Button
                 type="button"
-                variant="secondary"
+                variant={activeMode === "advanced" ? "default" : "secondary"}
                 size="sm"
-                onClick={() => setShowAdvanced(!showAdvanced)}
+                onClick={() => toggleMode("advanced")}
+                className={activeMode === "advanced" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : ""}
               >
                 <FiFilter className="h-3.5 w-3.5" />
                 {locale === "ar" ? "فلاتر متقدمة" : "Advanced Filters"}
@@ -299,10 +316,17 @@ export function BusinessesExplorer({
               
               <Button
                 type="button"
-                variant="secondary"
+                variant={activeMode === "image" ? "default" : "secondary"}
                 size="sm"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  if (activeMode === "image") {
+                    toggleMode("image");
+                  } else {
+                    fileInputRef.current?.click();
+                  }
+                }}
                 disabled={isAiSearching}
+                className={activeMode === "image" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : ""}
               >
                 <FiUpload className="h-3.5 w-3.5" />
                 {locale === "ar" ? "بحث بالصورة" : "Search by Image"}
@@ -319,15 +343,16 @@ export function BusinessesExplorer({
 
               <Button
                 type="button"
-                variant="secondary"
+                variant={activeMode === "chat" ? "default" : "secondary"}
                 size="sm"
-                onClick={() => setShowChat(!showChat)}
+                onClick={() => toggleMode("chat")}
+                className={activeMode === "chat" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : ""}
               >
                 <FiMessageCircle className="h-3.5 w-3.5" />
-                {locale === "ar" ? "محادثة ذكية" : "AI Chat"}
+                {locale === "ar" ? "محادثة ذکية" : "AI Chat"}
               </Button>
 
-              {(searchQuery || uploadedImage || aiResults || city || tags || categoryId) && (
+              {(searchQuery || uploadedImage || aiResults || city || tags || categoryId || activeMode !== "none") && (
                 <Button
                   type="button"
                   variant="ghost"
@@ -364,6 +389,7 @@ export function BusinessesExplorer({
                 onClick={() => {
                   setUploadedImage(null);
                   setAiResults(null);
+                  setActiveMode("none");
                   if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
                 className="h-8 w-8 rounded-full bg-red-500/10 text-red-500 hover:bg-red-500/20 transition flex items-center justify-center"
@@ -374,7 +400,7 @@ export function BusinessesExplorer({
           )}
 
           {/* Advanced Filters */}
-          {showAdvanced && (
+          {activeMode === "advanced" && (
             <div className="space-y-3 p-4 rounded-xl border border-(--surface-border) bg-(--background) animate-in slide-in-from-top duration-200">
               <h3 className="text-sm font-semibold flex items-center gap-2">
                 <FiFilter className="h-4 w-4" />
@@ -440,7 +466,7 @@ export function BusinessesExplorer({
           )}
 
           {/* AI Chat Interface */}
-          {showChat && (
+          {activeMode === "chat" && (
             <div className="space-y-3 p-4 rounded-xl border border-(--surface-border) bg-(--background) animate-in slide-in-from-top duration-200">
               <h3 className="text-sm font-semibold flex items-center gap-2">
                 <FiMessageCircle className="h-4 w-4" />
