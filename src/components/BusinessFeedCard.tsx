@@ -60,6 +60,8 @@ interface BusinessFeedCardProps {
   onToggleSave: (businessId: string) => Promise<{ saved: boolean }>;
   /** Route prefix for business details links. Example: "/businesses" or "/explorer" */
   detailsBasePath?: string;
+  /** Whether the business has active stories */
+  hasStories?: boolean;
 }
 
 export function BusinessFeedCard({
@@ -74,6 +76,7 @@ export function BusinessFeedCard({
   onToggleLike,
   onToggleSave,
   detailsBasePath = "/businesses",
+  hasStories = false,
 }: BusinessFeedCardProps) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -211,19 +214,24 @@ export function BusinessFeedCard({
           href={detailPath}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
-          {showLogo ? (
-            <div className="relative w-9 h-9 rounded-full overflow-hidden ring-2 ring-accent/20">
-              <Image src={logo!} alt={name} fill className="object-cover" sizes="36px" />
+          {/* Avatar with optional story ring */}
+          <div className={`rounded-full p-[2px] ${hasStories ? "bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600" : ""}`}>
+            <div className={`rounded-full ${hasStories ? "p-[2px] bg-background" : ""}`}>
+              {showLogo ? (
+                <div className="relative w-9 h-9 rounded-full overflow-hidden ring-2 ring-accent/20">
+                  <Image src={logo!} alt={name} fill className="object-cover" sizes="36px" />
+                </div>
+              ) : categoryIconId ? (
+                <div className="w-9 h-9 rounded-full bg-(--chip-bg) border border-(--surface-border) flex items-center justify-center">
+                  <CategoryIcon className="h-5 w-5 text-(--muted-foreground)" />
+                </div>
+              ) : (
+                <div className="w-9 h-9 rounded-full bg-linear-to-br from-accent to-accent-2 flex items-center justify-center">
+                  <span className="text-xs font-bold text-white">{name.charAt(0).toUpperCase()}</span>
+                </div>
+              )}
             </div>
-          ) : categoryIconId ? (
-            <div className="w-9 h-9 rounded-full bg-(--chip-bg) border border-(--surface-border) flex items-center justify-center">
-              <CategoryIcon className="h-5 w-5 text-(--muted-foreground)" />
-            </div>
-          ) : (
-            <div className="w-9 h-9 rounded-full bg-linear-to-br from-accent to-accent-2 flex items-center justify-center">
-              <span className="text-xs font-bold text-white">{name.charAt(0).toUpperCase()}</span>
-            </div>
-          )}
+          </div>
           <div>
             <div className="flex items-center gap-1">
               <p className="text-sm font-semibold leading-none">{name}</p>

@@ -7,6 +7,7 @@ import { BusinessFeedCard } from "@/components/BusinessFeedCard";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinessesByOwner } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
+import { listBusinessesWithActiveStories } from "@/lib/db/stories";
 import {
   getBusinessLikeCount,
   hasUserLikedBusiness,
@@ -28,6 +29,10 @@ export default async function ProfileBusinessesPage({
 
   const auth = await requireUser(locale as Locale);
   const businesses = await listBusinessesByOwner(auth.id);
+  
+  // Get businesses with stories
+  const businessesWithStories = await listBusinessesWithActiveStories();
+  const businessIdsWithStories = new Set(businessesWithStories.map(b => b.businessId));
 
   // Prepare engagement data for each business
   const businessesWithEngagement = await Promise.all(businesses.map(async (b) => {
@@ -43,6 +48,7 @@ export default async function ProfileBusinessesPage({
       initialLiked: await hasUserLikedBusiness(auth.id, b.id),
       initialSaved: await hasUserSavedBusiness(auth.id, b.id),
       commentCount: approvedComments.length,
+      hasStories: businessIdsWithStories.has(b.id),
     };
   }));
 
@@ -105,6 +111,7 @@ export default async function ProfileBusinessesPage({
               commentCount={item.commentCount}
               onToggleLike={toggleBusinessLikeAction.bind(null, locale)}
               onToggleSave={toggleBusinessSaveAction.bind(null, locale)}
+              hasStories={item.hasStories}
             />
           ))}
         </div>

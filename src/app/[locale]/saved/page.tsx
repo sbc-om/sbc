@@ -5,6 +5,7 @@ import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getBusinessById } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
+import { listBusinessesWithActiveStories } from "@/lib/db/stories";
 import {
   getBusinessLikeCount,
   hasUserLikedBusiness,
@@ -33,6 +34,10 @@ export default async function SavedPage({
   const businesses = (await Promise.all(
     savedBusinessIds.map((id) => getBusinessById(id))
   )).filter((b) => b !== null);
+  
+  // Get businesses with stories
+  const businessesWithStories = await listBusinessesWithActiveStories();
+  const businessIdsWithStories = new Set(businessesWithStories.map(b => b.businessId));
 
   // Prepare engagement data for each business
   const businessesWithEngagement = await Promise.all(businesses.map(async (b) => {
@@ -48,6 +53,7 @@ export default async function SavedPage({
       initialLiked: await hasUserLikedBusiness(user.id, b.id),
       initialSaved: await hasUserSavedBusiness(user.id, b.id),
       commentCount: approvedComments.length,
+      hasStories: businessIdsWithStories.has(b.id),
     };
   }));
 
@@ -107,6 +113,7 @@ export default async function SavedPage({
               commentCount={item.commentCount}
               onToggleLike={toggleBusinessLikeAction.bind(null, locale)}
               onToggleSave={toggleBusinessSaveAction.bind(null, locale)}
+              hasStories={item.hasStories}
             />
           ))}
         </div>

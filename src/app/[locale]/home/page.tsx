@@ -80,6 +80,9 @@ export default async function HomeFollowedPage({
   const followedCategoryIds = new Set(await getUserFollowedCategoryIds(user.id));
   const allBusinesses = await listBusinesses();
   const businessesWithStories = await listBusinessesWithActiveStories();
+  
+  // Create a Set of business IDs that have stories for quick lookup
+  const businessIdsWithStories = new Set(businessesWithStories.map(b => b.businessId));
 
   const businesses = allBusinesses.filter((b) =>
     b.categoryId ? followedCategoryIds.has(b.categoryId) : false,
@@ -99,6 +102,7 @@ export default async function HomeFollowedPage({
         initialLiked: await hasUserLikedBusiness(user.id, b.id),
         initialSaved: await hasUserSavedBusiness(user.id, b.id),
         commentCount: approvedComments.length,
+        hasStories: businessIdsWithStories.has(b.id),
       };
     })
   );
@@ -160,6 +164,7 @@ export default async function HomeFollowedPage({
               onToggleLike={toggleBusinessLikeAction.bind(null, locale)}
               onToggleSave={toggleBusinessSaveAction.bind(null, locale)}
               detailsBasePath="/explorer"
+              hasStories={item.hasStories}
             />
           ))}
         </div>

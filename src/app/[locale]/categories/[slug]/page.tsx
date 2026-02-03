@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinesses } from "@/lib/db/businesses";
 import { listCategories, getCategoryById } from "@/lib/db/categories";
 import { getUserFollowedCategoryIds } from "@/lib/db/follows";
+import { listBusinessesWithActiveStories } from "@/lib/db/stories";
 import {
   getBusinessLikeCount,
   hasUserLikedBusiness,
@@ -42,6 +43,10 @@ export default async function CategoryDetailPage({
   // Get businesses for this category
   const allBusinesses = await listBusinesses();
   const businesses = allBusinesses.filter((b) => b.categoryId === category.id);
+  
+  // Get businesses with stories
+  const businessesWithStories = await listBusinessesWithActiveStories();
+  const businessIdsWithStories = new Set(businessesWithStories.map(b => b.businessId));
 
   // Check if user follows this category
   const followedCategoryIds = new Set(await getUserFollowedCategoryIds(user.id));
@@ -60,6 +65,7 @@ export default async function CategoryDetailPage({
       initialLiked: await hasUserLikedBusiness(user.id, b.id),
       initialSaved: await hasUserSavedBusiness(user.id, b.id),
       commentCount: approvedComments.length,
+      hasStories: businessIdsWithStories.has(b.id),
     };
   }));
 
@@ -134,6 +140,7 @@ export default async function CategoryDetailPage({
               commentCount={item.commentCount}
               onToggleLike={toggleBusinessLikeAction.bind(null, locale)}
               onToggleSave={toggleBusinessSaveAction.bind(null, locale)}
+              hasStories={item.hasStories}
             />
           ))}
         </div>

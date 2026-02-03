@@ -67,6 +67,7 @@ export default async function ExplorerPage({
           businesses={businesses}
           categories={categories}
           detailsBasePath={detailsBasePath}
+          businessIdsWithStories={new Set(businessesWithStories.map(b => b.businessId))}
         />
       </div>
     </Wrapper>

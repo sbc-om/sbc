@@ -45,6 +45,7 @@ export function BusinessesExplorer({
   businesses,
   categories,
   detailsBasePath = "/businesses",
+  businessIdsWithStories = new Set<string>(),
 }: {
   locale: Locale;
   dict: Dictionary;
@@ -52,6 +53,8 @@ export function BusinessesExplorer({
   categories: Category[];
   /** Route prefix for business details links. Example: "/businesses" or "/explorer" */
   detailsBasePath?: string;
+  /** Set of business IDs that have active stories */
+  businessIdsWithStories?: Set<string>;
 }) {
   // Unified search state
   const [searchQuery, setSearchQuery] = useState("");
@@ -583,6 +586,7 @@ export function BusinessesExplorer({
           const description = b.description ? (locale === "ar" ? b.description.ar : b.description.en) : "";
           const img = b.media?.cover || b.media?.banner || b.media?.logo;
           const logo = b.media?.logo;
+          const hasStories = businessIdsWithStories.has(b.id);
 
           const href = b.username 
             ? `/@${b.username}` 
@@ -602,11 +606,15 @@ export function BusinessesExplorer({
                 <div className="absolute inset-0 bg-linear-to-t from-black/45 via-black/10 to-transparent" />
                 <div className="absolute bottom-3 left-3 right-3">
                   <div className="flex items-center gap-2 min-w-0">
-                    {/* Business Logo */}
+                    {/* Business Logo with story ring */}
                     {logo && (
-                      <div className="relative w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-white/30 shadow-lg">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={logo} alt={name} className="w-full h-full object-cover" />
+                      <div className={`rounded-full p-[2px] flex-shrink-0 ${hasStories ? "bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600" : ""}`}>
+                        <div className={`rounded-full ${hasStories ? "p-[2px] bg-black/50" : ""}`}>
+                          <div className="relative w-8 h-8 rounded-full overflow-hidden ring-2 ring-white/30 shadow-lg">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={logo} alt={name} className="w-full h-full object-cover" />
+                          </div>
+                        </div>
                       </div>
                     )}
                     <div className="truncate text-base font-semibold text-white drop-shadow">
