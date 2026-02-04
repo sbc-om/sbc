@@ -8,6 +8,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
   getAllWithdrawalRequests,
+  countWithdrawalRequests,
   approveWithdrawalRequest,
   rejectWithdrawalRequest,
   getUserWallet,
@@ -16,6 +17,8 @@ import {
 import { broadcastWalletEvent } from "@/app/api/wallet/stream/route";
 import { sendText, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
 import { getUserById } from "@/lib/db/users";
+
+const PER_PAGE = 20;
 
 /**
  * GET /api/admin/wallet/withdrawals - Get all withdrawal requests
@@ -28,11 +31,25 @@ export async function GET(request: NextRequest) {
     }
 
     const status = request.nextUrl.searchParams.get("status") as WithdrawalRequestStatus | null;
-    const requests = await getAllWithdrawalRequests(status || undefined);
+    const search = request.nextUrl.searchParams.get("search") || undefined;
+    const page = parseInt(request.nextUrl.searchParams.get("page") || "1", 10);
+    const limit = PER_PAGE;
+    const offset = (page - 1) * limit;
+
+    const [requests, total] = await Promise.all([
+      getAllWithdrawalRequests(status || undefined, limit, offset, search),
+      countWithdrawalRequests(status || undefined, search),
+    ]);
 
     return NextResponse.json({
       ok: true,
       requests,
+      pagination: {
+        page,
+        perPage: limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error("Get withdrawal requests error:", error);

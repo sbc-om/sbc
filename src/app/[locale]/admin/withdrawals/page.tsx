@@ -4,20 +4,22 @@ import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
-import { getAllWithdrawalRequests } from "@/lib/db/wallet";
+import { getAllWithdrawalRequests, countWithdrawalRequests } from "@/lib/db/wallet";
 import { WithdrawalsClient } from "./WithdrawalsClient";
 
 export const runtime = "nodejs";
+
+const PER_PAGE = 20;
 
 export default async function AdminWithdrawalsPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; page?: string; search?: string }>;
 }) {
   const { locale } = await params;
-  const { status } = await searchParams;
+  const { status, page, search } = await searchParams;
   
   if (!isLocale(locale)) notFound();
 
@@ -34,7 +36,16 @@ export default async function AdminWithdrawalsPage({
   const validStatuses = ["pending", "approved", "rejected", "all"] as const;
   const requestedStatus = validStatuses.includes(status as any) ? status : "pending";
   const filterStatus = requestedStatus === "all" ? undefined : requestedStatus as "pending" | "approved" | "rejected";
-  const requests = await getAllWithdrawalRequests(filterStatus, 100, 0);
+  
+  const currentPage = Math.max(1, parseInt(page || "1", 10));
+  const offset = (currentPage - 1) * PER_PAGE;
+  
+  const [requests, total] = await Promise.all([
+    getAllWithdrawalRequests(filterStatus, PER_PAGE, offset, search),
+    countWithdrawalRequests(filterStatus, search),
+  ]);
+  
+  const totalPages = Math.ceil(total / PER_PAGE);
 
   return (
     <AppPage>
@@ -43,6 +54,13 @@ export default async function AdminWithdrawalsPage({
         dict={dict}
         initialRequests={requests}
         currentStatus={requestedStatus as "pending" | "approved" | "rejected" | "all"}
+        initialSearch={search || ""}
+        pagination={{
+          page: currentPage,
+          perPage: PER_PAGE,
+          total,
+          totalPages,
+        }}
       />
     </AppPage>
   );

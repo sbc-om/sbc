@@ -170,6 +170,90 @@ export async function listBusinesses(): Promise<Business[]> {
   return result.rows.map(rowToBusiness);
 }
 
+export type BusinessFilter = "all" | "pending" | "approved";
+
+export interface ListBusinessesOptions {
+  filter?: BusinessFilter;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export async function listBusinessesPaginated(
+  options: ListBusinessesOptions = {}
+): Promise<Business[]> {
+  const { filter = "all", search, limit = 20, offset = 0 } = options;
+  
+  let queryStr = `SELECT * FROM businesses WHERE 1=1`;
+  const params: (string | number)[] = [];
+  let paramIndex = 1;
+
+  // Filter by approval status
+  if (filter === "pending") {
+    queryStr += ` AND (is_approved = false OR is_approved IS NULL)`;
+  } else if (filter === "approved") {
+    queryStr += ` AND is_approved = true`;
+  }
+
+  // Search
+  if (search) {
+    queryStr += ` AND (
+      name_en ILIKE $${paramIndex} OR 
+      name_ar ILIKE $${paramIndex} OR 
+      username ILIKE $${paramIndex} OR 
+      slug ILIKE $${paramIndex} OR 
+      city ILIKE $${paramIndex} OR 
+      phone ILIKE $${paramIndex} OR
+      category ILIKE $${paramIndex}
+    )`;
+    params.push(`%${search}%`);
+    paramIndex++;
+  }
+
+  queryStr += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+  params.push(limit, offset);
+
+  const result = await query(queryStr, params);
+  return result.rows.map(rowToBusiness);
+}
+
+export async function countBusinesses(
+  options: Omit<ListBusinessesOptions, "limit" | "offset"> = {}
+): Promise<{ total: number; pending: number; approved: number }> {
+  const { filter = "all", search } = options;
+  
+  let baseCondition = `WHERE 1=1`;
+  const params: string[] = [];
+  let paramIndex = 1;
+
+  if (search) {
+    baseCondition += ` AND (
+      name_en ILIKE $${paramIndex} OR 
+      name_ar ILIKE $${paramIndex} OR 
+      username ILIKE $${paramIndex} OR 
+      slug ILIKE $${paramIndex} OR 
+      city ILIKE $${paramIndex} OR 
+      phone ILIKE $${paramIndex} OR
+      category ILIKE $${paramIndex}
+    )`;
+    params.push(`%${search}%`);
+  }
+
+  const result = await query(`
+    SELECT 
+      COUNT(*) as total,
+      COUNT(*) FILTER (WHERE is_approved = false OR is_approved IS NULL) as pending,
+      COUNT(*) FILTER (WHERE is_approved = true) as approved
+    FROM businesses ${baseCondition}
+  `, params);
+
+  return {
+    total: parseInt(result.rows[0]?.total || "0", 10),
+    pending: parseInt(result.rows[0]?.pending || "0", 10),
+    approved: parseInt(result.rows[0]?.approved || "0", 10),
+  };
+}
+
 export async function listApprovedBusinesses(): Promise<Business[]> {
   const result = await query(`SELECT * FROM businesses WHERE is_approved = true ORDER BY name_en`);
   return result.rows.map(rowToBusiness);

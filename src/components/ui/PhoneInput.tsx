@@ -184,7 +184,7 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
     const isRTL = locale === "ar";
 
     return (
-      <div className={cn("flex gap-2", className)} dir="ltr">
+      <div className={cn("flex gap-2 w-full min-w-0", className)} dir="ltr">
         {name && (
           <input type="hidden" name={name} value={fullPhoneValue} />
         )}
@@ -221,7 +221,7 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
           autoComplete={autoComplete}
           dir="ltr"
           className={cn(
-            "h-12 flex-1 px-4 rounded-xl text-base",
+            "h-12 flex-1 min-w-0 px-4 rounded-xl text-base",
             "border-2 border-[var(--surface-border)] bg-[var(--background)]",
             "placeholder:text-[var(--muted-foreground)]",
             "hover:border-[var(--muted-foreground)]/30 transition-colors",
@@ -242,6 +242,7 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
             
             <div 
               ref={dropdownRef}
+              dir="ltr"
               onClick={(e) => e.stopPropagation()}
               className={cn(
                 "relative w-full sm:w-96 sm:max-w-[calc(100vw-2rem)]",
@@ -251,9 +252,6 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
               )}
             >
               <div className="flex items-center justify-between p-4 border-b border-[var(--surface-border)]">
-                <span className="font-semibold">
-                  {isRTL ? "اختر الدولة" : "Select Country"}
-                </span>
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
@@ -261,6 +259,9 @@ export const PhoneInput = React.forwardRef<HTMLInputElement, PhoneInputProps>(
                 >
                   <HiX className="h-5 w-5" />
                 </button>
+                <span className="font-semibold">
+                  {isRTL ? "اختر رمز الدولة" : "Select Country"}
+                </span>
               </div>
               
               <div className="flex-1 overflow-y-auto overscroll-contain">

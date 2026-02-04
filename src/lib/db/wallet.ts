@@ -760,12 +760,43 @@ export async function getUserWithdrawalRequests(
 }
 
 /**
+ * Count withdrawal requests (admin only)
+ */
+export async function countWithdrawalRequests(
+  status?: WithdrawalRequestStatus,
+  search?: string
+): Promise<number> {
+  let queryStr = `
+    SELECT COUNT(*) as count
+    FROM withdrawal_requests wr
+    JOIN users u ON wr.user_id = u.id
+    WHERE 1=1
+  `;
+  const params: (string | number)[] = [];
+  let paramIndex = 1;
+  
+  if (status) {
+    queryStr += ` AND wr.status = $${paramIndex++}`;
+    params.push(status);
+  }
+  
+  if (search) {
+    queryStr += ` AND (u.display_name ILIKE $${paramIndex} OR u.full_name ILIKE $${paramIndex} OR u.phone ILIKE $${paramIndex})`;
+    params.push(`%${search}%`);
+  }
+
+  const result = await query<{ count: string }>(queryStr, params);
+  return parseInt(result.rows[0]?.count || "0", 10);
+}
+
+/**
  * Get all pending withdrawal requests (admin only)
  */
 export async function getAllWithdrawalRequests(
   status?: WithdrawalRequestStatus,
   limit: number = 100,
-  offset: number = 0
+  offset: number = 0,
+  search?: string
 ): Promise<WithdrawalRequest[]> {
   let queryStr = `
     SELECT wr.*, 
@@ -779,15 +810,23 @@ export async function getAllWithdrawalRequests(
     FROM withdrawal_requests wr
     JOIN users u ON wr.user_id = u.id
     LEFT JOIN wallets w ON wr.user_id = w.user_id
+    WHERE 1=1
   `;
   const params: (string | number)[] = [];
+  let paramIndex = 1;
   
   if (status) {
-    queryStr += ` WHERE wr.status = $1`;
+    queryStr += ` AND wr.status = $${paramIndex++}`;
     params.push(status);
   }
   
-  queryStr += ` ORDER BY wr.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+  if (search) {
+    queryStr += ` AND (u.display_name ILIKE $${paramIndex} OR u.full_name ILIKE $${paramIndex} OR u.phone ILIKE $${paramIndex})`;
+    paramIndex++;
+    params.push(`%${search}%`);
+  }
+  
+  queryStr += ` ORDER BY wr.created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
   params.push(limit, offset);
 
   const result = await query<{

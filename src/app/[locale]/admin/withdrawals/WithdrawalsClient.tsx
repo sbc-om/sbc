@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
@@ -15,13 +15,25 @@ import {
   HiOutlineXCircle,
   HiOutlineUser,
   HiOutlinePhone,
+  HiOutlineSearch,
+  HiOutlineChevronLeft,
+  HiOutlineChevronRight,
 } from "react-icons/hi";
+
+interface Pagination {
+  page: number;
+  perPage: number;
+  total: number;
+  totalPages: number;
+}
 
 interface WithdrawalsClientProps {
   locale: Locale;
   dict: Dictionary;
   initialRequests: WithdrawalRequest[];
   currentStatus?: "pending" | "approved" | "rejected" | "all";
+  initialSearch?: string;
+  pagination: Pagination;
 }
 
 export function WithdrawalsClient({
@@ -29,6 +41,8 @@ export function WithdrawalsClient({
   dict,
   initialRequests,
   currentStatus,
+  initialSearch = "",
+  pagination: initialPagination,
 }: WithdrawalsClientProps) {
   const router = useRouter();
   const [requests, setRequests] = useState(initialRequests);
@@ -39,6 +53,9 @@ export function WithdrawalsClient({
   const [showRejectConfirm, setShowRejectConfirm] = useState<string | null>(null);
   const [rejectMessage, setRejectMessage] = useState<{ [key: string]: string }>({});
   const [activeStatus, setActiveStatus] = useState<string>(currentStatus || "pending");
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [pagination, setPagination] = useState<Pagination>(initialPagination);
 
   const isRTL = locale === "ar";
 
@@ -66,6 +83,13 @@ export function WithdrawalsClient({
     available: isRTL ? "متاح" : "Available",
     optionalMessage: isRTL ? "رسالة اختيارية..." : "Optional message...",
     reasonPlaceholder: isRTL ? "سبب الرفض..." : "Reason for rejection...",
+    searchPlaceholder: isRTL ? "بحث بالاسم أو رقم الهاتف..." : "Search by name or phone...",
+    page: isRTL ? "صفحة" : "Page",
+    of: isRTL ? "من" : "of",
+    showing: isRTL ? "عرض" : "Showing",
+    results: isRTL ? "نتيجة" : "results",
+    previous: isRTL ? "السابق" : "Previous",
+    next: isRTL ? "التالي" : "Next",
   };
 
   const formatAmount = (amount: number) => {
@@ -86,23 +110,41 @@ export function WithdrawalsClient({
     }).format(d);
   };
 
-  const refreshRequests = useCallback(async () => {
+  const buildUrl = useCallback((status: string, page: number, search: string) => {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (page > 1) params.set("page", String(page));
+    if (search) params.set("search", search);
+    return `/${locale}/admin/withdrawals?${params.toString()}`;
+  }, [locale]);
+
+  const buildApiUrl = useCallback((status: string, page: number, search: string) => {
+    const params = new URLSearchParams();
+    if (status && status !== "all") params.set("status", status);
+    params.set("page", String(page));
+    if (search) params.set("search", search);
+    return `/api/admin/wallet/withdrawals?${params.toString()}`;
+  }, []);
+
+  const fetchRequests = useCallback(async (status: string, page: number, search: string) => {
     setLoading(true);
     try {
-      const url = activeStatus && activeStatus !== "all"
-        ? `/api/admin/wallet/withdrawals?status=${activeStatus}`
-        : "/api/admin/wallet/withdrawals";
-      const res = await fetch(url);
+      const res = await fetch(buildApiUrl(status, page, search));
       const data = await res.json();
       if (data.ok) {
         setRequests(data.requests);
+        setPagination(data.pagination);
       }
     } catch (error) {
-      console.error("Failed to refresh requests:", error);
+      console.error("Failed to fetch requests:", error);
     } finally {
       setLoading(false);
     }
-  }, [activeStatus]);
+  }, [buildApiUrl]);
+
+  const refreshRequests = useCallback(async () => {
+    await fetchRequests(activeStatus, pagination.page, searchQuery);
+  }, [activeStatus, pagination.page, searchQuery, fetchRequests]);
 
   const handleAction = async (requestId: string, action: "approve" | "reject") => {
     const message = action === "approve" 
@@ -142,23 +184,21 @@ export function WithdrawalsClient({
 
   const handleStatusFilter = async (status: string) => {
     setActiveStatus(status);
-    setLoading(true);
-    try {
-      const url = status === "all"
-        ? "/api/admin/wallet/withdrawals"
-        : `/api/admin/wallet/withdrawals?status=${status}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data.ok) {
-        setRequests(data.requests);
-      }
-    } catch (error) {
-      console.error("Failed to filter requests:", error);
-    } finally {
-      setLoading(false);
-    }
-    // Update URL without full page reload
-    router.replace(`/${locale}/admin/withdrawals?status=${status}`, { scroll: false });
+    await fetchRequests(status, 1, searchQuery);
+    router.replace(buildUrl(status, 1, searchQuery), { scroll: false });
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSearchQuery(searchInput);
+    await fetchRequests(activeStatus, 1, searchInput);
+    router.replace(buildUrl(activeStatus, 1, searchInput), { scroll: false });
+  };
+
+  const handlePageChange = async (newPage: number) => {
+    if (newPage < 1 || newPage > pagination.totalPages) return;
+    await fetchRequests(activeStatus, newPage, searchQuery);
+    router.replace(buildUrl(activeStatus, newPage, searchQuery), { scroll: false });
   };
 
   return (
@@ -184,28 +224,60 @@ export function WithdrawalsClient({
         </button>
       </div>
 
-      {/* Status Filter */}
-      <div className="flex gap-2 flex-wrap">
-        {[
-          { key: "pending", label: texts.pending },
-          { key: "approved", label: texts.approved },
-          { key: "rejected", label: texts.rejected },
-          { key: "all", label: texts.all },
-        ].map(({ key, label }) => (
+      {/* Status Filter & Search */}
+      <div className="space-y-4">
+        {/* Status Filter - Full width on mobile */}
+        <div className="grid grid-cols-4 gap-2 p-1.5 rounded-2xl bg-(--surface)">
+          {[
+            { key: "pending", label: texts.pending },
+            { key: "approved", label: texts.approved },
+            { key: "rejected", label: texts.rejected },
+            { key: "all", label: texts.all },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => handleStatusFilter(key)}
+              disabled={loading}
+              className={`py-2.5 px-2 rounded-xl text-sm font-medium transition-all duration-200 disabled:opacity-70 ${
+                activeStatus === key
+                  ? "bg-accent text-white shadow-md"
+                  : "hover:bg-(--surface-hover) text-(--muted-foreground)"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Search - Full width */}
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <div className="relative flex-1">
+            <HiOutlineSearch className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-(--muted-foreground)" />
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={texts.searchPlaceholder}
+              className="w-full ps-12 pe-4 py-3 rounded-xl border-2 bg-background focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all"
+              style={{ borderColor: "var(--surface-border)" }}
+            />
+          </div>
           <button
-            key={key}
-            onClick={() => handleStatusFilter(key)}
+            type="submit"
             disabled={loading}
-            className={`px-4 py-2 rounded-xl transition-colors disabled:opacity-70 ${
-              activeStatus === key
-                ? "bg-accent text-white"
-                : "bg-(--surface) hover:bg-(--surface-hover)"
-            }`}
+            className="px-6 py-3 rounded-xl bg-accent text-white font-medium hover:bg-accent/90 transition-all disabled:opacity-70 shadow-sm hover:shadow-md"
           >
-            {label}
+            {isRTL ? "بحث" : "Search"}
           </button>
-        ))}
+        </form>
       </div>
+
+      {/* Results info */}
+      {pagination.total > 0 && (
+        <div className="text-sm text-(--muted-foreground)">
+          {texts.showing} {((pagination.page - 1) * pagination.perPage) + 1}-{Math.min(pagination.page * pagination.perPage, pagination.total)} {texts.of} {pagination.total} {texts.results}
+        </div>
+      )}
 
       {/* Requests List */}
       <div className="rounded-2xl border p-4" style={{ borderColor: "var(--surface-border)" }}>
@@ -387,6 +459,91 @@ export function WithdrawalsClient({
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => handlePageChange(pagination.page - 1)}
+            disabled={loading || pagination.page <= 1}
+            className="flex items-center gap-1 px-3 py-2 rounded-xl border hover:bg-(--surface) transition-colors disabled:opacity-50"
+            style={{ borderColor: "var(--surface-border)" }}
+          >
+            <HiOutlineChevronLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">{texts.previous}</span>
+          </button>
+
+          <div className="flex items-center gap-1">
+            {/* First page */}
+            {pagination.page > 2 && (
+              <>
+                <button
+                  onClick={() => handlePageChange(1)}
+                  disabled={loading}
+                  className="px-3 py-2 rounded-xl hover:bg-(--surface) transition-colors"
+                >
+                  1
+                </button>
+                {pagination.page > 3 && <span className="px-2">...</span>}
+              </>
+            )}
+
+            {/* Previous page */}
+            {pagination.page > 1 && (
+              <button
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={loading}
+                className="px-3 py-2 rounded-xl hover:bg-(--surface) transition-colors"
+              >
+                {pagination.page - 1}
+              </button>
+            )}
+
+            {/* Current page */}
+            <button
+              disabled
+              className="px-3 py-2 rounded-xl bg-accent text-white"
+            >
+              {pagination.page}
+            </button>
+
+            {/* Next page */}
+            {pagination.page < pagination.totalPages && (
+              <button
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={loading}
+                className="px-3 py-2 rounded-xl hover:bg-(--surface) transition-colors"
+              >
+                {pagination.page + 1}
+              </button>
+            )}
+
+            {/* Last page */}
+            {pagination.page < pagination.totalPages - 1 && (
+              <>
+                {pagination.page < pagination.totalPages - 2 && <span className="px-2">...</span>}
+                <button
+                  onClick={() => handlePageChange(pagination.totalPages)}
+                  disabled={loading}
+                  className="px-3 py-2 rounded-xl hover:bg-(--surface) transition-colors"
+                >
+                  {pagination.totalPages}
+                </button>
+              </>
+            )}
+          </div>
+
+          <button
+            onClick={() => handlePageChange(pagination.page + 1)}
+            disabled={loading || pagination.page >= pagination.totalPages}
+            className="flex items-center gap-1 px-3 py-2 rounded-xl border hover:bg-(--surface) transition-colors disabled:opacity-50"
+            style={{ borderColor: "var(--surface-border)" }}
+          >
+            <span className="hidden sm:inline">{texts.next}</span>
+            <HiOutlineChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }
