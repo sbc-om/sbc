@@ -35,12 +35,11 @@ function detectLocaleFromAcceptLanguage(header: string | null): Locale {
 }
 
 // Extract subdomain from hostname (e.g., "spirithub" from "spirithub.sbc.om")
+// Hostname should already have port removed
 function extractSubdomain(hostname: string): string | null {
-  const hostWithoutPort = hostname.split(":")[0];
-  
   for (const baseDomain of BASE_DOMAINS) {
-    if (hostWithoutPort.endsWith(`.${baseDomain}`)) {
-      const subdomain = hostWithoutPort.slice(0, -(baseDomain.length + 1));
+    if (hostname.endsWith(`.${baseDomain}`)) {
+      const subdomain = hostname.slice(0, -(baseDomain.length + 1));
       // Exclude "www" as it's not a business subdomain
       if (subdomain && subdomain !== "www") {
         return subdomain;
@@ -51,7 +50,14 @@ function extractSubdomain(hostname: string): string | null {
 }
 
 export async function proxy(req: NextRequest) {
-  const { pathname, hostname } = req.nextUrl;
+  const { pathname } = req.nextUrl;
+  // Use the Host header to get the full hostname including subdomain
+  const hostHeader = req.headers.get("host") || req.nextUrl.hostname;
+  const hostname = hostHeader.split(":")[0];
+
+  // Debug logging for subdomain routing
+  const subdomain = extractSubdomain(hostname);
+  console.log(`[Proxy] host header: ${hostHeader}, hostname: ${hostname}, subdomain: ${subdomain}, pathname: ${pathname}`);
 
   // Skip Next internals and static files.
   if (
@@ -64,11 +70,8 @@ export async function proxy(req: NextRequest) {
   ) {
     return NextResponse.next();
   }
-
-  const hostWithoutPort = hostname.split(":")[0];
   
   // Handle subdomain routing (e.g., spirithub.sbc.om -> /@spirithub)
-  const subdomain = extractSubdomain(hostWithoutPort);
   if (subdomain) {
     const cookieLocale = req.cookies.get("locale")?.value;
     const preferred: Locale =
@@ -103,10 +106,10 @@ export async function proxy(req: NextRequest) {
 
   // Handle custom domain routing - redirect to domain lookup page
   const isCustomDomain = !MAIN_DOMAINS.some(
-    (d) => hostWithoutPort === d || hostWithoutPort.endsWith(`.${d}`)
+    (d) => hostname === d || hostname.endsWith(`.${d}`)
   );
 
-  if (isCustomDomain && hostWithoutPort && (pathname === "/" || pathname === "")) {
+  if (isCustomDomain && hostname && (pathname === "/" || pathname === "")) {
     // Rewrite to custom domain handler page which will do the DB lookup
     const cookieLocale = req.cookies.get("locale")?.value;
     const preferred: Locale =
@@ -116,12 +119,12 @@ export async function proxy(req: NextRequest) {
 
     const url = req.nextUrl.clone();
     url.pathname = `/${preferred}/domain`;
-    url.searchParams.set("host", hostWithoutPort);
+    url.searchParams.set("host", hostname);
 
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-locale", preferred);
     requestHeaders.set("x-pathname", pathname);
-    requestHeaders.set("x-custom-domain", hostWithoutPort);
+    requestHeaders.set("x-custom-domain", hostname);
 
     const res = NextResponse.rewrite(url, {
       request: {
