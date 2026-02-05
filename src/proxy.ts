@@ -4,7 +4,14 @@ import { jwtVerify } from "jose";
 const LOCALES = ["en", "ar"] as const;
 const DEFAULT_LOCALE = "en";
 
-// Main domain(s) that should not be treated as custom domain
+// Main domain(s) - base domains without subdomains
+const BASE_DOMAINS = [
+  "sbc.om",
+  "localhost",
+  "127.0.0.1",
+];
+
+// Full main domains that should not be treated as custom/subdomain
 const MAIN_DOMAINS = [
   "sbc.om",
   "www.sbc.om",
@@ -27,6 +34,22 @@ function detectLocaleFromAcceptLanguage(header: string | null): Locale {
   return "en";
 }
 
+// Extract subdomain from hostname (e.g., "spirithub" from "spirithub.sbc.om")
+function extractSubdomain(hostname: string): string | null {
+  const hostWithoutPort = hostname.split(":")[0];
+  
+  for (const baseDomain of BASE_DOMAINS) {
+    if (hostWithoutPort.endsWith(`.${baseDomain}`)) {
+      const subdomain = hostWithoutPort.slice(0, -(baseDomain.length + 1));
+      // Exclude "www" as it's not a business subdomain
+      if (subdomain && subdomain !== "www") {
+        return subdomain;
+      }
+    }
+  }
+  return null;
+}
+
 export async function proxy(req: NextRequest) {
   const { pathname, hostname } = req.nextUrl;
 
@@ -42,8 +65,43 @@ export async function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Handle custom domain routing - redirect to domain lookup page
   const hostWithoutPort = hostname.split(":")[0];
+  
+  // Handle subdomain routing (e.g., spirithub.sbc.om -> /@spirithub)
+  const subdomain = extractSubdomain(hostWithoutPort);
+  if (subdomain) {
+    const cookieLocale = req.cookies.get("locale")?.value;
+    const preferred: Locale =
+      cookieLocale && isLocale(cookieLocale)
+        ? cookieLocale
+        : detectLocaleFromAcceptLanguage(req.headers.get("accept-language"));
+
+    const url = req.nextUrl.clone();
+    // Rewrite to the @username handler
+    url.pathname = `/${preferred}/u/${subdomain}`;
+
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-locale", preferred);
+    requestHeaders.set("x-pathname", pathname);
+    requestHeaders.set("x-subdomain", subdomain);
+
+    const res = NextResponse.rewrite(url, {
+      request: {
+        headers: requestHeaders,
+      },
+    });
+
+    res.cookies.set("locale", preferred, {
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+
+    return res;
+  }
+
+  // Handle custom domain routing - redirect to domain lookup page
   const isCustomDomain = !MAIN_DOMAINS.some(
     (d) => hostWithoutPort === d || hostWithoutPort.endsWith(`.${d}`)
   );
