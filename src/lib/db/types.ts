@@ -48,6 +48,8 @@ export type Business = {
   website?: string;
   email?: string;
   tags?: string[];
+  /** Custom domain for the business page (e.g., mybusiness.com) */
+  customDomain?: string;
   /** Geographic location */
   latitude?: number;
   longitude?: number;

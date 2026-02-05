@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-import { getUserById } from "@/lib/db/users";
 
 const LOCALES = ["en", "ar"] as const;
 const DEFAULT_LOCALE = "en";
+
+// Main domain(s) that should not be treated as custom domain
+const MAIN_DOMAINS = [
+  "sbc.om",
+  "www.sbc.om",
+  "localhost",
+  "127.0.0.1",
+];
 
 type Locale = (typeof LOCALES)[number];
 
@@ -21,7 +28,7 @@ function detectLocaleFromAcceptLanguage(header: string | null): Locale {
 }
 
 export async function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, hostname } = req.nextUrl;
 
   // Skip Next internals and static files.
   if (
@@ -33,6 +40,45 @@ export async function proxy(req: NextRequest) {
     /\.[a-zA-Z0-9]+$/.test(pathname)
   ) {
     return NextResponse.next();
+  }
+
+  // Handle custom domain routing - redirect to domain lookup page
+  const hostWithoutPort = hostname.split(":")[0];
+  const isCustomDomain = !MAIN_DOMAINS.some(
+    (d) => hostWithoutPort === d || hostWithoutPort.endsWith(`.${d}`)
+  );
+
+  if (isCustomDomain && hostWithoutPort && (pathname === "/" || pathname === "")) {
+    // Rewrite to custom domain handler page which will do the DB lookup
+    const cookieLocale = req.cookies.get("locale")?.value;
+    const preferred: Locale =
+      cookieLocale && isLocale(cookieLocale)
+        ? cookieLocale
+        : detectLocaleFromAcceptLanguage(req.headers.get("accept-language"));
+
+    const url = req.nextUrl.clone();
+    url.pathname = `/${preferred}/domain`;
+    url.searchParams.set("host", hostWithoutPort);
+
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-locale", preferred);
+    requestHeaders.set("x-pathname", pathname);
+    requestHeaders.set("x-custom-domain", hostWithoutPort);
+
+    const res = NextResponse.rewrite(url, {
+      request: {
+        headers: requestHeaders,
+      },
+    });
+
+    res.cookies.set("locale", preferred, {
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+
+    return res;
   }
 
   const segments = pathname.split("/").filter(Boolean);
@@ -140,7 +186,6 @@ export async function proxy(req: NextRequest) {
         new TextEncoder().encode(secret)
       );
       const role = payload.role;
-      const userId = payload.sub as string;
 
       if (isAdmin && role !== "admin") {
         const url = req.nextUrl.clone();
@@ -148,19 +193,8 @@ export async function proxy(req: NextRequest) {
         return NextResponse.redirect(url);
       }
 
-      // Check phone verification for non-verify-phone pages
-      // Skip verification check for admins
-      if (!isVerifyPhone && role !== "admin") {
-        const wahaEnabled = process.env.WAHA_URL && process.env.WAHA_SESSION;
-        if (wahaEnabled && userId) {
-          const user = await getUserById(userId);
-          if (user && !user.isPhoneVerified) {
-            const url = req.nextUrl.clone();
-            url.pathname = `/${locale}/verify-phone`;
-            return NextResponse.redirect(url);
-          }
-        }
-      }
+      // Phone verification check is now handled in the layout/page level
+      // to avoid database access in Edge middleware
     } catch {
       return redirectToLogin();
     }

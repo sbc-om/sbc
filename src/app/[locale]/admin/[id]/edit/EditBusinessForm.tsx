@@ -208,6 +208,12 @@ export function EditBusinessForm({
   const [usernameMessage, setUsernameMessage] = useState("");
   const usernameCheckRef = useRef(0);
   const slugAutoRef = useRef(false);
+
+  // Custom domain state
+  const [domainValue, setDomainValue] = useState(business.customDomain ?? "");
+  const [domainStatus, setDomainStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid" | "saving" | "saved">("idle");
+  const [domainMessage, setDomainMessage] = useState("");
+  const domainCheckRef = useRef(0);
   
   // File input refs to store actual files for upload
   const coverFileRef = useRef<File | null>(null);
@@ -291,6 +297,94 @@ export function EditBusinessForm({
 
     return () => clearTimeout(timer);
   }, [usernameValue, business.id, ar]);
+
+  // Domain availability check
+  useEffect(() => {
+    const normalized = domainValue.trim().toLowerCase();
+    if (!normalized) {
+      setDomainStatus("idle");
+      setDomainMessage("");
+      return;
+    }
+
+    // Basic domain validation
+    if (!/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(normalized)) {
+      setDomainStatus("invalid");
+      setDomainMessage(ar ? "صيغة الدومين غير صحيحة" : "Invalid domain format");
+      return;
+    }
+
+    // Skip if same as current
+    if (normalized === business.customDomain) {
+      setDomainStatus("idle");
+      setDomainMessage(ar ? "الدومين الحالي" : "Current domain");
+      return;
+    }
+
+    setDomainStatus("checking");
+    setDomainMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+
+    const requestId = ++domainCheckRef.current;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/businesses/domain?domain=${encodeURIComponent(normalized)}&excludeId=${business.id}`
+        );
+        const data = await res.json();
+        if (requestId !== domainCheckRef.current) return;
+
+        if (data.available) {
+          setDomainStatus("available");
+          setDomainMessage(ar ? "متاح" : "Available");
+        } else {
+          setDomainStatus(data.reason === "TAKEN" ? "taken" : "invalid");
+          setDomainMessage(data.reason === "TAKEN" 
+            ? (ar ? "الدومين مستخدم من قبل آخر" : "Domain already in use")
+            : (ar ? "صيغة غير صحيحة" : "Invalid format"));
+        }
+      } catch {
+        if (requestId !== domainCheckRef.current) return;
+        setDomainStatus("invalid");
+        setDomainMessage(ar ? "تعذر التحقق الآن" : "Could not check right now");
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [domainValue, business.id, business.customDomain, ar]);
+
+  const saveDomain = async () => {
+    const normalized = domainValue.trim().toLowerCase() || null;
+    
+    setDomainStatus("saving");
+    setDomainMessage(ar ? "جارٍ الحفظ..." : "Saving...");
+
+    try {
+      const res = await fetch("/api/businesses/domain", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId: business.id, domain: normalized }),
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        setDomainStatus("saved");
+        setDomainMessage(ar ? "تم الحفظ بنجاح" : "Saved successfully");
+        // Reset status after a moment
+        setTimeout(() => {
+          setDomainStatus("idle");
+          setDomainMessage(normalized ? (ar ? "الدومين الحالي" : "Current domain") : "");
+        }, 2000);
+      } else {
+        setDomainStatus("invalid");
+        setDomainMessage(data.error === "DOMAIN_TAKEN" 
+          ? (ar ? "الدومين مستخدم" : "Domain taken")
+          : (ar ? "خطأ في الحفظ" : "Save failed"));
+      }
+    } catch {
+      setDomainStatus("invalid");
+      setDomainMessage(ar ? "خطأ في الاتصال" : "Connection error");
+    }
+  };
 
   useEffect(() => {
     if (!slugAutoRef.current) {
@@ -585,6 +679,81 @@ export function EditBusinessForm({
                   <input type="hidden" name="longitude" value={String(location.lng)} />
                 </>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Custom Domain Section */}
+        <div className="sbc-card p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-1">
+            {ar ? "الدومين المخصص" : "Custom Domain"}
+          </h2>
+          <p className="text-sm text-(--muted-foreground) mb-6">
+            {ar 
+              ? "اربط دومين خاص بصفحة النشاط التجاري (مثال: mybusiness.com)" 
+              : "Connect a custom domain to this business page (e.g., mybusiness.com)"}
+          </p>
+
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-semibold text-foreground">
+                {ar ? "اسم الدومين" : "Domain Name"}
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="example.com"
+                  value={domainValue}
+                  onChange={(e) => setDomainValue(e.target.value.toLowerCase().trim())}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant={domainStatus === "available" || (domainValue && domainStatus === "idle") ? "primary" : "secondary"}
+                  onClick={saveDomain}
+                  disabled={domainStatus === "checking" || domainStatus === "saving" || domainStatus === "taken" || domainStatus === "invalid"}
+                >
+                  {domainStatus === "saving" 
+                    ? (ar ? "جارٍ الحفظ..." : "Saving...") 
+                    : (ar ? "حفظ الدومين" : "Save Domain")}
+                </Button>
+              </div>
+              <span className={`min-h-4 text-xs ${
+                domainStatus === "available" || domainStatus === "saved"
+                  ? "text-emerald-600"
+                  : domainStatus === "checking" || domainStatus === "idle" || domainStatus === "saving"
+                    ? "text-(--muted-foreground)"
+                    : "text-red-600"
+              }`}>
+                {domainMessage || " "}
+              </span>
+            </div>
+
+            <div className="rounded-lg bg-(--chip-bg) p-4 text-sm">
+              <h4 className="font-semibold mb-2">{ar ? "إعدادات DNS المطلوبة" : "Required DNS Settings"}</h4>
+              <p className="text-(--muted-foreground) mb-3">
+                {ar 
+                  ? "لربط الدومين، يجب على صاحب النشاط إضافة السجلات التالية في إعدادات DNS:" 
+                  : "To connect the domain, the owner must add these records in their DNS settings:"}
+              </p>
+              <div className="space-y-2 font-mono text-xs bg-(--surface) rounded p-3">
+                <div className="flex gap-4">
+                  <span className="text-(--muted-foreground) w-16">Type:</span>
+                  <span>CNAME</span>
+                </div>
+                <div className="flex gap-4">
+                  <span className="text-(--muted-foreground) w-16">Name:</span>
+                  <span>@ or www</span>
+                </div>
+                <div className="flex gap-4">
+                  <span className="text-(--muted-foreground) w-16">Value:</span>
+                  <span>sbc.om</span>
+                </div>
+              </div>
+              <p className="text-(--muted-foreground) mt-3 text-xs">
+                {ar 
+                  ? "ملاحظة: قد يستغرق تفعيل DNS من 24-48 ساعة." 
+                  : "Note: DNS propagation may take 24-48 hours."}
+              </p>
             </div>
           </div>
         </div>

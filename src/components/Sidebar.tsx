@@ -383,7 +383,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
             >
               {(() => {
-                const WalletIcon = isActive("/wallet") ? HiCash : HiOutlineCash;
+                const WalletIcon = isActive("/wallet") ? IoWallet : IoWalletOutline;
                 return <WalletIcon className="h-5 w-5 shrink-0" />;
               })()}
               <span className="min-w-0 truncate">

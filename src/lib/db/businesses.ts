@@ -42,6 +42,7 @@ export const businessInputSchema = z.object({
   website: z.string().trim().min(1).optional(),
   email: z.string().trim().email().optional(),
   tags: z.array(z.string().trim().min(1)).optional(),
+  customDomain: z.string().trim().toLowerCase().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
   avatarMode: z.enum(["icon", "logo"]).optional(),
@@ -75,6 +76,7 @@ function rowToBusiness(row: any): Business {
     website: row.website,
     email: row.email,
     tags: row.tags || [],
+    customDomain: row.custom_domain,
     latitude: row.latitude,
     longitude: row.longitude,
     avatarMode: row.avatar_mode,
@@ -115,6 +117,43 @@ export async function getBusinessByUsername(username: string): Promise<Business 
 export async function getBusinessByOwnerId(ownerId: string): Promise<Business | null> {
   const result = await query(`SELECT * FROM businesses WHERE owner_id = $1 LIMIT 1`, [ownerId]);
   return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
+}
+
+/**
+ * Get a business by its custom domain.
+ */
+export async function getBusinessByDomain(domain: string): Promise<Business | null> {
+  const normalized = domain.trim().toLowerCase();
+  if (!normalized) return null;
+  const result = await query(`SELECT * FROM businesses WHERE custom_domain = $1`, [normalized]);
+  return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
+}
+
+/**
+ * Check if a custom domain is available (not already used by another business).
+ */
+export async function checkDomainAvailability(
+  domain: string,
+  excludeBusinessId?: string
+): Promise<{ available: boolean; reason?: "INVALID" | "TAKEN" }> {
+  const normalized = domain.trim().toLowerCase();
+  // Basic validation
+  if (!normalized || !/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(normalized)) {
+    return { available: false, reason: "INVALID" };
+  }
+  
+  const result = excludeBusinessId
+    ? await query(
+        `SELECT id FROM businesses WHERE custom_domain = $1 AND id != $2`,
+        [normalized, excludeBusinessId]
+      )
+    : await query(`SELECT id FROM businesses WHERE custom_domain = $1`, [normalized]);
+  
+  if (result.rows.length > 0) {
+    return { available: false, reason: "TAKEN" };
+  }
+  
+  return { available: true };
 }
 
 /**
@@ -447,6 +486,25 @@ export async function setBusinessHomepageTop(id: string, homepageTop: boolean): 
   const result = await query(`
     UPDATE businesses SET homepage_top = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [homepageTop, new Date(), id]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToBusiness(result.rows[0]);
+}
+
+export async function setBusinessCustomDomain(id: string, customDomain: string | null): Promise<Business> {
+  const normalized = customDomain?.trim().toLowerCase() || null;
+  
+  // Check availability if setting a domain
+  if (normalized) {
+    const availability = await checkDomainAvailability(normalized, id);
+    if (!availability.available) {
+      throw new Error(availability.reason === "TAKEN" ? "DOMAIN_TAKEN" : "INVALID_DOMAIN");
+    }
+  }
+  
+  const result = await query(`
+    UPDATE businesses SET custom_domain = $1, updated_at = $2 WHERE id = $3 RETURNING *
+  `, [normalized, new Date(), id]);
 
   if (result.rows.length === 0) throw new Error("NOT_FOUND");
   return rowToBusiness(result.rows[0]);
