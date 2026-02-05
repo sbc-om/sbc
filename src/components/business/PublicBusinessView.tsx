@@ -10,6 +10,7 @@ import { ShareActionButton } from "@/components/ShareActionButton";
 import { FollowBusinessButton } from "@/components/business/FollowBusinessButton";
 import { BusinessContentLanguageToggle } from "./BusinessContentLanguageToggle";
 import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
+import { MarkdownRenderer } from "@/components/ui/MarkdownEditor";
 import type { Business, Category } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -220,7 +221,7 @@ export function PublicBusinessView({
                 {locale === "ar" ? "نبذة" : "About"}
               </h2>
               <div className="mt-3 text-sm leading-7 text-foreground">
-                {description}
+                <MarkdownRenderer content={description} />
               </div>
             </section>
           ) : null}

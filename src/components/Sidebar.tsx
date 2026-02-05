@@ -32,10 +32,8 @@ import {
   HiUser,
   HiOutlineUser,
   HiX,
-  HiCash,
-  HiOutlineCash
 } from "react-icons/hi";
-import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
+import { IoBookmark, IoBookmarkOutline, IoWallet, IoWalletOutline } from "react-icons/io5";
 import { HiPlus, HiOutlinePlus, HiBriefcase, HiOutlineBriefcase } from "react-icons/hi";
 
 interface SidebarProps {
@@ -138,8 +136,8 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       key: "wallet",
       label: (dict.nav as Record<string, string | undefined>).wallet ?? (locale === "ar" ? "المحفظة" : "Wallet"),
       path: "/wallet",
-      Icon: HiCash,
-      IconOutline: HiOutlineCash,
+      Icon: IoWallet,
+      IconOutline: IoWalletOutline,
     },
     // Only show business request if user doesn't have a business
     ...(!user.hasBusiness ? [{

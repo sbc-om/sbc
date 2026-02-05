@@ -6,7 +6,6 @@ import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
 import type { WalletTransaction, WithdrawalRequest } from "@/lib/db/wallet";
 import {
-  HiOutlineCash,
   HiOutlineArrowUp,
   HiOutlineArrowDown,
   HiOutlineSwitchHorizontal,
@@ -20,6 +19,7 @@ import {
   HiOutlineEye,
   HiOutlineEyeOff,
 } from "react-icons/hi";
+import { IoWalletOutline } from "react-icons/io5";
 
 // Notification sound (simple beep using Web Audio API)
 function playNotificationSound() {
@@ -387,7 +387,7 @@ export function WalletClient({
       case "transfer_out":
         return <HiOutlineSwitchHorizontal className="h-5 w-5 text-red-500" />;
       default:
-        return <HiOutlineCash className="h-5 w-5" />;
+        return <IoWalletOutline className="h-5 w-5" />;
     }
   };
 
@@ -407,7 +407,7 @@ export function WalletClient({
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-            <HiOutlineCash className="h-7 w-7 text-accent" />
+            <IoWalletOutline className="h-7 w-7 text-accent" />
             {walletDict.title}
           </h1>
           <p className="mt-1 text-sm text-(--muted-foreground)">
@@ -465,7 +465,7 @@ export function WalletClient({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                  <HiOutlineCash className="h-4 w-4 text-green-600" />
+                  <IoWalletOutline className="h-4 w-4 text-green-600" />
                 </div>
                 <span className="font-medium text-green-700 dark:text-green-400">
                   {isRTL ? "المتاح للاستخدام" : "Available to Use"}
