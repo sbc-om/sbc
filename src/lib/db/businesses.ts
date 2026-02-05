@@ -117,6 +117,20 @@ export async function getBusinessByOwnerId(ownerId: string): Promise<Business | 
   return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
 }
 
+/**
+ * Returns a Set of user IDs that already own a business.
+ * Optionally excludes a specific business (useful when editing an existing business).
+ */
+export async function getUserIdsWithBusiness(excludeBusinessId?: string): Promise<Set<string>> {
+  const result = excludeBusinessId
+    ? await query(
+        `SELECT DISTINCT owner_id FROM businesses WHERE owner_id IS NOT NULL AND id != $1`,
+        [excludeBusinessId]
+      )
+    : await query(`SELECT DISTINCT owner_id FROM businesses WHERE owner_id IS NOT NULL`);
+  return new Set(result.rows.map((row: any) => row.owner_id));
+}
+
 export function normalizeBusinessUsername(input: string): string | null {
   const normalized = input.trim().replace(/^@/, "").toLowerCase();
   const key = usernameSchema.safeParse(normalized);

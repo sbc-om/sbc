@@ -36,11 +36,12 @@ import {
   HiOutlineCash
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
+import { HiPlus, HiOutlinePlus, HiBriefcase, HiOutlineBriefcase } from "react-icons/hi";
 
 interface SidebarProps {
   locale: Locale;
   dict: Dictionary;
-  user: { displayName: string; role: string; email: string; avatarUrl: string | null };
+  user: { displayName: string; role: string; email: string; avatarUrl: string | null; hasBusiness?: boolean };
 }
 
 type NavItem = {
@@ -140,13 +141,14 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       Icon: HiCash,
       IconOutline: HiOutlineCash,
     },
-    {
+    // Only show business request if user doesn't have a business
+    ...(!user.hasBusiness ? [{
       key: "businessRequest",
       label: dict.nav.businessRequest ?? (locale === "ar" ? "طلب إضافة عمل" : "Request Listing"),
       path: "/business-request",
-      Icon: HiSearch,
-      IconOutline: HiOutlineSearch,
-    },
+      Icon: HiPlus,
+      IconOutline: HiOutlinePlus,
+    }] : []),
   ];
 
   const navItems: NavItem[] =

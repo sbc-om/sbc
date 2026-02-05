@@ -104,12 +104,15 @@ export default async function DirectoryManagePage({
                     : "These businesses are linked to your account as owner."}
                 </p>
               </div>
-              <Link
-                href={`/${locale}/business-request`}
-                className={buttonVariants({ variant: "secondary", size: "sm" })}
-              >
-                {ar ? "إضافة نشاط" : "Add business"}
-              </Link>
+              {/* Only show add button if user doesn't already have a business */}
+              {businesses.length === 0 && (
+                <Link
+                  href={`/${locale}/business-request`}
+                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                >
+                  {ar ? "إضافة نشاط" : "Add business"}
+                </Link>
+              )}
             </div>
 
             {businesses.length === 0 ? (

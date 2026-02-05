@@ -7,6 +7,7 @@ import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { NewBusinessWizard } from "@/app/[locale]/admin/new/NewBusinessWizard";
 import { listCategories } from "@/lib/db/categories";
 import { listUsers } from "@/lib/db/users";
+import { getUserIdsWithBusiness } from "@/lib/db/businesses";
 
 export const runtime = "nodejs";
 
@@ -21,7 +22,10 @@ export default async function AdminNewBusinessPage({
   await requireAdmin(locale as Locale);
   const dict = await getDictionary(locale as Locale);
   const categories = await listCategories();
-  const users = await listUsers();
+  const allUsers = await listUsers();
+  // Filter out users who already have a business (each user can only have one business)
+  const userIdsWithBusiness = await getUserIdsWithBusiness();
+  const users = allUsers.filter((u) => !userIdsWithBusiness.has(u.id));
 
   const title = locale === "ar" ? "إضافة عمل" : "Add business";
 

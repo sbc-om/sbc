@@ -17,6 +17,7 @@ import { CartProvider } from "@/components/store/CartProvider";
 import { CartFloating } from "@/components/store/CartFloating";
 import { listStoreProducts } from "@/lib/store/products";
 import { AISearchProvider } from "@/lib/ai/AISearchProvider";
+import { getBusinessByOwnerId } from "@/lib/db/businesses";
 
 export async function generateMetadata({
   params,
@@ -45,6 +46,8 @@ export default async function LocaleLayout({
   const dict = await getDictionary(locale as Locale);
   const user = await getCurrentUser();
   const products = await listStoreProducts();
+  // Check if user already has a business (to hide business request menu)
+  const userBusiness = user ? await getBusinessByOwnerId(user.id) : null;
   
   // Check if we're on chat page
   const headersList = await headers();
@@ -77,6 +80,7 @@ export default async function LocaleLayout({
                   role: user.role,
                   email: user.email,
                   avatarUrl: user.avatarUrl ?? null,
+                  hasBusiness: !!userBusiness,
                 }}
               />
               <div

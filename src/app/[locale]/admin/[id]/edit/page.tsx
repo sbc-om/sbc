@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
-import { getBusinessById } from "@/lib/db/businesses";
+import { getBusinessById, getUserIdsWithBusiness } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
 import { listUsers } from "@/lib/db/users";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -25,7 +25,10 @@ export default async function AdminEditBusinessPage({
   const categories = await listCategories();
   const business = await getBusinessById(id);
   if (!business) notFound();
-  const users = await listUsers();
+  // Filter out users who already have a business (exclude current business's owner)
+  const allUsers = await listUsers();
+  const userIdsWithBusiness = await getUserIdsWithBusiness(id);
+  const users = allUsers.filter((u) => !userIdsWithBusiness.has(u.id));
 
   const title = locale === "ar" ? "تعديل النشاط التجاري" : "Edit Business";
 
