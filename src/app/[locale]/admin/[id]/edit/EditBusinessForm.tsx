@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { UserSelect } from "@/components/ui/UserSelect";
+import { MarkdownEditorField } from "@/components/ui/MarkdownEditor";
 
 const OsmLocationPicker = dynamic(
   () => import("@/components/maps/OsmLocationPicker").then((mod) => mod.OsmLocationPicker),
@@ -483,16 +484,20 @@ export function EditBusinessForm({
             {ar ? "وصف مفصل" : "Detailed description"}
           </p>
           
-          <div className="grid gap-6 sm:grid-cols-2">
-            <TextArea 
-              label={ar ? "الوصف (EN)" : "Description (EN)"} 
-              name="desc_en" 
+          <div className="space-y-6">
+            <MarkdownEditorField
+              label={ar ? "الوصف (EN)" : "Description (EN)"}
+              name="desc_en"
               defaultValue={business.description?.en}
+              dir="ltr"
+              height={200}
             />
-            <TextArea 
-              label={ar ? "الوصف (AR)" : "Description (AR)"} 
-              name="desc_ar" 
+            <MarkdownEditorField
+              label={ar ? "الوصف (AR)" : "Description (AR)"}
+              name="desc_ar"
               defaultValue={business.description?.ar}
+              dir="rtl"
+              height={200}
             />
           </div>
         </div>

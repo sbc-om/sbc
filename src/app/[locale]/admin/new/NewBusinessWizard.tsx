@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/Textarea";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { CategorySelectField } from "@/components/CategorySelectField";
 import { UserSelect } from "@/components/ui/UserSelect";
+import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
 
 const OsmLocationPicker = dynamic(
   () => import("@/components/maps/OsmLocationPicker").then((mod) => mod.OsmLocationPicker),
@@ -361,30 +362,24 @@ export function NewBusinessWizard({
           </div>
         )}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {ar ? "الوصف (EN)" : "Description (EN)"}
-            </label>
-            <Textarea
-              value={formData.desc_en}
-              onChange={(e) => setFormData({ ...formData, desc_en: e.target.value })}
-              placeholder={ar ? "Describe your business..." : "Describe your business..."}
-              rows={4}
-            />
-          </div>
+        <div className="space-y-4">
+          <MarkdownEditor
+            label={ar ? "الوصف (EN)" : "Description (EN)"}
+            value={formData.desc_en}
+            onChange={(value) => setFormData({ ...formData, desc_en: value })}
+            placeholder={ar ? "Describe your business..." : "Describe your business..."}
+            dir="ltr"
+            height={200}
+          />
 
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {ar ? "الوصف (AR)" : "Description (AR)"}
-            </label>
-            <Textarea
-              value={formData.desc_ar}
-              onChange={(e) => setFormData({ ...formData, desc_ar: e.target.value })}
-              placeholder={ar ? "اوصف نشاطك التجاري..." : "اوصف نشاطك التجاري..."}
-              rows={4}
-            />
-          </div>
+          <MarkdownEditor
+            label={ar ? "الوصف (AR)" : "Description (AR)"}
+            value={formData.desc_ar}
+            onChange={(value) => setFormData({ ...formData, desc_ar: value })}
+            placeholder={ar ? "اوصف نشاطك التجاري..." : "اوصف نشاطك التجاري..."}
+            dir="rtl"
+            height={200}
+          />
         </div>
       </div>
 
