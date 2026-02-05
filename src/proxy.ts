@@ -54,10 +54,7 @@ export async function proxy(req: NextRequest) {
   // Use the Host header to get the full hostname including subdomain
   const hostHeader = req.headers.get("host") || req.nextUrl.hostname;
   const hostname = hostHeader.split(":")[0];
-
-  // Debug logging for subdomain routing
   const subdomain = extractSubdomain(hostname);
-  console.log(`[Proxy] host header: ${hostHeader}, hostname: ${hostname}, subdomain: ${subdomain}, pathname: ${pathname}`);
 
   // Skip Next internals and static files.
   if (
