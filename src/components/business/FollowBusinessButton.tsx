@@ -63,7 +63,35 @@ export function FollowBusinessButton({
 
   const handleClick = async () => {
     if (status === "guest") {
-      router.push(`/${locale}/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      // Get the current URL info to build proper redirect
+      const currentHost = window.location.host;
+      const currentHostname = window.location.hostname;
+      
+      // Check if we're on a subdomain (e.g., spirithub.sbc.om or spirithub.localhost)
+      const baseDomains = ["sbc.om", "localhost"];
+      let isSubdomain = false;
+      let subdomain = "";
+      
+      for (const baseDomain of baseDomains) {
+        if (currentHostname.endsWith(`.${baseDomain}`) && !currentHostname.startsWith("www.")) {
+          isSubdomain = true;
+          subdomain = currentHostname.slice(0, -(baseDomain.length + 1));
+          break;
+        }
+      }
+      
+      if (isSubdomain && subdomain) {
+        // Redirect to main domain with subdomain as redirect target
+        const port = window.location.port ? `:${window.location.port}` : "";
+        const protocol = window.location.protocol;
+        const mainDomain = currentHostname.replace(`${subdomain}.`, "");
+        const redirectTarget = `/@${subdomain}`;
+        const loginUrl = `${protocol}//${mainDomain}${port}/${locale}/login?redirect=${encodeURIComponent(redirectTarget)}`;
+        window.location.href = loginUrl;
+      } else {
+        // Normal redirect within same domain
+        router.push(`/${locale}/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      }
       return;
     }
 

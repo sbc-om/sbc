@@ -70,11 +70,97 @@ export async function proxy(req: NextRequest) {
   
   // Handle subdomain routing (e.g., spirithub.sbc.om -> /@spirithub)
   if (subdomain) {
+    // Check if URL has locale prefix
+    const segments = pathname.split("/").filter(Boolean);
+    const urlLocale = segments[0] && isLocale(segments[0]) ? segments[0] as Locale : null;
+    
+    // Use URL locale if present, otherwise fall back to cookie or Accept-Language
     const cookieLocale = req.cookies.get("locale")?.value;
-    const preferred: Locale =
-      cookieLocale && isLocale(cookieLocale)
-        ? cookieLocale
-        : detectLocaleFromAcceptLanguage(req.headers.get("accept-language"));
+    const preferred: Locale = urlLocale 
+      ? urlLocale
+      : (cookieLocale && isLocale(cookieLocale)
+          ? cookieLocale
+          : detectLocaleFromAcceptLanguage(req.headers.get("accept-language")));
+
+    // If user is trying to access login/register on subdomain, redirect to main domain
+    const pathWithoutLocale = urlLocale ? segments.slice(1).join("/") : segments.join("/");
+    
+    // If user is trying to access another business page on subdomain, redirect to main domain
+    if (pathWithoutLocale.startsWith("@") || pathWithoutLocale.startsWith("u/")) {
+      const port = hostHeader.includes(":") ? `:${hostHeader.split(":")[1]}` : "";
+      // Find the base domain this subdomain belongs to
+      let mainDomain = "sbc.om";
+      for (const baseDomain of BASE_DOMAINS) {
+        if (hostname.endsWith(`.${baseDomain}`)) {
+          mainDomain = baseDomain;
+          break;
+        }
+      }
+      const protocol = req.nextUrl.protocol.replace(/:$/, "");
+      // Redirect to main domain without locale prefix (proxy will handle locale)
+      const targetUrl = `${protocol}://${mainDomain}${port}/${pathWithoutLocale}`;
+      
+      // Use HTML redirect for cross-subdomain (works better with localhost)
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0;url=${targetUrl}">
+  <script>window.location.replace("${targetUrl}");</script>
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Redirecting...</p>
+</body>
+</html>`;
+      
+      return new NextResponse(html, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+        },
+      });
+    }
+    
+    if (pathWithoutLocale === "login" || pathWithoutLocale === "register") {
+      // Get the port from host header if present
+      const port = hostHeader.includes(":") ? `:${hostHeader.split(":")[1]}` : "";
+      // Find the base domain this subdomain belongs to
+      let mainDomain = "sbc.om";
+      for (const baseDomain of BASE_DOMAINS) {
+        if (hostname.endsWith(`.${baseDomain}`)) {
+          mainDomain = baseDomain;
+          break;
+        }
+      }
+      
+      // Build redirect URL to main domain with subdomain as redirect target
+      const protocol = req.nextUrl.protocol.replace(/:$/, ""); // Remove trailing colon if present
+      const redirectParam = req.nextUrl.searchParams.get("redirect") || `/@${subdomain}`;
+      const loginUrl = `${protocol}://${mainDomain}${port}/${preferred}/${pathWithoutLocale}?redirect=${encodeURIComponent(redirectParam)}`;
+      
+      // Return HTML page with client-side redirect (works better with localhost subdomains)
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0;url=${loginUrl}">
+  <script>window.location.href = "${loginUrl}";</script>
+  <title>Redirecting...</title>
+</head>
+<body>
+  <p>Redirecting to login page...</p>
+  <p><a href="${loginUrl}">Click here if not redirected</a></p>
+</body>
+</html>`;
+      
+      return new NextResponse(html, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+        },
+      });
+    }
 
     const url = req.nextUrl.clone();
     // Rewrite to the @username handler
