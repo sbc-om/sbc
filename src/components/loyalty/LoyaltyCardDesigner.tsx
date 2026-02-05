@@ -34,15 +34,15 @@ type WalletContent = {
 };
 
 const defaultDesign: CardDesign = {
-  primaryColor: "#7c3aed",
-  secondaryColor: "#0ea5e9",
+  primaryColor: "#1E40AF",
+  secondaryColor: "#3B82F6",
   textColor: "#ffffff",
-  backgroundColor: "#1e1e2e",
-  backgroundStyle: "gradient",
-  logoPosition: "top",
+  backgroundColor: "#1E40AF",
+  backgroundStyle: "solid",
+  logoPosition: "corner",
   showBusinessName: true,
   showCustomerName: true,
-  cornerRadius: 16,
+  cornerRadius: 12,
 };
 
 const defaultWalletContent: WalletContent = {
@@ -56,6 +56,106 @@ const defaultWalletContent: WalletContent = {
   walletBarcodeMessage: "SBC-LOYALTY-000123",
   walletNotificationTitle: "Loyalty update",
   walletNotificationBody: "Your loyalty points balance has been updated.",
+};
+
+// Professional presets inspired by real wallet passes
+const PRESETS = {
+  airline: {
+    name: { en: "Airline Blue", ar: "أزرق طيران" },
+    design: {
+      primaryColor: "#1E40AF",
+      secondaryColor: "#3B82F6",
+      backgroundColor: "#1E40AF",
+      textColor: "#FFFFFF",
+      backgroundStyle: "solid" as const,
+      logoPosition: "corner" as const,
+      cornerRadius: 12,
+    },
+  },
+  coffee: {
+    name: { en: "Coffee Shop", ar: "مقهى" },
+    design: {
+      primaryColor: "#166534",
+      secondaryColor: "#22C55E",
+      backgroundColor: "#166534",
+      textColor: "#FFFFFF",
+      backgroundStyle: "solid" as const,
+      logoPosition: "corner" as const,
+      cornerRadius: 12,
+    },
+  },
+  luxury: {
+    name: { en: "Luxury Gold", ar: "ذهبي فاخر" },
+    design: {
+      primaryColor: "#1C1917",
+      secondaryColor: "#D4AF37",
+      backgroundColor: "#1C1917",
+      textColor: "#D4AF37",
+      backgroundStyle: "solid" as const,
+      logoPosition: "corner" as const,
+      cornerRadius: 12,
+    },
+  },
+  modern: {
+    name: { en: "Modern Purple", ar: "بنفسجي عصري" },
+    design: {
+      primaryColor: "#7C3AED",
+      secondaryColor: "#A78BFA",
+      backgroundColor: "#7C3AED",
+      textColor: "#FFFFFF",
+      backgroundStyle: "gradient" as const,
+      logoPosition: "corner" as const,
+      cornerRadius: 12,
+    },
+  },
+  sunset: {
+    name: { en: "Sunset Orange", ar: "برتقالي غروب" },
+    design: {
+      primaryColor: "#EA580C",
+      secondaryColor: "#F59E0B",
+      backgroundColor: "#EA580C",
+      textColor: "#FFFFFF",
+      backgroundStyle: "gradient" as const,
+      logoPosition: "corner" as const,
+      cornerRadius: 12,
+    },
+  },
+  ocean: {
+    name: { en: "Ocean Teal", ar: "أزرق محيطي" },
+    design: {
+      primaryColor: "#0D9488",
+      secondaryColor: "#2DD4BF",
+      backgroundColor: "#0D9488",
+      textColor: "#FFFFFF",
+      backgroundStyle: "gradient" as const,
+      logoPosition: "corner" as const,
+      cornerRadius: 12,
+    },
+  },
+  rose: {
+    name: { en: "Rose Pink", ar: "وردي" },
+    design: {
+      primaryColor: "#BE185D",
+      secondaryColor: "#F472B6",
+      backgroundColor: "#BE185D",
+      textColor: "#FFFFFF",
+      backgroundStyle: "gradient" as const,
+      logoPosition: "corner" as const,
+      cornerRadius: 12,
+    },
+  },
+  minimal: {
+    name: { en: "Minimal Light", ar: "فاتح بسيط" },
+    design: {
+      primaryColor: "#F8FAFC",
+      secondaryColor: "#E2E8F0",
+      backgroundColor: "#F8FAFC",
+      textColor: "#1E293B",
+      backgroundStyle: "solid" as const,
+      logoPosition: "corner" as const,
+      cornerRadius: 12,
+    },
+  },
 };
 
 interface Props {
@@ -99,6 +199,16 @@ export function LoyaltyCardDesigner({
 
   const updateWallet = (updates: Partial<WalletContent>) => {
     setWallet((prev) => ({ ...prev, ...updates }));
+  };
+
+  const applyPreset = (presetKey: keyof typeof PRESETS) => {
+    const preset = PRESETS[presetKey];
+    setDesign((prev) => ({
+      ...prev,
+      ...preset.design,
+      showBusinessName: prev.showBusinessName,
+      showCustomerName: prev.showCustomerName,
+    }));
   };
 
   useEffect(() => {
@@ -200,13 +310,10 @@ export function LoyaltyCardDesigner({
       });
     } finally {
       setSaving(false);
-      
-      // Clear message after 3 seconds
       setTimeout(() => setMessage(null), 3000);
     }
   };
 
-  // Sample data for preview
   const samplePoints = 12;
   const sampleCustomerName = ar ? "محمد أحمد" : "John Smith";
 
@@ -228,6 +335,53 @@ export function LoyaltyCardDesigner({
       <div className="mt-6 grid gap-8 lg:grid-cols-2">
         {/* Controls */}
         <div className="space-y-6">
+          {/* Quick Presets - Moved to top for better UX */}
+          <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-5">
+            <h4 className="text-sm font-semibold mb-4">
+              {ar ? "قوالب جاهزة" : "Quick Presets"}
+            </h4>
+            
+            <div className="grid grid-cols-4 gap-2">
+              {(Object.entries(PRESETS) as [keyof typeof PRESETS, typeof PRESETS[keyof typeof PRESETS]][]).map(([key, preset]) => {
+                const isActive = 
+                  design.primaryColor === preset.design.primaryColor &&
+                  design.backgroundColor === preset.design.backgroundColor;
+                
+                return (
+                  <button
+                    key={key}
+                    onClick={() => applyPreset(key)}
+                    className={`relative h-16 rounded-xl overflow-hidden border-2 transition-all ${
+                      isActive 
+                        ? "border-accent ring-2 ring-accent/30 scale-105" 
+                        : "border-transparent hover:border-accent/50 hover:scale-102"
+                    }`}
+                    style={{
+                      background: preset.design.backgroundStyle === "gradient"
+                        ? `linear-gradient(135deg, ${preset.design.primaryColor}, ${preset.design.secondaryColor})`
+                        : preset.design.backgroundColor,
+                    }}
+                    title={preset.name[ar ? "ar" : "en"]}
+                  >
+                    <span 
+                      className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold px-1 text-center leading-tight"
+                      style={{ color: preset.design.textColor }}
+                    >
+                      {preset.name[ar ? "ar" : "en"]}
+                    </span>
+                    {isActive && (
+                      <div className="absolute top-1 right-1">
+                        <svg className="w-3 h-3 text-white drop-shadow-md" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Color Settings */}
           <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-5">
             <h4 className="text-sm font-semibold mb-4">
@@ -410,87 +564,6 @@ export function LoyaltyCardDesigner({
                   </span>
                 </label>
               </div>
-            </div>
-          </div>
-
-          {/* Quick Presets */}
-          <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-5">
-            <h4 className="text-sm font-semibold mb-4">
-              {ar ? "تصاميم جاهزة" : "Quick Presets"}
-            </h4>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => updateDesign({
-                  primaryColor: "#7c3aed",
-                  secondaryColor: "#0ea5e9",
-                  backgroundColor: "#1e1e2e",
-                  textColor: "#ffffff",
-                  backgroundStyle: "gradient",
-                })}
-                className="h-20 rounded-xl border border-(--surface-border) hover:border-accent transition"
-                style={{
-                  background: "linear-gradient(135deg, #7c3aed, #0ea5e9)",
-                }}
-              >
-                <span className="text-white text-xs font-medium">
-                  {ar ? "بنفسجي وأزرق" : "Purple & Blue"}
-                </span>
-              </button>
-
-              <button
-                onClick={() => updateDesign({
-                  primaryColor: "#dc2626",
-                  secondaryColor: "#f59e0b",
-                  backgroundColor: "#1a1a1a",
-                  textColor: "#ffffff",
-                  backgroundStyle: "gradient",
-                })}
-                className="h-20 rounded-xl border border-(--surface-border) hover:border-accent transition"
-                style={{
-                  background: "linear-gradient(135deg, #dc2626, #f59e0b)",
-                }}
-              >
-                <span className="text-white text-xs font-medium">
-                  {ar ? "أحمر وذهبي" : "Red & Gold"}
-                </span>
-              </button>
-
-              <button
-                onClick={() => updateDesign({
-                  primaryColor: "#059669",
-                  secondaryColor: "#10b981",
-                  backgroundColor: "#f0fdf4",
-                  textColor: "#064e3b",
-                  backgroundStyle: "solid",
-                })}
-                className="h-20 rounded-xl border border-(--surface-border) hover:border-accent transition"
-                style={{
-                  background: "linear-gradient(135deg, #059669, #10b981)",
-                }}
-              >
-                <span className="text-white text-xs font-medium">
-                  {ar ? "أخضر طبيعي" : "Fresh Green"}
-                </span>
-              </button>
-
-              <button
-                onClick={() => updateDesign({
-                  primaryColor: "#1e293b",
-                  secondaryColor: "#475569",
-                  backgroundColor: "#0f172a",
-                  textColor: "#f1f5f9",
-                  backgroundStyle: "solid",
-                })}
-                className="h-20 rounded-xl border border-(--surface-border) hover:border-accent transition"
-                style={{
-                  background: "linear-gradient(135deg, #1e293b, #475569)",
-                }}
-              >
-                <span className="text-white text-xs font-medium">
-                  {ar ? "أسود راقي" : "Elegant Dark"}
-                </span>
-              </button>
             </div>
           </div>
 
@@ -745,16 +818,18 @@ export function LoyaltyCardDesigner({
           </div>
 
           {/* Card Preview */}
-          <div className="relative rounded-2xl border border-(--surface-border) bg-(--surface) p-8 min-h-150 flex items-center justify-center">
+          <div className="relative rounded-2xl border border-(--surface-border) bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 p-6 min-h-[640px] flex items-center justify-center overflow-hidden">
+            {/* Background Pattern */}
             <div
-              className="absolute inset-0 rounded-2xl opacity-5"
+              className="absolute inset-0 opacity-30"
               style={{
-                backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%239C92AC\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+                backgroundImage: `radial-gradient(circle at 25% 25%, rgba(120,120,120,0.1) 0%, transparent 50%), 
+                                  radial-gradient(circle at 75% 75%, rgba(120,120,120,0.1) 0%, transparent 50%)`,
               }}
             />
 
             {activePreview === "ios" ? (
-              <IOSCardPreview
+              <IOSWalletPreview
                 design={design}
                 businessName={businessName}
                 logoUrl={logoUrl}
@@ -765,7 +840,7 @@ export function LoyaltyCardDesigner({
                 qrDataUrl={qrDataUrl}
               />
             ) : activePreview === "android" ? (
-              <AndroidCardPreview
+              <AndroidWalletPreview
                 design={design}
                 businessName={businessName}
                 logoUrl={logoUrl}
@@ -791,56 +866,8 @@ export function LoyaltyCardDesigner({
   );
 }
 
-// iOS Wallet Card Preview Component
-function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
-  const v = (value ?? "").trim();
-  if (!v) return null;
-  return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="text-[10px] font-medium text-gray-500 shrink-0">{label}</div>
-      <div className="text-[11px] font-semibold text-gray-800 text-right break-all">{v}</div>
-    </div>
-  );
-}
-
-function PassBarcode({
-  format,
-  message,
-  qrDataUrl,
-}: {
-  format: WalletBarcodeFormat;
-  message: string;
-  qrDataUrl: string | null;
-}) {
-  const msg = (message ?? "").trim();
-  if (!msg) return null;
-
-  return (
-    <div className="rounded-xl bg-white/12 border border-white/20 p-3">
-      <div className="flex items-center justify-center overflow-hidden rounded-lg bg-white p-2">
-        {format === "qr" ? (
-          qrDataUrl ? (
-            <Image src={qrDataUrl} alt="QR" width={120} height={120} unoptimized />
-          ) : (
-            <div className="text-xs text-gray-600">Generating QR…</div>
-          )
-        ) : (
-          <Barcode
-            value={msg.slice(0, 80)}
-            format="CODE128"
-            width={2}
-            height={52}
-            displayValue={false}
-            margin={0}
-          />
-        )}
-      </div>
-      <div className="mt-2 text-[10px] opacity-70 text-center break-all">{msg}</div>
-    </div>
-  );
-}
-
-function IOSCardPreview({
+// iOS Wallet Pass Preview - Styled like real Apple Wallet passes
+function IOSWalletPreview({
   design,
   businessName,
   logoUrl,
@@ -861,236 +888,66 @@ function IOSCardPreview({
 }) {
   const getBackground = () => {
     if (design.backgroundStyle === "gradient") {
-      return `linear-gradient(135deg, ${design.primaryColor}, ${design.secondaryColor})`;
+      return `linear-gradient(180deg, ${design.primaryColor}, ${design.secondaryColor})`;
     }
     if (design.backgroundStyle === "pattern") {
-      return `${design.backgroundColor} url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='${encodeURIComponent(design.primaryColor)}' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`;
+      return `${design.backgroundColor} url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='${encodeURIComponent(design.textColor)}' fill-opacity='0.05' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='1.5'/%3E%3Ccircle cx='13' cy='13' r='1.5'/%3E%3C/g%3E%3C/svg%3E")`;
     }
     return design.backgroundColor;
   };
 
   return (
-    <div className="w-full max-w-85">
-      {/* iOS Device Frame */}
-      <div className="relative mx-auto" style={{ width: "340px", height: "640px" }}>
-        {/* Device */}
-        <div className="absolute inset-0 rounded-[40px] bg-black shadow-2xl border-8 border-gray-900">
-          {/* Notch */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-10" />
-          
-          {/* Screen */}
-          <div className="absolute inset-2 rounded-4xl bg-gray-100 overflow-hidden">
-            {/* Status Bar */}
-            <div className="h-12 bg-white/95 backdrop-blur flex items-center justify-between px-6 pt-2">
-              <span className="text-xs font-semibold">9:41</span>
-              <div className="flex items-center gap-1">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM13 20h-2v-1h2v1zm3.33-3H7.67V6h8.67v11z"/>
-                </svg>
-              </div>
-            </div>
-
-            {/* Wallet Card */}
-            <div className="p-4 pt-2">
-              <div
-                className="relative overflow-hidden shadow-xl"
-                style={{
-                  background: getBackground(),
-                  borderRadius: `${design.cornerRadius}px`,
-                  color: design.textColor,
-                  height: "480px",
-                }}
-              >
-                {/* Card Content */}
-                <div className="relative h-full p-6 flex flex-col">
-                  {/* Logo */}
-                  {logoUrl && (
-                    <div
-                      className={`${
-                        design.logoPosition === "top"
-                          ? "flex justify-center mb-4"
-                          : design.logoPosition === "corner"
-                          ? "absolute top-4 right-4"
-                          : "flex-1 flex items-center justify-center"
-                      }`}
-                    >
-                      <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-white/10 backdrop-blur border border-white/20">
-                        <Image
-                          src={logoUrl}
-                          alt={businessName}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Business Name */}
-                  {design.showBusinessName && design.logoPosition !== "center" && (
-                    <div className="text-center mb-2">
-                      <h3 className="text-lg font-bold opacity-90">{businessName}</h3>
-                    </div>
-                  )}
-
-                  {/* Points Section */}
-                  <div className={`${design.logoPosition === "center" ? "mt-auto" : "flex-1 flex flex-col justify-center"}`}>
-                    <div className="text-center">
-                      <div className="text-sm opacity-70 mb-2">
-                        {ar ? "نقاط الولاء" : "Loyalty Points"}
-                      </div>
-                      <div className="text-6xl font-bold mb-4" style={{ 
-                        background: `linear-gradient(to right, ${design.textColor}, ${design.textColor}99)`,
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                      }}>
-                        {points}
-                      </div>
-                      
-                      {/* Visual Points */}
-                      <div className="flex justify-center gap-2 flex-wrap max-w-50 mx-auto">
-                        {Array.from({ length: Math.min(points, 12) }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="w-5 h-5 rounded-full opacity-80"
-                            style={{
-                              background: `linear-gradient(135deg, ${design.textColor}44, ${design.textColor}22)`,
-                              border: `1.5px solid ${design.textColor}66`,
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Barcode */}
-                  <div className="mt-4">
-                    <PassBarcode
-                      format={wallet.walletBarcodeFormat}
-                      message={wallet.walletBarcodeMessage}
-                      qrDataUrl={qrDataUrl}
-                    />
-                  </div>
-
-                  {/* Customer Name */}
-                  {design.showCustomerName && (
-                    <div className="mt-auto pt-4 border-t border-white/20">
-                      <div className="text-xs opacity-60 mb-1">
-                        {ar ? "العميل" : "Member"}
-                      </div>
-                      <div className="text-base font-semibold opacity-90">
-                        {customerName}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Pass Details (iOS back fields) */}
-              <div className="mt-3 rounded-xl border border-gray-200 bg-white p-3">
-                <div className="text-xs font-semibold text-gray-800 mb-2">
-                  {ar ? "التفاصيل" : "Details"}
-                </div>
-                <div className="space-y-1">
-                  <DetailRow label={ar ? "الوصف" : "Description"} value={wallet.walletPassDescription} />
-                  <DetailRow label={ar ? "الشروط" : "Terms"} value={wallet.walletPassTerms} />
-                  <DetailRow label={ar ? "الموقع" : "Website"} value={wallet.walletWebsiteUrl} />
-                  <DetailRow label={ar ? "الهاتف" : "Phone"} value={wallet.walletSupportPhone} />
-                  <DetailRow label={ar ? "البريد" : "Email"} value={wallet.walletSupportEmail} />
-                  <DetailRow label={ar ? "العنوان" : "Address"} value={wallet.walletAddress} />
-                </div>
-              </div>
+    <div className="w-full max-w-[340px] mx-auto relative z-10">
+      {/* iPhone Frame */}
+      <div className="rounded-[48px] bg-gray-900 p-[10px] shadow-2xl ring-1 ring-gray-800">
+        {/* Dynamic Island */}
+        <div className="absolute top-[18px] left-1/2 -translate-x-1/2 w-[100px] h-[32px] bg-black rounded-full z-20" />
+        
+        {/* Screen */}
+        <div className="rounded-[38px] bg-gray-100 overflow-hidden">
+          {/* Status Bar */}
+          <div className="h-[52px] flex items-end justify-between px-8 pb-1 bg-gray-50">
+            <span className="text-[15px] font-semibold text-gray-900">9:41</span>
+            <div className="flex items-center gap-1">
+              <svg className="w-[18px] h-[18px] text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.01 21.49L23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l11.63 14.49.01.01.01-.01z"/>
+              </svg>
+              <svg className="w-[18px] h-[18px] text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17 4h-3V2h-4v2H7v18h10V4zm-3 16h-4v-2h4v2zm0-4h-4V8h4v8z"/>
+              </svg>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-// Android Wallet Card Preview Component
-function AndroidCardPreview({
-  design,
-  businessName,
-  logoUrl,
-  points,
-  customerName,
-  ar,
-  wallet,
-  qrDataUrl,
-}: {
-  design: CardDesign;
-  businessName: string;
-  logoUrl?: string | null;
-  points: number;
-  customerName: string;
-  ar: boolean;
-  wallet: WalletContent;
-  qrDataUrl: string | null;
-}) {
-  const getBackground = () => {
-    if (design.backgroundStyle === "gradient") {
-      return `linear-gradient(135deg, ${design.primaryColor}, ${design.secondaryColor})`;
-    }
-    if (design.backgroundStyle === "pattern") {
-      return `${design.backgroundColor} url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='${encodeURIComponent(design.primaryColor)}' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`;
-    }
-    return design.backgroundColor;
-  };
-
-  return (
-    <div className="w-full max-w-85">
-      {/* Android Device Frame */}
-      <div className="relative mx-auto" style={{ width: "340px", height: "640px" }}>
-        {/* Device */}
-        <div className="absolute inset-0 rounded-4xl bg-black shadow-2xl border-4 border-gray-800">
-          {/* Screen */}
-          <div className="absolute inset-1 rounded-[28px] bg-white overflow-hidden">
-            {/* Status Bar */}
-            <div className="h-8 bg-black text-white flex items-center justify-between px-4">
-              <span className="text-xs font-medium">9:41</span>
-              <div className="flex items-center gap-1">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/>
-                </svg>
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z"/>
-                </svg>
-              </div>
-            </div>
-
-            {/* Google Wallet Header */}
-            <div className="h-14 bg-white border-b border-gray-200 flex items-center px-4">
-              <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M21.8 12.03c0-.73-.07-1.42-.2-2.1H12v3.98h5.5c-.24 1.27-.96 2.34-2.03 3.06v2.56h3.28c1.92-1.77 3.05-4.38 3.05-7.5z"/>
-                <path d="M12 22c2.7 0 4.98-.9 6.64-2.43l-3.28-2.56c-.9.6-2.06.96-3.36.96-2.58 0-4.77-1.74-5.55-4.08H3.05v2.64C4.7 19.78 8.1 22 12 22z"/>
-                <path d="M6.45 13.89c-.2-.6-.32-1.23-.32-1.89s.11-1.29.32-1.89V7.47H3.05C2.38 8.8 2 10.35 2 12s.38 3.2 1.05 4.53l3.4-2.64z"/>
-                <path d="M12 6.03c1.46 0 2.76.5 3.78 1.48l2.84-2.84C17.01 3.03 14.73 2 12 2 8.1 2 4.7 4.22 3.05 7.47l3.4 2.64C7.23 7.77 9.42 6.03 12 6.03z"/>
+          {/* Wallet Header */}
+          <div className="h-[44px] flex items-center justify-between px-4 bg-gray-50 border-b border-gray-200/60">
+            <span className="text-[17px] text-blue-500 font-normal">Done</span>
+            <button className="w-[30px] h-[30px] rounded-full bg-gray-200/80 flex items-center justify-center">
+              <svg className="w-[18px] h-[18px] text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
               </svg>
-              <span className="ml-2 text-sm font-medium text-gray-800">Google Wallet</span>
-            </div>
+            </button>
+          </div>
 
-            {/* Card Container */}
-            <div className="p-4 bg-gray-50" style={{ height: "calc(100% - 88px)", overflowY: "auto" }}>
-              {/* Wallet Card */}
-              <div
-                className="relative overflow-hidden shadow-lg"
-                style={{
-                  background: getBackground(),
-                  borderRadius: `${design.cornerRadius}px`,
-                  color: design.textColor,
-                  minHeight: "400px",
-                }}
-              >
-                {/* Card Content */}
-                <div className="relative p-5 flex flex-col min-h-100">
-                  {/* Header Section */}
-                  <div className="flex items-center justify-between mb-6">
-                    {logoUrl && design.logoPosition === "corner" && (
-                      <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-white/10 backdrop-blur border border-white/20">
+          {/* Pass Card */}
+          <div className="p-4 bg-white">
+            <div
+              className="relative overflow-hidden shadow-xl"
+              style={{
+                background: getBackground(),
+                borderRadius: `${design.cornerRadius}px`,
+                color: design.textColor,
+              }}
+            >
+              {/* Header Strip */}
+              <div className="px-5 pt-5 pb-4">
+                <div className="flex items-start justify-between">
+                  {/* Logo & Business Name */}
+                  <div className="flex items-center gap-3">
+                    {logoUrl && (
+                      <div 
+                        className="relative w-[44px] h-[44px] rounded-[10px] overflow-hidden flex-shrink-0"
+                        style={{ background: `${design.textColor}15` }}
+                      >
                         <Image
                           src={logoUrl}
                           alt={businessName}
@@ -1100,16 +957,221 @@ function AndroidCardPreview({
                       </div>
                     )}
                     {design.showBusinessName && (
-                      <div className={`${design.logoPosition === "corner" ? "text-right" : "text-center w-full"}`}>
-                        <h3 className="text-base font-bold opacity-90">{businessName}</h3>
+                      <div>
+                        <div className="text-[17px] font-semibold tracking-tight leading-tight">
+                          {businessName}
+                        </div>
+                        <div className="text-[13px] opacity-70 mt-0.5">
+                          {ar ? "بطاقة ولاء" : "Loyalty Card"}
+                        </div>
                       </div>
                     )}
                   </div>
+                  
+                  {/* Points Badge (Top Right) */}
+                  <div className="text-right">
+                    <div className="text-[11px] uppercase tracking-wider opacity-60">
+                      {ar ? "النقاط" : "POINTS"}
+                    </div>
+                    <div className="text-[28px] font-bold leading-none mt-0.5 tabular-nums">
+                      {points}
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-                  {/* Logo (center or top) */}
-                  {logoUrl && (design.logoPosition === "top" || design.logoPosition === "center") && (
-                    <div className={`${design.logoPosition === "center" ? "flex-1 flex items-center justify-center" : "flex justify-center mb-4"}`}>
-                      <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-white/10 backdrop-blur border border-white/20">
+              {/* Main Content - Points Display */}
+              <div className="px-5 py-6">
+                <div className="text-center">
+                  <div className="text-[11px] uppercase tracking-widest opacity-50 mb-2">
+                    {ar ? "رصيد النقاط" : "POINTS BALANCE"}
+                  </div>
+                  <div className="text-[72px] font-black leading-none tabular-nums">
+                    {points}
+                  </div>
+                  <div className="text-[13px] uppercase tracking-wider opacity-60 mt-2">
+                    {ar ? "نقطة ولاء" : "LOYALTY POINTS"}
+                  </div>
+                </div>
+
+                {/* Progress Indicator */}
+                <div className="mt-6">
+                  <div className="flex items-center justify-between text-[11px] uppercase tracking-wider opacity-50 mb-2">
+                    <span>{ar ? "التقدم" : "PROGRESS"}</span>
+                    <span>{Math.min(points, 10)}/10</span>
+                  </div>
+                  <div 
+                    className="h-[6px] rounded-full overflow-hidden"
+                    style={{ background: `${design.textColor}20` }}
+                  >
+                    <div 
+                      className="h-full rounded-full transition-all duration-700 ease-out"
+                      style={{ 
+                        width: `${Math.min((points / 10) * 100, 100)}%`,
+                        background: design.textColor,
+                      }}
+                    />
+                  </div>
+                  <div className="text-[11px] text-center opacity-50 mt-2">
+                    {points >= 10 
+                      ? (ar ? "🎉 حصلت على مكافأة!" : "🎉 You earned a reward!") 
+                      : (ar ? `${10 - Math.min(points, 10)} نقاط للمكافأة` : `${10 - Math.min(points, 10)} points to reward`)}
+                  </div>
+                </div>
+              </div>
+
+              {/* Member Info Strip */}
+              {design.showCustomerName && (
+                <div 
+                  className="mx-5 mb-4 px-4 py-3 rounded-xl"
+                  style={{ background: `${design.textColor}10` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider opacity-50">
+                        {ar ? "العضو" : "MEMBER"}
+                      </div>
+                      <div className="text-[15px] font-semibold mt-0.5">
+                        {customerName}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] uppercase tracking-wider opacity-50">
+                        {ar ? "منذ" : "SINCE"}
+                      </div>
+                      <div className="text-[15px] font-semibold mt-0.5">
+                        2024
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Barcode Section */}
+              <div className="bg-white mx-4 mb-4 rounded-xl overflow-hidden">
+                <div className="p-4 flex flex-col items-center">
+                  {wallet.walletBarcodeFormat === "qr" ? (
+                    qrDataUrl ? (
+                      <Image src={qrDataUrl} alt="QR" width={140} height={140} unoptimized />
+                    ) : (
+                      <div className="w-[140px] h-[140px] bg-gray-100 rounded-lg flex items-center justify-center">
+                        <div className="text-xs text-gray-400">QR Code</div>
+                      </div>
+                    )
+                  ) : (
+                    <Barcode
+                      value={(wallet.walletBarcodeMessage || "SBC-LOYALTY-000123").slice(0, 80)}
+                      format="CODE128"
+                      width={2}
+                      height={50}
+                      displayValue={false}
+                      margin={0}
+                    />
+                  )}
+                  <div className="mt-2 text-[12px] text-gray-500 font-mono tracking-wide">
+                    {wallet.walletBarcodeMessage || "SBC-LOYALTY-000123"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Bottom Safe Area */}
+          <div className="h-[34px] bg-white" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Android Google Wallet Preview
+function AndroidWalletPreview({
+  design,
+  businessName,
+  logoUrl,
+  points,
+  customerName,
+  ar,
+  wallet,
+  qrDataUrl,
+}: {
+  design: CardDesign;
+  businessName: string;
+  logoUrl?: string | null;
+  points: number;
+  customerName: string;
+  ar: boolean;
+  wallet: WalletContent;
+  qrDataUrl: string | null;
+}) {
+  const getBackground = () => {
+    if (design.backgroundStyle === "gradient") {
+      return `linear-gradient(180deg, ${design.primaryColor}, ${design.secondaryColor})`;
+    }
+    if (design.backgroundStyle === "pattern") {
+      return `${design.backgroundColor} url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='${encodeURIComponent(design.textColor)}' fill-opacity='0.05' fill-rule='evenodd'%3E%3Ccircle cx='3' cy='3' r='1.5'/%3E%3Ccircle cx='13' cy='13' r='1.5'/%3E%3C/g%3E%3C/svg%3E")`;
+    }
+    return design.backgroundColor;
+  };
+
+  return (
+    <div className="w-full max-w-[340px] mx-auto relative z-10">
+      {/* Android Phone Frame */}
+      <div className="rounded-[36px] bg-gray-900 p-[6px] shadow-2xl ring-1 ring-gray-800">
+        {/* Screen */}
+        <div className="rounded-[30px] bg-white overflow-hidden">
+          {/* Status Bar */}
+          <div className="h-[28px] bg-gray-900 flex items-center justify-between px-6">
+            <span className="text-[12px] font-medium text-white">9:41</span>
+            <div className="flex items-center gap-1.5">
+              <svg className="w-[14px] h-[14px] text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.01 21.49L23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l11.63 14.49.01.01.01-.01z"/>
+              </svg>
+              <svg className="w-[14px] h-[14px] text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17 4h-3V2h-4v2H7v18h10V4z"/>
+              </svg>
+            </div>
+          </div>
+
+          {/* Google Wallet Header */}
+          <div className="h-[56px] flex items-center px-4 border-b border-gray-100 bg-white">
+            <button className="p-2 -ml-2 rounded-full hover:bg-gray-100">
+              <svg className="w-[24px] h-[24px] text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-3 ml-4">
+              <svg className="w-[24px] h-[24px]" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              <span className="text-[18px] font-medium text-gray-800">Wallet</span>
+            </div>
+          </div>
+
+          {/* Card Container */}
+          <div className="p-4 bg-gray-100 min-h-[520px]">
+            {/* Pass Card */}
+            <div
+              className="relative overflow-hidden shadow-lg"
+              style={{
+                background: getBackground(),
+                borderRadius: `${design.cornerRadius}px`,
+                color: design.textColor,
+              }}
+            >
+              {/* Header */}
+              <div className="px-5 pt-5 pb-4">
+                <div className="flex items-start justify-between">
+                  {/* Logo & Name */}
+                  <div className="flex items-center gap-3">
+                    {logoUrl && (
+                      <div 
+                        className="relative w-[48px] h-[48px] rounded-[12px] overflow-hidden flex-shrink-0"
+                        style={{ background: `${design.textColor}15` }}
+                      >
                         <Image
                           src={logoUrl}
                           alt={businessName}
@@ -1117,95 +1179,125 @@ function AndroidCardPreview({
                           className="object-cover"
                         />
                       </div>
-                    </div>
-                  )}
-
-                  {/* Points Section */}
-                  <div className={`${design.logoPosition === "center" ? "" : "flex-1 flex flex-col justify-center"}`}>
-                    <div className="text-center mb-6">
-                      <div className="text-xs opacity-70 uppercase tracking-wider mb-3">
-                        {ar ? "نقاط الولاء" : "Loyalty Points"}
-                      </div>
-                      <div className="text-7xl font-black mb-4" style={{
-                        background: `linear-gradient(to bottom, ${design.textColor}, ${design.textColor}cc)`,
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                        backgroundClip: 'text',
-                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
-                      }}>
-                        {points}
-                      </div>
-
-                      {/* Points Visualization - Android style */}
-                      <div className="grid grid-cols-6 gap-2 max-w-45 mx-auto">
-                        {Array.from({ length: Math.min(points, 12) }).map((_, i) => (
-                          <div
-                            key={i}
-                            className="aspect-square rounded-md"
-                            style={{
-                              background: `linear-gradient(135deg, ${design.textColor}55, ${design.textColor}33)`,
-                              border: `1px solid ${design.textColor}66`,
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Barcode */}
-                  <div className="mt-2">
-                    <PassBarcode
-                      format={wallet.walletBarcodeFormat}
-                      message={wallet.walletBarcodeMessage}
-                      qrDataUrl={qrDataUrl}
-                    />
-                  </div>
-
-                  {/* Customer Info */}
-                  {design.showCustomerName && (
-                    <div className="mt-auto pt-4 border-t" style={{ borderColor: `${design.textColor}33` }}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="text-[10px] opacity-60 uppercase tracking-wider mb-1">
-                            {ar ? "العضو" : "Member"}
-                          </div>
-                          <div className="text-sm font-bold opacity-90">
-                            {customerName}
-                          </div>
+                    )}
+                    {design.showBusinessName && (
+                      <div>
+                        <div className="text-[16px] font-semibold">
+                          {businessName}
                         </div>
-                        <svg className="w-8 h-8 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
-                        </svg>
+                        <div className="text-[13px] opacity-60 mt-0.5">
+                          {ar ? "بطاقة ولاء" : "Loyalty Card"}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Menu */}
+                  <button 
+                    className="p-2 rounded-full"
+                    style={{ background: `${design.textColor}15` }}
+                  >
+                    <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Points Display */}
+              <div className="px-5 pb-5">
+                <div className="py-8 text-center">
+                  <div className="text-[64px] font-black leading-none tabular-nums">
+                    {points}
+                  </div>
+                  <div className="text-[14px] uppercase tracking-wider opacity-60 mt-2">
+                    {ar ? "نقطة ولاء" : "Loyalty Points"}
+                  </div>
+                </div>
+
+                {/* Progress */}
+                <div 
+                  className="py-4 border-t border-b"
+                  style={{ borderColor: `${design.textColor}20` }}
+                >
+                  <div className="flex items-center justify-between text-[12px] opacity-60 mb-3">
+                    <span>{ar ? "التقدم نحو المكافأة" : "Progress to reward"}</span>
+                    <span>{Math.min(points, 10)}/10</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <div
+                        key={i}
+                        className="flex-1 h-[8px] rounded-full transition-all duration-300"
+                        style={{
+                          background: i < Math.min(points, 10) 
+                            ? design.textColor 
+                            : `${design.textColor}25`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Member Info */}
+                {design.showCustomerName && (
+                  <div className="pt-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wider opacity-50">
+                        {ar ? "العضو" : "Member"}
+                      </div>
+                      <div className="text-[15px] font-semibold mt-1">
+                        {customerName}
                       </div>
                     </div>
+                    <div className="text-right">
+                      <div className="text-[11px] uppercase tracking-wider opacity-50">
+                        {ar ? "المستوى" : "Tier"}
+                      </div>
+                      <div className="text-[15px] font-semibold mt-1">
+                        {points >= 10 ? (ar ? "ذهبي" : "Gold") : ar ? "فضي" : "Silver"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Barcode */}
+              <div className="bg-white p-4">
+                <div className="flex flex-col items-center">
+                  {wallet.walletBarcodeFormat === "qr" ? (
+                    qrDataUrl ? (
+                      <Image src={qrDataUrl} alt="QR" width={120} height={120} unoptimized />
+                    ) : (
+                      <div className="w-[120px] h-[120px] bg-gray-100 rounded-lg flex items-center justify-center">
+                        <div className="text-xs text-gray-400">QR Code</div>
+                      </div>
+                    )
+                  ) : (
+                    <Barcode
+                      value={(wallet.walletBarcodeMessage || "SBC-LOYALTY-000123").slice(0, 80)}
+                      format="CODE128"
+                      width={2}
+                      height={45}
+                      displayValue={false}
+                      margin={0}
+                    />
                   )}
+                  <div className="mt-2 text-[12px] text-gray-500 font-mono">
+                    {wallet.walletBarcodeMessage || "SBC-LOYALTY-000123"}
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* Pass Details (Android text modules) */}
-              <div className="mt-4 rounded-xl border border-gray-200 bg-white p-3">
-                <div className="text-xs font-semibold text-gray-800 mb-2">
-                  {ar ? "التفاصيل" : "Details"}
-                </div>
-                <div className="space-y-1">
-                  <DetailRow label={ar ? "الوصف" : "Description"} value={wallet.walletPassDescription} />
-                  <DetailRow label={ar ? "الشروط" : "Terms"} value={wallet.walletPassTerms} />
-                  <DetailRow label={ar ? "الموقع" : "Website"} value={wallet.walletWebsiteUrl} />
-                  <DetailRow label={ar ? "الهاتف" : "Phone"} value={wallet.walletSupportPhone} />
-                  <DetailRow label={ar ? "البريد" : "Email"} value={wallet.walletSupportEmail} />
-                  <DetailRow label={ar ? "العنوان" : "Address"} value={wallet.walletAddress} />
-                </div>
-              </div>
-
-              {/* Quick Actions (Android style) */}
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <button className="h-10 rounded-lg bg-white border border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 transition">
-                  {ar ? "التفاصيل" : "Details"}
-                </button>
-                <button className="h-10 rounded-lg bg-white border border-gray-300 text-gray-700 text-xs font-medium hover:bg-gray-50 transition">
-                  {ar ? "مشاركة" : "Share"}
-                </button>
-              </div>
+            {/* Action Buttons */}
+            <div className="mt-4 flex gap-3">
+              <button className="flex-1 h-[44px] rounded-full bg-white border border-gray-200 text-gray-700 text-[14px] font-medium shadow-sm">
+                {ar ? "التفاصيل" : "Details"}
+              </button>
+              <button className="flex-1 h-[44px] rounded-full bg-white border border-gray-200 text-gray-700 text-[14px] font-medium shadow-sm">
+                {ar ? "مشاركة" : "Share"}
+              </button>
             </div>
           </div>
         </div>
@@ -1224,50 +1316,95 @@ function NotificationPreview({
   wallet: WalletContent;
 }) {
   return (
-    <div className="w-full max-w-85">
-      <div className="relative mx-auto" style={{ width: "340px", height: "640px" }}>
-        <div className="absolute inset-0 rounded-[40px] bg-black shadow-2xl border-8 border-gray-900" />
-        <div className="absolute inset-2 rounded-4xl bg-gray-100 overflow-hidden">
-          <div className="h-12 bg-white/95 backdrop-blur flex items-center justify-between px-6 pt-2">
-            <span className="text-xs font-semibold">9:41</span>
+    <div className="w-full max-w-[340px] mx-auto relative z-10">
+      {/* iPhone Frame */}
+      <div className="rounded-[48px] bg-gray-900 p-[10px] shadow-2xl ring-1 ring-gray-800">
+        {/* Dynamic Island */}
+        <div className="absolute top-[18px] left-1/2 -translate-x-1/2 w-[100px] h-[32px] bg-black rounded-full z-20" />
+        
+        {/* Screen - Lock Screen Style */}
+        <div 
+          className="rounded-[38px] overflow-hidden min-h-[600px]"
+          style={{
+            background: "linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+          }}
+        >
+          {/* Status Bar */}
+          <div className="h-[52px] flex items-end justify-between px-8 pb-1">
+            <span className="text-[15px] font-semibold text-white">9:41</span>
             <div className="flex items-center gap-1">
-              <div className="w-4 h-4 rounded-full bg-gray-800" />
-              <div className="w-4 h-4 rounded bg-gray-800" />
+              <svg className="w-[18px] h-[18px] text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12.01 21.49L23.64 7c-.45-.34-4.93-4-11.64-4C5.28 3 .81 6.66.36 7l11.63 14.49.01.01.01-.01z"/>
+              </svg>
+              <svg className="w-[18px] h-[18px] text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17 4h-3V2h-4v2H7v18h10V4zm-3 16h-4v-2h4v2zm0-4h-4V8h4v8z"/>
+              </svg>
             </div>
           </div>
 
-          <div className="p-5">
-            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
-                <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
-                  {logoUrl ? (
-                    <Image src={logoUrl} alt={businessName} fill className="object-cover" />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-500">
-                      {businessName.slice(0, 1).toUpperCase()}
+          {/* Lock Screen Content */}
+          <div className="px-6 pt-10 pb-6">
+            {/* Time */}
+            <div className="text-center mb-2">
+              <div className="text-[80px] font-light text-white tracking-tight leading-none">
+                9:41
+              </div>
+              <div className="text-[20px] text-white/70 mt-2">
+                Wednesday, February 5
+              </div>
+            </div>
+
+            {/* Notification */}
+            <div className="mt-10 rounded-[20px] bg-white/95 backdrop-blur-xl shadow-2xl overflow-hidden">
+              <div className="p-4">
+                <div className="flex items-start gap-3">
+                  {/* App Icon */}
+                  <div className="relative w-[44px] h-[44px] rounded-[10px] overflow-hidden bg-gray-100 flex-shrink-0 shadow-sm">
+                    {logoUrl ? (
+                      <Image src={logoUrl} alt={businessName} fill className="object-cover" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-blue-500 text-white text-[18px] font-bold">
+                        {businessName.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-[12px] font-semibold text-gray-500 uppercase tracking-wide">
+                        {businessName}
+                      </div>
+                      <div className="text-[12px] text-gray-400">now</div>
                     </div>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[11px] font-semibold text-gray-700 truncate">{businessName}</div>
-                  <div className="text-[10px] text-gray-500">Wallet</div>
-                </div>
-                <div className="ml-auto text-[10px] text-gray-400">now</div>
-              </div>
-
-              <div className="px-4 py-3">
-                <div className="text-sm font-semibold text-gray-900">
-                  {wallet.walletNotificationTitle.trim() || "Notification"}
-                </div>
-                <div className="mt-1 text-[13px] leading-snug text-gray-700 whitespace-pre-wrap">
-                  {wallet.walletNotificationBody.trim() || ""}
+                    <div className="text-[15px] font-semibold text-gray-900 mt-1">
+                      {wallet.walletNotificationTitle.trim() || "Loyalty Update"}
+                    </div>
+                    <div className="text-[15px] text-gray-600 mt-0.5 leading-snug">
+                      {wallet.walletNotificationBody.trim() || "Your points balance has been updated."}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="mt-4 text-xs text-gray-500">
-              Tip: you can use this message for wallet updates.
+            {/* Older notification placeholder */}
+            <div className="mt-3 opacity-40">
+              <div className="rounded-[16px] bg-white/20 backdrop-blur-sm p-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-[36px] h-[36px] rounded-[8px] bg-white/30" />
+                  <div className="flex-1">
+                    <div className="h-[10px] w-[80px] rounded bg-white/30" />
+                    <div className="h-[10px] w-[140px] rounded bg-white/20 mt-2" />
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Home Indicator */}
+          <div className="absolute bottom-[8px] left-1/2 -translate-x-1/2">
+            <div className="w-[140px] h-[5px] rounded-full bg-white/40" />
           </div>
         </div>
       </div>
