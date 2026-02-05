@@ -262,7 +262,7 @@ export function EditUserForm({
             <div className="flex gap-3 justify-end">
               <Button
                 type="button"
-                variant="outline"
+                variant="destructive"
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={deleting}
               >
