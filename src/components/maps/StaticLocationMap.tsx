@@ -21,17 +21,16 @@ export function StaticLocationMap({
   className,
 }: StaticLocationMapProps) {
   return (
-    <div className={className}>
-      <OsmLocationPicker
-        value={{ lat: latitude, lng: longitude, radiusMeters: 250 }}
-        onChange={() => {
-          // No-op for static display
-        }}
-        locale={locale}
-        disabled
-        hideRadius
-        viewOnly
-      />
-    </div>
+    <OsmLocationPicker
+      value={{ lat: latitude, lng: longitude, radiusMeters: 250 }}
+      onChange={() => {
+        // No-op for static display
+      }}
+      locale={locale}
+      disabled
+      hideRadius
+      viewOnly
+      className={className}
+    />
   );
 }

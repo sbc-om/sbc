@@ -224,3 +224,117 @@ https://sbc.om`,
     text: messages[locale],
   });
 }
+
+// ==================== Loyalty Points Notifications ====================
+
+export interface LoyaltyPointsNotificationOptions {
+  phone: string;
+  customerName: string;
+  businessName: string;
+  points: number;
+  delta: number;
+  type: "earn" | "deduct" | "redeem";
+  locale?: "en" | "ar";
+}
+
+/**
+ * Send loyalty points update notification via WhatsApp
+ * Professional notification for when customers earn, lose, or redeem points
+ */
+export async function sendLoyaltyPointsNotification(
+  options: LoyaltyPointsNotificationOptions
+): Promise<WAHAResponse | null> {
+  if (!isWAHAEnabled()) {
+    console.log("[WAHA] WhatsApp notifications disabled, skipping loyalty notification");
+    return null;
+  }
+
+  if (!options.phone) {
+    console.log("[WAHA] No phone number provided, skipping loyalty notification");
+    return null;
+  }
+
+  const chatId = formatChatId(options.phone);
+  const locale = options.locale || "en";
+  const absDelta = Math.abs(options.delta);
+
+  let message: string;
+
+  if (options.type === "earn") {
+    // Points earned (positive)
+    message = locale === "ar" 
+      ? `🎉 *مبروك ${options.customerName}!*
+
+لقد حصلت على *${absDelta} نقطة* جديدة من *${options.businessName}*! 🌟
+
+📊 *رصيد نقاطك الحالي:* ${options.points} نقطة
+
+استمر في جمع النقاط للحصول على مكافآت رائعة! 🎁
+
+شكراً لولائك 💚`
+      : `🎉 *Congratulations ${options.customerName}!*
+
+You've earned *${absDelta} point${absDelta > 1 ? "s" : ""}* from *${options.businessName}*! 🌟
+
+📊 *Your current balance:* ${options.points} point${options.points !== 1 ? "s" : ""}
+
+Keep collecting points for amazing rewards! 🎁
+
+Thank you for your loyalty 💚`;
+  } else if (options.type === "deduct") {
+    // Points deducted (negative adjustment)
+    message = locale === "ar"
+      ? `📝 *تحديث رصيد النقاط*
+
+مرحباً ${options.customerName}،
+
+تم خصم *${absDelta} نقطة* من رصيدك في *${options.businessName}*
+
+📊 *رصيد نقاطك الحالي:* ${options.points} نقطة
+
+إذا كان لديك أي استفسار، يرجى التواصل معنا 📞`
+      : `📝 *Points Balance Update*
+
+Hi ${options.customerName},
+
+*${absDelta} point${absDelta > 1 ? "s" : ""}* ${absDelta > 1 ? "have" : "has"} been deducted from your balance at *${options.businessName}*
+
+📊 *Your current balance:* ${options.points} point${options.points !== 1 ? "s" : ""}
+
+If you have any questions, please contact us 📞`;
+  } else {
+    // Points redeemed
+    message = locale === "ar"
+      ? `✨ *تم استبدال النقاط بنجاح!*
+
+مرحباً ${options.customerName}،
+
+لقد استخدمت *${absDelta} نقطة* في *${options.businessName}* 🎁
+
+📊 *رصيد نقاطك المتبقي:* ${options.points} نقطة
+
+نتمنى لك تجربة ممتعة! 🌟
+
+شكراً لاختيارك لنا 💚`
+      : `✨ *Points Redeemed Successfully!*
+
+Hi ${options.customerName},
+
+You've used *${absDelta} point${absDelta > 1 ? "s" : ""}* at *${options.businessName}* 🎁
+
+📊 *Your remaining balance:* ${options.points} point${options.points !== 1 ? "s" : ""}
+
+Enjoy your reward! 🌟
+
+Thank you for choosing us 💚`;
+  }
+
+  try {
+    const result = await sendText({ chatId, text: message });
+    console.log(`[WAHA] Loyalty notification sent to ${options.phone}:`, options.type);
+    return result;
+  } catch (error) {
+    console.error(`[WAHA] Failed to send loyalty notification:`, error);
+    throw error;
+  }
+}

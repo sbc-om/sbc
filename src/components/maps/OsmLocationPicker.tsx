@@ -225,8 +225,12 @@ export function OsmLocationPicker({
         };
   }, [isDark]);
 
+  const containerClassName = viewOnly
+    ? cn("w-full h-full", className)
+    : cn("rounded-2xl border border-(--surface-border) bg-(--surface) p-4", className);
+
   return (
-    <div className={cn("rounded-2xl border border-(--surface-border) bg-(--surface) p-4", className)}>
+    <div className={containerClassName}>
       {!viewOnly && (
         <>
           <div className={cn("flex items-start justify-between gap-3", rtl ? "flex-row-reverse" : "")}>
@@ -293,13 +297,18 @@ export function OsmLocationPicker({
         </>
       )}
 
-      <div className={cn("relative overflow-hidden rounded-2xl border border-(--surface-border)", !viewOnly && "mt-4")}>
+      <div
+        className={cn(
+          "relative overflow-hidden",
+          viewOnly ? "h-full rounded-xl" : "rounded-2xl border border-(--surface-border) mt-4"
+        )}
+      >
         <MapContainer
           center={[center.lat, center.lng]}
           zoom={value ? 16 : 12}
           scrollWheelZoom={false}
           attributionControl={false}
-          style={{ height: 320, width: "100%" }}
+          style={{ height: viewOnly ? "100%" : 320, width: "100%" }}
         >
           <TileLayer
             attribution={tiles.attribution}

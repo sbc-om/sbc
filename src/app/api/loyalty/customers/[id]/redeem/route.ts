@@ -1,6 +1,9 @@
+import { headers } from "next/headers";
+
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { redeemLoyaltyCustomerPoints, getLoyaltySettings, getLoyaltyCustomerById, defaultLoyaltySettings } from "@/lib/db/loyalty";
+import { redeemLoyaltyCustomerPoints, getLoyaltySettings, getLoyaltyCustomerById, defaultLoyaltySettings, getLoyaltyProfile } from "@/lib/db/loyalty";
 import { updateWalletCardPoints } from "@/lib/wallet/walletUpdates";
+import { sendLoyaltyPointsNotification } from "@/lib/waha/client";
 
 export const runtime = "nodejs";
 
@@ -59,11 +62,41 @@ export async function POST(
       console.log(`[WalletUpdate] No cardId found for customer, skipping wallet update`);
     }
 
+    // Send WhatsApp notification for redemption
+    let whatsappNotification = null;
+    if (existingCustomer.phone) {
+      try {
+        const profile = await getLoyaltyProfile(existingCustomer.userId);
+        const businessName = profile?.businessName || "Your Business";
+        const locale = (await headers()).get("x-locale") === "ar" ? "ar" : "en";
+        
+        await sendLoyaltyPointsNotification({
+          phone: existingCustomer.phone,
+          customerName: existingCustomer.fullName,
+          businessName,
+          points: customer.points,
+          delta: settings.pointsDeductPerRedemption,
+          type: "redeem",
+          locale,
+        });
+        
+        whatsappNotification = { sent: true };
+        console.log(`[WhatsApp] Redemption notification sent to ${existingCustomer.phone}`);
+      } catch (error) {
+        console.error(`[WhatsApp] Failed to send notification:`, error);
+        whatsappNotification = { 
+          sent: false, 
+          error: error instanceof Error ? error.message : "NOTIFICATION_FAILED" 
+        };
+      }
+    }
+
     return Response.json({ 
       ok: true, 
       customer, 
       settings,
       walletUpdate: walletUpdateInfo,
+      whatsappNotification,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "REDEEM_FAILED";

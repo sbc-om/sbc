@@ -227,7 +227,7 @@ export function PublicBusinessView({
           ) : null}
 
           {business.latitude && business.longitude ? (
-            <section className="sbc-card mt-6 rounded-2xl p-6">
+            <section className="sbc-card mt-6 rounded-2xl p-6 overflow-hidden">
               <h2 className="text-lg font-semibold tracking-tight">
                 {locale === "ar" ? "الموقع" : "Location"}
               </h2>
@@ -241,22 +241,6 @@ export function PublicBusinessView({
               </div>
             </section>
           ) : null}
-
-          <div className="sbc-card mt-6 rounded-2xl p-6">
-            <div className="text-center">
-              <p className="mb-4 text-sm text-muted-foreground">
-                {locale === "ar"
-                  ? "قم بتسجيل الدخول للإعجاب والتعليق والمزيد"
-                  : "Sign in to like, comment, and more"}
-              </p>
-              <Link
-                href={`/${locale}/login?redirect=${encodeURIComponent(handlePath)}`}
-                className={buttonVariants({ variant: "primary" })}
-              >
-                {locale === "ar" ? "تسجيل الدخول" : "Sign in"}
-              </Link>
-            </div>
-          </div>
         </div>
 
         {/* Sidebar */}
