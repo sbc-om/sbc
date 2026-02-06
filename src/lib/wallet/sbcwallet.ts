@@ -299,6 +299,9 @@ export function isSbcwalletGoogleConfigured(): boolean {
 /**
  * Generate a deterministic auth token for a pass.
  * This token is included in the pass and sent back by Apple in update requests.
+ * NOTE: This returns the raw token WITHOUT the "ApplePass " prefix.
+ * Apple Wallet sends "Authorization: ApplePass <token>" header, so we store just <token>.
+ * Apple requires authenticationToken to be at least 16 characters.
  */
 export function generateAppleWalletAuthToken(input: {
   serialNumber: string;
@@ -315,11 +318,22 @@ export function generateAppleWalletAuthToken(input: {
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash;
   }
-  return `ApplePass ${Math.abs(hash).toString(36)}${input.serialNumber.slice(0, 8)}`;
+  // Generate a second hash for extra length
+  let hash2 = 0;
+  const data2 = `${secret}:${input.serialNumber}:${input.passTypeIdentifier}`;
+  for (let i = 0; i < data2.length; i++) {
+    const char = data2.charCodeAt(i);
+    hash2 = ((hash2 << 5) - hash2) + char;
+    hash2 = hash2 & hash2;
+  }
+  // Return raw token (min 16 chars required by Apple)
+  // Format: hash1_hash2_serialPrefix = ensures at least 16 characters
+  return `${Math.abs(hash).toString(36)}${Math.abs(hash2).toString(36)}${input.serialNumber.slice(0, 8)}`;
 }
 
 /**
  * Verify the authentication token from Apple Wallet update requests.
+ * Apple sends "Authorization: ApplePass <token>" header.
  */
 export function verifyAppleWalletAuthToken(input: {
   authorization: string | null;
@@ -328,19 +342,24 @@ export function verifyAppleWalletAuthToken(input: {
 }): boolean {
   if (!input.authorization) return false;
   
+  // Apple sends "ApplePass <token>" - extract just the token part
+  const token = input.authorization.startsWith("ApplePass ")
+    ? input.authorization.slice("ApplePass ".length)
+    : input.authorization;
+  
   const expectedToken = generateAppleWalletAuthToken({
     serialNumber: input.serialNumber,
     passTypeIdentifier: input.passTypeIdentifier,
   });
   
-  return input.authorization === expectedToken;
+  return token === expectedToken;
 }
 
 // ============================================================================
 // Adapter Getters
 // ============================================================================
 
-function getAppleConfig() {
+export function getAppleConfig() {
   const teamId = env("APPLE_TEAM_ID") || "";
   const passTypeId = env("APPLE_PASS_TYPE_ID") || "";
   const certPath = env("APPLE_CERT_PATH") || "";

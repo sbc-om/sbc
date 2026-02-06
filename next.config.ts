@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Native/optional-dep packages are best required at runtime, not bundled.
   serverExternalPackages: [],
+  // Allow dev requests from ngrok tunnels
+  allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok.io"],
   // Increase body size limit for file uploads (stories, images, etc.)
   experimental: {
     serverActions: {

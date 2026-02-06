@@ -1,7 +1,9 @@
 import fs from "node:fs";
 import http2 from "node:http2";
+import tls from "node:tls";
 
 import { importPKCS8, SignJWT } from "jose";
+import { SocksClient } from "socks";
 
 import { listAppleWalletPushTokensForSerial } from "@/lib/db/loyalty";
 
@@ -21,7 +23,14 @@ function getApplePassTypeIdentifier(): string {
 }
 
 function isSandbox(): boolean {
-  return (env("APPLE_APNS_ENV") || "production").toLowerCase() === "sandbox";
+  // Support both APPLE_APNS_ENV and APNS_SANDBOX
+  const apnsEnv = env("APPLE_APNS_ENV");
+  if (apnsEnv) {
+    return apnsEnv.toLowerCase() === "sandbox";
+  }
+  // APNS_SANDBOX=false means production, APNS_SANDBOX=true means sandbox
+  const sandbox = env("APNS_SANDBOX");
+  return sandbox?.toLowerCase() === "true";
 }
 
 export function isAppleApnsConfigured(): boolean {
@@ -62,10 +71,70 @@ async function getApnsJwt(): Promise<string> {
   return jwt;
 }
 
+// SOCKS5 proxy configuration for restricted networks (e.g., Iran)
+function getSocks5Config(): { host: string; port: number } | null {
+  const host = env("APNS_SOCKS5_HOST");
+  const port = env("APNS_SOCKS5_PORT");
+  if (host && port) {
+    return { host, port: parseInt(port, 10) };
+  }
+  return null;
+}
+
+/**
+ * Connect to APNs through SOCKS5 proxy
+ */
+async function connectThroughSocks5(targetHost: string, targetPort: number): Promise<tls.TLSSocket> {
+  const socks5 = getSocks5Config();
+  if (!socks5) throw new Error("SOCKS5 not configured");
+
+  const { socket } = await SocksClient.createConnection({
+    proxy: {
+      host: socks5.host,
+      port: socks5.port,
+      type: 5,
+    },
+    command: "connect",
+    destination: {
+      host: targetHost,
+      port: targetPort,
+    },
+    timeout: 10000,
+  });
+
+  // Upgrade to TLS with ALPN for HTTP/2
+  const tlsSocket = tls.connect({
+    socket: socket,
+    servername: targetHost,
+    ALPNProtocols: ["h2"],
+  });
+
+  return new Promise((resolve, reject) => {
+    tlsSocket.on("secureConnect", () => resolve(tlsSocket));
+    tlsSocket.on("error", reject);
+  });
+}
+
 async function sendOnePushToken(input: { token: string; passTypeIdentifier: string }): Promise<{ ok: true } | { ok: false; status: number; body: string }> {
   const jwt = await getApnsJwt();
-  const origin = isSandbox() ? "https://api.sandbox.push.apple.com" : "https://api.push.apple.com";
-  const client = http2.connect(origin);
+  const apnsHost = isSandbox() ? "api.sandbox.push.apple.com" : "api.push.apple.com";
+  const apnsPort = 443;
+  const socks5 = getSocks5Config();
+
+  console.log(`[APNs] Sending push to ${apnsHost} (sandbox: ${isSandbox()}, socks5: ${socks5 ? `${socks5.host}:${socks5.port}` : "none"})`);
+
+  let client: http2.ClientHttp2Session;
+
+  if (socks5) {
+    // Connect through SOCKS5 proxy
+    const tlsSocket = await connectThroughSocks5(apnsHost, apnsPort);
+    client = http2.connect(`https://${apnsHost}`, {
+      createConnection: () => tlsSocket,
+    });
+  } else {
+    // Direct connection
+    client = http2.connect(`https://${apnsHost}`);
+  }
 
   try {
     const req = client.request({
@@ -99,18 +168,26 @@ async function sendOnePushToken(input: { token: string; passTypeIdentifier: stri
 }
 
 export async function notifyAppleWalletPassUpdated(input: { cardId: string }): Promise<{ attempted: number; ok: number; failed: number }> {
-  if (!isAppleApnsConfigured()) return { attempted: 0, ok: 0, failed: 0 };
+  if (!isAppleApnsConfigured()) {
+    console.log("[APNs] Not configured, skipping push notification");
+    return { attempted: 0, ok: 0, failed: 0 };
+  }
 
   const passTypeIdentifier = getApplePassTypeIdentifier();
   const tokens = await listAppleWalletPushTokensForSerial(passTypeIdentifier, input.cardId);
+
+  console.log(`[APNs] Found ${tokens.length} push token(s) for card ${input.cardId}`);
 
   if (!tokens.length) return { attempted: 0, ok: 0, failed: 0 };
 
   const results = await Promise.all(
     tokens.map(async (t) => {
       try {
-        return await sendOnePushToken({ token: t, passTypeIdentifier });
+        const result = await sendOnePushToken({ token: t, passTypeIdentifier });
+        console.log(`[APNs] Push result for token ${t.slice(0, 8)}...: ${result.ok ? "OK" : `FAILED (${(result as { status: number; body: string }).status}: ${(result as { body: string }).body})`}`);
+        return result;
       } catch (e) {
+        console.error(`[APNs] Push error for token ${t.slice(0, 8)}...:`, e);
         return { ok: false as const, status: 0, body: e instanceof Error ? e.message : "APNS_FAILED" };
       }
     })
@@ -118,5 +195,6 @@ export async function notifyAppleWalletPassUpdated(input: { cardId: string }): P
 
   const ok = results.filter((r) => r.ok).length;
   const failed = results.length - ok;
+  console.log(`[APNs] Push summary: ${ok} ok, ${failed} failed out of ${results.length} attempted`);
   return { attempted: results.length, ok, failed };
 }

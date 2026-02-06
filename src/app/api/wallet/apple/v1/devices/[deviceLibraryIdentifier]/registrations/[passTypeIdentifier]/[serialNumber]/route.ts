@@ -5,7 +5,7 @@ import {
   removeAppleWalletRegistration,
   upsertAppleWalletRegistration,
 } from "@/lib/db/loyalty";
-import { verifyAppleWalletAuthToken } from "@/lib/wallet/sbcwallet";
+import { verifyAppleWalletAuthToken, generateAppleWalletAuthToken } from "@/lib/wallet/sbcwallet";
 
 export const runtime = "nodejs";
 
@@ -25,12 +25,29 @@ export async function POST(
   if (!isPassTypeAllowed(passTypeIdentifier)) return new Response("Not found", { status: 404 });
 
   const authHeader = (await headers()).get("authorization");
+  
+  // Debug logging
+  const expectedToken = generateAppleWalletAuthToken({ serialNumber, passTypeIdentifier });
+  const receivedToken = authHeader?.startsWith("ApplePass ") ? authHeader.slice("ApplePass ".length) : authHeader;
+  console.log("[AppleWallet] Register request:");
+  console.log("  Device:", deviceLibraryIdentifier);
+  console.log("  Serial:", serialNumber);
+  console.log("  Auth header:", authHeader);
+  console.log("  Received token:", receivedToken);
+  console.log("  Expected token:", expectedToken);
+  console.log("  Match:", receivedToken === expectedToken);
+  
   const authorized = verifyAppleWalletAuthToken({
     authorization: authHeader,
     serialNumber,
     passTypeIdentifier,
   });
-  if (!authorized) return new Response("Unauthorized", { status: 401 });
+  if (!authorized) {
+    console.log("[AppleWallet] ❌ Auth FAILED");
+    return new Response("Unauthorized", { status: 401 });
+  }
+  
+  console.log("[AppleWallet] ✅ Auth OK");
 
   const body = registerSchema.parse(await req.json());
 

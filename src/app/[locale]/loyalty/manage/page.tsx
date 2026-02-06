@@ -143,17 +143,37 @@ export default async function LoyaltyManagePage({
           <div className="mt-8 sbc-card rounded-2xl p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h3 className="text-lg font-semibold">{ar ? "تصميم البطاقة" : "Card Design"}</h3>
+                <h3 className="text-lg font-semibold">{ar ? "قوالب البطاقات" : "Card Templates"}</h3>
                 <p className="mt-1 text-sm text-(--muted-foreground)">
                   {ar
-                    ? "خصص شكل وألوان بطاقة الولاء الخاصة بك."
-                    : "Customize the look and colors of your loyalty card."}
+                    ? "أنشئ وأدر قوالب بطاقات الولاء مع معاينة مباشرة لـ iOS و Android."
+                    : "Create and manage loyalty card templates with live iOS & Android preview."}
+                </p>
+              </div>
+
+              <Link
+                href={`/${locale}/loyalty/manage/templates`}
+                className={buttonVariants({ variant: "primary", size: "md" })}
+              >
+                {ar ? "إدارة القوالب" : "Manage Templates"}
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-4 sbc-card rounded-2xl p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">{ar ? "تصميم البطاقة (كلاسيكي)" : "Card Design (Classic)"}</h3>
+                <p className="mt-1 text-sm text-(--muted-foreground)">
+                  {ar
+                    ? "خصص شكل وألوان بطاقة الولاء الأساسية."
+                    : "Customize the basic look and colors of your loyalty card."}
                 </p>
               </div>
 
               <Link
                 href={`/${locale}/loyalty/manage/design`}
-                className={buttonVariants({ variant: "primary", size: "md" })}
+                className={buttonVariants({ variant: "secondary", size: "md" })}
               >
                 {ar ? "تعديل التصميم" : "Edit Design"}
               </Link>

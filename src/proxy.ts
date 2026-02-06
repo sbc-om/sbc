@@ -19,6 +19,13 @@ const MAIN_DOMAINS = [
   "127.0.0.1",
 ];
 
+// Domains that should be treated as main app (not custom domains)
+// These are tunneling/dev domains where the subdomain is not a business handle
+const DEV_DOMAIN_SUFFIXES = [
+  ".ngrok-free.app",
+  ".ngrok.io",
+];
+
 type Locale = (typeof LOCALES)[number];
 
 function isLocale(value: string): value is Locale {
@@ -188,7 +195,8 @@ export async function proxy(req: NextRequest) {
   }
 
   // Handle custom domain routing - redirect to domain lookup page
-  const isCustomDomain = !MAIN_DOMAINS.some(
+  const isDevDomain = DEV_DOMAIN_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
+  const isCustomDomain = !isDevDomain && !MAIN_DOMAINS.some(
     (d) => hostname === d || hostname.endsWith(`.${d}`)
   );
 

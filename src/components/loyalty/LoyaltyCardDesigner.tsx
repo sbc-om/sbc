@@ -1378,10 +1378,10 @@ function NotificationPreview({
                       <div className="text-[12px] text-gray-400">now</div>
                     </div>
                     <div className="text-[15px] font-semibold text-gray-900 mt-1">
-                      {wallet.walletNotificationTitle.trim() || "Loyalty Update"}
+                      {wallet.walletNotificationTitle?.trim() || "Loyalty Update"}
                     </div>
                     <div className="text-[15px] text-gray-600 mt-0.5 leading-snug">
-                      {wallet.walletNotificationBody.trim() || "Your points balance has been updated."}
+                      {wallet.walletNotificationBody?.trim() || "Your points balance has been updated."}
                     </div>
                   </div>
                 </div>

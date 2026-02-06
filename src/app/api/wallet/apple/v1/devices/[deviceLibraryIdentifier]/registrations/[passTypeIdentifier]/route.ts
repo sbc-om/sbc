@@ -1,7 +1,4 @@
-import { headers } from "next/headers";
-
 import { getLoyaltyCardById, listAppleWalletRegistrationsForDevice } from "@/lib/db/loyalty";
-import { generateAppleWalletAuthToken } from "@/lib/wallet/sbcwallet";
 
 export const runtime = "nodejs";
 
@@ -18,6 +15,13 @@ function parseUpdatedSince(value: string | null): number | null {
   return parsed;
 }
 
+/**
+ * Get Serial Numbers for Passes Associated with a Device
+ * https://developer.apple.com/documentation/walletpasses/get-the-list-of-updatable-passes
+ * 
+ * NOTE: This endpoint does NOT require authentication per Apple's spec.
+ * The device is already registered and Apple just needs to know which passes to update.
+ */
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ deviceLibraryIdentifier: string; passTypeIdentifier: string }> },
@@ -25,20 +29,10 @@ export async function GET(
   const { deviceLibraryIdentifier, passTypeIdentifier } = await params;
   if (!isPassTypeAllowed(passTypeIdentifier)) return new Response("Not found", { status: 404 });
 
-  const authHeader = (await headers()).get("authorization");
-  if (!authHeader) return new Response("Unauthorized", { status: 401 });
-
   const registrations = await listAppleWalletRegistrationsForDevice(
     deviceLibraryIdentifier,
     passTypeIdentifier
   );
-
-  const authorized = registrations.some((r) => {
-    const token = generateAppleWalletAuthToken({ serialNumber: r.serialNumber, passTypeIdentifier });
-    return token ? authHeader.trim() === `ApplePass ${token}` : false;
-  });
-
-  if (!authorized) return new Response("Unauthorized", { status: 401 });
 
   const url = new URL(_req.url);
   const since = parseUpdatedSince(url.searchParams.get("passesUpdatedSince"));

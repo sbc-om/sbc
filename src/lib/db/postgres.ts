@@ -671,6 +671,49 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     VALUES ('whatsapp_registration_verification', 'true'::jsonb)
     ON CONFLICT (key) DO NOTHING;
 
+    -- Loyalty card templates table
+    CREATE TABLE IF NOT EXISTS loyalty_card_templates (
+      id TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      is_default BOOLEAN DEFAULT false,
+      design JSONB NOT NULL,
+      pass_content JSONB NOT NULL,
+      barcode JSONB NOT NULL,
+      images JSONB,
+      support JSONB,
+      terms TEXT,
+      description TEXT,
+      notification_title TEXT,
+      notification_body TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_loyalty_card_templates_user_id ON loyalty_card_templates(user_id);
+    CREATE INDEX IF NOT EXISTS idx_loyalty_card_templates_is_default ON loyalty_card_templates(is_default);
+
+    -- Loyalty issued cards table
+    CREATE TABLE IF NOT EXISTS loyalty_issued_cards (
+      id TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      template_id TEXT REFERENCES loyalty_card_templates(id) ON DELETE SET NULL,
+      customer_id TEXT REFERENCES loyalty_customers(id) ON DELETE CASCADE,
+      points INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'active',
+      member_id TEXT NOT NULL,
+      overrides JSONB,
+      google_save_url TEXT,
+      apple_registered BOOLEAN DEFAULT false,
+      last_points_update TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(user_id, member_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_loyalty_issued_cards_user_id ON loyalty_issued_cards(user_id);
+    CREATE INDEX IF NOT EXISTS idx_loyalty_issued_cards_template_id ON loyalty_issued_cards(template_id);
+    CREATE INDEX IF NOT EXISTS idx_loyalty_issued_cards_customer_id ON loyalty_issued_cards(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_loyalty_issued_cards_status ON loyalty_issued_cards(status);
+
     -- Create SBC Treasury system user if not exists
     INSERT INTO users (id, email, phone, full_name, password_hash, role, is_active, is_verified, display_name, approval_status, created_at, updated_at)
     VALUES ('sbc-treasury', 'treasury@sbc.om', 'sbc', 'SBC Treasury', '$2b$10$placeholder', 'system', true, true, 'SBC Treasury', 'approved', NOW(), NOW())

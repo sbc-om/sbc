@@ -375,3 +375,110 @@ export type ProgramSubscription = {
   /** Updated whenever the user purchases again (also extends expiresAt). */
   updatedAt: string;
 };
+
+// ==================== Loyalty Card Templates ====================
+
+/**
+ * A saved card design template that business owners create.
+ * This is the "master design" that customers' issued cards inherit from.
+ */
+export type LoyaltyCardTemplate = {
+  id: string;
+  /** Business owner user id. */
+  userId: string;
+  /** Template name for identification (e.g., "Gold Member", "VIP Card"). */
+  name: string;
+  /** Whether this is the default/active template for new cards. */
+  isDefault: boolean;
+  /** Card design settings */
+  design: {
+    primaryColor: string;
+    secondaryColor: string;
+    textColor: string;
+    backgroundColor: string;
+    backgroundStyle: "solid" | "gradient" | "pattern";
+    logoPosition: "top" | "center" | "corner";
+    showBusinessName: boolean;
+    showCustomerName: boolean;
+    cornerRadius: number;
+  };
+  /** Pass content configuration */
+  passContent: {
+    programName: string;
+    pointsLabel: string;
+    /** Header field (top) */
+    headerLabel?: string;
+    headerValue?: string;
+    /** Secondary field */
+    secondaryLabel?: string;
+    secondaryValue?: string;
+    /** Auxiliary fields (below points) */
+    auxFields?: Array<{ label: string; value: string }>;
+    /** Back of card fields (detail section) */
+    backFields?: Array<{ label: string; value: string }>;
+  };
+  /** Barcode configuration */
+  barcode: {
+    format: "qr" | "code128" | "pdf417" | "aztec";
+    /** Message template - supports {{memberId}}, {{customerId}}, {{cardId}}, {{phone}} */
+    messageTemplate?: string;
+    /** Alt text template (shown below barcode) */
+    altTextTemplate?: string;
+  };
+  /** Image URLs */
+  images: {
+    logoUrl?: string;
+    iconUrl?: string;
+    stripUrl?: string;
+    thumbnailUrl?: string;
+  };
+  /** Contact and support info */
+  support: {
+    websiteUrl?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  };
+  /** Terms and description */
+  terms?: string;
+  description?: string;
+  /** Notification defaults */
+  notificationTitle?: string;
+  notificationBody?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * An issued customer card linked to a template.
+ * This represents the actual card that a customer has in their wallet.
+ */
+export type LoyaltyIssuedCard = {
+  id: string;
+  /** Business owner user id. */
+  userId: string;
+  /** Reference to the template used for this card. */
+  templateId: string;
+  /** Reference to the loyalty customer. */
+  customerId: string;
+  /** Current points balance. */
+  points: number;
+  /** Card status. */
+  status: "active" | "suspended" | "revoked";
+  /** Unique member ID for this card (used in barcodes). */
+  memberId: string;
+  /** Override values for this specific card (optional). */
+  overrides?: {
+    secondaryLabel?: string;
+    secondaryValue?: string;
+    auxFields?: Array<{ label: string; value: string }>;
+  };
+  /** Google Wallet save URL (cached). */
+  googleSaveUrl?: string;
+  /** Apple Wallet registration status. */
+  appleRegistered?: boolean;
+  /** Last points update timestamp. */
+  lastPointsUpdate?: string;
+  createdAt: string;
+  updatedAt: string;
+};
