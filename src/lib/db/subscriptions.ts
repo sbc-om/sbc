@@ -60,7 +60,26 @@ export async function createProgramSubscription(input: ProgramSubscriptionInput)
   const id = nanoid();
   const now = new Date();
   const startDate = now;
-  const endDate = new Date(now.getTime() + input.durationDays * 24 * 60 * 60 * 1000);
+  const durationMs = input.durationDays * 24 * 60 * 60 * 1000;
+
+  // Check if the user already has an active subscription for the same program.
+  // If so, stack the new duration on top of the existing end date.
+  const existing = await getUserActiveSubscriptionForProgram(input.userId, input.program);
+  let baseDate = now;
+  if (existing) {
+    const existingEnd = new Date(existing.endDate);
+    // Use the later of (existing end date, now) as the base for stacking
+    if (existingEnd.getTime() > now.getTime()) {
+      baseDate = existingEnd;
+    }
+    // Deactivate the old subscription so it doesn't overlap
+    await query(
+      `UPDATE program_subscriptions SET is_active = false, updated_at = $1 WHERE id = $2`,
+      [now, existing.id]
+    );
+  }
+
+  const endDate = new Date(baseDate.getTime() + durationMs);
 
   const result = await query(`
     INSERT INTO program_subscriptions (
