@@ -180,6 +180,7 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       media_url TEXT NOT NULL,
       media_type TEXT NOT NULL DEFAULT 'image',
       caption TEXT,
+      overlays JSONB,
       view_count INTEGER DEFAULT 0,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       expires_at TIMESTAMPTZ NOT NULL

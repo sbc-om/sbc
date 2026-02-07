@@ -109,6 +109,11 @@ export async function POST(
     const file = formData.get("file") as File | null;
     const mediaType = formData.get("mediaType") as string;
     const caption = formData.get("caption") as string | null;
+    const overlaysRaw = formData.get("overlays") as string | null;
+    let overlays = undefined;
+    if (overlaysRaw) {
+      try { overlays = JSON.parse(overlaysRaw); } catch { /* ignore invalid JSON */ }
+    }
 
     if (!file) {
       return NextResponse.json({ ok: false, error: "No file provided" }, { status: 400 });
@@ -155,6 +160,7 @@ export async function POST(
       mediaUrl,
       mediaType: validation.data.mediaType,
       caption: validation.data.caption ?? undefined,
+      overlays,
     });
 
     return NextResponse.json({ ok: true, data: story }, { status: 201 });

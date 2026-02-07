@@ -135,6 +135,7 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   
   // UI state
   const [isUploading, setIsUploading] = useState(false);
@@ -322,7 +323,6 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
      ───────────────────────────────────────────────────────────── */
 
   const handleImageDragStart = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (mediaType === "video") return;
     e.preventDefault();
     e.stopPropagation();
     setIsDraggingImage(true);
@@ -361,15 +361,14 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
     window.addEventListener("mouseup", handleUp);
     window.addEventListener("touchmove", handleMove);
     window.addEventListener("touchend", handleUp);
-  }, [mediaType, imagePosition, imageScale]);
+  }, [imagePosition, imageScale]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    if (mediaType === "video") return;
     e.preventDefault();
     
     const delta = e.deltaY > 0 ? -0.2 : 0.2;
     setImageScale((prev) => Math.max(0.5, Math.min(10, prev + delta)));
-  }, [mediaType]);
+  }, []);
 
   const resetImageTransform = useCallback(() => {
     setImageScale(1);
@@ -381,7 +380,7 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
      ───────────────────────────────────────────────────────────── */
 
   const renderToCanvas = useCallback(async (): Promise<Blob | null> => {
-    if (!mediaUrl || mediaType === "video") return null;
+    if (!mediaUrl) return null;
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -393,37 +392,51 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
     canvas.width = width;
     canvas.height = height;
 
-    // Load and draw image
-    const img = document.createElement("img");
-    img.crossOrigin = "anonymous";
-    
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = reject;
-      img.src = mediaUrl;
-    });
+    // Load source: image or video frame
+    let source: HTMLImageElement | HTMLVideoElement;
+    let srcW: number;
+    let srcH: number;
+
+    if (mediaType === "video") {
+      const video = videoRef.current;
+      if (!video) return null;
+      source = video;
+      srcW = video.videoWidth;
+      srcH = video.videoHeight;
+    } else {
+      const img = document.createElement("img");
+      img.crossOrigin = "anonymous";
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = mediaUrl;
+      });
+      source = img;
+      srcW = img.width;
+      srcH = img.height;
+    }
 
     // Apply filters
     const filterStyle = FILTERS.find((f) => f.id === activeFilter)?.style || "";
     const adjustments = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
     ctx.filter = `${filterStyle} ${adjustments}`.trim() || "none";
 
-    // Draw image with zoom and pan
-    const imgRatio = img.width / img.height;
+    // Draw source with zoom and pan
+    const imgRatio = srcW / srcH;
     const canvasRatio = width / height;
     
     // Calculate base crop
-    let baseW = img.width;
-    let baseH = img.height;
+    let baseW = srcW;
+    let baseH = srcH;
     let baseX = 0;
     let baseY = 0;
     
     if (imgRatio > canvasRatio) {
-      baseW = img.height * canvasRatio;
-      baseX = (img.width - baseW) / 2;
+      baseW = srcH * canvasRatio;
+      baseX = (srcW - baseW) / 2;
     } else {
-      baseH = img.width / canvasRatio;
-      baseY = (img.height - baseH) / 2;
+      baseH = srcW / canvasRatio;
+      baseY = (srcH - baseH) / 2;
     }
     
     // Apply zoom (scale reduces the source area)
@@ -437,7 +450,7 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
     const sx = baseX + (baseW - scaledW) / 2 - panFactorX;
     const sy = baseY + (baseH - scaledH) / 2 - panFactorY;
 
-    ctx.drawImage(img, sx, sy, scaledW, scaledH, 0, 0, width, height);
+    ctx.drawImage(source, sx, sy, scaledW, scaledH, 0, 0, width, height);
     ctx.filter = "none";
 
     // Draw text overlays
@@ -509,19 +522,41 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
     try {
       let fileToUpload: File | Blob = mediaFile;
 
-      // If image with overlays or transforms, render to canvas
-      if (mediaType === "image" && (textOverlays.length > 0 || stickerOverlays.length > 0 || activeFilter !== "none" || brightness !== 100 || contrast !== 100 || saturation !== 100 || imageScale !== 1 || imagePosition.x !== 0 || imagePosition.y !== 0)) {
-        const blob = await renderToCanvas();
-        if (blob) {
-          fileToUpload = new File([blob], "story.jpg", { type: "image/jpeg" });
+      // For images: render overlays/filters/transforms into final image via canvas
+      if (mediaType === "image") {
+        const hasModifications = textOverlays.length > 0 || stickerOverlays.length > 0 || activeFilter !== "none" || brightness !== 100 || contrast !== 100 || saturation !== 100 || imageScale !== 1 || imagePosition.x !== 0 || imagePosition.y !== 0;
+        if (hasModifications) {
+          const blob = await renderToCanvas();
+          if (blob) {
+            fileToUpload = new File([blob], "story.jpg", { type: "image/jpeg" });
+          }
         }
       }
+      // For videos: upload the original video file as-is, but send overlays as metadata
 
       const formData = new FormData();
       formData.append("file", fileToUpload);
       formData.append("mediaType", mediaType);
       if (caption.trim()) {
         formData.append("caption", caption.trim());
+      }
+
+      // Send overlay data for videos (images have overlays baked in via canvas)
+      if (mediaType === "video") {
+        const hasVideoOverlays = textOverlays.length > 0 || stickerOverlays.length > 0 || activeFilter !== "none" || brightness !== 100 || contrast !== 100 || saturation !== 100 || imageScale !== 1 || imagePosition.x !== 0 || imagePosition.y !== 0;
+        if (hasVideoOverlays) {
+          const overlayData = {
+            textOverlays: textOverlays.map(t => ({ text: t.text, x: t.x, y: t.y, fontSize: t.fontSize, fontFamily: t.fontFamily, color: t.color, backgroundColor: t.backgroundColor, rotation: t.rotation, scale: t.scale })),
+            stickerOverlays: stickerOverlays.map(s => ({ emoji: s.emoji, x: s.x, y: s.y, scale: s.scale, rotation: s.rotation })),
+            filter: activeFilter,
+            brightness,
+            contrast,
+            saturation,
+            imageScale,
+            imagePosition,
+          };
+          formData.append("overlays", JSON.stringify(overlayData));
+        }
       }
 
       const res = await fetch(`/api/businesses/${businessId}/stories`, {
@@ -804,8 +839,8 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
               <div
                 ref={containerRef}
                 className={`relative w-[340px] md:w-[380px] aspect-[9/16] rounded-2xl overflow-hidden bg-black cursor-grab ${isDraggingImage ? "cursor-grabbing" : ""}`}
-                onMouseDown={mediaType === "image" ? handleImageDragStart : undefined}
-                onTouchStart={mediaType === "image" ? handleImageDragStart : undefined}
+                onMouseDown={handleImageDragStart}
+                onTouchStart={handleImageDragStart}
                 onWheel={handleWheel}
                 onClick={(e) => {
                   if (e.target === e.currentTarget) setSelectedOverlayId(null);
@@ -813,9 +848,14 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
               >
                 {mediaType === "video" ? (
                   <video
+                    ref={videoRef}
                     src={mediaUrl}
-                    className="w-full h-full object-cover"
-                    style={{ filter: getFilterStyle() }}
+                    className="absolute w-full h-full object-contain select-none"
+                    style={{
+                      filter: getFilterStyle(),
+                      transform: `scale(${imageScale}) translate(${imagePosition.x}%, ${imagePosition.y}%)`,
+                      transformOrigin: "center center",
+                    }}
                     autoPlay
                     loop
                     muted

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import useEmblaCarousel from "embla-carousel-react";
 
-import type { BusinessWithStories, Story } from "@/lib/db/stories";
+import type { BusinessWithStories, Story, StoryOverlays } from "@/lib/db/stories";
 import type { Locale } from "@/lib/i18n/locales";
 import { getTimeAgo } from "./StoriesCarousel";
 
@@ -39,6 +39,27 @@ interface StoryComment {
 
 /* ─── constants ─── */
 const STORY_DURATION = 15000; // 15 seconds for all stories
+
+const FILTER_STYLES: Record<string, string> = {
+  none: "",
+  grayscale: "grayscale(100%)",
+  sepia: "sepia(80%)",
+  warm: "saturate(1.3) sepia(20%) brightness(1.1)",
+  cool: "saturate(1.1) hue-rotate(10deg) brightness(1.05)",
+  vintage: "sepia(30%) contrast(1.1) brightness(0.95)",
+  dramatic: "contrast(1.4) saturate(1.2) brightness(0.9)",
+  fade: "contrast(0.9) brightness(1.1) saturate(0.8)",
+  vivid: "saturate(1.5) contrast(1.1)",
+};
+
+function buildFilterStyle(overlays: StoryOverlays): string {
+  const filter = FILTER_STYLES[overlays.filter ?? "none"] || "";
+  const b = overlays.brightness ?? 100;
+  const c = overlays.contrast ?? 100;
+  const s = overlays.saturation ?? 100;
+  const adjustments = `brightness(${b}%) contrast(${c}%) saturate(${s}%)`;
+  return `${filter} ${adjustments}`.trim();
+}
 
 /* ─── component ─── */
 
@@ -449,6 +470,7 @@ export function StoryViewer({
                         key={currentStory.id}
                         src={currentStory.mediaUrl}
                         className="w-full h-full object-contain"
+                        style={currentStory.overlays ? { filter: buildFilterStyle(currentStory.overlays), transform: `scale(${currentStory.overlays.imageScale ?? 1}) translate(${currentStory.overlays.imagePosition?.x ?? 0}%, ${currentStory.overlays.imagePosition?.y ?? 0}%)`, transformOrigin: "center center" } : undefined}
                         autoPlay
                         playsInline
                         muted={false}
@@ -466,6 +488,22 @@ export function StoryViewer({
                       />
                     )}
                   </div>
+
+                  {/* Video overlays (text + stickers stored as metadata) */}
+                  {currentStory.overlays && (
+                    <div className="absolute inset-0 pointer-events-none z-10">
+                      {currentStory.overlays.textOverlays?.map((text, i) => (
+                        <div key={`t-${i}`} className="absolute" style={{ left: `${text.x}%`, top: `${text.y}%`, transform: `translate(-50%, -50%) rotate(${text.rotation}deg) scale(${text.scale})` }}>
+                          <span className="px-3 py-1.5 whitespace-nowrap" style={{ fontSize: `${text.fontSize}px`, fontFamily: text.fontFamily, color: text.color, backgroundColor: text.backgroundColor, textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}>{text.text}</span>
+                        </div>
+                      ))}
+                      {currentStory.overlays.stickerOverlays?.map((sticker, i) => (
+                        <div key={`s-${i}`} className="absolute text-5xl" style={{ left: `${sticker.x}%`, top: `${sticker.y}%`, transform: `translate(-50%, -50%) rotate(${sticker.rotation}deg) scale(${sticker.scale})` }}>
+                          {sticker.emoji}
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {/* Gradients */}
                   <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />

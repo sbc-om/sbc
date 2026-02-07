@@ -1,12 +1,24 @@
 import { nanoid } from "nanoid";
 import { query } from "./postgres";
 
+export type StoryOverlays = {
+  textOverlays?: { text: string; x: number; y: number; fontSize: number; fontFamily: string; color: string; backgroundColor: string; rotation: number; scale: number }[];
+  stickerOverlays?: { emoji: string; x: number; y: number; scale: number; rotation: number }[];
+  filter?: string;
+  brightness?: number;
+  contrast?: number;
+  saturation?: number;
+  imageScale?: number;
+  imagePosition?: { x: number; y: number };
+};
+
 export type Story = {
   id: string;
   businessId: string;
   mediaUrl: string;
   mediaType: "image" | "video";
   caption?: string;
+  overlays?: StoryOverlays;
   createdAt: string;
   expiresAt: string;
   viewCount: number;
@@ -34,6 +46,7 @@ function rowToStory(row: any): Story {
     mediaUrl: row.media_url,
     mediaType: row.media_type,
     caption: row.caption,
+    overlays: row.overlays || undefined,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     expiresAt: row.expires_at?.toISOString() || new Date().toISOString(),
     viewCount: row.view_count || 0,
@@ -59,16 +72,17 @@ export async function createStory(input: {
   mediaUrl: string;
   mediaType: "image" | "video";
   caption?: string;
+  overlays?: StoryOverlays;
 }): Promise<Story> {
   const id = nanoid();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
 
   const result = await query(`
-    INSERT INTO stories (id, business_id, media_url, media_type, caption, created_at, expires_at, view_count)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, 0)
+    INSERT INTO stories (id, business_id, media_url, media_type, caption, overlays, created_at, expires_at, view_count)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0)
     RETURNING *
-  `, [id, input.businessId, input.mediaUrl, input.mediaType, input.caption || null, now, expiresAt]);
+  `, [id, input.businessId, input.mediaUrl, input.mediaType, input.caption || null, input.overlays ? JSON.stringify(input.overlays) : null, now, expiresAt]);
 
   return rowToStory(result.rows[0]);
 }
@@ -132,6 +146,7 @@ export async function listBusinessesWithActiveStories(): Promise<BusinessWithSto
       mediaUrl: story.mediaUrl,
       mediaType: story.mediaType,
       caption: story.caption,
+      overlays: story.overlays,
       createdAt: story.createdAt,
       expiresAt: story.expiresAt,
       viewCount: story.viewCount,
@@ -214,6 +229,7 @@ export async function listFollowedBusinessesWithActiveStoriesWithCategory(
       mediaUrl: story.mediaUrl,
       mediaType: story.mediaType,
       caption: story.caption,
+      overlays: story.overlays,
       createdAt: story.createdAt,
       expiresAt: story.expiresAt,
       viewCount: story.viewCount,
