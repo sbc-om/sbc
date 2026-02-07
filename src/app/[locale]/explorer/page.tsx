@@ -43,6 +43,7 @@ export default async function ExplorerPage({
             locale={locale as Locale}
             currentUserId={user?.id}
             ownedBusinessIds={ownedBusinesses.map(b => b.id)}
+            isAdmin={user?.role === "admin"}
           />
         </div>
       )}

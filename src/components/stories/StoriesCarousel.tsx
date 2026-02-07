@@ -29,7 +29,7 @@ export function StoriesCarousel({ businesses, locale, onOpenStory }: StoriesCaro
   return (
     <div className="relative">
       <div className="overflow-hidden" ref={emblaRef}>
-        <div className="flex gap-3 px-4 py-2" dir={ar ? "rtl" : "ltr"}>
+        <div className="flex gap-4 px-4 py-3" dir={ar ? "rtl" : "ltr"}>
           {businesses.map((business) => (
             <StoryCircle
               key={business.businessId}
@@ -60,29 +60,29 @@ function StoryCircle({ business, locale, onClick }: StoryCircleProps) {
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
+      className="flex flex-col items-center gap-1.5 flex-shrink-0 group active:scale-95 transition-transform duration-150"
     >
       {/* Circle with gradient border */}
       <div
-        className={`relative rounded-full p-[3px] transition-transform group-hover:scale-105 ${
+        className={`relative rounded-full p-[2.5px] transition-all duration-200 group-hover:scale-105 group-hover:shadow-lg ${
           hasUnviewed
-            ? "bg-gradient-to-tr from-amber-500 via-pink-500 to-purple-600"
-            : "bg-(--surface-border)"
+            ? "bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 shadow-pink-500/20"
+            : "bg-(--surface-border) opacity-70"
         }`}
       >
-        {/* White/dark inner ring */}
+        {/* Inner ring */}
         <div className="rounded-full p-[2px] bg-background">
           {/* Avatar */}
-          <div className="relative w-16 h-16 rounded-full overflow-hidden bg-(--surface)">
+          <div className="relative w-[66px] h-[66px] rounded-full overflow-hidden bg-(--surface)">
             {avatar ? (
               <Image
                 src={avatar}
                 alt={name}
                 fill
-                className="object-cover"
+                className="object-cover transition-transform duration-300 group-hover:scale-110"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-xl font-bold text-(--muted-foreground)">
+              <div className="w-full h-full flex items-center justify-center text-xl font-bold text-(--muted-foreground) bg-gradient-to-br from-(--surface) to-(--chip-bg)">
                 {name.charAt(0).toUpperCase()}
               </div>
             )}
@@ -91,14 +91,16 @@ function StoryCircle({ business, locale, onClick }: StoryCircleProps) {
         
         {/* Story count badge */}
         {business.stories.length > 1 && (
-          <div className="absolute -bottom-0.5 -right-0.5 bg-accent text-(--accent-foreground) text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background">
+          <div className="absolute -bottom-0.5 -right-0.5 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-background shadow-sm">
             {business.stories.length}
           </div>
         )}
       </div>
       
       {/* Name */}
-      <span className="text-xs font-medium text-(--muted-foreground) max-w-[72px] truncate">
+      <span className={`text-[11px] font-medium max-w-[76px] truncate transition-colors ${
+        hasUnviewed ? "text-foreground" : "text-(--muted-foreground)"
+      }`}>
         {name}
       </span>
     </button>

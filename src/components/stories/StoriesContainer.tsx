@@ -13,6 +13,7 @@ interface StoriesContainerProps {
   locale: Locale;
   currentUserId?: string;
   ownedBusinessIds?: string[];
+  isAdmin?: boolean;
 }
 
 export function StoriesContainer({ 
@@ -20,6 +21,7 @@ export function StoriesContainer({
   locale,
   currentUserId,
   ownedBusinessIds = [],
+  isAdmin = false,
 }: StoriesContainerProps) {
   const [businesses, setBusinesses] = useState(initialBusinesses);
   const [viewerOpen, setViewerOpen] = useState(false);
@@ -69,6 +71,7 @@ export function StoriesContainer({
           onClose={handleCloseViewer}
           currentUserId={currentUserId}
           isBusinessOwner={isBusinessOwner}
+          isAdmin={isAdmin}
         />,
         document.body
       )}

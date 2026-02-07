@@ -139,6 +139,7 @@ export default async function HomeFollowedPage({
             locale={locale as Locale}
             currentUserId={user.id}
             ownedBusinessIds={ownedBusinesses.map(b => b.id)}
+            isAdmin={user.role === "admin"}
           />
         </div>
       )}
