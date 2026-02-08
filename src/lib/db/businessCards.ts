@@ -121,14 +121,15 @@ export async function deleteBusinessCard(id: string): Promise<boolean> {
 }
 
 export async function setBusinessCardApproved(id: string, isApproved: boolean): Promise<BusinessCard> {
+  const now = new Date();
   const result = await query(`
     UPDATE business_cards SET
       is_approved = $1,
-      approved_at = CASE WHEN $1 THEN $2 ELSE NULL END,
+      approved_at = CASE WHEN $1 THEN $2::timestamptz ELSE NULL END,
       updated_at = $2
     WHERE id = $3
     RETURNING *
-  `, [isApproved, new Date(), id]);
+  `, [isApproved, now, id]);
 
   if (result.rows.length === 0) throw new Error("NOT_FOUND");
   return rowToBusinessCard(result.rows[0]);
