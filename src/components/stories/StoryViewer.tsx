@@ -78,8 +78,13 @@ function StoryMedia({
   onVideoEnded: () => void;
 }) {
   const [fitMode, setFitMode] = useState<"cover" | "contain">("contain");
-  const filterCSS = story.overlays ? buildFilterStyle(story.overlays) : undefined;
-  const transformCSS = story.overlays
+  
+  // For videos: apply filter + scale/position from overlays
+  // For images: filter is baked into the canvas, scale/position is also baked
+  // So we only apply transform for videos
+  const isVideo = story.mediaType === "video";
+  const filterCSS = isVideo && story.overlays ? buildFilterStyle(story.overlays) : undefined;
+  const transformCSS = isVideo && story.overlays
     ? `scale(${story.overlays.imageScale ?? 1}) translate(${story.overlays.imagePosition?.x ?? 0}%, ${story.overlays.imagePosition?.y ?? 0}%)`
     : undefined;
 
@@ -408,7 +413,7 @@ export function StoryViewer({
       )}
 
       {/* Embla Carousel */}
-      <div className="w-full h-full md:w-[420px] md:h-[calc(100vh-48px)] md:max-h-[860px] overflow-hidden md:rounded-2xl" ref={emblaRef}>
+      <div className="w-full h-full md:w-auto md:h-[calc(100vh-48px)] md:max-h-[860px] overflow-hidden md:rounded-2xl" style={{ aspectRatio: "9/16" }} ref={emblaRef}>
         <div className="flex h-full" style={{ direction: ar ? "rtl" : "ltr" }}>
           {businesses.map((business, bizIdx) => (
             <div key={business.businessId} className="flex-[0_0_100%] min-w-0 h-full">
