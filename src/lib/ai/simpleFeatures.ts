@@ -1,28 +1,46 @@
 /**
  * Simple AI features without ML5 dependency
- * Fallback implementation with keyword matching and relevance scoring
+ * Enhanced fallback implementation with fuzzy matching, Arabic support, and relevance scoring
  */
+
+/** Arabic diacritics regex */
+const AR_DIACRITICS = /[\u064B-\u065F\u0670]/g;
+
+/** Arabic letter normalization */
+const AR_NORMALIZE: Record<string, string> = {
+  "أ": "ا", "إ": "ا", "آ": "ا", "ٱ": "ا",
+  "ة": "ه", "ؤ": "و", "ئ": "ي", "ى": "ي",
+  "ک": "ك", "ی": "ي", "ڤ": "ف", "گ": "ك",
+};
+
+function normalizeArabicText(text: string): string {
+  let r = text.replace(AR_DIACRITICS, "");
+  for (const [from, to] of Object.entries(AR_NORMALIZE)) {
+    r = r.replaceAll(from, to);
+  }
+  // Remove "ال" prefix for matching
+  return r;
+}
 
 export class SimpleTextFeatures {
   /**
-   * Extract keywords from text
+   * Extract keywords from text with Arabic normalization
    */
   private extractKeywords(text: string): string[] {
-    const normalized = text.toLowerCase().trim();
-    // Split by spaces and filter out short words
+    const normalized = normalizeArabicText(text.toLowerCase().trim());
     return normalized
-      .split(/[\s,،.]+/)
-      .filter(word => word.length > 2)
+      .split(/[\s,،.؟?!:;]+/)
+      .filter(word => word.length > 1)
       .map(word => word.replace(/[^\w\u0600-\u06FF]/g, ''));
   }
 
   /**
-   * Calculate keyword match score with exact and partial matching
+   * Calculate keyword match score with exact, partial, fuzzy, and Arabic-aware matching
    */
   calculateRelevanceScore(query: string, businessText: string): number {
     const queryKeywords = this.extractKeywords(query);
     const businessKeywords = this.extractKeywords(businessText);
-    const businessLower = businessText.toLowerCase();
+    const businessLower = normalizeArabicText(businessText.toLowerCase());
     
     if (queryKeywords.length === 0) return 0;
     
@@ -30,22 +48,62 @@ export class SimpleTextFeatures {
     const maxScore = queryKeywords.length * 10;
     
     for (const queryWord of queryKeywords) {
+      // Skip very short words and common stop words
+      if (queryWord.length <= 1) continue;
+      
+      const queryNoAl = queryWord.startsWith("ال") && queryWord.length > 3 
+        ? queryWord.slice(2) : queryWord;
+
       // Exact match in business keywords (highest score)
-      if (businessKeywords.some(bw => bw === queryWord)) {
+      if (businessKeywords.some(bw => bw === queryWord || bw === queryNoAl)) {
         score += 10;
       }
-      // Partial match (business keyword contains query word)
-      else if (businessKeywords.some(bw => bw.includes(queryWord) || queryWord.includes(bw))) {
-        score += 5;
+      // Exact match without "ال" prefix
+      else if (businessKeywords.some(bw => {
+        const bwNoAl = bw.startsWith("ال") && bw.length > 3 ? bw.slice(2) : bw;
+        return bwNoAl === queryNoAl;
+      })) {
+        score += 9;
+      }
+      // Partial match (business keyword contains query word or vice versa)
+      else if (businessKeywords.some(bw => bw.includes(queryNoAl) || queryNoAl.includes(bw))) {
+        score += 6;
       }
       // Substring match in full text
-      else if (businessLower.includes(queryWord)) {
-        score += 2;
+      else if (businessLower.includes(queryWord) || businessLower.includes(queryNoAl)) {
+        score += 4;
+      }
+      // Fuzzy match (Levenshtein distance <= 2)
+      else if (businessKeywords.some(bw => this.levenshtein(queryNoAl, bw) <= Math.max(1, Math.floor(queryNoAl.length * 0.3)))) {
+        score += 3;
       }
     }
     
     // Normalize score to [0, 1]
     return Math.min(score / maxScore, 1);
+  }
+
+  /**
+   * Levenshtein distance for fuzzy matching
+   */
+  private levenshtein(a: string, b: string): number {
+    const m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    let prev = Array.from({ length: n + 1 }, (_, i) => i);
+    let curr = new Array(n + 1);
+    for (let i = 1; i <= m; i++) {
+      curr[0] = i;
+      for (let j = 1; j <= n; j++) {
+        curr[j] = Math.min(
+          prev[j] + 1,
+          curr[j - 1] + 1,
+          prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+        );
+      }
+      [prev, curr] = [curr, prev];
+    }
+    return prev[n];
   }
 
   /**

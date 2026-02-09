@@ -3,7 +3,7 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FiSearch, FiUpload, FiX, FiFilter, FiZap, FiMessageCircle } from "react-icons/fi";
+import { FiSearch, FiUpload, FiX, FiFilter, FiZap, FiMessageCircle, FiSend, FiTrash2, FiArrowRight } from "react-icons/fi";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
@@ -134,45 +134,71 @@ export function BusinessesExplorer({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleChatSearch = async () => {
-    if (!chatInput.trim()) return;
+  const handleChatSearch = async (overrideMessage?: string) => {
+    const userMessage = (overrideMessage || chatInput).trim();
+    if (!userMessage) return;
     
-    const userMessage = chatInput.trim();
     setChatInput("");
-    setChatMessages(prev => [...prev, { role: "user", content: userMessage }]);
+    const newHistory = [...chatMessages, { role: "user" as const, content: userMessage }];
+    setChatMessages(newHistory);
     setIsTyping(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const res = await fetch("/api/ai-search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: userMessage,
+          locale,
+          conversationHistory: chatMessages.slice(-6),
+        }),
+      });
       
-      const results = await searchSimilar(userMessage, businesses, locale);
-      setAiResults(results);
+      const data = await res.json();
       
-      let response = "";
-      if (results.length === 0) {
-        response = locale === "ar"
-          ? `عذراً، لم أجد أي نشاط تجاري لـ "${userMessage}". يرجى تجربة بحث آخر.`
-          : `Sorry, I couldn't find any businesses for "${userMessage}". Please try a different search.`;
-      } else if (results.length === 1) {
-        const business = results[0];
-        response = locale === "ar"
-          ? `وجدته! ${business.name[locale]} في ${business.city || 'منطقتك'}. ${business.description?.[locale] || ''}`
-          : `Found it! ${business.name[locale]} in ${business.city || 'your area'}. ${business.description?.[locale] || ''}`;
+      if (data.ok) {
+        // Map result IDs to full business objects preserving server-side ranking
+        const idOrder = new Map(data.resultIds.map((id: string, i: number) => [id, i]));
+        const orderedResults = businesses
+          .filter(b => idOrder.has(b.id))
+          .sort((a, b) => (idOrder.get(a.id) ?? 999) - (idOrder.get(b.id) ?? 999));
+        
+        if (orderedResults.length > 0) {
+          setAiResults(orderedResults);
+        }
+        
+        setChatMessages(prev => [...prev, { role: "assistant", content: data.message }]);
       } else {
-        const top3 = results.slice(0, 3).map(b => b.name[locale]).join(locale === "ar" ? '، ' : ', ');
-        response = locale === "ar"
-          ? `وجدت ${results.length} نشاط تجاري. الأفضل: ${top3}. انظر القائمة الكاملة أدناه.`
-          : `Found ${results.length} businesses. Top picks: ${top3}. See full list below.`;
+        // Fallback to client-side search
+        const results = await searchSimilar(userMessage, businesses, locale);
+        setAiResults(results);
+        
+        const fallbackMsg = results.length > 0
+          ? (locale === "ar"
+            ? `وجدت ${results.length} نتيجة لـ "${userMessage}". انظر القائمة أدناه.`
+            : `Found ${results.length} results for "${userMessage}". See list below.`)
+          : (locale === "ar"
+            ? `عذراً، لم أجد نتائج لـ "${userMessage}".`
+            : `Sorry, no results found for "${userMessage}".`);
+        
+        setChatMessages(prev => [...prev, { role: "assistant", content: fallbackMsg }]);
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 300));
-      setChatMessages(prev => [...prev, { role: "assistant", content: response }]);
     } catch (error) {
       console.error('Chat search error:', error);
-      const errorMsg = locale === "ar" 
-        ? "خطأ في البحث. يرجى المحاولة مرة أخرى."
-        : "Search error. Please try again.";
-      setChatMessages(prev => [...prev, { role: "assistant", content: errorMsg }]);
+      // Fallback to client-side search on network error
+      try {
+        const results = await searchSimilar(userMessage, businesses, locale);
+        setAiResults(results);
+        const fallbackMsg = locale === "ar"
+          ? `وجدت ${results.length} نتيجة. (بحث محلي)`
+          : `Found ${results.length} results. (Local search)`;
+        setChatMessages(prev => [...prev, { role: "assistant", content: fallbackMsg }]);
+      } catch {
+        const errorMsg = locale === "ar" 
+          ? "خطأ في البحث. يرجى المحاولة مرة أخرى."
+          : "Search error. Please try again.";
+        setChatMessages(prev => [...prev, { role: "assistant", content: errorMsg }]);
+      }
     } finally {
       setIsTyping(false);
     }
@@ -471,21 +497,70 @@ export function BusinessesExplorer({
           {/* AI Chat Interface */}
           {activeMode === "chat" && (
             <div className="space-y-3 p-4 rounded-xl border border-(--surface-border) bg-(--background) animate-in slide-in-from-top duration-200">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <FiMessageCircle className="h-4 w-4" />
-                {locale === "ar" ? "المحادثة الذكية" : "AI Chat Assistant"}
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <FiMessageCircle className="h-3.5 w-3.5 text-white" />
+                  </div>
+                  {locale === "ar" ? "المحادثة الذكية" : "AI Chat Assistant"}
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-600 dark:text-blue-400">
+                    {locale === "ar" ? "ذكاء اصطناعي" : "AI-Powered"}
+                  </span>
+                </h3>
+                {chatMessages.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setChatMessages([]);
+                      setAiResults(null);
+                    }}
+                    className="text-xs text-(--muted-foreground) hover:text-red-500 transition flex items-center gap-1"
+                  >
+                    <FiTrash2 className="h-3 w-3" />
+                    {locale === "ar" ? "مسح المحادثة" : "Clear chat"}
+                  </button>
+                )}
+              </div>
               
-              <div className="h-[300px] overflow-y-auto rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+              <div className="h-[350px] overflow-y-auto rounded-xl border border-(--surface-border) bg-(--surface) p-4 scroll-smooth">
                 <div className="space-y-3">
                   {chatMessages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                      <FiMessageCircle className="h-12 w-12 text-(--muted-foreground) opacity-20 mb-3" />
-                      <p className="text-(--muted-foreground) text-sm max-w-md">
+                    <div className="flex flex-col items-center justify-center h-full text-center py-8">
+                      <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center mb-4">
+                        <FiMessageCircle className="h-8 w-8 text-blue-500/60" />
+                      </div>
+                      <h4 className="font-semibold text-sm mb-1">
+                        {locale === "ar" ? "مرحباً! كيف أقدر أساعدك؟" : "Hi! How can I help you?"}
+                      </h4>
+                      <p className="text-(--muted-foreground) text-xs max-w-sm mb-5">
                         {locale === "ar" 
-                          ? "اسأل سؤالك وسأجد لك أفضل الأنشطة التجارية 💬"
-                          : "Ask me anything and I'll find the best businesses for you 💬"}
+                          ? "اسألني عن أي نشاط تجاري وسأجد لك أفضل النتائج بذكاء"
+                          : "Ask me about any business and I'll find the best results for you"}
                       </p>
+                      {/* Quick Suggestions */}
+                      <div className="flex flex-wrap gap-2 justify-center max-w-sm">
+                        {(locale === "ar" ? [
+                          "أفضل مطاعم في مسقط",
+                          "كافيهات قريبة",
+                          "صالونات مميزة",
+                          "محلات ملابس",
+                        ] : [
+                          "Best restaurants in Muscat",
+                          "Nearby cafes",
+                          "Top salons",
+                          "Clothing stores",
+                        ]).map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            onClick={() => handleChatSearch(suggestion)}
+                            className="text-xs px-3 py-1.5 rounded-full border border-(--surface-border) bg-(--background) hover:bg-(--accent) hover:text-(--accent-foreground) transition-colors flex items-center gap-1"
+                          >
+                            <FiArrowRight className="h-3 w-3" />
+                            {suggestion}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -494,24 +569,52 @@ export function BusinessesExplorer({
                           key={idx}
                           className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in slide-in-from-bottom duration-300`}
                         >
+                          {msg.role === "assistant" && (
+                            <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-1 me-2">
+                              <FiMessageCircle className="h-3 w-3 text-white" />
+                            </div>
+                          )}
                           <div
-                            className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
+                            className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
                               msg.role === "user"
                                 ? "bg-(--accent) text-(--accent-foreground)"
                                 : "bg-(--muted) text-(--foreground) border border-(--surface-border)"
                             }`}
                           >
-                            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                            {msg.role === "assistant" ? (
+                              <div className="whitespace-pre-wrap break-words [&_strong]:font-semibold [&_strong]:text-(--foreground) leading-relaxed text-[13px]">
+                                {msg.content.split('\n').map((line, i) => {
+                                  // Bold text
+                                  const parts = line.split(/\*\*(.+?)\*\*/g);
+                                  return (
+                                    <span key={i}>
+                                      {parts.map((part, j) =>
+                                        j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+                                      )}
+                                      {i < msg.content.split('\n').length - 1 && <br />}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                            )}
                           </div>
                         </div>
                       ))}
                       {isTyping && (
                         <div className="flex justify-start animate-in fade-in duration-200">
+                          <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-1 me-2">
+                            <FiMessageCircle className="h-3 w-3 text-white" />
+                          </div>
                           <div className="bg-(--muted) text-(--foreground) rounded-2xl px-4 py-3 border border-(--surface-border) shadow-sm">
-                            <div className="flex gap-1.5">
-                              <span className="w-2 h-2 bg-(--foreground) rounded-full animate-bounce" style={{animationDelay: "0ms"}}></span>
-                              <span className="w-2 h-2 bg-(--foreground) rounded-full animate-bounce" style={{animationDelay: "150ms"}}></span>
-                              <span className="w-2 h-2 bg-(--foreground) rounded-full animate-bounce" style={{animationDelay: "300ms"}}></span>
+                            <div className="flex gap-1.5 items-center">
+                              <span className="text-xs text-(--muted-foreground) me-1">
+                                {locale === "ar" ? "جاري البحث" : "Searching"}
+                              </span>
+                              <span className="w-1.5 h-1.5 bg-(--foreground) rounded-full animate-bounce" style={{animationDelay: "0ms"}}></span>
+                              <span className="w-1.5 h-1.5 bg-(--foreground) rounded-full animate-bounce" style={{animationDelay: "150ms"}}></span>
+                              <span className="w-1.5 h-1.5 bg-(--foreground) rounded-full animate-bounce" style={{animationDelay: "300ms"}}></span>
                             </div>
                           </div>
                         </div>
@@ -526,13 +629,13 @@ export function BusinessesExplorer({
                 <Input
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter" && !isTyping && chatInput.trim()) {
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && !isTyping && chatInput.trim()) {
                       e.preventDefault();
                       handleChatSearch();
                     }
                   }}
-                  placeholder={locale === "ar" ? "اسأل سؤالك..." : "Ask your question..."}
+                  placeholder={locale === "ar" ? "اسأل عن أي نشاط تجاري..." : "Ask about any business..."}
                   disabled={isTyping}
                   className="flex-1"
                 />
@@ -543,11 +646,12 @@ export function BusinessesExplorer({
                     handleChatSearch();
                   }}
                   disabled={!chatInput.trim() || isTyping}
+                  className="min-w-[44px]"
                 >
                   {isTyping ? (
                     <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                   ) : (
-                    <FiSearch className="h-4 w-4" />
+                    <FiSend className="h-4 w-4" />
                   )}
                 </Button>
               </div>
