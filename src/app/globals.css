@@ -12,6 +12,7 @@
   --surface: rgba(255, 255, 255, 0.72);
   --surface-rgb: 255, 255, 255;
   --surface-border: rgba(15, 23, 42, 0.08);
+  --surface-hover: rgba(15, 23, 42, 0.04);
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
   --shadow-hover: 0 16px 45px rgba(15, 23, 42, 0.10);
   --muted-foreground: rgba(15, 23, 42, 0.70);
@@ -66,6 +67,7 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
   --surface: rgba(24, 27, 32, 0.85);
   --surface-rgb: 24, 27, 32;
   --surface-border: rgba(255, 255, 255, 0.12);
+  --surface-hover: rgba(255, 255, 255, 0.08);
   --shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
   --shadow-hover: 0 16px 50px rgba(0, 0, 0, 0.60);
   --muted-foreground: rgba(232, 234, 237, 0.72);

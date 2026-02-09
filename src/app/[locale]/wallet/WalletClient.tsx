@@ -568,7 +568,7 @@ export function WalletClient({
                 {transactions.map((tx) => (
                 <div
                   key={tx.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-(--surface) hover:bg-(--surface-hover) transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/[0.10] transition-colors"
                 >
                   <div className="p-2 rounded-full bg-background">
                     {getTransactionIcon(tx.type)}
@@ -602,7 +602,7 @@ export function WalletClient({
                 {withdrawalRequests.map((req) => (
                 <div
                   key={req.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-(--surface) hover:bg-(--surface-hover) transition-colors"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/[0.10] transition-colors"
                 >
                   <div className="p-2 rounded-full bg-background">
                     {req.status === "pending" && <HiOutlineClock className="h-5 w-5 text-yellow-500" />}
