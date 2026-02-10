@@ -63,7 +63,7 @@ export async function proxy(req: NextRequest) {
   const hostname = hostHeader.split(":")[0];
   const subdomain = extractSubdomain(hostname);
 
-  // Skip Next internals and static files.
+  // Skip Next internals, static files, and non-locale routes.
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api") ||
@@ -303,6 +303,31 @@ export async function proxy(req: NextRequest) {
     if (handle) {
       return rewriteHandle(handle, locale);
     }
+  }
+
+  // Public user-built websites: /{locale}/site/{slug} → /site/{slug}
+  // Rewrite so the page is served from /app/site/ (bare layout, no sidebar).
+  if (restSegments[0] === "site") {
+    const url = req.nextUrl.clone();
+    // Strip the locale prefix: /en/site/slug/about → /site/slug/about
+    url.pathname = `/${restSegments.join("/")}`;
+
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-locale", locale);
+    requestHeaders.set("x-pathname", pathname);
+
+    const res = NextResponse.rewrite(url, {
+      request: { headers: requestHeaders },
+    });
+
+    res.cookies.set("locale", locale, {
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+
+    return res;
   }
 
   // Auth protection (JWT cookie) for protected areas.

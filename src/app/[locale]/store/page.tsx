@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   HiOutlineBuildingOffice2,
+  HiOutlineGlobeAlt,
   HiOutlineMegaphone,
   HiOutlineSparkles,
   HiCheckCircle,
@@ -53,6 +54,7 @@ export default async function StorePage({
     directory: products.filter((p) => p.program === "directory"),
     loyalty: products.filter((p) => p.program === "loyalty"),
     marketing: products.filter((p) => p.program === "marketing"),
+    website: products.filter((p) => p.program === "website"),
   };
 
   const ar = locale === "ar";
@@ -158,6 +160,15 @@ export default async function StorePage({
                 iconClassName: "text-fuchsia-600 dark:text-fuchsia-300",
                 iconBgClassName: "bg-fuchsia-500/12",
                 borderClassName: "border-fuchsia-500/25 dark:border-fuchsia-400/25",
+              },
+              {
+                key: "website" as const,
+                title: ar ? "منشئ المواقع" : "Website Builder",
+                subtitle: ar ? "صمم موقعك الخاص بدامنه مخصص." : "Build your own website with a custom domain.",
+                Icon: HiOutlineGlobeAlt,
+                iconClassName: "text-cyan-600 dark:text-cyan-300",
+                iconBgClassName: "bg-cyan-500/12",
+                borderClassName: "border-cyan-500/25 dark:border-cyan-400/25",
               },
             ] as const
           ).map((section) => {

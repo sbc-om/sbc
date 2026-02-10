@@ -359,7 +359,7 @@ export type AppleWalletRegistration = {
   updatedAt: string;
 };
 
-export type ProgramId = "directory" | "loyalty" | "marketing";
+export type ProgramId = "directory" | "loyalty" | "marketing" | "website";
 
 export type ProgramSubscription = {
   /** The owner user id. */
@@ -481,4 +481,156 @@ export type LoyaltyIssuedCard = {
   lastPointsUpdate?: string;
   createdAt: string;
   updatedAt: string;
+};
+
+// ==================== Website Builder ====================
+
+export type WebsitePackage = "starter" | "professional" | "enterprise";
+
+/** A user-built website with its own template, nav, domain etc. */
+export type Website = {
+  id: string;
+  /** Owner user id. */
+  ownerId: string;
+  /** URL slug (used in /@slug or /site/slug). */
+  slug: string;
+  /** Optional custom domain (e.g., mybusiness.com). */
+  customDomain?: string;
+  /** Display title / site name. */
+  title: LocalizedString;
+  /** Short tagline displayed under the title. */
+  tagline?: LocalizedString;
+  /** SEO meta description. */
+  metaDescription?: LocalizedString;
+  /** Active package tier. */
+  package: WebsitePackage;
+  /** Whether the site is published and publicly accessible. */
+  isPublished: boolean;
+  /** Selected template id. */
+  templateId: string;
+  /** Brand / visual settings. */
+  branding: {
+    primaryColor: string;
+    secondaryColor: string;
+    fontFamily?: string;
+    logoUrl?: string;
+    faviconUrl?: string;
+    ogImageUrl?: string;
+  };
+  /** Top navigation menu items. */
+  navigation: WebsiteNavItem[];
+  /** Social media links. */
+  socials?: {
+    instagram?: string;
+    x?: string;
+    linkedin?: string;
+    facebook?: string;
+    youtube?: string;
+    whatsapp?: string;
+    tiktok?: string;
+  };
+  /** Footer text (HTML/Markdown). */
+  footerText?: LocalizedString;
+  /** Contact info shown on the site. */
+  contact?: {
+    email?: string;
+    phone?: string;
+    address?: string;
+    mapLatitude?: number;
+    mapLongitude?: number;
+  };
+  /** Analytics / tracking codes (enterprise only). */
+  analytics?: {
+    googleAnalyticsId?: string;
+    facebookPixelId?: string;
+    customHeadCode?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WebsiteNavItem = {
+  id: string;
+  label: LocalizedString;
+  /** Link target: a page slug, external URL, or section anchor. */
+  href: string;
+  /** Nested children for dropdown menus (professional+ only). */
+  children?: WebsiteNavItem[];
+};
+
+/** A single page within a user website. */
+export type WebsitePage = {
+  id: string;
+  websiteId: string;
+  /** URL slug for this page (e.g., "about", "services"). */
+  slug: string;
+  title: LocalizedString;
+  /** Whether this is the homepage. */
+  isHomepage: boolean;
+  /** Page content stored as an ordered list of content blocks (JSON). */
+  blocks: WebsiteBlock[];
+  /** SEO overrides for this specific page. */
+  seo?: {
+    title?: string;
+    description?: string;
+    ogImage?: string;
+  };
+  sortOrder: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** Content block types for the page builder. */
+export type WebsiteBlock =
+  | { type: "hero"; data: { heading: LocalizedString; subheading?: LocalizedString; imageUrl?: string; ctaText?: LocalizedString; ctaLink?: string } }
+  | { type: "text"; data: { content: LocalizedString } }
+  | { type: "image"; data: { url: string; alt?: string; caption?: LocalizedString } }
+  | { type: "gallery"; data: { images: Array<{ url: string; alt?: string }> } }
+  | { type: "features"; data: { items: Array<{ icon?: string; title: LocalizedString; description: LocalizedString }> } }
+  | { type: "cta"; data: { heading: LocalizedString; description?: LocalizedString; buttonText: LocalizedString; buttonLink: string } }
+  | { type: "testimonials"; data: { items: Array<{ name: string; role?: string; text: LocalizedString; avatarUrl?: string }> } }
+  | { type: "contact-form"; data: { heading?: LocalizedString; fields: string[] } }
+  | { type: "map"; data: { latitude: number; longitude: number; zoom?: number } }
+  | { type: "video"; data: { url: string; title?: LocalizedString } }
+  | { type: "divider"; data: Record<string, never> }
+  | { type: "html"; data: { code: string } };
+
+/** Package limits per tier. */
+export const WEBSITE_PACKAGE_LIMITS: Record<WebsitePackage, {
+  maxPages: number;
+  customDomain: boolean;
+  analytics: boolean;
+  customCode: boolean;
+  removeBranding: boolean;
+  maxStorageMb: number;
+  formSubmissions: boolean;
+}> = {
+  starter: {
+    maxPages: 3,
+    customDomain: false,
+    analytics: false,
+    customCode: false,
+    removeBranding: false,
+    maxStorageMb: 50,
+    formSubmissions: false,
+  },
+  professional: {
+    maxPages: 15,
+    customDomain: true,
+    analytics: false,
+    customCode: false,
+    removeBranding: true,
+    maxStorageMb: 500,
+    formSubmissions: true,
+  },
+  enterprise: {
+    maxPages: -1, // unlimited
+    customDomain: true,
+    analytics: true,
+    customCode: true,
+    removeBranding: true,
+    maxStorageMb: 5000,
+    formSubmissions: true,
+  },
 };

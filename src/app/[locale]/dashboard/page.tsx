@@ -4,6 +4,7 @@ import {
   HiArrowUpRight,
   HiCheckBadge,
   HiOutlineBuildingOffice2,
+  HiOutlineGlobeAlt,
   HiOutlineMegaphone,
   HiOutlineSparkles,
   HiOutlineShoppingBag,
@@ -82,6 +83,16 @@ export default async function DashboardPage({
       iconClassName: "text-fuchsia-600 dark:text-fuchsia-300",
       iconBgClassName: "bg-fuchsia-500/12 ring-1 ring-fuchsia-500/18",
       borderClassName: "border-fuchsia-500/25 dark:border-fuchsia-400/25",
+    },
+    website: {
+      title: ar ? "منشئ المواقع" : "Website Builder",
+      href: `/${locale}/dashboard/websites`,
+      storeHref: `/${locale}/store?q=website`,
+      subtitle: ar ? "صمم موقعك الخاص" : "Design your own website",
+      Icon: HiOutlineGlobeAlt,
+      iconClassName: "text-cyan-600 dark:text-cyan-300",
+      iconBgClassName: "bg-cyan-500/12 ring-1 ring-cyan-500/18",
+      borderClassName: "border-cyan-500/25 dark:border-cyan-400/25",
     },
   } as const;
 

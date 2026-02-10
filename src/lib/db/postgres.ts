@@ -715,6 +715,53 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_loyalty_issued_cards_customer_id ON loyalty_issued_cards(customer_id);
     CREATE INDEX IF NOT EXISTS idx_loyalty_issued_cards_status ON loyalty_issued_cards(status);
 
+    -- Websites table (user-built websites with custom templates)
+    CREATE TABLE IF NOT EXISTS websites (
+      id TEXT PRIMARY KEY,
+      owner_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      slug TEXT UNIQUE NOT NULL,
+      custom_domain TEXT UNIQUE,
+      title_en TEXT NOT NULL DEFAULT '',
+      title_ar TEXT NOT NULL DEFAULT '',
+      tagline_en TEXT,
+      tagline_ar TEXT,
+      meta_description_en TEXT,
+      meta_description_ar TEXT,
+      package TEXT NOT NULL DEFAULT 'starter',
+      is_published BOOLEAN DEFAULT false,
+      template_id TEXT NOT NULL DEFAULT 'minimal',
+      branding JSONB DEFAULT '{"primaryColor":"#2563eb","secondaryColor":"#7c3aed"}',
+      navigation JSONB DEFAULT '[]',
+      socials JSONB,
+      footer_text_en TEXT,
+      footer_text_ar TEXT,
+      contact JSONB,
+      analytics JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_websites_owner_id ON websites(owner_id);
+    CREATE INDEX IF NOT EXISTS idx_websites_slug ON websites(slug);
+    CREATE INDEX IF NOT EXISTS idx_websites_custom_domain ON websites(custom_domain);
+
+    -- Website pages table
+    CREATE TABLE IF NOT EXISTS website_pages (
+      id TEXT PRIMARY KEY,
+      website_id TEXT REFERENCES websites(id) ON DELETE CASCADE,
+      slug TEXT NOT NULL DEFAULT 'home',
+      title_en TEXT NOT NULL DEFAULT '',
+      title_ar TEXT NOT NULL DEFAULT '',
+      is_homepage BOOLEAN DEFAULT false,
+      blocks JSONB DEFAULT '[]',
+      seo JSONB,
+      sort_order INTEGER DEFAULT 0,
+      is_published BOOLEAN DEFAULT true,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(website_id, slug)
+    );
+    CREATE INDEX IF NOT EXISTS idx_website_pages_website_id ON website_pages(website_id);
+
     -- Create SBC Treasury system user if not exists
     INSERT INTO users (id, email, phone, full_name, password_hash, role, is_active, is_verified, display_name, approval_status, created_at, updated_at)
     VALUES ('sbc-treasury', 'treasury@sbc.om', 'sbc', 'SBC Treasury', '$2b$10$placeholder', 'system', true, true, 'SBC Treasury', 'approved', NOW(), NOW())

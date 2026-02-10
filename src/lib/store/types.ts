@@ -11,7 +11,7 @@ export type StoreProductPrice = {
   interval?: "month" | "year" | "6mo";
 };
 
-export type StoreProgramId = "directory" | "loyalty" | "marketing";
+export type StoreProgramId = "directory" | "loyalty" | "marketing" | "website";
 
 export type StoreProduct = {
   id: string;
