@@ -147,8 +147,8 @@ export async function sendOTP(phone: string, code: string, locale: "en" | "ar" =
   const chatId = formatChatId(phone);
   
   const messages = {
-    en: `🔐 Your SBC verification code is: *${code}*\n\nThis code will expire in ${process.env.OTP_EXPIRY_MINUTES || 5} minutes.\n\nDo not share this code with anyone.`,
-    ar: `🔐 رمز التحقق الخاص بك في SBC هو: *${code}*\n\nستنتهي صلاحية هذا الرمز خلال ${process.env.OTP_EXPIRY_MINUTES || 5} دقائق.\n\nلا تشارك هذا الرمز مع أي شخص.`,
+    en: `🔐 Your SBC verification code:\n\n\`${code}\`\n\nThis code will expire in 2 minutes.\n\nDo not share this code with anyone.`,
+    ar: `🔐 رمز التحقق الخاص بك في SBC:\n\n\`${code}\`\n\nستنتهي صلاحية هذا الرمز خلال 2 دقائق.\n\nلا تشارك هذا الرمز مع أي شخص.`,
   };
 
   return sendText({

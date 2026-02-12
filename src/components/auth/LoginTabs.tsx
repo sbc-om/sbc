@@ -110,7 +110,6 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
   const router = useRouter();
   const t = texts[locale];
   const [activeTab, setActiveTab] = useState<TabId>("password");
-  
   // WhatsApp state
   const [whatsappEnabled, setWhatsappEnabled] = useState<boolean | null>(null);
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -119,6 +118,38 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
   const [loading, setLoading] = useState(false);
   const [whatsappError, setWhatsappError] = useState("");
   const [countdown, setCountdown] = useState(0);
+
+  // Restore WhatsApp state from localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("wa-login-state");
+    if (saved) {
+      try {
+        const { step, phone, countdown, ts } = JSON.parse(saved);
+        if (step === "otp" && phone) {
+          setStep("otp");
+          setPhone(phone);
+          // Calculate remaining countdown
+          const now = Date.now();
+          const remain = Math.max(0, Math.floor((ts + countdown * 1000 - now) / 1000));
+          setCountdown(remain);
+        }
+      } catch {}
+    }
+  }, []);
+
+  // Save WhatsApp state to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (step === "otp" && phone) {
+      localStorage.setItem(
+        "wa-login-state",
+        JSON.stringify({ step, phone, countdown, ts: Date.now() })
+      );
+    } else {
+      localStorage.removeItem("wa-login-state");
+    }
+  }, [step, phone, countdown]);
 
   // Check if WhatsApp login is enabled
   useEffect(() => {
@@ -227,7 +258,14 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
       const data = await res.json();
       if (data.ok) {
         setStep("otp");
-        setCountdown(60);
+        setCountdown(120);
+        // Save state immediately
+        if (typeof window !== "undefined") {
+          localStorage.setItem(
+            "wa-login-state",
+            JSON.stringify({ step: "otp", phone, countdown: 120, ts: Date.now() })
+          );
+        }
       } else {
         setWhatsappError(data.error || "Failed to send code");
       }
@@ -251,6 +289,10 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
       });
       const data = await res.json();
       if (data.ok) {
+        // Clear WhatsApp state on success
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("wa-login-state");
+        }
         router.push(next || `/${locale}/dashboard`);
         router.refresh();
       } else {
@@ -424,6 +466,9 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
                     setStep("phone");
                     setOtp("");
                     setWhatsappError("");
+                    if (typeof window !== "undefined") {
+                      localStorage.removeItem("wa-login-state");
+                    }
                   }}
                   className="text-(--muted-foreground) hover:text-foreground"
                 >

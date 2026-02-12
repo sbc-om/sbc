@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       message: "OTP sent successfully",
-      expiresIn: parseInt(process.env.OTP_EXPIRY_MINUTES || "5", 10) * 60,
+      expiresIn: 120,
     });
 
   } catch (error) {

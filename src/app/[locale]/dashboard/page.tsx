@@ -122,7 +122,7 @@ export default async function DashboardPage({
       <div className="mt-8 flex flex-col gap-4">
         {await Promise.all((Object.keys(programMeta) as Array<keyof typeof programMeta>).map(async (programId) => {
           const meta = programMeta[programId];
-          const isMarketingDisabled = programId === 'marketing';
+          const isMarketingDisabled = false;
           const sub = subscriptions.find((s) => s.program === programId) ?? null;
           const active = await hasActiveSubscription(user.id, programId);
           const daysLeft = sub ? remainingDays(sub.expiresAt) : 0;
@@ -153,7 +153,7 @@ export default async function DashboardPage({
               className={
                 "relative overflow-hidden rounded-2xl border-2 bg-(--surface) p-6 backdrop-blur-sm shadow-sm transition-all duration-200 " +
                 meta.borderClassName +
-                (isMarketingDisabled ? " opacity-50 pointer-events-none" : " hover:shadow-md")
+                " hover:shadow-md"
               }
             >
               <div className="relative flex items-start justify-between gap-4">
@@ -185,7 +185,7 @@ export default async function DashboardPage({
                     {active ? (
                       <HiCheckBadge className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
                     ) : null}
-                    {isMarketingDisabled ? (ar ? "قريباً" : "Coming Soon") : statusLabel}
+                    {statusLabel}
                   </span>
                 </div>
               </div>
