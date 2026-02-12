@@ -19,6 +19,7 @@ interface UserSelectProps {
   onChange: (value: string) => void;
   placeholder: string;
   searchPlaceholder?: string;
+  modalTitle?: string;
   locale: "en" | "ar";
   required?: boolean;
   allowEmpty?: boolean;
@@ -30,6 +31,7 @@ export function UserSelect({
   value,
   onChange,
   placeholder,
+  modalTitle,
   locale,
   required,
   allowEmpty,
@@ -131,7 +133,7 @@ export function UserSelect({
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-[var(--surface-border)]">
               <span className="font-semibold">
-                {isRTL ? "اختر المالك" : "Select Owner"}
+                {modalTitle || (isRTL ? "اختر المالك" : "Select Owner")}
               </span>
               <button
                 type="button"

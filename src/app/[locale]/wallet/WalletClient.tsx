@@ -107,6 +107,7 @@ export function WalletClient({
 
   const isRTL = locale === "ar";
   const isAdmin = user.role === "admin";
+  const isAgent = user.role === "agent";
 
   // Show toast notification
   const showToast = useCallback((message: string, type: "success" | "error" | "info" = "info") => {
@@ -509,15 +510,27 @@ export function WalletClient({
           {walletDict.deposit}
         </button>
         <button
-          onClick={() => setModalType("withdraw")}
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 text-red-600 hover:bg-red-500/20 transition-colors font-medium"
+          onClick={isAgent ? undefined : () => setModalType("withdraw")}
+          disabled={isAgent}
+          title={isAgent ? (isRTL ? "رصید شما فقط برای شارژ مشتریان قابل استفاده است" : "Your balance can only be used for client operations") : undefined}
+          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-colors ${
+            isAgent
+              ? "bg-gray-500/10 text-gray-400 cursor-not-allowed opacity-60"
+              : "bg-red-500/10 text-red-600 hover:bg-red-500/20"
+          }`}
         >
           <HiOutlineArrowUp className="h-5 w-5" />
           {walletDict.withdraw}
         </button>
         <button
-          onClick={() => setModalType("transfer")}
-          className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-accent/10 text-accent hover:bg-accent/20 transition-colors font-medium"
+          onClick={isAgent ? undefined : () => setModalType("transfer")}
+          disabled={isAgent}
+          title={isAgent ? (isRTL ? "رصید شما فقط برای شارژ مشتریان قابل استفاده است" : "Your balance can only be used for client operations") : undefined}
+          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-colors ${
+            isAgent
+              ? "bg-gray-500/10 text-gray-400 cursor-not-allowed opacity-60"
+              : "bg-accent/10 text-accent hover:bg-accent/20"
+          }`}
         >
           <HiOutlineSwitchHorizontal className="h-5 w-5" />
           {walletDict.transfer}

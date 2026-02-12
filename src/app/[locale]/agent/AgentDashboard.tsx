@@ -3,6 +3,7 @@
 import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import {
   HiOutlineSearch,
   HiOutlineCash,
@@ -64,7 +65,7 @@ export default function AgentDashboard({
       USER_EXISTS:                   ["This user already exists",               "هذا المستخدم موجود بالفعل"],
       CLIENT_ID_REQUIRED:           ["Client ID is required",                  "معرّف العميل مطلوب"],
       USER_NOT_FOUND:               ["User not found",                         "المستخدم غير موجود"],
-      QUERY_TOO_SHORT:              ["Search query is too short",              "نص البحث قصير جداً"],
+      QUERY_TOO_SHORT:              ["Search query is too short. Enter at least 3 characters.", "نص البحث قصير جدًا. أدخل 3 أحرف على الأقل."],
       INVALID_PARAMS:               ["Invalid parameters",                     "بيانات غير صحيحة"],
       NOT_YOUR_CLIENT:              ["This user is not your client",           "هذا المستخدم ليس من عملائك"],
       INSUFFICIENT_BALANCE:         ["Insufficient balance",                   "رصيدك غير كافٍ"],
@@ -122,6 +123,7 @@ export default function AgentDashboard({
     balance: ar ? "الرصيد" : "Balance",
     transfer: ar ? "تحويل" : "Transfer",
     purchase: ar ? "شراء اشتراك" : "Purchase",
+    registerBusiness: ar ? "تسجيل عمل" : "Register Business",
     close: ar ? "إغلاق" : "Close",
     // Transfer
     transferTitle: ar ? "تحويل رصيد" : "Transfer Funds",
@@ -137,7 +139,11 @@ export default function AgentDashboard({
     purchaseBtn: ar ? "شراء" : "Purchase",
     // Status
     saving_: ar ? "جاري..." : "Processing...",
+    invalidAmount: ar ? "الرجاء إدخال مبلغ صالح" : "Please enter a valid amount",
   };
+
+  const transferValue = parseFloat(transferAmount);
+  const isTransferAmountValid = !isNaN(transferValue) && transferValue > 0 && transferValue <= walletBalance;
 
   function resetModal() {
     setModal(null);
@@ -313,6 +319,8 @@ export default function AgentDashboard({
                       type="button"
                       onClick={() => {
                         setSelectedClientId(c.clientUserId);
+                        setError("");
+                        setSuccess("");
                         setModal("transfer");
                       }}
                       title={t.transfer}
@@ -325,6 +333,8 @@ export default function AgentDashboard({
                       type="button"
                       onClick={() => {
                         setSelectedClientId(c.clientUserId);
+                        setError("");
+                        setSuccess("");
                         setModal("purchase");
                       }}
                       title={t.purchase}
@@ -332,6 +342,14 @@ export default function AgentDashboard({
                     >
                       <HiOutlineShoppingCart className="h-3.5 w-3.5" />
                     </button>
+
+                    <Link
+                      href={`/${locale}/agent/businesses/new?clientId=${encodeURIComponent(c.clientUserId)}&clientName=${encodeURIComponent(c.clientName)}`}
+                      title={t.registerBusiness}
+                      className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 p-2 text-indigo-600 transition-colors hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-400 dark:hover:bg-indigo-950/50"
+                    >
+                      <HiOutlineCheckBadge className="h-3.5 w-3.5" />
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -387,15 +405,18 @@ export default function AgentDashboard({
 
                 <button
                   type="button"
-                  disabled={saving || isPending}
+                  disabled={saving || isPending || !isTransferAmountValid}
                   onClick={handleTransfer}
-                  className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-blue-700 disabled:opacity-50"
+                  className="w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-all hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <span className="inline-flex items-center gap-2">
                     <HiOutlineCash className="h-4 w-4" />
                     {saving || isPending ? t.saving_ : t.transferBtn}
                   </span>
                 </button>
+                {transferAmount && !isTransferAmountValid && (
+                  <p className="text-xs font-medium text-red-500">{t.invalidAmount}</p>
+                )}
               </div>
             )}
 
@@ -422,15 +443,19 @@ export default function AgentDashboard({
                   <div className="max-h-60 space-y-2 overflow-y-auto">
                     {products.map((p) => {
                       const selected = selectedProductSlug === p.slug;
+                      const affordable = selectedClient.walletBalance >= p.price;
                       return (
                         <button
                           key={p.slug}
                           type="button"
+                          disabled={!affordable}
                           onClick={() => setSelectedProductSlug(p.slug)}
                           className={`flex w-full items-center gap-3 rounded-xl border p-3 text-start transition-all ${
                             selected
                               ? "border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-200 dark:border-emerald-600 dark:bg-emerald-950/20 dark:ring-emerald-800"
-                              : "border-gray-200/80 hover:bg-gray-50 dark:border-white/[0.08] dark:hover:bg-white/[0.03]"
+                              : affordable
+                                ? "border-gray-200/80 hover:bg-gray-50 dark:border-white/[0.08] dark:hover:bg-white/[0.03]"
+                                : "border-gray-200/60 opacity-55 cursor-not-allowed dark:border-white/[0.06]"
                           }`}
                         >
                           <div className="min-w-0 flex-1">
@@ -440,6 +465,11 @@ export default function AgentDashboard({
                             <p className="text-xs text-(--muted-foreground)">
                               {p.program} · {p.durationDays} {ar ? "يوم" : "days"}
                             </p>
+                            {!affordable && (
+                              <p className="mt-1 text-[11px] font-medium text-red-500">
+                                {ar ? "رصيد العميل غير كافٍ" : "Insufficient client balance"}
+                              </p>
+                            )}
                           </div>
                           <span className="shrink-0 text-sm font-bold tabular-nums">
                             {p.price.toFixed(3)} OMR

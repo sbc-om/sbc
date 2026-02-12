@@ -39,6 +39,14 @@ export async function POST(request: NextRequest) {
 
     const { amount } = validation.data;
 
+    // Agents are not allowed to withdraw — their balance is only for client operations
+    if (user.role === "agent") {
+      return NextResponse.json(
+        { ok: false, error: "AGENT_WITHDRAW_BLOCKED" },
+        { status: 403 }
+      );
+    }
+
     // Check wallet exists
     const wallet = await getUserWallet(user.id);
     if (!wallet) {

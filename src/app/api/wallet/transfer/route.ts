@@ -42,6 +42,14 @@ export async function POST(request: NextRequest) {
 
     const { toAccountNumber, amount, description } = validation.data;
 
+    // Agents are not allowed to transfer — their balance is only for client operations via the agent panel
+    if (user.role === "agent") {
+      return NextResponse.json(
+        { ok: false, error: "AGENT_TRANSFER_BLOCKED" },
+        { status: 403 }
+      );
+    }
+
     // Check sender wallet exists
     const senderWallet = await getUserWallet(user.id);
     if (!senderWallet) {
