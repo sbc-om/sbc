@@ -12,7 +12,7 @@ import { listLoyaltyProfiles } from "@/lib/db/loyalty";
 import { getAllWithdrawalRequests } from "@/lib/db/wallet";
 import { getOrderSummary } from "@/lib/db/orders";
 import { listAllProgramSubscriptions } from "@/lib/db/subscriptions";
-import { listAgents } from "@/lib/db/agents";
+import { countAgentWithdrawalRequests, listAgents } from "@/lib/db/agents";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
@@ -102,6 +102,7 @@ export default async function AdminPage({
   const orderSummary = await getOrderSummary();
   const allSubscriptions = await listAllProgramSubscriptions();
   const allAgentsList = await listAgents();
+  const pendingAgentWithdrawals = await countAgentWithdrawalRequests("pending");
   const activeSubscriptions = allSubscriptions.filter(
     (s) => s.isActive && new Date(s.endDate) > new Date()
   );
@@ -176,6 +177,18 @@ export default async function AdminPage({
       label: ar ? "طلبات السحب" : "Withdrawals",
       color: "rose",
       badge: pendingWithdrawals.length > 0 ? pendingWithdrawals.length : undefined,
+      badgeType: "warning" as const,
+    },
+    {
+      href: `/${locale}/admin/agent-withdrawals`,
+      icon: (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm-2-7h8m-8 3h5" />
+        </svg>
+      ),
+      label: ar ? "سحب أرباح الوكلاء" : "Agent Withdrawals",
+      color: "teal",
+      badge: pendingAgentWithdrawals > 0 ? pendingAgentWithdrawals : undefined,
       badgeType: "warning" as const,
     },
     {

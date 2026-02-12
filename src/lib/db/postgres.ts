@@ -759,6 +759,7 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
       commission_rate DECIMAL(5, 2) NOT NULL DEFAULT 0,
       total_earned DECIMAL(15, 3) NOT NULL DEFAULT 0,
+      total_withdrawn DECIMAL(15, 3) NOT NULL DEFAULT 0,
       total_clients INTEGER NOT NULL DEFAULT 0,
       is_active BOOLEAN NOT NULL DEFAULT true,
       notes TEXT,
@@ -793,6 +794,42 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_agent_clients_agent ON agent_clients(agent_user_id);
     CREATE INDEX IF NOT EXISTS idx_agent_clients_client ON agent_clients(client_user_id);
+
+    -- Agent withdrawal requests (separate from user wallet withdrawals)
+    CREATE TABLE IF NOT EXISTS agent_withdrawal_requests (
+      id TEXT PRIMARY KEY,
+      agent_user_id TEXT NOT NULL REFERENCES agents(user_id) ON DELETE CASCADE,
+      requested_amount DECIMAL(15, 3) NOT NULL,
+      approved_amount DECIMAL(15, 3),
+      status TEXT NOT NULL DEFAULT 'pending',
+      agent_note TEXT,
+      admin_note TEXT,
+      payout_method TEXT,
+      payout_reference TEXT,
+      payout_receipt_url TEXT,
+      payout_bank_name TEXT,
+      payout_account_name TEXT,
+      payout_account_number TEXT,
+      payout_iban TEXT,
+      processed_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      processed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_agent_withdrawals_agent ON agent_withdrawal_requests(agent_user_id);
+    CREATE INDEX IF NOT EXISTS idx_agent_withdrawals_status ON agent_withdrawal_requests(status);
+    CREATE INDEX IF NOT EXISTS idx_agent_withdrawals_created ON agent_withdrawal_requests(created_at DESC);
+
+    -- Migration: ensure total_withdrawn exists in agents
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'agents' AND column_name = 'total_withdrawn'
+      ) THEN
+        ALTER TABLE agents ADD COLUMN total_withdrawn DECIMAL(15, 3) NOT NULL DEFAULT 0;
+      END IF;
+    END $$;
 
     -- Migrations: Add agent_user_id and missing columns to business_requests
     DO $$ 

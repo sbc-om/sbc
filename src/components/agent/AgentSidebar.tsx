@@ -15,7 +15,7 @@ import {
   HiUserAdd,
   HiOutlineUserAdd,
 } from "react-icons/hi";
-import { HiOutlineArrowUturnLeft } from "react-icons/hi2";
+import { HiOutlineArrowUturnLeft, HiOutlineWallet } from "react-icons/hi2";
 import { cn } from "@/lib/cn";
 import type { Locale } from "@/lib/i18n/locales";
 
@@ -35,6 +35,7 @@ const texts = {
     addClient: "Add Client",
     businesses: "My Businesses",
     newBusiness: "Register Business",
+    wallet: "Agent Wallet",
     backToApp: "Back to App",
   },
   ar: {
@@ -44,6 +45,7 @@ const texts = {
     addClient: "إضافة عميل",
     businesses: "أعمالي",
     newBusiness: "تسجيل عمل",
+    wallet: "محفظة الوكيل",
     backToApp: "العودة للتطبيق",
   },
 };
@@ -207,6 +209,13 @@ export function AgentSidebar({ locale, mobile }: { locale: Locale; mobile?: bool
       path: `/${locale}/agent/businesses/new`,
       Icon: HiPlus,
       IconOutline: HiOutlinePlus,
+    },
+    {
+      key: "wallet",
+      label: t.wallet,
+      path: `/${locale}/agent/wallet`,
+      Icon: HiOutlineWallet,
+      IconOutline: HiOutlineWallet,
     },
   ];
 

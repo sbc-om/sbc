@@ -32,7 +32,10 @@ type Props = {
   clients: ClientItem[];
   stats: {
     totalClients: number;
+    totalSales?: number;
     totalEarned: number;
+    totalWithdrawn?: number;
+    availableWallet?: number;
     pendingAmount: number;
     totalTransactions: number;
   };
@@ -114,7 +117,9 @@ export default function AgentDashboard({
     myBalance: ar ? "رصيدي" : "My Balance",
     commission: ar ? "نسبة العمولة" : "Commission",
     totalClients: ar ? "العملاء" : "Clients",
+    totalSales: ar ? "إجمالي المبيعات" : "Total Sales",
     totalEarned: ar ? "الأرباح" : "Earnings",
+    availableWallet: ar ? "محفظة الوكيل" : "Agent Wallet",
     pending: ar ? "معلق" : "Pending",
     myClients: ar ? "عملائي" : "My Clients",
     noClients: ar ? "لا يوجد عملاء بعد" : "No clients yet",
@@ -226,12 +231,14 @@ export default function AgentDashboard({
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
         {[
           { label: t.myBalance, value: `${walletBalance.toFixed(3)} OMR`, icon: <HiOutlineWallet className="h-5 w-5" />, color: "bg-blue-100 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400" },
           { label: t.commission, value: `${agent.commissionRate}%`, icon: <HiOutlineReceiptPercent className="h-5 w-5" />, color: "bg-indigo-100 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400" },
           { label: t.totalClients, value: stats.totalClients, icon: <HiOutlineUserGroup className="h-5 w-5" />, color: "bg-purple-100 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400" },
+          { label: t.totalSales, value: `${(stats.totalSales ?? 0).toFixed(3)}`, icon: <HiOutlineBanknotes className="h-5 w-5" />, color: "bg-cyan-100 text-cyan-600 dark:bg-cyan-950/50 dark:text-cyan-400" },
           { label: t.totalEarned, value: `${stats.totalEarned.toFixed(3)}`, icon: <HiOutlineBanknotes className="h-5 w-5" />, color: "bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400" },
+          { label: t.availableWallet, value: `${(stats.availableWallet ?? 0).toFixed(3)}`, icon: <HiOutlineWallet className="h-5 w-5" />, color: "bg-violet-100 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400" },
           { label: t.pending, value: `${stats.pendingAmount.toFixed(3)}`, icon: <HiOutlineClock className="h-5 w-5" />, color: "bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400" },
         ].map((card, i) => (
           <div

@@ -1,14 +1,74 @@
 import { nanoid } from "nanoid";
 import { query } from "./postgres";
 
+let agentWalletSchemaReady = false;
+
+async function ensureAgentWalletSchema() {
+  if (agentWalletSchemaReady) return;
+
+  await query(`
+    ALTER TABLE agents
+    ADD COLUMN IF NOT EXISTS total_withdrawn DECIMAL(15, 3) NOT NULL DEFAULT 0;
+
+    CREATE TABLE IF NOT EXISTS agent_withdrawal_requests (
+      id TEXT PRIMARY KEY,
+      agent_user_id TEXT NOT NULL REFERENCES agents(user_id) ON DELETE CASCADE,
+      requested_amount DECIMAL(15, 3) NOT NULL,
+      approved_amount DECIMAL(15, 3),
+      status TEXT NOT NULL DEFAULT 'pending',
+      agent_note TEXT,
+      admin_note TEXT,
+      payout_method TEXT,
+      payout_reference TEXT,
+      payout_receipt_url TEXT,
+      payout_bank_name TEXT,
+      payout_account_name TEXT,
+      payout_account_number TEXT,
+      payout_iban TEXT,
+      processed_by TEXT REFERENCES users(id) ON DELETE SET NULL,
+      processed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_agent_withdrawals_agent ON agent_withdrawal_requests(agent_user_id);
+    CREATE INDEX IF NOT EXISTS idx_agent_withdrawals_status ON agent_withdrawal_requests(status);
+    CREATE INDEX IF NOT EXISTS idx_agent_withdrawals_created ON agent_withdrawal_requests(created_at DESC);
+  `);
+
+  agentWalletSchemaReady = true;
+}
+
 /* ─── Types ─── */
 export type Agent = {
   userId: string;
   commissionRate: number;
   totalEarned: number;
+  totalWithdrawn: number;
   totalClients: number;
   isActive: boolean;
   notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AgentWithdrawalRequest = {
+  id: string;
+  agentUserId: string;
+  requestedAmount: number;
+  approvedAmount: number | null;
+  status: "pending" | "approved" | "rejected";
+  agentNote: string | null;
+  adminNote: string | null;
+  payoutMethod: string | null;
+  payoutReference: string | null;
+  payoutReceiptUrl: string | null;
+  payoutBankName: string | null;
+  payoutAccountName: string | null;
+  payoutAccountNumber: string | null;
+  payoutIban: string | null;
+  processedBy: string | null;
+  processedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -53,9 +113,33 @@ function rowToAgent(row: any): Agent {
     userId: row.user_id,
     commissionRate: parseFloat(row.commission_rate) || 0,
     totalEarned: parseFloat(row.total_earned) || 0,
+    totalWithdrawn: parseFloat(row.total_withdrawn) || 0,
     totalClients: parseInt(row.total_clients, 10) || 0,
     isActive: row.is_active ?? true,
     notes: row.notes || null,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+  };
+}
+
+function rowToAgentWithdrawalRequest(row: any): AgentWithdrawalRequest {
+  return {
+    id: row.id,
+    agentUserId: row.agent_user_id,
+    requestedAmount: parseFloat(row.requested_amount) || 0,
+    approvedAmount: row.approved_amount != null ? parseFloat(row.approved_amount) : null,
+    status: row.status || "pending",
+    agentNote: row.agent_note || null,
+    adminNote: row.admin_note || null,
+    payoutMethod: row.payout_method || null,
+    payoutReference: row.payout_reference || null,
+    payoutReceiptUrl: row.payout_receipt_url || null,
+    payoutBankName: row.payout_bank_name || null,
+    payoutAccountName: row.payout_account_name || null,
+    payoutAccountNumber: row.payout_account_number || null,
+    payoutIban: row.payout_iban || null,
+    processedBy: row.processed_by || null,
+    processedAt: row.processed_at?.toISOString() || null,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
@@ -326,19 +410,260 @@ export async function markCommissionPaid(id: string): Promise<AgentCommission> {
 
 /** Get agent stats summary */
 export async function getAgentStats(agentUserId: string) {
+  await ensureAgentWalletSchema();
+
   const result = await query(
     `SELECT
        (SELECT COUNT(*) FROM agent_clients WHERE agent_user_id = $1) as total_clients,
+       (SELECT COALESCE(SUM(amount), 0) FROM agent_commissions WHERE agent_user_id = $1) as total_sales,
        (SELECT COALESCE(SUM(commission_amount), 0) FROM agent_commissions WHERE agent_user_id = $1) as total_earned,
        (SELECT COALESCE(SUM(commission_amount), 0) FROM agent_commissions WHERE agent_user_id = $1 AND status = 'pending') as pending_amount,
+       (SELECT COALESCE(total_withdrawn, 0) FROM agents WHERE user_id = $1) as total_withdrawn,
+       (SELECT COALESCE(SUM(requested_amount), 0) FROM agent_withdrawal_requests WHERE agent_user_id = $1 AND status = 'pending') as pending_withdraw_requests,
        (SELECT COUNT(*) FROM agent_commissions WHERE agent_user_id = $1) as total_transactions`,
     [agentUserId]
   );
   const row = result.rows[0];
+  const totalEarned = parseFloat(row.total_earned) || 0;
+  const totalWithdrawn = parseFloat(row.total_withdrawn) || 0;
+  const pendingWithdrawRequests = parseFloat(row.pending_withdraw_requests) || 0;
   return {
     totalClients: parseInt(row.total_clients, 10) || 0,
-    totalEarned: parseFloat(row.total_earned) || 0,
+    totalSales: parseFloat(row.total_sales) || 0,
+    totalEarned,
+    totalWithdrawn,
+    pendingWithdrawRequests,
+    availableWallet: Math.max(0, totalEarned - totalWithdrawn - pendingWithdrawRequests),
     pendingAmount: parseFloat(row.pending_amount) || 0,
     totalTransactions: parseInt(row.total_transactions, 10) || 0,
   };
+}
+
+export async function getAgentWalletSummary(agentUserId: string) {
+  await ensureAgentWalletSchema();
+
+  const stats = await getAgentStats(agentUserId);
+  const recentRequests = await listAgentWithdrawalRequests(agentUserId, 10, 0);
+  return {
+    ...stats,
+    recentRequests,
+  };
+}
+
+export async function createAgentWithdrawalRequest(input: {
+  agentUserId: string;
+  amount: number;
+  agentNote?: string;
+  payoutMethod?: string;
+  payoutBankName?: string;
+  payoutAccountName?: string;
+  payoutAccountNumber?: string;
+  payoutIban?: string;
+}) {
+  await ensureAgentWalletSchema();
+
+  const amount = Math.round(input.amount * 1000) / 1000;
+  if (!Number.isFinite(amount) || amount <= 0) {
+    throw new Error("INVALID_AMOUNT");
+  }
+
+  const stats = await getAgentStats(input.agentUserId);
+  if (amount > stats.availableWallet) {
+    throw new Error("INSUFFICIENT_AGENT_WALLET");
+  }
+
+  const id = nanoid();
+  const result = await query(
+    `INSERT INTO agent_withdrawal_requests (
+      id, agent_user_id, requested_amount, status, agent_note,
+      payout_method, payout_bank_name, payout_account_name, payout_account_number, payout_iban,
+      created_at, updated_at
+    ) VALUES ($1,$2,$3,'pending',$4,$5,$6,$7,$8,$9,NOW(),NOW())
+    RETURNING *`,
+    [
+      id,
+      input.agentUserId,
+      amount,
+      input.agentNote || null,
+      input.payoutMethod || "bank_transfer",
+      input.payoutBankName || null,
+      input.payoutAccountName || null,
+      input.payoutAccountNumber || null,
+      input.payoutIban || null,
+    ]
+  );
+
+  return rowToAgentWithdrawalRequest(result.rows[0]);
+}
+
+export async function listAgentWithdrawalRequests(agentUserId: string, limit = 50, offset = 0) {
+  await ensureAgentWalletSchema();
+
+  const result = await query(
+    `SELECT * FROM agent_withdrawal_requests
+     WHERE agent_user_id = $1
+     ORDER BY created_at DESC
+     LIMIT $2 OFFSET $3`,
+    [agentUserId, limit, offset]
+  );
+  return result.rows.map(rowToAgentWithdrawalRequest);
+}
+
+export async function countAgentWithdrawalRequests(status?: "pending" | "approved" | "rejected", search?: string) {
+  await ensureAgentWalletSchema();
+
+  const clauses: string[] = [];
+  const params: any[] = [];
+  let idx = 1;
+
+  if (status) {
+    clauses.push(`awr.status = $${idx++}`);
+    params.push(status);
+  }
+  if (search?.trim()) {
+    clauses.push(`(u.email ILIKE $${idx} OR u.full_name ILIKE $${idx} OR u.phone ILIKE $${idx})`);
+    params.push(`%${search.trim()}%`);
+    idx++;
+  }
+
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const result = await query(
+    `SELECT COUNT(*) as c
+     FROM agent_withdrawal_requests awr
+     LEFT JOIN users u ON awr.agent_user_id = u.id
+     ${where}`,
+    params
+  );
+  return parseInt(result.rows[0]?.c || "0", 10);
+}
+
+export async function listAllAgentWithdrawalRequests(
+  status?: "pending" | "approved" | "rejected",
+  limit = 20,
+  offset = 0,
+  search?: string
+) {
+  await ensureAgentWalletSchema();
+
+  const clauses: string[] = [];
+  const params: any[] = [];
+  let idx = 1;
+
+  if (status) {
+    clauses.push(`awr.status = $${idx++}`);
+    params.push(status);
+  }
+  if (search?.trim()) {
+    clauses.push(`(u.email ILIKE $${idx} OR u.full_name ILIKE $${idx} OR u.phone ILIKE $${idx})`);
+    params.push(`%${search.trim()}%`);
+    idx++;
+  }
+
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(limit, offset);
+
+  const result = await query(
+    `SELECT awr.*, COALESCE(u.display_name, u.full_name, u.email) as agent_name, u.email as agent_email, u.phone as agent_phone
+     FROM agent_withdrawal_requests awr
+     LEFT JOIN users u ON awr.agent_user_id = u.id
+     ${where}
+     ORDER BY awr.created_at DESC
+     LIMIT $${idx++} OFFSET $${idx++}`,
+    params
+  );
+
+  return result.rows.map((row: any) => ({
+    ...rowToAgentWithdrawalRequest(row),
+    agentName: row.agent_name || "",
+    agentEmail: row.agent_email || "",
+    agentPhone: row.agent_phone || "",
+  }));
+}
+
+export async function processAgentWithdrawalRequest(input: {
+  requestId: string;
+  action: "approve" | "reject";
+  processedBy: string;
+  approvedAmount?: number;
+  adminNote?: string;
+  payoutMethod?: string;
+  payoutReference?: string;
+  payoutReceiptUrl?: string;
+  payoutBankName?: string;
+  payoutAccountName?: string;
+  payoutAccountNumber?: string;
+  payoutIban?: string;
+}) {
+  await ensureAgentWalletSchema();
+
+  const requestRes = await query(
+    `SELECT * FROM agent_withdrawal_requests WHERE id = $1`,
+    [input.requestId]
+  );
+  const reqRow = requestRes.rows[0];
+  if (!reqRow) throw new Error("REQUEST_NOT_FOUND");
+  if (reqRow.status !== "pending") throw new Error("REQUEST_ALREADY_PROCESSED");
+
+  if (input.action === "reject") {
+    const result = await query(
+      `UPDATE agent_withdrawal_requests
+       SET status = 'rejected', admin_note = $2, processed_by = $3, processed_at = NOW(), updated_at = NOW()
+       WHERE id = $1
+       RETURNING *`,
+      [input.requestId, input.adminNote || null, input.processedBy]
+    );
+    return rowToAgentWithdrawalRequest(result.rows[0]);
+  }
+
+  const approvedAmount = Math.round(((input.approvedAmount ?? parseFloat(reqRow.requested_amount)) as number) * 1000) / 1000;
+  if (!Number.isFinite(approvedAmount) || approvedAmount <= 0) {
+    throw new Error("INVALID_APPROVED_AMOUNT");
+  }
+
+  const stats = await getAgentStats(reqRow.agent_user_id);
+  if (approvedAmount > stats.availableWallet + parseFloat(reqRow.requested_amount)) {
+    throw new Error("INSUFFICIENT_AGENT_WALLET");
+  }
+
+  await query(
+    `UPDATE agents
+     SET total_withdrawn = total_withdrawn + $1,
+         updated_at = NOW()
+     WHERE user_id = $2`,
+    [approvedAmount, reqRow.agent_user_id]
+  );
+
+  const result = await query(
+    `UPDATE agent_withdrawal_requests
+     SET status = 'approved',
+         approved_amount = $2,
+         admin_note = $3,
+         payout_method = COALESCE($4, payout_method),
+         payout_reference = $5,
+         payout_receipt_url = $6,
+         payout_bank_name = COALESCE($7, payout_bank_name),
+         payout_account_name = COALESCE($8, payout_account_name),
+         payout_account_number = COALESCE($9, payout_account_number),
+         payout_iban = COALESCE($10, payout_iban),
+         processed_by = $11,
+         processed_at = NOW(),
+         updated_at = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [
+      input.requestId,
+      approvedAmount,
+      input.adminNote || null,
+      input.payoutMethod || "bank_transfer",
+      input.payoutReference || null,
+      input.payoutReceiptUrl || null,
+      input.payoutBankName || null,
+      input.payoutAccountName || null,
+      input.payoutAccountNumber || null,
+      input.payoutIban || null,
+      input.processedBy,
+    ]
+  );
+
+  return rowToAgentWithdrawalRequest(result.rows[0]);
 }

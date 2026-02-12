@@ -30,6 +30,7 @@ export default async function AgentPage({
     userId: user.id,
     commissionRate: 0,
     totalEarned: 0,
+    totalWithdrawn: 0,
     totalClients: 0,
     isActive: true,
     notes: null,
