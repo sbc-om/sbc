@@ -4,6 +4,7 @@ import {
   HiArrowUpRight,
   HiCheckBadge,
   HiOutlineBuildingOffice2,
+  HiOutlineEnvelope,
   HiOutlineGlobeAlt,
   HiOutlineMegaphone,
   HiOutlineSparkles,
@@ -98,6 +99,17 @@ export default async function DashboardPage({
       iconBgClassName: "bg-cyan-500/12 ring-1 ring-cyan-500/18",
       borderClassName: "border-cyan-500/25 dark:border-cyan-400/25",
       glowColor: "rgba(6,182,212,0.12)",
+    },
+    email: {
+      title: ar ? "البريد المؤسسي" : "Business Email",
+      href: `/${locale}/email/manage`,
+      storeHref: `/${locale}/store?q=email`,
+      subtitle: ar ? "بريد إلكتروني بدامنتك الخاصة" : "Email with your own domain",
+      Icon: HiOutlineEnvelope,
+      iconClassName: "text-orange-600 dark:text-orange-300",
+      iconBgClassName: "bg-orange-500/12 ring-1 ring-orange-500/18",
+      borderClassName: "border-orange-500/25 dark:border-orange-400/25",
+      glowColor: "rgba(249,115,22,0.12)",
     },
   } as const;
 

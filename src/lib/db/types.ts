@@ -359,7 +359,7 @@ export type AppleWalletRegistration = {
   updatedAt: string;
 };
 
-export type ProgramId = "directory" | "loyalty" | "marketing" | "website";
+export type ProgramId = "directory" | "loyalty" | "marketing" | "website" | "email";
 
 export type ProgramSubscription = {
   /** The owner user id. */

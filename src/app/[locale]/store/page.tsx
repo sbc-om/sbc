@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   HiOutlineBuildingOffice2,
+  HiOutlineEnvelope,
   HiOutlineGlobeAlt,
   HiOutlineMegaphone,
   HiOutlineSparkles,
@@ -55,6 +56,7 @@ export default async function StorePage({
     loyalty: products.filter((p) => p.program === "loyalty"),
     marketing: products.filter((p) => p.program === "marketing"),
     website: products.filter((p) => p.program === "website"),
+    email: products.filter((p) => p.program === "email"),
   };
 
   const ar = locale === "ar";
@@ -169,6 +171,15 @@ export default async function StorePage({
                 iconClassName: "text-cyan-600 dark:text-cyan-300",
                 iconBgClassName: "bg-cyan-500/12",
                 borderClassName: "border-cyan-500/25 dark:border-cyan-400/25",
+              },
+              {
+                key: "email" as const,
+                title: ar ? "البريد المؤسسي" : "Business Email",
+                subtitle: ar ? "بريد إلكتروني باسم نطاقك الخاص." : "Professional email with your own domain.",
+                Icon: HiOutlineEnvelope,
+                iconClassName: "text-orange-600 dark:text-orange-300",
+                iconBgClassName: "bg-orange-500/12",
+                borderClassName: "border-orange-500/25 dark:border-orange-400/25",
               },
             ] as const
           ).map((section) => {
