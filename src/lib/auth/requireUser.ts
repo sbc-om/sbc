@@ -14,3 +14,9 @@ export async function requireAdmin(locale: Locale) {
   if (user.role !== "admin") redirect(`/${locale}/dashboard`);
   return user;
 }
+
+export async function requireAgent(locale: Locale) {
+  const user = await requireUser(locale);
+  if (user.role !== "agent" && user.role !== "admin") redirect(`/${locale}/dashboard`);
+  return user;
+}

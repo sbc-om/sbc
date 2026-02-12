@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { approveUserAccount, archiveUser, restoreUser, setUserActive, setUserVerified, updateUserAdmin, updateUserRole } from "@/lib/db/users";
+import { getAgentByUserId } from "@/lib/db/agents";
 import type { Role } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
 import { getCurrentUser } from "@/lib/auth/currentUser";
@@ -18,8 +19,16 @@ export async function updateUserRoleAction(
   }
 
   const newRole = formData.get("role") as Role;
-  if (!newRole || (newRole !== "user" && newRole !== "admin")) {
+  if (!newRole || (newRole !== "user" && newRole !== "admin" && newRole !== "agent")) {
     throw new Error("INVALID_ROLE");
+  }
+
+  // Cannot assign agent role if user has no agent record
+  if (newRole === "agent") {
+    const agent = await getAgentByUserId(userId);
+    if (!agent) {
+      throw new Error("NOT_AN_AGENT");
+    }
   }
 
   updateUserRole(userId, newRole);
@@ -93,7 +102,7 @@ export async function updateUserAdminAction(
   const isPhoneVerified = isPhoneVerifiedRaw ? isPhoneVerifiedRaw === "true" : null;
   const isActive = isActiveRaw ? isActiveRaw === "true" : null;
 
-  if (role && role !== "admin" && role !== "user") {
+  if (role && role !== "admin" && role !== "agent" && role !== "user") {
     throw new Error("INVALID_ROLE");
   }
 

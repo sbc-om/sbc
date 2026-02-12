@@ -538,6 +538,188 @@ export const openApiSpec: OpenAPIV3.Document = {
         },
       },
     },
+    '/api/auth/otp/status': {
+      get: {
+        tags: ['Authentication'],
+        summary: 'WhatsApp OTP status',
+        description: 'Check whether WhatsApp OTP login and phone verification are enabled',
+        responses: {
+          '200': {
+            description: 'OTP status',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    ok: { type: 'boolean', example: true },
+                    whatsapp: {
+                      type: 'object',
+                      properties: {
+                        available: { type: 'boolean', example: true },
+                        loginEnabled: { type: 'boolean', example: true },
+                        verificationRequired: { type: 'boolean', example: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/auth/otp/send': {
+      post: {
+        tags: ['Authentication'],
+        summary: 'Send OTP via WhatsApp',
+        description: 'Send a 6-digit one-time password to the given phone number via WhatsApp. For login purpose the phone must belong to an existing, active, approved user.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['phone'],
+                properties: {
+                  phone: {
+                    type: 'string',
+                    description: 'Phone number with country code (digits only)',
+                    example: '96891234567',
+                  },
+                  purpose: {
+                    type: 'string',
+                    enum: ['login', 'registration', 'phone_verification'],
+                    default: 'login',
+                    description: 'Purpose of the OTP',
+                  },
+                  locale: {
+                    type: 'string',
+                    enum: ['en', 'ar'],
+                    default: 'en',
+                    description: 'Language for the WhatsApp message',
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'OTP sent successfully',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    ok: { type: 'boolean', example: true },
+                    message: { type: 'string', example: 'OTP sent successfully' },
+                    expiresIn: { type: 'integer', example: 120, description: 'Seconds until the code expires' },
+                  },
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid request or rate limited',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+          '403': {
+            description: 'WhatsApp login disabled or account not approved',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+          '404': {
+            description: 'No account found with this phone number',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+          '429': {
+            description: 'Too many requests — please wait before requesting another code',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+          '503': {
+            description: 'WhatsApp service not available',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+    },
+    '/api/auth/otp/verify': {
+      post: {
+        tags: ['Authentication'],
+        summary: 'Verify OTP and login',
+        description: 'Verify a 6-digit OTP code. When purpose is "login", a JWT session cookie is set and user info is returned.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['phone', 'code'],
+                properties: {
+                  phone: {
+                    type: 'string',
+                    description: 'Phone number used when sending the OTP',
+                    example: '96891234567',
+                  },
+                  code: {
+                    type: 'string',
+                    description: '6-digit verification code',
+                    example: '123456',
+                  },
+                  purpose: {
+                    type: 'string',
+                    enum: ['login', 'registration', 'phone_verification'],
+                    default: 'login',
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'OTP verified (login: session created, other: verified flag)',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    ok: { type: 'boolean', example: true },
+                    message: { type: 'string', example: 'Login successful' },
+                    user: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        email: { type: 'string' },
+                        displayName: { type: 'string' },
+                        role: { type: 'string' },
+                        isVerified: { type: 'boolean' },
+                        isPhoneVerified: { type: 'boolean' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': {
+            description: 'Invalid request data',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+          '401': {
+            description: 'Invalid or expired code',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+          '403': {
+            description: 'WhatsApp login disabled or account deactivated/pending',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+          '404': {
+            description: 'User not found',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+          },
+        },
+      },
+    },
     '/api/users/me/profile': {
       get: {
         tags: ['Users'],

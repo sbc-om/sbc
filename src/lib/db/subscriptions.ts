@@ -204,6 +204,79 @@ export async function getProgramSubscriptionStats(program: string): Promise<{
   };
 }
 
+/**
+ * Update a subscription (admin use)
+ */
+export async function updateProgramSubscription(
+  id: string,
+  updates: {
+    program?: string;
+    plan?: string;
+    isActive?: boolean;
+    endDate?: Date;
+    amount?: number;
+    currency?: string;
+  }
+): Promise<ProgramSubscription> {
+  const setClauses: string[] = ["updated_at = NOW()"];
+  const params: any[] = [];
+  let paramIdx = 1;
+
+  if (updates.program !== undefined) {
+    setClauses.push(`program = $${paramIdx++}`);
+    params.push(updates.program);
+  }
+  if (updates.plan !== undefined) {
+    setClauses.push(`plan = $${paramIdx++}`);
+    params.push(updates.plan);
+  }
+  if (updates.isActive !== undefined) {
+    setClauses.push(`is_active = $${paramIdx++}`);
+    params.push(updates.isActive);
+  }
+  if (updates.endDate !== undefined) {
+    setClauses.push(`end_date = $${paramIdx++}`);
+    params.push(updates.endDate);
+  }
+  if (updates.amount !== undefined) {
+    setClauses.push(`amount = $${paramIdx++}`);
+    params.push(updates.amount);
+  }
+  if (updates.currency !== undefined) {
+    setClauses.push(`currency = $${paramIdx++}`);
+    params.push(updates.currency);
+  }
+
+  params.push(id);
+  const result = await query(
+    `UPDATE program_subscriptions SET ${setClauses.join(", ")} WHERE id = $${paramIdx} RETURNING *`,
+    params
+  );
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToSubscription(result.rows[0]);
+}
+
+/**
+ * List all subscriptions with user info (admin use)
+ */
+export async function listAllSubscriptionsWithUsers(): Promise<
+  (ProgramSubscription & { userEmail: string; userName: string; userAvatar: string | null })[]
+> {
+  const result = await query(`
+    SELECT ps.*, u.email as user_email, COALESCE(u.display_name, u.email) as user_name, u.avatar_url as user_avatar
+    FROM program_subscriptions ps
+    LEFT JOIN users u ON ps.user_id = u.id
+    ORDER BY ps.created_at DESC
+  `);
+  return result.rows.map((row: any) => ({
+    ...rowToSubscription(row),
+    userEmail: row.user_email || "",
+    userName: row.user_name || "",
+    userAvatar: row.user_avatar || null,
+  }));
+}
+
 // Expire old subscriptions (can be run periodically)
 export async function expireOldSubscriptions(): Promise<number> {
   const result = await query(`

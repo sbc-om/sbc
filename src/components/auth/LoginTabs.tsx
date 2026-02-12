@@ -127,14 +127,22 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
       try {
         const { step, phone, countdown, ts } = JSON.parse(saved);
         if (step === "otp" && phone) {
-          setStep("otp");
-          setPhone(phone);
-          // Calculate remaining countdown
           const now = Date.now();
           const remain = Math.max(0, Math.floor((ts + countdown * 1000 - now) / 1000));
+          // If the OTP window has expired (>120s old), discard the saved state
+          const age = (now - ts) / 1000;
+          if (age > 120) {
+            localStorage.removeItem("wa-login-state");
+            return;
+          }
+          setStep("otp");
+          setPhone(phone);
           setCountdown(remain);
+          setActiveTab("whatsapp");
         }
-      } catch {}
+      } catch {
+        localStorage.removeItem("wa-login-state");
+      }
     }
   }, []);
 
@@ -225,12 +233,8 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
         throw new Error(verifyJson.ok ? "VERIFY_FAILED" : verifyJson.error);
       }
 
-      if (next && next.startsWith(`/${locale}/`)) {
-        router.push(next);
-      } else {
-        router.push(`/${locale}/dashboard`);
-      }
-      router.refresh();
+      const dest = next && next.startsWith(`/${locale}/`) ? next : `/${locale}/dashboard`;
+      window.location.href = dest;
     } catch (e: any) {
       // User cancelled or closed the prompt
       if (e?.name === "NotAllowedError" || e?.message?.includes("cancelled")) {
@@ -293,8 +297,7 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
         if (typeof window !== "undefined") {
           localStorage.removeItem("wa-login-state");
         }
-        router.push(next || `/${locale}/dashboard`);
-        router.refresh();
+        window.location.href = next || `/${locale}/dashboard`;
       } else {
         setWhatsappError(data.error || "Invalid code");
       }

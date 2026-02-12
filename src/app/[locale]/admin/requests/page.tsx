@@ -93,12 +93,14 @@ export default async function AdminRequestsPage({
           <div className="grid gap-4">
             {pendingRequests.map((req) => {
               const user = req.userId ? usersById.get(req.userId) : undefined;
+              const agent = req.agentUserId ? usersById.get(req.agentUserId) : undefined;
               const category = req.categoryId ? categoriesById.get(req.categoryId) : null;
               return (
                 <RequestCard
                   key={req.id}
                   request={req}
                   user={user}
+                  agent={agent}
                   category={category}
                   locale={locale as Locale}
                 />
@@ -117,12 +119,14 @@ export default async function AdminRequestsPage({
           <div className="grid gap-4">
             {approvedRequests.map((req) => {
               const user = req.userId ? usersById.get(req.userId) : undefined;
+              const agent = req.agentUserId ? usersById.get(req.agentUserId) : undefined;
               const category = req.categoryId ? categoriesById.get(req.categoryId) : null;
               return (
                 <RequestCard
                   key={req.id}
                   request={req}
                   user={user}
+                  agent={agent}
                   category={category}
                   locale={locale as Locale}
                 />
@@ -141,12 +145,14 @@ export default async function AdminRequestsPage({
           <div className="grid gap-4">
             {rejectedRequests.map((req) => {
               const user = req.userId ? usersById.get(req.userId) : undefined;
+              const agent = req.agentUserId ? usersById.get(req.agentUserId) : undefined;
               const category = req.categoryId ? categoriesById.get(req.categoryId) : null;
               return (
                 <RequestCard
                   key={req.id}
                   request={req}
                   user={user}
+                  agent={agent}
                   category={category}
                   locale={locale as Locale}
                 />

@@ -320,9 +320,29 @@ export async function getUserByPhone(phone: string): Promise<User | null> {
   const p = phoneSchema.safeParse(phone);
   if (!p.success) return null;
 
-  const normalized = normalizePhone(p.data);
+  let normalized = normalizePhone(p.data);
+
+  // Handle "00" international dialing prefix (e.g., "0096891234567" → "96891234567")
+  if (normalized.startsWith("00")) {
+    normalized = normalized.slice(2);
+  }
+
+  // First try exact match
   const result = await query(`SELECT * FROM users WHERE phone = $1`, [normalized]);
-  return result.rows.length > 0 ? rowToUser(result.rows[0]) : null;
+  if (result.rows.length > 0) return rowToUser(result.rows[0]);
+
+  // If the number looks like a local number (no country code), try suffix match.
+  // This handles cases where users enter "91234567" but DB has "96891234567".
+  if (normalized.length >= 7 && normalized.length <= 10) {
+    const suffixResult = await query(
+      `SELECT * FROM users WHERE phone LIKE '%' || $1`,
+      [normalized],
+    );
+    // Only return if exactly one match to avoid ambiguity
+    if (suffixResult.rows.length === 1) return rowToUser(suffixResult.rows[0]);
+  }
+
+  return null;
 }
 
 export async function verifyUserPassword(input: {

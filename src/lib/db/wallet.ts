@@ -88,6 +88,21 @@ export async function getAvailableBalance(userId: string): Promise<{ balance: nu
 }
 
 /**
+ * Get wallet balances for all users (bulk).
+ * Returns a map of userId → balance.
+ */
+export async function getAllWalletBalances(): Promise<Record<string, number>> {
+  const result = await query<{ user_id: string; balance: string }>(
+    `SELECT user_id, balance FROM wallets`
+  );
+  const map: Record<string, number> = {};
+  for (const row of result.rows) {
+    map[row.user_id] = parseFloat(row.balance);
+  }
+  return map;
+}
+
+/**
  * Get wallet by account number (phone)
  */
 export async function getWalletByAccountNumber(accountNumber: string): Promise<Wallet | null> {

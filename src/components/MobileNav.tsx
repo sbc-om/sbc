@@ -26,6 +26,8 @@ import {
   HiOutlineLogout,
   HiCash,
   HiOutlineCash,
+  HiBriefcase,
+  HiOutlineBriefcase,
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
 
@@ -221,6 +223,21 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
                 <span className="min-w-0 truncate">{dict.nav.dashboard}</span>
               </Link>
 
+              {user.role === "agent" && (
+                <Link
+                  role="menuitem"
+                  href={`/${locale}/agent`}
+                  onClick={() => setProfileMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+                >
+                  {(() => {
+                    const AgentIcon = isActive("/agent") ? HiBriefcase : HiOutlineBriefcase;
+                    return <AgentIcon className="h-5 w-5 shrink-0" />;
+                  })()}
+                  <span className="min-w-0 truncate">{locale === "ar" ? "لوحة الوكيل" : "Agent Panel"}</span>
+                </Link>
+              )}
+
               <Link
                 role="menuitem"
                 href={`/${locale}/chat`}
@@ -298,7 +315,7 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
 
               <form
                 action={logoutAction.bind(null, locale)}
-                onSubmit={() => setProfileMenuOpen(false)}
+                onSubmit={() => { localStorage.removeItem("wa-login-state"); setProfileMenuOpen(false); }}
               >
                 <button
                   type="submit"

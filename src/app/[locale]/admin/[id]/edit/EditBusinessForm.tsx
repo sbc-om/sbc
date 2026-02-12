@@ -184,7 +184,7 @@ export function EditBusinessForm({
   business: Business;
   categories: Category[];
   emailLabel: string;
-  users: Array<{ id: string; email: string; fullName?: string; phone?: string; role: "admin" | "user" }>;
+  users: Array<{ id: string; email: string; fullName?: string; phone?: string; role: "admin" | "agent" | "user" }>;
 }) {
   const ar = locale === "ar";
   const router = useRouter();

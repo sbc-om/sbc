@@ -10,10 +10,13 @@ interface RoleSelectProps {
   placeholder: string;
   locale: "en" | "ar";
   disabled?: boolean;
+  /** Roles that should appear greyed-out / unselectable */
+  disabledRoles?: Role[];
 }
 
 const ROLES: { value: Role; labelEn: string; labelAr: string }[] = [
   { value: "user", labelEn: "User", labelAr: "مستخدم" },
+  { value: "agent", labelEn: "Agent", labelAr: "وكيل" },
   { value: "admin", labelEn: "Admin", labelAr: "مدير" },
 ];
 
@@ -23,6 +26,7 @@ export function RoleSelect({
   placeholder,
   locale,
   disabled,
+  disabledRoles = [],
 }: RoleSelectProps) {
   const [open, setOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<React.CSSProperties>({});
@@ -167,17 +171,22 @@ export function RoleSelect({
             <div className="p-2 flex flex-col gap-1">
               {ROLES.map((role) => {
                 const isSelected = role.value === value;
+                const isRoleDisabled = disabledRoles.includes(role.value);
                 const label = locale === "ar" ? role.labelAr : role.labelEn;
 
                 return (
                   <button
                     key={role.value}
                     type="button"
-                    onClick={() => handleSelect(role.value)}
+                    onClick={() => !isRoleDisabled && handleSelect(role.value)}
+                    disabled={isRoleDisabled}
+                    title={isRoleDisabled ? (locale === "ar" ? "يجب إضافة المستخدم كوكيل أولاً" : "User must be added as agent first") : undefined}
                     className={`w-full text-start rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                      isSelected
-                        ? "bg-accent text-(--accent-foreground) font-medium"
-                        : "text-foreground hover:bg-(--chip-bg)"
+                      isRoleDisabled
+                        ? "opacity-40 cursor-not-allowed"
+                        : isSelected
+                          ? "bg-accent text-(--accent-foreground) font-medium"
+                          : "text-foreground hover:bg-(--chip-bg)"
                     }`}
                   >
                     <div className="flex items-center justify-between">

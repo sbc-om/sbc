@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createUser } from '@/lib/db/users';
 import { getAuthCookieName, signAuthToken } from '@/lib/auth/jwt';
@@ -145,14 +144,7 @@ export async function POST(req: Request) {
     const cookieName = getAuthCookieName();
     const secure = process.env.NODE_ENV === 'production';
 
-    (await cookies()).set(cookieName, token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure,
-      path: '/',
-    });
-
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         ok: true,
         user: {
@@ -165,6 +157,15 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     );
+
+    response.cookies.set(cookieName, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure,
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

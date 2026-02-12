@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { z } from "zod";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 
@@ -77,19 +76,12 @@ export async function POST(req: Request) {
   const cookieName = getAuthCookieName();
   const secure = process.env.NODE_ENV === "production";
 
-  (await cookies()).set(cookieName, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure,
-    path: "/",
-  });
-
   // Send login notification
   if (user.phone && isWAHAEnabled()) {
     sendLoginNotification(user.phone, "en", "passkey").catch(console.error);
   }
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     ok: true,
     user: {
       id: user.id,
@@ -98,4 +90,13 @@ export async function POST(req: Request) {
       displayName: user.displayName ?? user.email.split("@")[0],
     },
   });
+
+  response.cookies.set(cookieName, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure,
+    path: "/",
+  });
+
+  return response;
 }

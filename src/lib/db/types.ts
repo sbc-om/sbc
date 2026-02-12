@@ -1,6 +1,6 @@
 export type Locale = "en" | "ar";
 
-export type Role = "admin" | "user";
+export type Role = "admin" | "agent" | "user";
 
 export type LocalizedString = {
   en: string;

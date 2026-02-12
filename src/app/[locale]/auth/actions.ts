@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { createUser, verifyUserPassword, getUserById } from "@/lib/db/users";
@@ -60,6 +61,9 @@ export async function loginAction(formData: FormData) {
   if (user.phone && isWAHAEnabled()) {
     sendLoginNotification(user.phone, locale as "en" | "ar", "password").catch(console.error);
   }
+
+  // Bust the client-side Router Cache so the authenticated layout renders
+  revalidatePath("/", "layout");
 
   // Check if phone verification is required and user is not verified
   const wahaEnabled = isWAHAEnabled();
@@ -142,6 +146,9 @@ export async function registerAction(formData: FormData) {
     path: "/",
   });
 
+  // Bust the client-side Router Cache so the authenticated layout renders
+  revalidatePath("/", "layout");
+
   // Check if phone verification is required and redirect to verify page
   const wahaEnabled = isWAHAEnabled();
   if (wahaEnabled && !user.isPhoneVerified) {
@@ -165,5 +172,6 @@ export async function logoutAction(locale: Locale) {
     maxAge: 0,
   });
 
+  revalidatePath("/", "layout");
   redirect(`/${locale}`);
 }

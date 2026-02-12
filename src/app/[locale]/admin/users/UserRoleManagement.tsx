@@ -16,6 +16,10 @@ interface UserRoleManagementProps {
   showArchived: boolean;
   locale: Locale;
   currentUserId: string;
+  /** IDs of users who have an agent record in the agents table */
+  agentUserIds: Set<string> | string[];
+  /** Map of userId → wallet balance */
+  walletBalances: Record<string, number>;
 }
 
 function formatDate(iso: string, locale: Locale) {
@@ -31,8 +35,9 @@ function formatDate(iso: string, locale: Locale) {
   }
 }
 
-export function UserRoleManagement({ users, archivedCount, showArchived, locale, currentUserId }: UserRoleManagementProps) {
+export function UserRoleManagement({ users, archivedCount, showArchived, locale, currentUserId, agentUserIds, walletBalances }: UserRoleManagementProps) {
   const router = useRouter();
+  const agentSet = useMemo(() => new Set(agentUserIds), [agentUserIds]);
   const [roleOverrides, setRoleOverrides] = useState<Record<string, Role>>({});
   const [verifiedOverrides, setVerifiedOverrides] = useState<Record<string, boolean>>({});
   const [activeOverrides, setActiveOverrides] = useState<Record<string, boolean>>({});
@@ -80,6 +85,12 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
     } catch (error) {
       console.error("Failed to update role:", error);
       setRoleOverrides((prev) => ({ ...prev, [userId]: previousRole }));
+      const msg = error instanceof Error ? error.message : "";
+      if (msg === "NOT_AN_AGENT") {
+        alert(locale === "ar"
+          ? "يجب إضافة المستخدم كوكيل أولاً من صفحة إدارة الوكلاء"
+          : "User must be added as an agent first from the Agents management page");
+      }
     } finally {
       setSavingRoleUserId(null);
     }
@@ -372,7 +383,7 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
               <thead className="text-xs uppercase bg-(--chip-bg) text-(--muted-foreground)">
                 <tr>
                   <th scope="col" className="px-5 py-3">{locale === "ar" ? "المستخدم" : "User"}</th>
-                  <th scope="col" className="px-5 py-3">{locale === "ar" ? "الاتصال" : "Contact"}</th>
+                  <th scope="col" className="px-5 py-3">{locale === "ar" ? "الرصيد" : "Balance"}</th>
                   <th scope="col" className="px-5 py-3">{locale === "ar" ? "الحالة" : "Status"}</th>
                   <th scope="col" className="px-5 py-3">{locale === "ar" ? "التوثيق" : "Verified"}</th>
                   <th scope="col" className="px-5 py-3">{locale === "ar" ? "الدور" : "Role"}</th>
@@ -428,13 +439,13 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
                               </span>
                             ) : null}
                           </div>
-                          <div className="mt-1 text-xs text-(--muted-foreground) truncate">ID: {u.id}</div>
+                          <div className="mt-1 text-xs text-(--muted-foreground) truncate">{u.email}</div>
+                          {u.phone ? <div className="text-xs text-(--muted-foreground) truncate">{u.phone}</div> : null}
                         </div>
                       </td>
                       <td className="px-5 py-4">
-                        <div className="text-xs text-(--muted-foreground)">
-                          <div className="truncate">{u.email}</div>
-                          <div className="truncate">{u.phone || "-"}</div>
+                        <div className="text-sm font-medium tabular-nums">
+                          {(walletBalances[u.id] ?? 0).toFixed(3)} <span className="text-xs text-(--muted-foreground)">OMR</span>
                         </div>
                       </td>
                       <td className="px-5 py-4">
@@ -478,6 +489,7 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
                             placeholder={locale === "ar" ? "اختر الدور" : "Select role"}
                             locale={locale}
                             disabled={isCurrentUser}
+                            disabledRoles={agentSet.has(u.id) ? [] : ["agent"]}
                           />
                           {isSavingRole && (
                             <div className="absolute top-0 right-0 -mr-6 flex items-center justify-center">

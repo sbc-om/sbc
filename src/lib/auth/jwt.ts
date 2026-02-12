@@ -43,7 +43,7 @@ export async function verifyAuthToken(token: string) {
 
   if (typeof sub !== "string") throw new Error("Invalid token");
   if (typeof email !== "string") throw new Error("Invalid token");
-  if (role !== "admin" && role !== "user") throw new Error("Invalid token");
+  if (role !== "admin" && role !== "agent" && role !== "user") throw new Error("Invalid token");
 
   return { sub, email, role } satisfies AuthTokenPayload;
 }

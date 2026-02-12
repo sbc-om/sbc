@@ -133,6 +133,7 @@ export function CartFloating({
             <div className="mt-4 flex flex-col gap-2">
               <Link
                 href={`/${locale}/store/checkout`}
+                onClick={() => setOpen(false)}
                 className={cn(
                   "inline-flex items-center justify-center gap-2 rounded-2xl bg-accent px-4 py-3 text-sm font-semibold text-(--accent-foreground) shadow-(--shadow) hover:brightness-[1.05] active:brightness-[0.97]",
                 )}

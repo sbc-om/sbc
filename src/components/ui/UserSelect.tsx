@@ -10,7 +10,7 @@ interface User {
   email: string;
   fullName?: string;
   phone?: string;
-  role: "admin" | "user";
+  role: "admin" | "agent" | "user";
 }
 
 interface UserSelectProps {
@@ -192,7 +192,7 @@ export function UserSelect({
                         {user.fullName || user.email}
                       </div>
                       <div className="text-xs text-[var(--muted-foreground)] truncate">
-                        {user.role === "admin" ? (isRTL ? "مدير" : "Admin") : (isRTL ? "مستخدم" : "User")}
+                        {user.role === "admin" ? (isRTL ? "مدير" : "Admin") : user.role === "agent" ? (isRTL ? "وكيل" : "Agent") : (isRTL ? "مستخدم" : "User")}
                         {user.phone ? ` • ${user.phone}` : ""}
                         {user.fullName ? ` • ${user.email}` : ""}
                       </div>

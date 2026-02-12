@@ -28,10 +28,9 @@
  *         description: OTP verification failed
  */
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { z } from "zod";
 import { verifyOTP, type OTPPurpose } from "@/lib/db/otp";
-import { getUserByPhone, getUserById, setUserPhoneVerified } from "@/lib/db/users";
+import { getUserByPhone, setUserPhoneVerified } from "@/lib/db/users";
 import { signAuthToken, getAuthCookieName } from "@/lib/auth/jwt";
 import { isWhatsAppLoginEnabled, isWhatsAppVerificationRequired } from "@/lib/db/settings";
 import { sendLoginNotification, isWAHAEnabled } from "@/lib/waha/client";
@@ -120,24 +119,14 @@ export async function POST(request: NextRequest) {
         role: user.role,
       });
 
-      // Set cookie
-      const cookieName = getAuthCookieName();
-      const cookieStore = await cookies();
-      cookieStore.set(cookieName, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: "/",
-      });
-
       // Send login notification (non-blocking)
       if (isWAHAEnabled() && user.phone) {
         sendLoginNotification(user.phone, "en", "whatsapp").catch(console.error);
       }
 
       // Phone is now verified since user logged in with WhatsApp OTP
-      return NextResponse.json({
+      const cookieName = getAuthCookieName();
+      const response = NextResponse.json({
         ok: true,
         message: "Login successful",
         user: {
@@ -146,10 +135,21 @@ export async function POST(request: NextRequest) {
           displayName: user.displayName || user.fullName,
           role: user.role,
           isVerified: user.isVerified,
-          isPhoneVerified: true, // Always true after WhatsApp OTP login
+          isPhoneVerified: true,
         },
-        needsVerification: false, // No longer needed since WhatsApp login auto-verifies phone
+        needsVerification: false,
       });
+
+      // Set cookie directly on the response so the Set-Cookie header is sent
+      response.cookies.set(cookieName, token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: "/",
+      });
+
+      return response;
     }
 
     // For other purposes, just return success

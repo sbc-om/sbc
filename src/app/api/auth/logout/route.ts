@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { getAuthCookieName } from '@/lib/auth/jwt';
 
 export const runtime = 'nodejs';
@@ -32,7 +31,12 @@ export const runtime = 'nodejs';
 export async function POST() {
   const cookieName = getAuthCookieName();
 
-  (await cookies()).set(cookieName, '', {
+  const response = NextResponse.json({
+    ok: true,
+    message: 'Logged out successfully',
+  });
+
+  response.cookies.set(cookieName, '', {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
@@ -40,8 +44,5 @@ export async function POST() {
     maxAge: 0,
   });
 
-  return NextResponse.json({
-    ok: true,
-    message: 'Logged out successfully',
-  });
+  return response;
 }

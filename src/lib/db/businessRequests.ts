@@ -6,6 +6,7 @@ import { query } from "./postgres";
 export type BusinessRequest = {
   id: string;
   userId?: string;
+  agentUserId?: string;
   /** Business name for the request (bilingual object) */
   name: { en: string; ar: string };
   /** Legacy single string business name - deprecated */
@@ -29,6 +30,7 @@ export type BusinessRequest = {
 
 const businessRequestSchema = z.object({
   userId: z.string().optional(),
+  agentUserId: z.string().optional(),
   businessName: z.string().trim().min(1).max(200),
   nameEn: z.string().trim().max(200).optional(),
   nameAr: z.string().trim().max(200).optional(),
@@ -56,6 +58,7 @@ function rowToRequest(row: any): BusinessRequest {
   return {
     id: row.id,
     userId: row.user_id,
+    agentUserId: row.agent_user_id || undefined,
     name: { 
       en: row.name_en || businessName, 
       ar: row.name_ar || businessName 
@@ -86,12 +89,12 @@ export async function createBusinessRequest(input: BusinessRequestInput): Promis
 
   const result = await query(`
     INSERT INTO business_requests (
-      id, user_id, business_name, name_en, name_ar, desc_en, desc_ar, category, category_id, description, 
+      id, user_id, agent_user_id, business_name, name_en, name_ar, desc_en, desc_ar, category, category_id, description, 
       city, address, phone, email, website, contact_email, contact_phone, tags, latitude, longitude, status, created_at, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 'pending', $21, $21)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 'pending', $22, $22)
     RETURNING *
   `, [
-    id, data.userId, data.businessName, data.nameEn || data.businessName, data.nameAr || data.businessName,
+    id, data.userId, data.agentUserId || null, data.businessName, data.nameEn || data.businessName, data.nameAr || data.businessName,
     data.descEn, data.descAr, data.category, data.categoryId, data.description, data.city, data.address,
     data.phone, data.email || null, data.website || null, data.contactEmail, data.contactPhone, data.tags,
     data.latitude, data.longitude, now
@@ -107,6 +110,14 @@ export async function getBusinessRequestById(id: string): Promise<BusinessReques
 
 export async function listBusinessRequests(): Promise<BusinessRequest[]> {
   const result = await query(`SELECT * FROM business_requests ORDER BY created_at DESC`);
+  return result.rows.map(rowToRequest);
+}
+
+export async function listBusinessRequestsByAgent(agentUserId: string): Promise<BusinessRequest[]> {
+  const result = await query(
+    `SELECT * FROM business_requests WHERE agent_user_id = $1 ORDER BY created_at DESC`,
+    [agentUserId]
+  );
   return result.rows.map(rowToRequest);
 }
 
@@ -140,4 +151,25 @@ export async function updateBusinessRequestStatus(
 export async function deleteBusinessRequest(id: string): Promise<boolean> {
   const result = await query(`DELETE FROM business_requests WHERE id = $1`, [id]);
   return (result.rowCount ?? 0) > 0;
+}
+
+/** Return a map of userId → request status for users that have at least one business request */
+export async function getBusinessRequestStatusByUserIds(
+  userIds: string[]
+): Promise<Map<string, "pending" | "approved" | "rejected">> {
+  if (userIds.length === 0) return new Map();
+  const placeholders = userIds.map((_, i) => `$${i + 1}`).join(", ");
+  // Pick the "best" status per user: approved > pending > rejected
+  const result = await query(
+    `SELECT DISTINCT ON (user_id) user_id, status
+     FROM business_requests
+     WHERE user_id IN (${placeholders})
+     ORDER BY user_id, CASE status WHEN 'approved' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END`,
+    userIds
+  );
+  const m = new Map<string, "pending" | "approved" | "rejected">();
+  for (const row of result.rows) {
+    m.set(row.user_id, row.status);
+  }
+  return m;
 }

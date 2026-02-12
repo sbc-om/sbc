@@ -119,6 +119,17 @@ export async function getBusinessByOwnerId(ownerId: string): Promise<Business | 
   return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
 }
 
+/** Return a Set of user IDs that own at least one business */
+export async function getOwnerIdsWithBusiness(userIds: string[]): Promise<Set<string>> {
+  if (userIds.length === 0) return new Set();
+  const placeholders = userIds.map((_, i) => `$${i + 1}`).join(", ");
+  const result = await query(
+    `SELECT DISTINCT owner_id FROM businesses WHERE owner_id IN (${placeholders})`,
+    userIds
+  );
+  return new Set(result.rows.map((r: any) => r.owner_id));
+}
+
 /**
  * Get a business by its custom domain.
  */

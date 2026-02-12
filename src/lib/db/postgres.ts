@@ -48,19 +48,11 @@ async function doEnsureSchema(): Promise<void> {
   if (globalThis.__sbcDbInitialized) return;
   
   const pool = getPool();
-  // Use a simple check to see if tables exist
-  const result = await pool.query(`
-    SELECT EXISTS (
-      SELECT FROM information_schema.tables 
-      WHERE table_schema = 'public' AND table_name = 'users'
-    )
-  `);
-  
-  if (!result.rows[0]?.exists) {
-    console.log("[DB] Initializing database schema...");
-    await runSchemaInit(pool);
-    console.log("[DB] Schema initialized successfully");
-  }
+  // Always run schema init — all statements use IF NOT EXISTS so it's safe
+  // This ensures new tables added to the schema are created even on existing DBs
+  console.log("[DB] Ensuring database schema...");
+  await runSchemaInit(pool);
+  console.log("[DB] Schema ready");
   
   globalThis.__sbcDbInitialized = true;
 }
@@ -761,6 +753,73 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       UNIQUE(website_id, slug)
     );
     CREATE INDEX IF NOT EXISTS idx_website_pages_website_id ON website_pages(website_id);
+
+    -- Agents table (resellers who help businesses register)
+    CREATE TABLE IF NOT EXISTS agents (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      commission_rate DECIMAL(5, 2) NOT NULL DEFAULT 0,
+      total_earned DECIMAL(15, 3) NOT NULL DEFAULT 0,
+      total_clients INTEGER NOT NULL DEFAULT 0,
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- Agent commissions log
+    CREATE TABLE IF NOT EXISTS agent_commissions (
+      id TEXT PRIMARY KEY,
+      agent_user_id TEXT NOT NULL REFERENCES agents(user_id) ON DELETE CASCADE,
+      client_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      order_id TEXT,
+      subscription_id TEXT,
+      amount DECIMAL(15, 3) NOT NULL,
+      commission_rate DECIMAL(5, 2) NOT NULL,
+      commission_amount DECIMAL(15, 3) NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      paid_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_agent_commissions_agent ON agent_commissions(agent_user_id);
+    CREATE INDEX IF NOT EXISTS idx_agent_commissions_client ON agent_commissions(client_user_id);
+    CREATE INDEX IF NOT EXISTS idx_agent_commissions_status ON agent_commissions(status);
+
+    -- Agent-client relationship (which agent manages which user)
+    CREATE TABLE IF NOT EXISTS agent_clients (
+      agent_user_id TEXT NOT NULL REFERENCES agents(user_id) ON DELETE CASCADE,
+      client_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (agent_user_id, client_user_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_agent_clients_agent ON agent_clients(agent_user_id);
+    CREATE INDEX IF NOT EXISTS idx_agent_clients_client ON agent_clients(client_user_id);
+
+    -- Migrations: Add agent_user_id and missing columns to business_requests
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'agent_user_id') THEN
+        ALTER TABLE business_requests ADD COLUMN agent_user_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'desc_en') THEN
+        ALTER TABLE business_requests ADD COLUMN desc_en TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'desc_ar') THEN
+        ALTER TABLE business_requests ADD COLUMN desc_ar TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'address') THEN
+        ALTER TABLE business_requests ADD COLUMN address TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'tags') THEN
+        ALTER TABLE business_requests ADD COLUMN tags TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'latitude') THEN
+        ALTER TABLE business_requests ADD COLUMN latitude DOUBLE PRECISION;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'longitude') THEN
+        ALTER TABLE business_requests ADD COLUMN longitude DOUBLE PRECISION;
+      END IF;
+    END $$;
+    CREATE INDEX IF NOT EXISTS idx_business_requests_agent ON business_requests(agent_user_id);
 
     -- Create SBC Treasury system user if not exists
     INSERT INTO users (id, email, phone, full_name, password_hash, role, is_active, is_verified, display_name, approval_status, created_at, updated_at)

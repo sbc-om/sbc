@@ -19,11 +19,13 @@ import {
 export function RequestCard({
   request,
   user,
+  agent,
   category,
   locale,
 }: {
   request: BusinessRequest;
   user?: UserListItem;
+  agent?: UserListItem;
   category?: Category | null;
   locale: Locale;
 }) {
@@ -111,6 +113,12 @@ export function RequestCard({
               <div>
                 <span className="text-(--muted-foreground)">{ar ? "المستخدم:" : "User:"}</span>{" "}
                 <span className="font-medium">{user.email}</span>
+              </div>
+            )}
+            {agent && (
+              <div>
+                <span className="text-(--muted-foreground)">{ar ? "الوكيل:" : "Agent:"}</span>{" "}
+                <span className="font-medium">{agent.fullName || agent.email}</span>
               </div>
             )}
             {category && (

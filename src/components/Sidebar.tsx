@@ -34,7 +34,7 @@ import {
   HiX,
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline, IoWallet, IoWalletOutline } from "react-icons/io5";
-import { HiPlus, HiOutlinePlus, HiBriefcase, HiOutlineBriefcase } from "react-icons/hi";
+import { HiPlus, HiOutlinePlus, HiBriefcase, HiOutlineBriefcase, HiUserGroup, HiOutlineUserGroup } from "react-icons/hi";
 
 interface SidebarProps {
   locale: Locale;
@@ -159,6 +159,17 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
             path: "/admin",
             Icon: HiCog,
             IconOutline: HiOutlineCog,
+          },
+        ]
+      : user.role === "agent"
+      ? [
+          ...baseNavItems,
+          {
+            key: "agent",
+            label: locale === "ar" ? "لوحة الوكيل" : "Agent Panel",
+            path: "/agent",
+            Icon: HiUserGroup,
+            IconOutline: HiOutlineUserGroup,
           },
         ]
       : baseNavItems;
@@ -321,6 +332,24 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               <span className="min-w-0 truncate">{dict.nav.dashboard}</span>
             </Link>
 
+            {user.role === "agent" && (
+              <Link
+                role="menuitem"
+                href={`/${locale}/agent`}
+                onClick={() => {
+                  setProfileMenuOpen(false);
+                  if (isMobile) setMobileOpen(false);
+                }}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              >
+                {(() => {
+                  const AgentIcon = isActive("/agent") ? HiBriefcase : HiOutlineBriefcase;
+                  return <AgentIcon className="h-5 w-5 shrink-0" />;
+                })()}
+                <span className="min-w-0 truncate">{locale === "ar" ? "لوحة الوكيل" : "Agent Panel"}</span>
+              </Link>
+            )}
+
             <Link
               role="menuitem"
               href={`/${locale}/chat`}
@@ -396,6 +425,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
             <form
               action={logoutAction.bind(null, locale)}
               onSubmit={() => {
+                localStorage.removeItem("wa-login-state");
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}

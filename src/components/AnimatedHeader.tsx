@@ -203,7 +203,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                 ) : null}
 
                 {user ? (
-                  <form action={logoutAction.bind(null, locale)}>
+                  <form action={logoutAction.bind(null, locale)} onSubmit={() => localStorage.removeItem("wa-login-state")}>
                     <button
                       type="submit"
                       className={buttonVariants({
@@ -317,7 +317,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   {user ? (
                     <form
                       action={logoutAction.bind(null, locale)}
-                      onSubmit={() => setMobileOpen(false)}
+                      onSubmit={() => { setMobileOpen(false); localStorage.removeItem("wa-login-state"); }}
                     >
                       <button
                         type="submit"
