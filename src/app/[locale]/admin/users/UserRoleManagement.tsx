@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { HiOutlineKey } from "react-icons/hi";
 import { RoleSelect } from "@/components/ui/RoleSelect";
 import { buttonVariants } from "@/components/ui/Button";
-import { approveUserAction, restoreUserAction, updateUserActiveAction, updateUserRoleAction, updateUserVerifiedAction } from "./actions";
+import { Input } from "@/components/ui/Input";
+import { approveUserAction, restoreUserAction, updateUserActiveAction, updateUserPasswordAction, updateUserRoleAction, updateUserVerifiedAction } from "./actions";
 import type { Role } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
 import type { UserListItem } from "@/lib/db/users";
@@ -51,6 +53,11 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
   const [verifiedFilter, setVerifiedFilter] = useState<"all" | "verified" | "unverified">("all");
   const [activeFilter, setActiveFilter] = useState<"all" | "active" | "inactive">("all");
   const [page, setPage] = useState(1);
+  const [passwordModal, setPasswordModal] = useState<{ userId: string; userName: string } | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
   const pageSize = 20;
 
   const now = Date.now();
@@ -142,6 +149,47 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
       router.refresh();
     } finally {
       setRestoringUserId(null);
+    }
+  };
+
+  const openPasswordModal = (userId: string, userName: string) => {
+    setPasswordModal({ userId, userName });
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError("");
+  };
+
+  const closePasswordModal = () => {
+    if (changingPassword) return;
+    setPasswordModal(null);
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError("");
+  };
+
+  const changePassword = async () => {
+    if (!passwordModal) return;
+
+    if (newPassword.trim().length < 8) {
+      setPasswordError(locale === "ar" ? "كلمة المرور يجب أن تكون 8 أحرف على الأقل" : "Password must be at least 8 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError(locale === "ar" ? "كلمتا المرور غير متطابقتين" : "Passwords do not match");
+      return;
+    }
+
+    setChangingPassword(true);
+    setPasswordError("");
+    try {
+      await updateUserPasswordAction(locale, passwordModal.userId, newPassword);
+      closePasswordModal();
+      alert(locale === "ar" ? "تم تغيير كلمة المرور بنجاح" : "Password changed successfully");
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "";
+      setPasswordError(msg || (locale === "ar" ? "فشل تغيير كلمة المرور" : "Failed to change password"));
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -539,12 +587,23 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
                               )}
                             </button>
                           ) : (
-                            <Link
-                              href={`/${locale}/admin/users/${u.id}`}
-                              className={buttonVariants({ variant: "secondary", size: "sm" })}
-                            >
-                              {locale === "ar" ? "تعديل" : "Edit"}
-                            </Link>
+                            <>
+                              <Link
+                                href={`/${locale}/admin/users/${u.id}`}
+                                className={buttonVariants({ variant: "secondary", size: "sm" })}
+                              >
+                                {locale === "ar" ? "تعديل" : "Edit"}
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => openPasswordModal(u.id, u.fullName || u.email)}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-violet-200 bg-violet-50 text-violet-600 transition-colors hover:bg-violet-100 dark:border-violet-800/60 dark:bg-violet-950/20 dark:text-violet-400 dark:hover:bg-violet-900/30"
+                                title={locale === "ar" ? "تغيير كلمة المرور" : "Change password"}
+                                aria-label={locale === "ar" ? "تغيير كلمة المرور" : "Change password"}
+                              >
+                                <HiOutlineKey className="h-4 w-4" />
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -586,6 +645,67 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
                 style={{ borderColor: "var(--surface-border)" }}
               >
                 {locale === "ar" ? "التالي" : "Next"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {passwordModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200/70 bg-white p-5 shadow-2xl dark:border-white/[0.08] dark:bg-gray-900/95">
+            <h3 className="text-lg font-semibold">
+              {locale === "ar" ? "تغيير كلمة المرور" : "Change Password"}
+            </h3>
+            <p className="mt-1 text-sm text-(--muted-foreground)">{passwordModal.userName}</p>
+
+            <div className="mt-4 space-y-3">
+              <label className="grid gap-1.5">
+                <span className="text-sm font-medium">{locale === "ar" ? "كلمة المرور الجديدة" : "New Password"}</span>
+                <Input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder={locale === "ar" ? "8 أحرف على الأقل" : "At least 8 characters"}
+                  autoFocus
+                />
+              </label>
+
+              <label className="grid gap-1.5">
+                <span className="text-sm font-medium">{locale === "ar" ? "تأكيد كلمة المرور" : "Confirm Password"}</span>
+                <Input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder={locale === "ar" ? "أعد إدخال كلمة المرور" : "Re-enter password"}
+                />
+              </label>
+            </div>
+
+            {passwordError ? (
+              <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm font-medium text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">
+                {passwordError}
+              </p>
+            ) : null}
+
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closePasswordModal}
+                disabled={changingPassword}
+                className={buttonVariants({ variant: "secondary", size: "sm" })}
+              >
+                {locale === "ar" ? "إلغاء" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                onClick={changePassword}
+                disabled={changingPassword}
+                className={buttonVariants({ variant: "primary", size: "sm" })}
+              >
+                {changingPassword
+                  ? locale === "ar" ? "جارٍ الحفظ..." : "Saving..."
+                  : locale === "ar" ? "حفظ" : "Save"}
               </button>
             </div>
           </div>

@@ -377,6 +377,19 @@ export async function setUserActive(id: string, isActive: boolean): Promise<User
   return rowToUser(result.rows[0]);
 }
 
+export async function setUserPassword(id: string, password: string): Promise<User> {
+  const nextPassword = z.string().min(8).parse(password);
+  const passwordHash = await bcrypt.hash(nextPassword, 12);
+
+  const result = await query(
+    `UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3 RETURNING *`,
+    [passwordHash, new Date(), id]
+  );
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToUser(result.rows[0]);
+}
+
 export async function updateUserAdmin(
   id: string,
   patch: {

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { approveUserAccount, archiveUser, restoreUser, setUserActive, setUserVerified, updateUserAdmin, updateUserRole } from "@/lib/db/users";
+import { approveUserAccount, archiveUser, restoreUser, setUserActive, setUserPassword, setUserVerified, updateUserAdmin, updateUserRole } from "@/lib/db/users";
 import { getAgentByUserId } from "@/lib/db/agents";
 import type { Role } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
@@ -75,6 +75,28 @@ export async function updateUserActiveAction(
 
   setUserActive(userId, isActive);
   revalidatePath(`/${locale}/admin/users`);
+  return { success: true };
+}
+
+export async function updateUserPasswordAction(
+  locale: Locale,
+  userId: string,
+  password: string,
+) {
+  const auth = await getCurrentUser();
+  if (!auth || auth.role !== "admin") {
+    throw new Error("UNAUTHORIZED");
+  }
+
+  const nextPassword = String(password || "").trim();
+  if (nextPassword.length < 8) {
+    throw new Error(locale === "ar" ? "كلمة المرور يجب أن تكون 8 أحرف على الأقل" : "Password must be at least 8 characters");
+  }
+
+  await setUserPassword(userId, nextPassword);
+
+  revalidatePath(`/${locale}/admin/users`);
+  revalidatePath(`/${locale}/admin/users/${userId}`);
   return { success: true };
 }
 
