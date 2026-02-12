@@ -12,6 +12,7 @@ import {
 } from "react-icons/hi2";
 
 import { AppPage } from "@/components/AppPage";
+import { DashboardCard } from "@/components/DashboardCard";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listProgramSubscriptionsByUser, hasActiveSubscription } from "@/lib/db/subscriptions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -63,6 +64,7 @@ export default async function DashboardPage({
       iconClassName: "text-indigo-600 dark:text-indigo-300",
       iconBgClassName: "bg-indigo-500/12 ring-1 ring-indigo-500/18",
       borderClassName: "border-indigo-500/25 dark:border-indigo-400/25",
+      glowColor: "rgba(99,102,241,0.12)",
     },
     loyalty: {
       title: ar ? "نظام الولاء" : "Loyalty System",
@@ -73,6 +75,7 @@ export default async function DashboardPage({
       iconClassName: "text-emerald-600 dark:text-emerald-300",
       iconBgClassName: "bg-emerald-500/12 ring-1 ring-emerald-500/18",
       borderClassName: "border-emerald-500/25 dark:border-emerald-400/25",
+      glowColor: "rgba(16,185,129,0.12)",
     },
     marketing: {
       title: ar ? "منصة التسويق" : "Marketing Platform",
@@ -83,6 +86,7 @@ export default async function DashboardPage({
       iconClassName: "text-fuchsia-600 dark:text-fuchsia-300",
       iconBgClassName: "bg-fuchsia-500/12 ring-1 ring-fuchsia-500/18",
       borderClassName: "border-fuchsia-500/25 dark:border-fuchsia-400/25",
+      glowColor: "rgba(217,70,239,0.12)",
     },
     website: {
       title: ar ? "منشئ المواقع" : "Website Builder",
@@ -93,6 +97,7 @@ export default async function DashboardPage({
       iconClassName: "text-cyan-600 dark:text-cyan-300",
       iconBgClassName: "bg-cyan-500/12 ring-1 ring-cyan-500/18",
       borderClassName: "border-cyan-500/25 dark:border-cyan-400/25",
+      glowColor: "rgba(6,182,212,0.12)",
     },
   } as const;
 
@@ -148,15 +153,12 @@ export default async function DashboardPage({
               : "Inactive";
 
           return (
-            <section
+            <DashboardCard
               key={programId}
-              className={
-                "relative overflow-hidden rounded-2xl border-2 bg-(--surface) p-6 backdrop-blur-sm shadow-sm transition-all duration-200 " +
-                meta.borderClassName +
-                " hover:shadow-md"
-              }
+              borderClassName={meta.borderClassName}
+              glowColor={meta.glowColor}
             >
-              <div className="relative flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-4">
                 <div className="flex min-w-0 items-start gap-4">
                   <div
                     className={
@@ -190,7 +192,7 @@ export default async function DashboardPage({
                 </div>
               </div>
 
-              <div className="relative mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                   <span className="sbc-chip rounded-full px-3 py-1">
                     <span className="text-(--muted-foreground)">{ar ? "الخطة" : "Plan"}: </span>
@@ -250,7 +252,7 @@ export default async function DashboardPage({
                 </Link>
                 </div>
               </div>
-            </section>
+            </DashboardCard>
           );
         }))}
       </div>

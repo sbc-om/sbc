@@ -174,9 +174,8 @@ export default async function StorePage({
           ).map((section) => {
             const items = groups[section.key];
             if (items.length === 0) return null;
-            const isMarketingDisabled = section.key === 'marketing';
             return (
-              <section key={section.key} className={isMarketingDisabled ? "opacity-50 pointer-events-none" : ""}>
+              <section key={section.key}>
                 <div className="flex items-start gap-4">
                   <div
                     className={
@@ -189,11 +188,6 @@ export default async function StorePage({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h2 className="text-xl font-semibold tracking-tight">{section.title}</h2>
-                      {isMarketingDisabled && (
-                        <span className="rounded-full bg-(--chip-bg) px-2.5 py-0.5 text-xs font-semibold text-(--muted-foreground)">
-                          {ar ? "قريباً" : "Coming Soon"}
-                        </span>
-                      )}
                     </div>
                     <p className="mt-1 text-sm text-(--muted-foreground)">{section.subtitle}</p>
                   </div>
