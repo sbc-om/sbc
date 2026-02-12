@@ -1,7 +1,5 @@
 import { Container } from "@/components/Container";
 import { PublicPage } from "@/components/PublicPage";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { ScrollLottie } from "@/components/ScrollLottie";
 import { BusinessCard } from "@/components/BusinessCard";
 import { FadeInSection } from "@/components/FadeInSection";
@@ -10,7 +8,6 @@ import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { listBusinesses } from "@/lib/db/businesses";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
 
@@ -99,131 +96,6 @@ export default async function LocaleHome({
         </Container>
       </section>
 
-      {/* Search Section */}
-      <Container size="lg">
-        <FadeInSection duration={700} delay={0}>
-          <div className="max-w-4xl mx-auto pb-20">
-          <div 
-            className="relative rounded-3xl p-8 backdrop-blur-xl shadow-2xl"
-            style={{
-              background: "rgba(var(--surface-rgb, 255, 255, 255), 0.6)",
-              border: "2px solid",
-              borderColor: "var(--surface-border)",
-            }}
-          >
-            <h2 className="text-2xl font-bold mb-2 text-foreground">
-              {locale === "ar" ? "ابحث في الدليل" : "Search the directory"}
-            </h2>
-            <p className="text-base mb-6 opacity-70" style={{ color: "currentColor" }}>
-              {locale === "ar"
-                ? "ابحث بالاسم أو التصنيف أو المدينة."
-                : "Search by name, category, or city."}
-            </p>
-            
-            <form
-              className="flex flex-col gap-4 sm:flex-row"
-              action={`/${locale}/businesses`}
-            >
-              <Input
-                className="flex-1"
-                placeholder={dict.home.searchPlaceholder}
-                name="q"
-              />
-              <Button 
-                type="submit"
-                className="shadow-lg hover:shadow-xl transition-all hover:scale-105 whitespace-nowrap"
-              >
-                {dict.home.browseAll}
-              </Button>
-            </form>
-          </div>
-          </div>
-        </FadeInSection>
-      </Container>
-
-      {/* Products Section */}
-      <section className="py-10">
-        <Container size="lg">
-          <FadeInSection duration={600} delay={0}>
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-foreground mb-3">
-                {locale === "ar" ? "الحلول" : "Solutions"}
-              </h2>
-              <p className="text-base text-foreground opacity-70">
-                {locale === "ar"
-                  ? "وحدات أعمال احترافية يمكن تفعيلها: دليل الأعمال، بطاقة الولاء، ومنصة التسويق."
-                  : "Professional business modules you can activate: Business Directory, Loyalty Card, and Marketing Platform."}
-              </p>
-            </div>
-          </FadeInSection>
-
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <FadeInSection duration={500} delay={0}>
-              <div className="sbc-card rounded-2xl p-6">
-              <div className="text-lg font-semibold">
-                {locale === "ar" ? "دليل الأعمال" : "Business Directory"}
-              </div>
-              <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
-                {locale === "ar"
-                  ? "استكشف الأعمال الموثوقة والتصنيفات والملفات التعريفية." 
-                  : "Explore trusted businesses, categories, and profiles."}
-              </p>
-              <div className="mt-4">
-                <Link
-                  href={`/${locale}/businesses`}
-                  className="inline-flex items-center text-sm font-medium text-accent hover:underline"
-                >
-                  {locale === "ar" ? "فتح" : "Open"}
-                </Link>
-              </div>
-            </div>
-            </FadeInSection>
-
-            <FadeInSection duration={500} delay={100}>
-            <div className="sbc-card rounded-2xl p-6">
-              <div className="text-lg font-semibold">
-                {locale === "ar" ? "بطاقة الولاء" : "Loyalty Card"}
-              </div>
-              <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
-                {locale === "ar"
-                  ? "أصدر بطاقات ولاء رقمية (Apple/Google Wallet) وأدر العملاء والمكافآت." 
-                  : "Issue digital loyalty cards (Apple/Google Wallet) and manage customers & rewards."}
-              </p>
-              <div className="mt-4">
-                <Link
-                  href={`/${locale}/loyalty`}
-                  className="inline-flex items-center text-sm font-medium text-accent hover:underline"
-                >
-                  {locale === "ar" ? "فتح" : "Open"}
-                </Link>
-              </div>
-            </div>
-            </FadeInSection>
-
-            <FadeInSection duration={500} delay={200}>
-            <div className="sbc-card rounded-2xl p-6">
-              <div className="text-lg font-semibold">
-                {locale === "ar" ? "منصة التسويق" : "Marketing Platform"}
-              </div>
-              <p className="mt-2 text-sm leading-7 text-(--muted-foreground)">
-                {locale === "ar"
-                  ? "واجهات واتساب وتلغرام قابلة للتخصيص للحملات والأتمتة." 
-                  : "Customizable WhatsApp + Telegram APIs for campaigns and automation."}
-              </p>
-              <div className="mt-4">
-                <Link
-                  href={`/${locale}/marketing-platform`}
-                  className="inline-flex items-center text-sm font-medium text-accent hover:underline"
-                >
-                  {locale === "ar" ? "فتح" : "Open"}
-                </Link>
-              </div>
-            </div>
-            </FadeInSection>
-          </div>
-        </Container>
-      </section>
-
       {/* Latest Businesses Section */}
       {topRowBusinesses.length > 0 ? (
         <section className="py-16">
@@ -232,13 +104,13 @@ export default async function LocaleHome({
               <div className="mb-10">
                 <h2 className="text-3xl font-bold text-foreground mb-3">
                   {locale === "ar"
-                    ? "أفضل 3 أعمال مميزة"
-                    : "Top 3 featured businesses"}
+                    ? "برترین کسب‌وکارها"
+                    : "Top Businesses"}
                 </h2>
                 <p className="text-base text-foreground opacity-70">
                   {locale === "ar"
-                    ? "مختارات من الأعمال لعرضها في أعلى الصفحة الرئيسية."
-                    : "Hand-picked businesses highlighted at the top of the homepage."}
+                    ? "کسب‌وکارهای محبوب و مورد اعتماد مردم."
+                    : "Popular and trusted businesses."}
                 </p>
               </div>
             </FadeInSection>
@@ -263,12 +135,12 @@ export default async function LocaleHome({
             <FadeInSection duration={600} delay={0}>
               <div className="mb-10">
               <h2 className="text-3xl font-bold text-foreground mb-3">
-                {locale === "ar" ? "مميّز في الصفحة الرئيسية" : "Featured on the homepage"}
+                {locale === "ar" ? "پیشنهادی‌ها" : "Recommended"}
               </h2>
               <p className="text-base text-foreground opacity-70">
                 {locale === "ar"
-                  ? "قائمة منتقاة من الأعمال المميزة على الصفحة الرئيسية."
-                  : "A curated selection of businesses featured on the homepage."}
+                  ? "کسب‌وکارهایی که بیشتر پیشنهاد شده‌اند."
+                  : "Businesses people recommend most."}
               </p>
             </div>
             </FadeInSection>
@@ -293,12 +165,12 @@ export default async function LocaleHome({
             <FadeInSection duration={600} delay={0}>
               <div className="mb-10">
               <h2 className="text-3xl font-bold text-foreground mb-3">
-                {locale === "ar" ? "أحدث الأعمال" : "Latest Businesses"}
+                {locale === "ar" ? "جدیدترین‌ها" : "New Businesses"}
               </h2>
               <p className="text-base text-foreground opacity-70">
                 {locale === "ar"
-                  ? "اكتشف أحدث الأعمال المضافة إلى الدليل"
-                  : "Discover the latest businesses added to the directory"}
+                  ? "کسب‌وکارهایی که به تازگی اضافه شده‌اند."
+                  : "Recently added businesses."}
               </p>
             </div>
             </FadeInSection>

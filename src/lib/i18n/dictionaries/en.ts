@@ -31,8 +31,8 @@ export const en = {
     reset: "Reset to defaults",
   },
   home: {
-    title: "Find trusted businesses",
-    subtitle: "A professional, bilingual business directory for trusted listings.",
+    title: "Smart Business Center",
+    subtitle: "The trusted directory for verified businesses.",
     searchPlaceholder: "Search by name, category, or city…",
     browseAll: "Search",
   },

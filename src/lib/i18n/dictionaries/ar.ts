@@ -31,8 +31,8 @@ export const ar = {
     reset: "إعادة الضبط",
   },
   home: {
-    title: "اعثر على أعمال موثوقة",
-    subtitle: "دليل أعمال احترافي ثنائي اللغة للقوائم الموثوقة.",
+    title: "Smart Business Center",
+    subtitle: "الدليل الموثوق للأعمال المعتمدة.",
     searchPlaceholder: "ابحث بالاسم أو التصنيف أو المدينة…",
     browseAll: "بحث",
   },

@@ -161,7 +161,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                 <Link
                   href={`/${locale}/businesses`}
                   className={buttonVariants({
-                    variant: "ghost",
+                    variant: "secondary",
                     size: "sm",
                   })}
                 >
@@ -179,26 +179,15 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     {dict.nav.dashboard}
                   </Link>
                 ) : (
-                  <>
-                    <Link
-                      href={`/${locale}/login`}
-                      className={buttonVariants({
-                        variant: "secondary",
-                        size: "sm",
-                      })}
-                    >
-                      {dict.nav.login}
-                    </Link>
-                    <Link
-                      href={`/${locale}/register`}
-                      className={buttonVariants({
-                        variant: "primary",
-                        size: "sm",
-                      })}
-                    >
-                      {dict.nav.register}
-                    </Link>
-                  </>
+                  <Link
+                    href={`/${locale}/login`}
+                    className={buttonVariants({
+                      variant: "secondary",
+                      size: "sm",
+                    })}
+                  >
+                    {dict.nav.login}
+                  </Link>
                 )}
 
                 {user?.role === "admin" ? (
@@ -298,30 +287,17 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                       {dict.nav.dashboard}
                     </Link>
                   ) : (
-                    <>
-                      <Link
-                        href={`/${locale}/login`}
-                        onClick={() => setMobileOpen(false)}
-                        className={buttonVariants({
-                          variant: "secondary",
-                          size: "md",
-                          className: "w-full justify-start rounded-xl",
-                        })}
-                      >
-                        {dict.nav.login}
-                      </Link>
-                      <Link
-                        href={`/${locale}/register`}
-                        onClick={() => setMobileOpen(false)}
-                        className={buttonVariants({
-                          variant: "primary",
-                          size: "md",
-                          className: "w-full justify-start rounded-xl",
-                        })}
-                      >
-                        {dict.nav.register}
-                      </Link>
-                    </>
+                    <Link
+                      href={`/${locale}/login`}
+                      onClick={() => setMobileOpen(false)}
+                      className={buttonVariants({
+                        variant: "secondary",
+                        size: "md",
+                        className: "w-full justify-start rounded-xl",
+                      })}
+                    >
+                      {dict.nav.login}
+                    </Link>
                   )}
 
                   {user?.role === "admin" ? (
