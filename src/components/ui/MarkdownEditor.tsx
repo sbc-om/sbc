@@ -25,6 +25,7 @@ import {
   RiSeparator,
   RiAtLine,
 } from "react-icons/ri";
+import { useToast } from "@/components/ui/Toast";
 
 interface MarkdownEditorProps {
   value: string;
@@ -105,6 +106,7 @@ export function MarkdownEditor({
   uploadEndpoint = "/api/chat/upload",
   resizable = true,
 }: MarkdownEditorProps) {
+  const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -176,12 +178,12 @@ export function MarkdownEditor({
     
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      alert("فرمت عکس مجاز نیست. فقط JPEG, PNG, GIF و WebP مجاز است.");
+      toast({ message: "فرمت عکس مجاز نیست. فقط JPEG, PNG, GIF و WebP مجاز است.", variant: "error" });
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      alert("حجم فایل نباید بیشتر از 10MB باشد.");
+      toast({ message: "حجم فایل نباید بیشتر از 10MB باشد.", variant: "error" });
       return;
     }
 
@@ -203,14 +205,14 @@ export function MarkdownEditor({
         const imageMarkdown = `![${file.name}](${data.url})`;
         insertText(textareaRef.current, value, handleChange, imageMarkdown, "", "");
       } else {
-        alert(data.error || "خطا در آپلود عکس");
+        toast({ message: data.error || "خطا در آپلود عکس", variant: "error" });
       }
     } catch {
-      alert("خطا در آپلود عکس");
+      toast({ message: "خطا در آپلود عکس", variant: "error" });
     } finally {
       setUploading(false);
     }
-  }, [value, handleChange, uploadEndpoint]);
+  }, [value, handleChange, uploadEndpoint, toast]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

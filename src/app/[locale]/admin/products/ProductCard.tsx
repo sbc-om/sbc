@@ -7,9 +7,11 @@ import { useRouter } from "next/navigation";
 import type { StoreProduct } from "@/lib/store/types";
 import type { Locale } from "@/lib/i18n/locales";
 import { Button, buttonVariants } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 
 export function ProductCard({ product, locale }: { product: StoreProduct; locale: Locale }) {
   const router = useRouter();
+  const { toast } = useToast();
   const ar = locale === "ar";
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +38,7 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
 
       router.refresh();
     } catch (error: any) {
-      alert(ar ? `خطا: ${error.message}` : `Error: ${error.message}`);
+      toast({ message: ar ? `خطا: ${error.message}` : `Error: ${error.message}`, variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -57,7 +59,7 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
 
       router.refresh();
     } catch (error: any) {
-      alert(ar ? `خطا: ${error.message}` : `Error: ${error.message}`);
+      toast({ message: ar ? `خطا: ${error.message}` : `Error: ${error.message}`, variant: "error" });
     } finally {
       setLoading(false);
     }

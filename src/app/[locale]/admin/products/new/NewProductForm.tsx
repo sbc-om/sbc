@@ -6,9 +6,11 @@ import type { Locale } from "@/lib/i18n/locales";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { useToast } from "@/components/ui/Toast";
 
 export function NewProductForm({ locale }: { locale: Locale }) {
   const router = useRouter();
+  const { toast } = useToast();
   const ar = locale === "ar";
   const [loading, setLoading] = useState(false);
 
@@ -75,7 +77,7 @@ export function NewProductForm({ locale }: { locale: Locale }) {
       router.push(`/${locale}/admin/products`);
       router.refresh();
     } catch (error: any) {
-      alert(ar ? `خطا: ${error.message}` : `Error: ${error.message}`);
+      toast({ message: ar ? `خطا: ${error.message}` : `Error: ${error.message}`, variant: "error" });
     } finally {
       setLoading(false);
     }

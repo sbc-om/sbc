@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import type { LoyaltyCardTemplate } from "@/lib/db/types";
+import { useToast } from "@/components/ui/Toast";
 
 interface Props {
   locale: Locale;
@@ -15,6 +16,7 @@ interface Props {
 export function TemplateListClient({ locale, templates, businessName }: Props) {
   const ar = locale === "ar";
   const router = useRouter();
+  const { toast } = useToast();
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const handleDelete = async (templateId: string) => {
@@ -30,14 +32,14 @@ export function TemplateListClient({ locale, templates, businessName }: Props) {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Failed to delete template");
+        toast({ message: data.error || "Failed to delete template", variant: "error" });
         return;
       }
 
       router.refresh();
     } catch (err) {
       console.error(err);
-      alert(ar ? "حدث خطأ أثناء الحذف" : "Error deleting template");
+      toast({ message: ar ? "حدث خطأ أثناء الحذف" : "Error deleting template", variant: "error" });
     } finally {
       setDeleting(null);
     }

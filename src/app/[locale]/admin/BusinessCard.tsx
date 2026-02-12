@@ -10,6 +10,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { approveBusinessAction, deleteBusinessAction } from "./actions";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 
 export function BusinessCard({
   business,
@@ -22,6 +23,7 @@ export function BusinessCard({
 }) {
   const ar = locale === "ar";
   const router = useRouter();
+  const { toast } = useToast();
   const [deleting, setDeleting] = useState(false);
   const [approving, setApproving] = useState(false);
   const isApproved = business.isApproved ?? business.isVerified ?? false;
@@ -35,7 +37,7 @@ export function BusinessCard({
       router.refresh();
     } catch {
       setDeleting(false);
-      alert(ar ? "فشل الحذف" : "Delete failed");
+      toast({ message: ar ? "فشل الحذف" : "Delete failed", variant: "error" });
     }
   };
 
@@ -46,7 +48,7 @@ export function BusinessCard({
       router.refresh();
     } catch {
       setApproving(false);
-      alert(ar ? "فشل الاعتماد" : "Approve failed");
+      toast({ message: ar ? "فشل الاعتماد" : "Approve failed", variant: "error" });
     }
   };
 

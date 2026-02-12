@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { buttonVariants } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 
 interface AppleWalletButtonProps {
   cardId: string;
@@ -11,6 +12,7 @@ interface AppleWalletButtonProps {
 
 export function AppleWalletButton({ cardId, label, locale = "en" }: AppleWalletButtonProps) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const { toast } = useToast();
 
   const ar = locale === "ar";
 
@@ -52,7 +54,7 @@ export function AppleWalletButton({ cardId, label, locale = "en" }: AppleWalletB
       const message = ar 
         ? "فشل تحميل البطاقة. يرجى المحاولة مرة أخرى."
         : "Failed to download pass. Please try again.";
-      alert(message);
+      toast({ message, variant: "error" });
     } finally {
       setIsDownloading(false);
     }

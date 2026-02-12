@@ -10,6 +10,7 @@ import type { Category } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
+import { useToast } from "@/components/ui/Toast";
 import { 
   respondToRequestAction, 
   convertRequestToBusinessAction,
@@ -31,6 +32,7 @@ export function RequestCard({
 }) {
   const ar = locale === "ar";
   const router = useRouter();
+  const { toast } = useToast();
   const [showResponse, setShowResponse] = useState(false);
   const [response, setResponse] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,7 +40,7 @@ export function RequestCard({
 
   const handleRespond = async (status: "approved" | "rejected") => {
     if (!response.trim()) {
-      alert(ar ? "الرجاء إدخال رد" : "Please enter a response");
+      toast({ message: ar ? "الرجاء إدخال رد" : "Please enter a response", variant: "error" });
       return;
     }
 
@@ -49,7 +51,7 @@ export function RequestCard({
       setResponse("");
       router.refresh();
     } catch {
-      alert(ar ? "فشل إرسال الرد" : "Failed to send response");
+      toast({ message: ar ? "فشل إرسال الرد" : "Failed to send response", variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -65,7 +67,7 @@ export function RequestCard({
       await convertRequestToBusinessAction(locale, request.id);
       router.push(`/${locale}/admin/businesses`);
     } catch (err) {
-      alert(ar ? `فشل التحويل: ${err}` : `Conversion failed: ${err}`);
+      toast({ message: ar ? `فشل التحويل: ${err}` : `Conversion failed: ${err}`, variant: "error" });
       setConverting(false);
     }
   };
@@ -79,7 +81,7 @@ export function RequestCard({
       await deleteRequestAction(locale, request.id);
       router.refresh();
     } catch {
-      alert(ar ? "فشل الحذف" : "Delete failed");
+      toast({ message: ar ? "فشل الحذف" : "Delete failed", variant: "error" });
     }
   };
 

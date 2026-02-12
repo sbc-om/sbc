@@ -4,6 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { LocationPickerModal } from "@/components/chat/LocationPickerModal";
+import { useToast } from "@/components/ui/Toast";
 
 // Common emoji list for quick access
 const COMMON_EMOJIS = [
@@ -29,6 +30,7 @@ type MessageInputProps = {
 };
 
 export function MessageInput({ onSendMessage, locale }: MessageInputProps) {
+  const { toast } = useToast();
   const [text, setText] = useState("");
   const [isPending, startTransition] = useTransition();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -135,7 +137,10 @@ export function MessageInput({ onSendMessage, locale }: MessageInputProps) {
       }, 1000);
     } catch (error) {
       console.error("Failed to start recording:", error);
-      alert(locale === "ar" ? "لا يمكن الوصول للميكروفون" : "Cannot access microphone");
+      toast({
+        message: locale === "ar" ? "لا يمكن الوصول للميكروفون" : "Cannot access microphone",
+        variant: "error",
+      });
     }
   };
 

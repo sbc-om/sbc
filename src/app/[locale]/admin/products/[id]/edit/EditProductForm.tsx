@@ -7,9 +7,11 @@ import type { StoreProduct } from "@/lib/store/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { useToast } from "@/components/ui/Toast";
 
 export function EditProductForm({ product, locale }: { product: StoreProduct; locale: Locale }) {
   const router = useRouter();
+  const { toast } = useToast();
   const ar = locale === "ar";
   const [loading, setLoading] = useState(false);
 
@@ -76,7 +78,7 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
       router.push(`/${locale}/admin/products`);
       router.refresh();
     } catch (error: any) {
-      alert(ar ? `خطا: ${error.message}` : `Error: ${error.message}`);
+      toast({ message: ar ? `خطا: ${error.message}` : `Error: ${error.message}`, variant: "error" });
     } finally {
       setLoading(false);
     }

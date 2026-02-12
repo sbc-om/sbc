@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/Button";
 import { CategorySelectField } from "@/components/CategorySelectField";
 import { UserSelect } from "@/components/ui/UserSelect";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
+import { useToast } from "@/components/ui/Toast";
 
 const OsmLocationPicker = dynamic(
   () =>
@@ -221,6 +222,7 @@ export function AgentBusinessForm({
   clientSubscriptions: Record<string, ClientSub[]>;
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const t = texts[locale];
   const ar = locale === "ar";
 
@@ -334,16 +336,18 @@ export function AgentBusinessForm({
     e.preventDefault();
 
     if (!formData.name_en || !formData.name_ar || !formData.categoryId) {
-      alert(ar ? "الرجاء ملء الحقول المطلوبة" : "Please fill required fields");
+      toast({ message: ar ? "الرجاء ملء الحقول المطلوبة" : "Please fill required fields", variant: "error" });
       return;
     }
 
     if (!selectedClientId || !selectedProductSlug) {
-      alert(
-        ar
-          ? "الرجاء اختيار العميل والطرح"
-          : "Please select a client and plan"
-      );
+      toast({
+        message:
+          ar
+            ? "الرجاء اختيار العميل والطرح"
+            : "Please select a client and plan",
+        variant: "error",
+      });
       return;
     }
 
@@ -371,7 +375,7 @@ export function AgentBusinessForm({
       router.push(`/${locale}/agent/businesses/new?success=1`);
       router.refresh();
     } catch (error: any) {
-      alert(ar ? `خطأ: ${error.message}` : `Error: ${error.message}`);
+      toast({ message: ar ? `خطأ: ${error.message}` : `Error: ${error.message}`, variant: "error" });
     } finally {
       setLoading(false);
     }

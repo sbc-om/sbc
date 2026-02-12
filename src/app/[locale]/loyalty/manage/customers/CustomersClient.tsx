@@ -11,6 +11,7 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { cn } from "@/lib/cn";
 import { QrScanner } from "@/components/QrScanner";
+import { useToast } from "@/components/ui/Toast";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -36,6 +37,7 @@ export function CustomersClient({
 }) {
   const rtl = localeDir(locale) === "rtl";
   const ar = locale === "ar";
+  const { toast } = useToast();
 
   const [q, setQ] = useState(initialQuery ?? "");
   const [items, setItems] = useState<CustomerDTO[]>(customers);
@@ -158,11 +160,11 @@ export function CustomersClient({
         setShowScanner(false);
         router.push(`/${locale}/loyalty/manage/customers/${customerId}`);
       } else {
-        alert(ar ? "رمز QR غير صالح" : "Invalid QR code");
+        toast({ message: ar ? "رمز QR غير صالح" : "Invalid QR code", variant: "error" });
         setShowScanner(false);
       }
     } catch {
-      alert(ar ? "رمز QR غير صالح" : "Invalid QR code");
+      toast({ message: ar ? "رمز QR غير صالح" : "Invalid QR code", variant: "error" });
       setShowScanner(false);
     }
   }

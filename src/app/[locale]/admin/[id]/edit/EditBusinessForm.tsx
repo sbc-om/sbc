@@ -16,6 +16,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { UserSelect } from "@/components/ui/UserSelect";
 import { MarkdownEditorField } from "@/components/ui/MarkdownEditor";
+import { useToast } from "@/components/ui/Toast";
 
 const OsmLocationPicker = dynamic(
   () => import("@/components/maps/OsmLocationPicker").then((mod) => mod.OsmLocationPicker),
@@ -188,6 +189,7 @@ export function EditBusinessForm({
 }) {
   const ar = locale === "ar";
   const router = useRouter();
+  const { toast } = useToast();
   const [deleting, setDeleting] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(business.categoryId || "");
   const [selectedOwner, setSelectedOwner] = useState(business.ownerId || "");
@@ -448,7 +450,7 @@ export function EditBusinessForm({
       router.push(`/${locale}/admin`);
     } catch {
       setDeleting(false);
-      alert(ar ? "فشل الحذف" : "Delete failed");
+      toast({ message: ar ? "فشل الحذف" : "Delete failed", variant: "error" });
     }
   };
 

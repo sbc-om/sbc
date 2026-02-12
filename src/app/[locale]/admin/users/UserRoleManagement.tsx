@@ -7,6 +7,7 @@ import { HiOutlineKey } from "react-icons/hi";
 import { RoleSelect } from "@/components/ui/RoleSelect";
 import { buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useToast } from "@/components/ui/Toast";
 import { approveUserAction, restoreUserAction, updateUserActiveAction, updateUserPasswordAction, updateUserRoleAction, updateUserVerifiedAction } from "./actions";
 import type { Role } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
@@ -39,6 +40,7 @@ function formatDate(iso: string, locale: Locale) {
 
 export function UserRoleManagement({ users, archivedCount, showArchived, locale, currentUserId, agentUserIds, walletBalances }: UserRoleManagementProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const agentSet = useMemo(() => new Set(agentUserIds), [agentUserIds]);
   const [roleOverrides, setRoleOverrides] = useState<Record<string, Role>>({});
   const [verifiedOverrides, setVerifiedOverrides] = useState<Record<string, boolean>>({});
@@ -94,9 +96,13 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
       setRoleOverrides((prev) => ({ ...prev, [userId]: previousRole }));
       const msg = error instanceof Error ? error.message : "";
       if (msg === "NOT_AN_AGENT") {
-        alert(locale === "ar"
-          ? "يجب إضافة المستخدم كوكيل أولاً من صفحة إدارة الوكلاء"
-          : "User must be added as an agent first from the Agents management page");
+        toast({
+          message:
+            locale === "ar"
+              ? "يجب إضافة المستخدم كوكيل أولاً من صفحة إدارة الوكلاء"
+              : "User must be added as an agent first from the Agents management page",
+          variant: "error",
+        });
       }
     } finally {
       setSavingRoleUserId(null);
@@ -184,7 +190,6 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
     try {
       await updateUserPasswordAction(locale, passwordModal.userId, newPassword);
       closePasswordModal();
-      alert(locale === "ar" ? "تم تغيير كلمة المرور بنجاح" : "Password changed successfully");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "";
       setPasswordError(msg || (locale === "ar" ? "فشل تغيير كلمة المرور" : "Failed to change password"));

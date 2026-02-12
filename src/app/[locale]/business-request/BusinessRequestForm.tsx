@@ -12,6 +12,7 @@ import { PhoneInput } from "@/components/ui/PhoneInput";
 import { Button } from "@/components/ui/Button";
 import { CategorySelectField } from "@/components/CategorySelectField";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
+import { useToast } from "@/components/ui/Toast";
 
 const OsmLocationPicker = dynamic(
   () => import("@/components/maps/OsmLocationPicker").then((m) => m.OsmLocationPicker),
@@ -26,6 +27,7 @@ export function BusinessRequestForm({
   categories: Category[];
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const ar = locale === "ar";
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -76,7 +78,7 @@ export function BusinessRequestForm({
     e.preventDefault();
     
     if (!formData.name_en || !formData.name_ar || !formData.categoryId) {
-      alert(ar ? "الرجاء ملء الحقول المطلوبة" : "Please fill required fields");
+      toast({ message: ar ? "الرجاء ملء الحقول المطلوبة" : "Please fill required fields", variant: "error" });
       return;
     }
 
@@ -103,7 +105,7 @@ export function BusinessRequestForm({
       router.push(`/${locale}/business-request?success=1`);
       router.refresh();
     } catch (error: any) {
-      alert(ar ? `خطا: ${error.message}` : `Error: ${error.message}`);
+      toast({ message: ar ? `خطا: ${error.message}` : `Error: ${error.message}`, variant: "error" });
     } finally {
       setLoading(false);
     }

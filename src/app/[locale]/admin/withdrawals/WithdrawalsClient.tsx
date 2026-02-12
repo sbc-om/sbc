@@ -19,6 +19,7 @@ import {
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
 } from "react-icons/hi";
+import { useToast } from "@/components/ui/Toast";
 
 interface Pagination {
   page: number;
@@ -45,6 +46,7 @@ export function WithdrawalsClient({
   pagination: initialPagination,
 }: WithdrawalsClientProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [requests, setRequests] = useState(initialRequests);
   const [loading, setLoading] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -172,11 +174,11 @@ export function WithdrawalsClient({
         setMessageInput(prev => ({ ...prev, [requestId]: "" }));
         setRejectMessage(prev => ({ ...prev, [requestId]: "" }));
       } else {
-        alert(data.error || "Failed to process request");
+        toast({ message: data.error || "Failed to process request", variant: "error" });
       }
     } catch (error) {
       console.error("Failed to process request:", error);
-      alert("Failed to process request");
+      toast({ message: "Failed to process request", variant: "error" });
     } finally {
       setProcessingId(null);
     }
