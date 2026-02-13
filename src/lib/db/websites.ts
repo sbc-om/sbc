@@ -1,6 +1,5 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import type { QueryResultRow } from "pg";
 
 import { query } from "./postgres";
 import type { Website, WebsitePage, WebsitePackage } from "./types";
@@ -132,8 +131,7 @@ type WebsitePageRow = {
   updated_at: Date | null;
 };
 
-function rowToWebsite(row: QueryResultRow): Website {
-  const r = row as WebsiteRow;
+function rowToWebsite(r: WebsiteRow): Website {
   return {
     id: r.id,
     ownerId: r.owner_id,
@@ -162,8 +160,7 @@ function rowToWebsite(row: QueryResultRow): Website {
   };
 }
 
-function rowToWebsitePage(row: QueryResultRow): WebsitePage {
-  const r = row as WebsitePageRow;
+function rowToWebsitePage(r: WebsitePageRow): WebsitePage {
   return {
     id: r.id,
     websiteId: r.website_id,
@@ -196,7 +193,7 @@ export async function createWebsite(ownerId: string, input: WebsiteInput): Promi
     if (existingDomain.rows.length > 0) throw new Error("DOMAIN_TAKEN");
   }
 
-  const result = await query(`
+  const result = await query<WebsiteRow>(`
     INSERT INTO websites (
       id, owner_id, slug, custom_domain,
       title_en, title_ar, tagline_en, tagline_ar,
@@ -249,37 +246,37 @@ export async function createWebsite(ownerId: string, input: WebsiteInput): Promi
 }
 
 export async function getWebsiteById(id: string): Promise<Website | null> {
-  const result = await query(`SELECT * FROM websites WHERE id = $1`, [id]);
+  const result = await query<WebsiteRow>(`SELECT * FROM websites WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToWebsite(result.rows[0]) : null;
 }
 
 export async function getWebsiteBySlug(slug: string): Promise<Website | null> {
-  const result = await query(`SELECT * FROM websites WHERE slug = $1`, [slug]);
+  const result = await query<WebsiteRow>(`SELECT * FROM websites WHERE slug = $1`, [slug]);
   return result.rows.length > 0 ? rowToWebsite(result.rows[0]) : null;
 }
 
 export async function getWebsiteByDomain(domain: string): Promise<Website | null> {
-  const result = await query(`SELECT * FROM websites WHERE custom_domain = $1`, [domain]);
+  const result = await query<WebsiteRow>(`SELECT * FROM websites WHERE custom_domain = $1`, [domain]);
   return result.rows.length > 0 ? rowToWebsite(result.rows[0]) : null;
 }
 
 export async function getWebsiteByOwnerId(ownerId: string): Promise<Website | null> {
-  const result = await query(`SELECT * FROM websites WHERE owner_id = $1 ORDER BY created_at DESC LIMIT 1`, [ownerId]);
+  const result = await query<WebsiteRow>(`SELECT * FROM websites WHERE owner_id = $1 ORDER BY created_at DESC LIMIT 1`, [ownerId]);
   return result.rows.length > 0 ? rowToWebsite(result.rows[0]) : null;
 }
 
 export async function listWebsitesByOwner(ownerId: string): Promise<Website[]> {
-  const result = await query(`SELECT * FROM websites WHERE owner_id = $1 ORDER BY created_at DESC`, [ownerId]);
+  const result = await query<WebsiteRow>(`SELECT * FROM websites WHERE owner_id = $1 ORDER BY created_at DESC`, [ownerId]);
   return result.rows.map(rowToWebsite);
 }
 
 export async function listAllWebsites(): Promise<Website[]> {
-  const result = await query(`SELECT * FROM websites ORDER BY created_at DESC`);
+  const result = await query<WebsiteRow>(`SELECT * FROM websites ORDER BY created_at DESC`);
   return result.rows.map(rowToWebsite);
 }
 
 export async function listPublishedWebsites(): Promise<Website[]> {
-  const result = await query(`SELECT * FROM websites WHERE is_published = true ORDER BY created_at DESC`);
+  const result = await query<WebsiteRow>(`SELECT * FROM websites WHERE is_published = true ORDER BY created_at DESC`);
   return result.rows.map(rowToWebsite);
 }
 
@@ -301,7 +298,7 @@ export async function updateWebsite(id: string, input: Partial<WebsiteInput>): P
     if (existingDomain.rows.length > 0) throw new Error("DOMAIN_TAKEN");
   }
 
-  const result = await query(`
+  const result = await query<WebsiteRow>(`
     UPDATE websites SET
       slug = COALESCE($2, slug),
       custom_domain = $3,
@@ -356,7 +353,7 @@ export async function deleteWebsite(id: string): Promise<boolean> {
 }
 
 export async function publishWebsite(id: string, isPublished: boolean): Promise<Website> {
-  const result = await query(`
+  const result = await query<WebsiteRow>(`
     UPDATE websites SET is_published = $2, updated_at = $3 WHERE id = $1 RETURNING *
   `, [id, isPublished, new Date()]);
   if (result.rows.length === 0) throw new Error("NOT_FOUND");
@@ -375,7 +372,7 @@ export async function createWebsitePage(websiteId: string, input: WebsitePageInp
     await query(`UPDATE website_pages SET is_homepage = false WHERE website_id = $1`, [websiteId]);
   }
 
-  const result = await query(`
+  const result = await query<WebsitePageRow>(`
     INSERT INTO website_pages (
       id, website_id, slug, title_en, title_ar,
       is_homepage, blocks, seo, sort_order, is_published,
@@ -393,22 +390,22 @@ export async function createWebsitePage(websiteId: string, input: WebsitePageInp
 }
 
 export async function getWebsitePageById(id: string): Promise<WebsitePage | null> {
-  const result = await query(`SELECT * FROM website_pages WHERE id = $1`, [id]);
+  const result = await query<WebsitePageRow>(`SELECT * FROM website_pages WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToWebsitePage(result.rows[0]) : null;
 }
 
 export async function getWebsitePageBySlug(websiteId: string, slug: string): Promise<WebsitePage | null> {
-  const result = await query(`SELECT * FROM website_pages WHERE website_id = $1 AND slug = $2`, [websiteId, slug]);
+  const result = await query<WebsitePageRow>(`SELECT * FROM website_pages WHERE website_id = $1 AND slug = $2`, [websiteId, slug]);
   return result.rows.length > 0 ? rowToWebsitePage(result.rows[0]) : null;
 }
 
 export async function getWebsiteHomepage(websiteId: string): Promise<WebsitePage | null> {
-  const result = await query(`SELECT * FROM website_pages WHERE website_id = $1 AND is_homepage = true LIMIT 1`, [websiteId]);
+  const result = await query<WebsitePageRow>(`SELECT * FROM website_pages WHERE website_id = $1 AND is_homepage = true LIMIT 1`, [websiteId]);
   return result.rows.length > 0 ? rowToWebsitePage(result.rows[0]) : null;
 }
 
 export async function listWebsitePages(websiteId: string): Promise<WebsitePage[]> {
-  const result = await query(`SELECT * FROM website_pages WHERE website_id = $1 ORDER BY sort_order ASC, created_at ASC`, [websiteId]);
+  const result = await query<WebsitePageRow>(`SELECT * FROM website_pages WHERE website_id = $1 ORDER BY sort_order ASC, created_at ASC`, [websiteId]);
   return result.rows.map(rowToWebsitePage);
 }
 
@@ -423,7 +420,7 @@ export async function updateWebsitePage(id: string, input: Partial<WebsitePageIn
     await query(`UPDATE website_pages SET is_homepage = false WHERE website_id = $1 AND id != $2`, [existing.websiteId, id]);
   }
 
-  const result = await query(`
+  const result = await query<WebsitePageRow>(`
     UPDATE website_pages SET
       slug = COALESCE($2, slug),
       title_en = COALESCE($3, title_en),

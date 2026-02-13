@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { createHash } from "node:crypto";
-import type { QueryResultRow } from "pg";
 
 import { query, transaction } from "./postgres";
 import type { Role, User, UserPushSubscription } from "./types";
@@ -100,8 +99,7 @@ type UserPushSubscriptionRow = {
   updated_at: Date | null;
 };
 
-function rowToUser(row: QueryResultRow): User {
-  const r = row as UserRow;
+function rowToUser(r: UserRow): User {
   return {
     id: r.id,
     email: r.email,
@@ -173,7 +171,7 @@ export async function createUser(input: {
   const now = new Date();
   const id = nanoid();
 
-  const result = await query(`
+  const result = await query<UserRow>(`
     INSERT INTO users (id, email, phone, full_name, username, password_hash, role, is_active, is_verified,
       display_name, approval_status, approval_reason, approval_requested_at, created_at, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, $7, true, false, $4, 'approved', NULL, $8, $8, $8)
@@ -184,7 +182,7 @@ export async function createUser(input: {
 }
 
 async function ensureUser(id: string): Promise<User> {
-  const result = await query(`SELECT * FROM users WHERE id = $1`, [id]);
+  const result = await query<UserRow>(`SELECT * FROM users WHERE id = $1`, [id]);
   if (result.rows.length === 0) throw new Error("NOT_FOUND");
   return rowToUser(result.rows[0]);
 }
@@ -222,7 +220,7 @@ export async function updateUserProfile(
 
   values.push(id);
 
-  const result = await query(
+  const result = await query<UserRow>(
     `UPDATE users SET ${updates.join(", ")} WHERE id = $${paramIdx} RETURNING *`,
     values
   );
@@ -236,7 +234,7 @@ export async function updateUserFullName(id: string, fullName: string | null | u
   const nextFullName = fullName === null ? undefined : fullNameSchema.parse(fullName);
 
   if (nextFullName) {
-    const result = await query(`
+    const result = await query<UserRow>(`
       UPDATE users SET full_name = $1, updated_at = $2 WHERE id = $3 RETURNING *
     `, [nextFullName, new Date(), id]);
     return rowToUser(result.rows[0]);
@@ -282,7 +280,7 @@ export async function updateUserContact(
 
   // Admins don't need approval for contact changes - apply directly
   if (current.role === "admin") {
-    const result = await query(`
+    const result = await query<UserRow>(`
       UPDATE users SET
         email = $1,
         phone = $2,
@@ -299,7 +297,7 @@ export async function updateUserContact(
       ? "new"
       : "contact_update";
 
-  const result = await query(`
+  const result = await query<UserRow>(`
     UPDATE users SET
       pending_email = CASE WHEN $1 != email THEN $1 ELSE pending_email END,
       pending_phone = CASE WHEN $2 != phone THEN $2 ELSE pending_phone END,
@@ -354,7 +352,7 @@ export async function approveUserAccount(id: string): Promise<User> {
 }
 
 export async function setUserAvatar(id: string, url: string | null): Promise<User> {
-  const result = await query(`
+  const result = await query<UserRow>(`
     UPDATE users SET avatar_url = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [url, new Date(), id]);
 
@@ -363,7 +361,7 @@ export async function setUserAvatar(id: string, url: string | null): Promise<Use
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-  const result = await query(`SELECT * FROM users WHERE id = $1`, [id]);
+  const result = await query<UserRow>(`SELECT * FROM users WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToUser(result.rows[0]) : null;
 }
 
@@ -371,7 +369,7 @@ export async function getUserByEmail(email: string): Promise<User | null> {
   const e = emailSchema.safeParse(email);
   if (!e.success) return null;
 
-  const result = await query(`SELECT * FROM users WHERE email = $1`, [e.data]);
+  const result = await query<UserRow>(`SELECT * FROM users WHERE email = $1`, [e.data]);
   return result.rows.length > 0 ? rowToUser(result.rows[0]) : null;
 }
 
@@ -387,13 +385,13 @@ export async function getUserByPhone(phone: string): Promise<User | null> {
   }
 
   // First try exact match
-  const result = await query(`SELECT * FROM users WHERE phone = $1`, [normalized]);
+  const result = await query<UserRow>(`SELECT * FROM users WHERE phone = $1`, [normalized]);
   if (result.rows.length > 0) return rowToUser(result.rows[0]);
 
   // If the number looks like a local number (no country code), try suffix match.
   // This handles cases where users enter "91234567" but DB has "96891234567".
   if (normalized.length >= 7 && normalized.length <= 10) {
-    const suffixResult = await query(
+    const suffixResult = await query<UserRow>(
       `SELECT * FROM users WHERE phone LIKE '%' || $1`,
       [normalized],
     );
@@ -419,7 +417,7 @@ export async function verifyUserPassword(input: {
 }
 
 export async function updateUserRole(id: string, newRole: Role): Promise<User> {
-  const result = await query(`
+  const result = await query<UserRow>(`
     UPDATE users SET role = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [newRole, new Date(), id]);
 
@@ -428,7 +426,7 @@ export async function updateUserRole(id: string, newRole: Role): Promise<User> {
 }
 
 export async function setUserActive(id: string, isActive: boolean): Promise<User> {
-  const result = await query(`
+  const result = await query<UserRow>(`
     UPDATE users SET is_active = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [isActive, new Date(), id]);
 
@@ -440,7 +438,7 @@ export async function setUserPassword(id: string, password: string): Promise<Use
   const nextPassword = z.string().min(8).parse(password);
   const passwordHash = await bcrypt.hash(nextPassword, 12);
 
-  const result = await query(
+  const result = await query<UserRow>(
     `UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3 RETURNING *`,
     [passwordHash, new Date(), id]
   );
@@ -537,7 +535,7 @@ export async function updateUserAdmin(
 }
 
 export async function setUserVerified(id: string, isVerified: boolean): Promise<User> {
-  const result = await query(`
+  const result = await query<UserRow>(`
     UPDATE users SET is_verified = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [isVerified, new Date(), id]);
 
@@ -546,7 +544,7 @@ export async function setUserVerified(id: string, isVerified: boolean): Promise<
 }
 
 export async function setUserPhoneVerified(id: string, isPhoneVerified: boolean): Promise<User> {
-  const result = await query(`
+  const result = await query<UserRow>(`
     UPDATE users SET is_phone_verified = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [isPhoneVerified, new Date(), id]);
 
@@ -558,7 +556,7 @@ export async function archiveUser(id: string): Promise<User> {
   const now = new Date().toISOString();
   
   // Archive the user (soft delete)
-  const result = await query(`
+  const result = await query<UserRow>(`
     UPDATE users 
     SET is_archived = true, archived_at = $1, is_active = false, updated_at = $2 
     WHERE id = $3 AND is_archived = false 
@@ -587,7 +585,7 @@ export async function archiveUser(id: string): Promise<User> {
 export async function restoreUser(id: string): Promise<User> {
   const now = new Date().toISOString();
   
-  const result = await query(`
+  const result = await query<UserRow>(`
     UPDATE users 
     SET is_archived = false, archived_at = NULL, is_active = true, updated_at = $1 
     WHERE id = $2 AND is_archived = true 
@@ -599,7 +597,7 @@ export async function restoreUser(id: string): Promise<User> {
 }
 
 export async function listUsers(includeArchived = false): Promise<UserListItem[]> {
-  const result = await query(`
+  const result = await query<UserListRow>(`
     SELECT id, email, phone, full_name, role, is_active, is_verified, is_phone_verified, 
            is_archived, archived_at, created_at, updated_at,
            approval_status, approval_reason, approval_requested_at, pending_email, pending_phone, approved_at
@@ -608,8 +606,7 @@ export async function listUsers(includeArchived = false): Promise<UserListItem[]
     ORDER BY created_at DESC
   `);
 
-  return result.rows.map((row) => {
-    const r = row as UserListRow;
+  return result.rows.map((r) => {
     return {
       id: r.id,
       email: r.email,
@@ -634,7 +631,7 @@ export async function listUsers(includeArchived = false): Promise<UserListItem[]
 }
 
 export async function listArchivedUsers(): Promise<UserListItem[]> {
-  const result = await query(`
+  const result = await query<UserListRow>(`
     SELECT id, email, phone, full_name, role, is_active, is_verified, is_phone_verified, 
            is_archived, archived_at, created_at, updated_at,
            approval_status, approval_reason, approval_requested_at, pending_email, pending_phone, approved_at
@@ -643,8 +640,7 @@ export async function listArchivedUsers(): Promise<UserListItem[]> {
     ORDER BY archived_at DESC
   `);
 
-  return result.rows.map((row) => {
-    const r = row as UserListRow;
+  return result.rows.map((r) => {
     return {
       id: r.id,
       email: r.email,
@@ -701,7 +697,7 @@ export async function upsertUserPushSubscription(input: {
   const id = userPushSubId(userId, sub.endpoint);
   const now = new Date();
 
-  const result = await query(`
+  const result = await query<UserPushSubscriptionRow>(`
     INSERT INTO user_push_subscriptions (id, user_id, endpoint, keys, user_agent, created_at, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, $6)
     ON CONFLICT (id) DO UPDATE SET
@@ -719,8 +715,8 @@ export async function upsertUserPushSubscription(input: {
     endpoint: row.endpoint,
     keys: row.keys,
     userAgent: row.user_agent ?? undefined,
-    createdAt: row.created_at?.toISOString(),
-    updatedAt: row.updated_at?.toISOString(),
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 
@@ -745,10 +741,9 @@ export async function listUserPushSubscriptionsByUser(input: {
 }): Promise<UserPushSubscription[]> {
   const userId = z.string().trim().min(1).parse(input.userId);
 
-  const result = await query(`SELECT * FROM user_push_subscriptions WHERE user_id = $1`, [userId]);
+  const result = await query<UserPushSubscriptionRow>(`SELECT * FROM user_push_subscriptions WHERE user_id = $1`, [userId]);
 
-  return result.rows.map((row) => {
-    const r = row as UserPushSubscriptionRow;
+  return result.rows.map((r) => {
     return {
       id: r.id,
       userId: r.user_id,
@@ -762,10 +757,9 @@ export async function listUserPushSubscriptionsByUser(input: {
 }
 
 export async function listAllUserPushSubscriptions(): Promise<UserPushSubscription[]> {
-  const result = await query(`SELECT * FROM user_push_subscriptions`);
+  const result = await query<UserPushSubscriptionRow>(`SELECT * FROM user_push_subscriptions`);
 
-  return result.rows.map((row) => {
-    const r = row as UserPushSubscriptionRow;
+  return result.rows.map((r) => {
     return {
       id: r.id,
       userId: r.user_id,
@@ -821,7 +815,7 @@ export async function isUsernameAvailable(username: string, excludeUserId?: stri
 export async function setUserUsername(userId: string, username: string | null): Promise<User> {
   if (username === null) {
     // Remove username
-    const result = await query(
+    const result = await query<UserRow>(
       `UPDATE users SET username = NULL, updated_at = $1 WHERE id = $2 RETURNING *`,
       [new Date(), userId]
     );
@@ -835,7 +829,7 @@ export async function setUserUsername(userId: string, username: string | null): 
   const available = await isUsernameAvailable(parsed, userId);
   if (!available) throw new Error("USERNAME_TAKEN");
   
-  const result = await query(
+  const result = await query<UserRow>(
     `UPDATE users SET username = $1, updated_at = $2 WHERE id = $3 RETURNING *`,
     [parsed, new Date(), userId]
   );
@@ -851,7 +845,7 @@ export async function getUserByUsername(username: string): Promise<User | null> 
   const parsed = usernameSchema.safeParse(username);
   if (!parsed.success) return null;
   
-  const result = await query(`SELECT * FROM users WHERE username = $1`, [parsed.data]);
+  const result = await query<UserRow>(`SELECT * FROM users WHERE username = $1`, [parsed.data]);
   return result.rows.length > 0 ? rowToUser(result.rows[0]) : null;
 }
 

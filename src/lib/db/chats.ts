@@ -1,5 +1,4 @@
 import { nanoid } from "nanoid";
-import type { QueryResultRow } from "pg";
 
 import { query, transaction } from "./postgres";
 
@@ -52,8 +51,7 @@ type ChatMessageRow = {
   created_at: Date | null;
 };
 
-function rowToConversation(row: QueryResultRow): ChatConversation {
-  const r = row as ChatConversationRow;
+function rowToConversation(r: ChatConversationRow): ChatConversation {
   return {
     id: r.id,
     participantIds: r.participant_ids || [],
@@ -63,8 +61,7 @@ function rowToConversation(row: QueryResultRow): ChatConversation {
   };
 }
 
-function rowToMessage(row: QueryResultRow): ChatMessage {
-  const r = row as ChatMessageRow;
+function rowToMessage(r: ChatMessageRow): ChatMessage {
   return {
     id: r.id,
     conversationId: r.conversation_id,
@@ -85,7 +82,7 @@ export async function getOrCreateConversation(participantIds: string[]): Promise
   const sorted = [...participantIds].sort();
   
   // Try to find existing conversation
-  const existing = await query(`
+  const existing = await query<ChatConversationRow>(`
     SELECT * FROM chat_conversations WHERE participant_ids = $1
   `, [sorted]);
   
@@ -97,7 +94,7 @@ export async function getOrCreateConversation(participantIds: string[]): Promise
   const id = nanoid();
   const now = new Date();
 
-  const result = await query(`
+  const result = await query<ChatConversationRow>(`
     INSERT INTO chat_conversations (id, participant_ids, created_at, updated_at)
     VALUES ($1, $2, $3, $3)
     RETURNING *
@@ -107,12 +104,12 @@ export async function getOrCreateConversation(participantIds: string[]): Promise
 }
 
 export async function getConversationById(id: string): Promise<ChatConversation | null> {
-  const result = await query(`SELECT * FROM chat_conversations WHERE id = $1`, [id]);
+  const result = await query<ChatConversationRow>(`SELECT * FROM chat_conversations WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToConversation(result.rows[0]) : null;
 }
 
 export async function getConversationMessages(conversationId: string): Promise<ChatMessage[]> {
-  const result = await query(`
+  const result = await query<ChatMessageRow>(`
     SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at ASC
   `, [conversationId]);
   return result.rows.map(rowToMessage);
@@ -132,7 +129,7 @@ export async function sendMessage(input: {
     const id = nanoid();
     const now = new Date();
 
-    const msgResult = await client.query(`
+    const msgResult = await client.query<ChatMessageRow>(`
       INSERT INTO chat_messages (id, conversation_id, sender_id, text, status, message_type, media_url, media_type, location_lat, location_lng, created_at)
       VALUES ($1, $2, $3, $4, 'sent', $5, $6, $7, $8, $9, $10)
       RETURNING *
@@ -167,14 +164,14 @@ export async function getUnreadCount(conversationId: string, userId: string): Pr
 }
 
 export async function getUserConversations(userId: string): Promise<ChatConversation[]> {
-  const result = await query(`
+  const result = await query<ChatConversationRow>(`
     SELECT * FROM chat_conversations WHERE $1 = ANY(participant_ids) ORDER BY last_message_at DESC NULLS LAST
   `, [userId]);
   return result.rows.map(rowToConversation);
 }
 
 export async function getLastMessageForConversation(conversationId: string): Promise<ChatMessage | null> {
-  const result = await query(`
+  const result = await query<ChatMessageRow>(`
     SELECT * FROM chat_messages WHERE conversation_id = $1 ORDER BY created_at DESC LIMIT 1
   `, [conversationId]);
   return result.rows.length > 0 ? rowToMessage(result.rows[0]) : null;

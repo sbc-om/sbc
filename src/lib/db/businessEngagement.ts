@@ -1,5 +1,4 @@
 import { query } from "./postgres";
-import type { QueryResultRow } from "pg";
 
 // Business likes
 export async function likeBusiness(userId: string, businessId: string): Promise<void> {
@@ -29,10 +28,10 @@ export async function getBusinessLikeCount(businessId: string): Promise<number> 
 }
 
 export async function getUserLikedBusinessIds(userId: string): Promise<string[]> {
-  const result = await query(`
+  const result = await query<{ business_id: string }>(`
     SELECT business_id FROM user_business_likes WHERE user_id = $1
   `, [userId]);
-  return result.rows.map((row) => (row as { business_id: string }).business_id);
+  return result.rows.map((row) => row.business_id);
 }
 
 // Business saves
@@ -56,10 +55,10 @@ export async function hasUserSavedBusiness(userId: string, businessId: string): 
 }
 
 export async function getUserSavedBusinessIds(userId: string): Promise<string[]> {
-  const result = await query(`
+  const result = await query<{ business_id: string }>(`
     SELECT business_id FROM user_business_saves WHERE user_id = $1 ORDER BY created_at DESC
   `, [userId]);
-  return result.rows.map((row) => (row as { business_id: string }).business_id);
+  return result.rows.map((row) => row.business_id);
 }
 
 // Business comments
@@ -78,8 +77,7 @@ type BusinessCommentRow = {
   updated_at: Date | null;
 };
 
-function rowToComment(row: QueryResultRow): BusinessComment {
-  const r = row as BusinessCommentRow;
+function rowToComment(r: BusinessCommentRow): BusinessComment {
   return {
     id: r.id,
     businessId: r.business_id,
@@ -101,7 +99,7 @@ export async function createBusinessComment(input: {
   const id = nanoid();
   const now = new Date();
 
-  const result = await query(`
+  const result = await query<BusinessCommentRow>(`
     INSERT INTO business_comments (id, business_id, user_id, text, status, created_at, updated_at)
     VALUES ($1, $2, $3, $4, 'pending', $5, $5)
     RETURNING *
@@ -111,14 +109,14 @@ export async function createBusinessComment(input: {
 }
 
 export async function getBusinessComments(businessId: string): Promise<BusinessComment[]> {
-  const result = await query(`
+  const result = await query<BusinessCommentRow>(`
     SELECT * FROM business_comments WHERE business_id = $1 ORDER BY created_at DESC
   `, [businessId]);
   return result.rows.map(rowToComment);
 }
 
 export async function getApprovedBusinessComments(businessId: string): Promise<BusinessComment[]> {
-  const result = await query(`
+  const result = await query<BusinessCommentRow>(`
     SELECT * FROM business_comments WHERE business_id = $1 AND status = 'approved' ORDER BY created_at DESC
   `, [businessId]);
   return result.rows.map(rowToComment);
@@ -129,7 +127,7 @@ export async function moderateComment(
   status: BusinessCommentStatus,
   moderatorUserId: string
 ): Promise<BusinessComment> {
-  const result = await query(`
+  const result = await query<BusinessCommentRow>(`
     UPDATE business_comments SET
       status = $1,
       moderated_by_user_id = $2,
@@ -149,11 +147,11 @@ export async function deleteComment(commentId: string): Promise<boolean> {
 }
 
 export async function listAllComments(): Promise<BusinessComment[]> {
-  const result = await query(`SELECT * FROM business_comments ORDER BY created_at DESC`);
+  const result = await query<BusinessCommentRow>(`SELECT * FROM business_comments ORDER BY created_at DESC`);
   return result.rows.map(rowToComment);
 }
 
 export async function listPendingComments(): Promise<BusinessComment[]> {
-  const result = await query(`SELECT * FROM business_comments WHERE status = 'pending' ORDER BY created_at DESC`);
+  const result = await query<BusinessCommentRow>(`SELECT * FROM business_comments WHERE status = 'pending' ORDER BY created_at DESC`);
   return result.rows.map(rowToComment);
 }

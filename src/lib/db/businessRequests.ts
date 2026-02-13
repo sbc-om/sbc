@@ -1,6 +1,5 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
-import type { QueryResultRow } from "pg";
 
 import { query } from "./postgres";
 
@@ -78,8 +77,7 @@ type BusinessRequestRow = {
   updated_at: Date | null;
 };
 
-function rowToRequest(row: QueryResultRow): BusinessRequest {
-  const r = row as BusinessRequestRow;
+function rowToRequest(r: BusinessRequestRow): BusinessRequest {
   const businessName = r.business_name || "";
   return {
     id: r.id,
@@ -113,7 +111,7 @@ export async function createBusinessRequest(input: BusinessRequestInput): Promis
   const id = nanoid();
   const now = new Date();
 
-  const result = await query(`
+  const result = await query<BusinessRequestRow>(`
     INSERT INTO business_requests (
       id, user_id, agent_user_id, business_name, name_en, name_ar, desc_en, desc_ar, category, category_id, description, 
       city, address, phone, email, website, contact_email, contact_phone, tags, latitude, longitude, status, created_at, updated_at
@@ -130,17 +128,17 @@ export async function createBusinessRequest(input: BusinessRequestInput): Promis
 }
 
 export async function getBusinessRequestById(id: string): Promise<BusinessRequest | null> {
-  const result = await query(`SELECT * FROM business_requests WHERE id = $1`, [id]);
+  const result = await query<BusinessRequestRow>(`SELECT * FROM business_requests WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToRequest(result.rows[0]) : null;
 }
 
 export async function listBusinessRequests(): Promise<BusinessRequest[]> {
-  const result = await query(`SELECT * FROM business_requests ORDER BY created_at DESC`);
+  const result = await query<BusinessRequestRow>(`SELECT * FROM business_requests ORDER BY created_at DESC`);
   return result.rows.map(rowToRequest);
 }
 
 export async function listBusinessRequestsByAgent(agentUserId: string): Promise<BusinessRequest[]> {
-  const result = await query(
+  const result = await query<BusinessRequestRow>(
     `SELECT * FROM business_requests WHERE agent_user_id = $1 ORDER BY created_at DESC`,
     [agentUserId]
   );
@@ -148,7 +146,7 @@ export async function listBusinessRequestsByAgent(agentUserId: string): Promise<
 }
 
 export async function listPendingBusinessRequests(): Promise<BusinessRequest[]> {
-  const result = await query(`SELECT * FROM business_requests WHERE status = 'pending' ORDER BY created_at DESC`);
+  const result = await query<BusinessRequestRow>(`SELECT * FROM business_requests WHERE status = 'pending' ORDER BY created_at DESC`);
   return result.rows.map(rowToRequest);
 }
 
@@ -159,7 +157,7 @@ export async function updateBusinessRequestStatus(
   adminResponse?: string
 ): Promise<BusinessRequest> {
   const now = new Date();
-  const result = await query(`
+  const result = await query<BusinessRequestRow>(`
     UPDATE business_requests SET
       status = $1,
       admin_notes = $2,
@@ -186,7 +184,7 @@ export async function getBusinessRequestStatusByUserIds(
   if (userIds.length === 0) return new Map();
   const placeholders = userIds.map((_, i) => `$${i + 1}`).join(", ");
   // Pick the "best" status per user: approved > pending > rejected
-  const result = await query(
+  const result = await query<{ user_id: string; status: "pending" | "approved" | "rejected" }>(
     `SELECT DISTINCT ON (user_id) user_id, status
      FROM business_requests
      WHERE user_id IN (${placeholders})

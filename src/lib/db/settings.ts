@@ -18,7 +18,7 @@ type AppSettingRow = {
  * Get a setting value
  */
 export async function getSetting<T = boolean>(key: SettingKey): Promise<T | null> {
-  const result = await query(
+  const result = await query<{ value: T }>(
     `SELECT value FROM app_settings WHERE key = $1`,
     [key]
   );
@@ -42,9 +42,9 @@ export async function setSetting<T>(key: SettingKey, value: T): Promise<void> {
  * Get all settings
  */
 export async function getAllSettings(): Promise<Record<SettingKey, unknown>> {
-  const result = await query(`SELECT key, value FROM app_settings`);
+  const result = await query<AppSettingRow>(`SELECT key, value FROM app_settings`);
   const settings: Partial<Record<SettingKey, unknown>> = {};
-  for (const row of result.rows as AppSettingRow[]) {
+  for (const row of result.rows) {
     settings[row.key] = row.value;
   }
   return settings as Record<SettingKey, unknown>;
