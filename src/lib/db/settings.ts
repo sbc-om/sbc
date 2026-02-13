@@ -9,6 +9,11 @@ export type SettingKey =
   | "whatsapp_registration_verification"
   | "whatsapp_login_notification";
 
+type AppSettingRow = {
+  key: SettingKey;
+  value: unknown;
+};
+
 /**
  * Get a setting value
  */
@@ -36,13 +41,13 @@ export async function setSetting<T>(key: SettingKey, value: T): Promise<void> {
 /**
  * Get all settings
  */
-export async function getAllSettings(): Promise<Record<SettingKey, any>> {
+export async function getAllSettings(): Promise<Record<SettingKey, unknown>> {
   const result = await query(`SELECT key, value FROM app_settings`);
-  const settings: Record<string, any> = {};
-  for (const row of result.rows) {
+  const settings: Partial<Record<SettingKey, unknown>> = {};
+  for (const row of result.rows as AppSettingRow[]) {
     settings[row.key] = row.value;
   }
-  return settings as Record<SettingKey, any>;
+  return settings as Record<SettingKey, unknown>;
 }
 
 /**

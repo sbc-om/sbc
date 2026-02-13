@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 
 import { Button } from "@/components/ui/Button";
 import type { Locale } from "@/lib/i18n/locales";
@@ -55,14 +56,16 @@ export function PasskeyLoginButton({ locale, next }: PasskeyLoginButtonProps) {
       });
 
       const optionsJson = (await optionsRes.json()) as
-        | { ok: true; options: unknown; requestId: string }
+        | { ok: true; options: PublicKeyCredentialRequestOptionsJSON; requestId: string }
         | { ok: false; error: string };
 
       if (!optionsRes.ok || !optionsJson.ok) {
         throw new Error(optionsJson.ok ? "OPTIONS_FAILED" : optionsJson.error);
       }
 
-      const assertion = await startAuthentication(optionsJson.options);
+      const assertion = await startAuthentication({
+        optionsJSON: optionsJson.options,
+      });
 
       const verifyRes = await fetch("/api/auth/passkey/authentication/verify", {
         method: "POST",

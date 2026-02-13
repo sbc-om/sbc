@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
+import type { PublicKeyCredentialRequestOptionsJSON } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PhoneInput } from "@/components/ui/PhoneInput";
@@ -201,7 +202,7 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
       });
 
       const optionsJson = (await optionsRes.json()) as
-        | { ok: true; options: unknown; requestId: string }
+        | { ok: true; options: PublicKeyCredentialRequestOptionsJSON; requestId: string }
         | { ok: false; error: string };
 
       if (!optionsRes.ok || !optionsJson.ok) {
@@ -215,7 +216,9 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
         return;
       }
 
-      const assertion = await startAuthentication(optionsJson.options);
+      const assertion = await startAuthentication({
+        optionsJSON: optionsJson.options,
+      });
 
       const verifyRes = await fetch("/api/auth/passkey/authentication/verify", {
         method: "POST",

@@ -42,7 +42,64 @@ function normalizePhone(value: string) {
   return value.replace(/\D/g, "");
 }
 
-function rowToUser(row: any): User {
+type UserRow = {
+  id: string;
+  email: string;
+  phone: string | null;
+  username: string | null;
+  full_name: string;
+  password_hash: string;
+  role: Role;
+  is_active: boolean | null;
+  is_verified: boolean | null;
+  is_phone_verified: boolean | null;
+  is_archived: boolean | null;
+  archived_at: Date | null;
+  display_name: string | null;
+  bio: string | null;
+  avatar_url: string | null;
+  approval_status: User["approvalStatus"];
+  approval_reason: User["approvalReason"];
+  approval_requested_at: Date | null;
+  approved_at: Date | null;
+  pending_email: string | null;
+  pending_phone: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type UserListRow = {
+  id: string;
+  email: string;
+  phone: string | null;
+  full_name: string | null;
+  role: Role;
+  is_active: boolean | null;
+  is_verified: boolean | null;
+  is_phone_verified: boolean | null;
+  is_archived: boolean | null;
+  archived_at: Date | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+  approval_status: User["approvalStatus"];
+  approval_reason: User["approvalReason"];
+  approval_requested_at: Date | null;
+  pending_email: string | null;
+  pending_phone: string | null;
+  approved_at: Date | null;
+};
+
+type UserPushSubscriptionRow = {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  keys: UserPushSubscription["keys"];
+  user_agent: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+function rowToUser(row: UserRow): User {
   return {
     id: row.id,
     email: row.email,
@@ -56,15 +113,15 @@ function rowToUser(row: any): User {
     isPhoneVerified: row.is_phone_verified ?? false,
     isArchived: row.is_archived ?? false,
     archivedAt: row.archived_at?.toISOString(),
-    displayName: row.display_name,
-    bio: row.bio,
-    avatarUrl: row.avatar_url,
+    displayName: row.display_name ?? undefined,
+    bio: row.bio ?? undefined,
+    avatarUrl: row.avatar_url ?? undefined,
     approvalStatus: row.approval_status,
-    approvalReason: row.approval_reason,
+    approvalReason: row.approval_reason ?? undefined,
     approvalRequestedAt: row.approval_requested_at?.toISOString(),
     approvedAt: row.approved_at?.toISOString(),
-    pendingEmail: row.pending_email,
-    pendingPhone: row.pending_phone,
+    pendingEmail: row.pending_email ?? undefined,
+    pendingPhone: row.pending_phone ?? undefined,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString(),
   };
@@ -137,7 +194,7 @@ export async function updateUserProfile(
   await ensureUser(id);
 
   const updates: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
   let paramIdx = 1;
 
   if (patch.displayName !== undefined) {
@@ -549,24 +606,24 @@ export async function listUsers(includeArchived = false): Promise<UserListItem[]
     ORDER BY created_at DESC
   `);
 
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row: UserListRow) => ({
     id: row.id,
     email: row.email,
     phone: row.phone ?? "",
     fullName: row.full_name ?? row.email.split("@")[0],
     role: row.role as Role,
     isActive: row.is_active ?? true,
-    isVerified: row.is_verified,
+    isVerified: row.is_verified ?? undefined,
     isPhoneVerified: row.is_phone_verified ?? false,
     isArchived: row.is_archived ?? false,
     archivedAt: row.archived_at?.toISOString(),
     createdAt: row.created_at?.toISOString() || "",
     updatedAt: row.updated_at?.toISOString(),
     approvalStatus: row.approval_status,
-    approvalReason: row.approval_reason,
+    approvalReason: row.approval_reason ?? undefined,
     approvalRequestedAt: row.approval_requested_at?.toISOString(),
-    pendingEmail: row.pending_email,
-    pendingPhone: row.pending_phone,
+    pendingEmail: row.pending_email ?? undefined,
+    pendingPhone: row.pending_phone ?? undefined,
     approvedAt: row.approved_at?.toISOString(),
   }));
 }
@@ -581,24 +638,24 @@ export async function listArchivedUsers(): Promise<UserListItem[]> {
     ORDER BY archived_at DESC
   `);
 
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row: UserListRow) => ({
     id: row.id,
     email: row.email,
     phone: row.phone ?? "",
     fullName: row.full_name ?? row.email.split("@")[0],
     role: row.role as Role,
     isActive: row.is_active ?? true,
-    isVerified: row.is_verified,
+    isVerified: row.is_verified ?? undefined,
     isPhoneVerified: row.is_phone_verified ?? false,
     isArchived: row.is_archived ?? false,
     archivedAt: row.archived_at?.toISOString(),
     createdAt: row.created_at?.toISOString() || "",
     updatedAt: row.updated_at?.toISOString(),
     approvalStatus: row.approval_status,
-    approvalReason: row.approval_reason,
+    approvalReason: row.approval_reason ?? undefined,
     approvalRequestedAt: row.approval_requested_at?.toISOString(),
-    pendingEmail: row.pending_email,
-    pendingPhone: row.pending_phone,
+    pendingEmail: row.pending_email ?? undefined,
+    pendingPhone: row.pending_phone ?? undefined,
     approvedAt: row.approved_at?.toISOString(),
   }));
 }
@@ -653,7 +710,7 @@ export async function upsertUserPushSubscription(input: {
     userId: row.user_id,
     endpoint: row.endpoint,
     keys: row.keys,
-    userAgent: row.user_agent,
+    userAgent: row.user_agent ?? undefined,
     createdAt: row.created_at?.toISOString(),
     updatedAt: row.updated_at?.toISOString(),
   };
@@ -682,28 +739,28 @@ export async function listUserPushSubscriptionsByUser(input: {
 
   const result = await query(`SELECT * FROM user_push_subscriptions WHERE user_id = $1`, [userId]);
 
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row: UserPushSubscriptionRow) => ({
     id: row.id,
     userId: row.user_id,
     endpoint: row.endpoint,
     keys: row.keys,
-    userAgent: row.user_agent,
-    createdAt: row.created_at?.toISOString(),
-    updatedAt: row.updated_at?.toISOString(),
+    userAgent: row.user_agent ?? undefined,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   }));
 }
 
 export async function listAllUserPushSubscriptions(): Promise<UserPushSubscription[]> {
   const result = await query(`SELECT * FROM user_push_subscriptions`);
 
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row: UserPushSubscriptionRow) => ({
     id: row.id,
     userId: row.user_id,
     endpoint: row.endpoint,
     keys: row.keys,
-    userAgent: row.user_agent,
-    createdAt: row.created_at?.toISOString(),
-    updatedAt: row.updated_at?.toISOString(),
+    userAgent: row.user_agent ?? undefined,
+    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   }));
 }
 

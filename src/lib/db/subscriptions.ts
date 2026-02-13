@@ -34,7 +34,31 @@ export type ProgramSubscriptionInput = {
   currency: string;
 };
 
-function rowToSubscription(row: any): ProgramSubscription {
+type ProgramSubscriptionRow = {
+  id: string;
+  user_id: string;
+  product_id: string;
+  product_slug: string;
+  program: string;
+  plan?: string | null;
+  start_date: Date | null;
+  end_date: Date | null;
+  is_active: boolean | null;
+  payment_id?: string | null;
+  payment_method?: string | null;
+  amount: string | number | null;
+  currency: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type SubscriptionWithUserRow = ProgramSubscriptionRow & {
+  user_email: string | null;
+  user_name: string | null;
+  user_avatar: string | null;
+};
+
+function rowToSubscription(row: ProgramSubscriptionRow): ProgramSubscription {
   const endDateStr = row.end_date?.toISOString() || new Date().toISOString();
   return {
     id: row.id,
@@ -47,9 +71,9 @@ function rowToSubscription(row: any): ProgramSubscription {
     endDate: endDateStr,
     expiresAt: endDateStr,
     isActive: row.is_active ?? true,
-    paymentId: row.payment_id,
-    paymentMethod: row.payment_method,
-    amount: parseFloat(row.amount) || 0,
+    paymentId: row.payment_id ?? undefined,
+    paymentMethod: row.payment_method ?? undefined,
+    amount: parseFloat(String(row.amount ?? "0")) || 0,
     currency: row.currency || "OMR",
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
@@ -219,7 +243,7 @@ export async function updateProgramSubscription(
   }
 ): Promise<ProgramSubscription> {
   const setClauses: string[] = ["updated_at = NOW()"];
-  const params: any[] = [];
+  const params: unknown[] = [];
   let paramIdx = 1;
 
   if (updates.program !== undefined) {
@@ -269,7 +293,7 @@ export async function listAllSubscriptionsWithUsers(): Promise<
     LEFT JOIN users u ON ps.user_id = u.id
     ORDER BY ps.created_at DESC
   `);
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row: SubscriptionWithUserRow) => ({
     ...rowToSubscription(row),
     userEmail: row.user_email || "",
     userName: row.user_name || "",
