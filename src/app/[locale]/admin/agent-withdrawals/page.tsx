@@ -14,10 +14,10 @@ export default async function AdminAgentWithdrawalsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ status?: string; page?: string; search?: string }>;
+  searchParams: Promise<{ status?: string; page?: string; search?: string; agentUserId?: string; agentName?: string }>;
 }) {
   const { locale } = await params;
-  const { status, page, search } = await searchParams;
+  const { status, page, search, agentUserId, agentName } = await searchParams;
   if (!isLocale(locale)) notFound();
 
   const user = await requireUser(locale as Locale);
@@ -30,8 +30,8 @@ export default async function AdminAgentWithdrawalsPage({
   const offset = (currentPage - 1) * PER_PAGE;
 
   const [requests, total] = await Promise.all([
-    listAllAgentWithdrawalRequests(filterStatus, PER_PAGE, offset, search),
-    countAgentWithdrawalRequests(filterStatus, search),
+    listAllAgentWithdrawalRequests(filterStatus, PER_PAGE, offset, search, agentUserId),
+    countAgentWithdrawalRequests(filterStatus, search, agentUserId),
   ]);
 
   return (
@@ -41,6 +41,8 @@ export default async function AdminAgentWithdrawalsPage({
         initialRequests={requests}
         currentStatus={currentStatus as "pending" | "approved" | "rejected" | "all"}
         initialSearch={search || ""}
+        initialAgentUserId={agentUserId || ""}
+        initialAgentName={agentName || ""}
         pagination={{
           page: currentPage,
           perPage: PER_PAGE,

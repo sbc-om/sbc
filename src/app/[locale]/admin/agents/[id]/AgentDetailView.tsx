@@ -73,19 +73,20 @@ export default function AgentDetailView({
     active: ar ? "نشط" : "Active",
     inactive: ar ? "غير نشط" : "Inactive",
     clients: ar ? "العملاء" : "Clients",
-    recentCommissions: ar ? "العمولات الأخيرة" : "Recent Commissions",
+    recentCommissions: ar ? "مراجعات السحب الأخيرة" : "Recent Withdrawal Reviews",
     totalEarned: ar ? "إجمالي الأرباح" : "Total Earned",
     pending: ar ? "قيد الانتظار" : "Pending",
     transactions: ar ? "عمليات" : "Transactions",
     noClients: ar ? "لا يوجد عملاء بعد" : "No clients yet",
-    noCommissions: ar ? "لا يوجد عمولات بعد" : "No commissions yet",
+    noCommissions: ar ? "لا توجد مراجعات سحب بعد" : "No withdrawal reviews yet",
     amount: ar ? "المبلغ" : "Amount",
-    commissionCol: ar ? "العمولة" : "Commission",
+    commissionCol: ar ? "مبلغ الاستحقاق" : "Payout Amount",
     status: ar ? "الحالة" : "Status",
+    action: ar ? "الإجراء" : "Action",
     date: ar ? "التاريخ" : "Date",
-    paid: ar ? "مدفوع" : "Paid",
-    pendingStatus: ar ? "معلق" : "Pending",
-    markPaid: ar ? "تحويل" : "Pay",
+    paid: ar ? "تمت المراجعة" : "Reviewed",
+    pendingStatus: ar ? "بانتظار المراجعة" : "Awaiting review",
+    markPaid: ar ? "مراجعة" : "Review",
     saving_: ar ? "جاري..." : "Saving...",
   };
 
@@ -407,7 +408,7 @@ export default function AgentDetailView({
                     {t.status}
                   </th>
                   <th className="px-5 py-3">
-                    <span className="sr-only">Actions</span>
+                    <span className="sr-only">{t.action}</span>
                   </th>
                 </tr>
               </thead>
@@ -443,7 +444,7 @@ export default function AgentDetailView({
                     <td className="px-5 py-3 text-end">
                       {c.status === "pending" && (
                         <Link
-                          href={`/${locale}/admin/agent-withdrawals`}
+                          href={`/${locale}/admin/agent-withdrawals?status=pending&agentUserId=${encodeURIComponent(user.id)}&agentName=${encodeURIComponent(user.fullName)}`}
                           className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
                         >
                           {t.markPaid}

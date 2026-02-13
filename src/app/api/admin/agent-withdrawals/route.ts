@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, parseInt(sp.get("page") || "1", 10));
   const perPage = Math.min(50, Math.max(10, parseInt(sp.get("perPage") || "20", 10)));
   const search = sp.get("search") || undefined;
+  const agentUserId = sp.get("agentUserId") || undefined;
   const offset = (page - 1) * perPage;
 
   const filterStatus =
@@ -32,8 +33,8 @@ export async function GET(request: NextRequest) {
       : undefined;
 
   const [requests, total] = await Promise.all([
-    listAllAgentWithdrawalRequests(filterStatus, perPage, offset, search),
-    countAgentWithdrawalRequests(filterStatus, search),
+    listAllAgentWithdrawalRequests(filterStatus, perPage, offset, search, agentUserId),
+    countAgentWithdrawalRequests(filterStatus, search, agentUserId),
   ]);
 
   return NextResponse.json({

@@ -71,12 +71,16 @@ export default function AgentWithdrawalsClient({
   initialRequests,
   currentStatus,
   initialSearch,
+  initialAgentUserId,
+  initialAgentName,
   pagination,
 }: {
   locale: Locale;
   initialRequests: RequestItem[];
   currentStatus: "pending" | "approved" | "rejected" | "all";
   initialSearch: string;
+  initialAgentUserId: string;
+  initialAgentName: string;
   pagination: { page: number; perPage: number; total: number; totalPages: number };
 }) {
   const router = useRouter();
@@ -143,6 +147,8 @@ export default function AgentWithdrawalsClient({
     minAmountError: ar ? "المبلغ يجب أن يكون 0.001 أو أكثر" : "Amount must be at least 0.001",
     newRequestToast: ar ? "طلب سحب جديد من" : "New withdrawal request from",
     processedToast: ar ? "تم تحديث حالة الطلب" : "Withdrawal request status updated",
+    filteredByAgent: ar ? "فلترة حسب الوكيل" : "Filtered by agent",
+    clearAgentFilter: ar ? "إزالة الفلتر" : "Clear filter",
   };
 
   const surfaceCard = "rounded-2xl border border-gray-200/70 bg-white dark:border-white/[0.06] dark:bg-white/[0.02]";
@@ -244,6 +250,8 @@ export default function AgentWithdrawalsClient({
     params.set("status", next.status ?? currentStatus);
     params.set("page", String(next.page ?? 1));
     if ((next.search ?? initialSearch).trim()) params.set("search", (next.search ?? initialSearch).trim());
+    if (initialAgentUserId.trim()) params.set("agentUserId", initialAgentUserId.trim());
+    if (initialAgentName.trim()) params.set("agentName", initialAgentName.trim());
     startTransition(() => router.push(`/${locale}/admin/agent-withdrawals?${params.toString()}`));
   }
 
@@ -332,6 +340,22 @@ export default function AgentWithdrawalsClient({
     return { pending, approved, rejected };
   }, [initialRequests]);
 
+  const clearAgentFilterHref = useMemo(() => {
+    const params = new URLSearchParams();
+    params.set("status", currentStatus);
+    params.set("page", "1");
+    if (initialSearch.trim()) params.set("search", initialSearch.trim());
+    return `/${locale}/admin/agent-withdrawals?${params.toString()}`;
+  }, [currentStatus, initialSearch, locale]);
+
+  const filteredAgentLabel = useMemo(() => {
+    if (!initialAgentUserId.trim()) return "";
+    if (initialAgentName.trim()) return initialAgentName.trim();
+    const fromList = initialRequests.find((request) => request.agentUserId === initialAgentUserId)?.agentName;
+    if (fromList?.trim()) return fromList.trim();
+    return initialAgentUserId;
+  }, [initialAgentName, initialAgentUserId, initialRequests]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 rounded-2xl border border-gray-200/70 bg-white p-5 dark:border-white/[0.06] dark:bg-white/[0.02] sm:flex-row sm:items-start sm:justify-between">
@@ -363,6 +387,15 @@ export default function AgentWithdrawalsClient({
           <p className="mt-1 text-lg font-bold">{visibleAmount.toFixed(3)} OMR</p>
         </div>
       </div>
+
+      {initialAgentUserId.trim() ? (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-indigo-200/70 bg-indigo-50/60 px-4 py-3 text-xs font-medium text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/30 dark:text-indigo-300">
+          <span>{t.filteredByAgent}: {filteredAgentLabel}</span>
+          <a href={clearAgentFilterHref} className="font-semibold underline underline-offset-4 hover:opacity-80">
+            {t.clearAgentFilter}
+          </a>
+        </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-gray-200/70 bg-white p-2 dark:border-white/[0.06] dark:bg-white/[0.02]">
         {statusTabs.map((tab) => (
@@ -406,7 +439,14 @@ export default function AgentWithdrawalsClient({
           <>
             <div className="hidden divide-y divide-gray-100 dark:divide-white/[0.05] md:block">
               {initialRequests.map((request) => (
-                <div key={request.id} className="grid grid-cols-12 gap-2 px-4 py-3 text-sm">
+                <div
+                  key={request.id}
+                  className={`grid grid-cols-12 gap-2 px-4 py-3 text-sm ${
+                    initialAgentUserId.trim() && request.agentUserId === initialAgentUserId
+                      ? "bg-indigo-50/40 dark:bg-indigo-950/20"
+                      : ""
+                  }`}
+                >
                   <div className="col-span-4 min-w-0">
                     <p className="truncate font-semibold">{request.agentName}</p>
                     <p className="truncate text-xs text-(--muted-foreground)">{request.agentEmail}</p>
@@ -440,7 +480,14 @@ export default function AgentWithdrawalsClient({
 
             <div className="space-y-2 p-3 md:hidden">
               {initialRequests.map((request) => (
-                <div key={request.id} className="rounded-xl border border-gray-200/70 bg-white p-3 dark:border-white/[0.06] dark:bg-white/[0.01]">
+                <div
+                  key={request.id}
+                  className={`rounded-xl border bg-white p-3 dark:bg-white/[0.01] ${
+                    initialAgentUserId.trim() && request.agentUserId === initialAgentUserId
+                      ? "border-indigo-200/80 bg-indigo-50/30 dark:border-indigo-900/60 dark:bg-indigo-950/15"
+                      : "border-gray-200/70 dark:border-white/[0.06]"
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold">{request.agentName}</p>

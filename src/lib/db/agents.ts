@@ -509,7 +509,11 @@ export async function listAgentWithdrawalRequests(agentUserId: string, limit = 5
   return result.rows.map(rowToAgentWithdrawalRequest);
 }
 
-export async function countAgentWithdrawalRequests(status?: "pending" | "approved" | "rejected", search?: string) {
+export async function countAgentWithdrawalRequests(
+  status?: "pending" | "approved" | "rejected",
+  search?: string,
+  agentUserId?: string
+) {
   await ensureAgentWalletSchema();
 
   const clauses: string[] = [];
@@ -524,6 +528,10 @@ export async function countAgentWithdrawalRequests(status?: "pending" | "approve
     clauses.push(`(u.email ILIKE $${idx} OR u.full_name ILIKE $${idx} OR u.phone ILIKE $${idx})`);
     params.push(`%${search.trim()}%`);
     idx++;
+  }
+  if (agentUserId?.trim()) {
+    clauses.push(`awr.agent_user_id = $${idx++}`);
+    params.push(agentUserId.trim());
   }
 
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
@@ -541,7 +549,8 @@ export async function listAllAgentWithdrawalRequests(
   status?: "pending" | "approved" | "rejected",
   limit = 20,
   offset = 0,
-  search?: string
+  search?: string,
+  agentUserId?: string
 ) {
   await ensureAgentWalletSchema();
 
@@ -557,6 +566,10 @@ export async function listAllAgentWithdrawalRequests(
     clauses.push(`(u.email ILIKE $${idx} OR u.full_name ILIKE $${idx} OR u.phone ILIKE $${idx})`);
     params.push(`%${search.trim()}%`);
     idx++;
+  }
+  if (agentUserId?.trim()) {
+    clauses.push(`awr.agent_user_id = $${idx++}`);
+    params.push(agentUserId.trim());
   }
 
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
