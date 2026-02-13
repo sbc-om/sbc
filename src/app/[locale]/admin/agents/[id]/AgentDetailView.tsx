@@ -143,23 +143,6 @@ export default function AgentDetailView({
     }
   }
 
-  async function handleMarkPaid(commissionId: string) {
-    try {
-      const res = await fetch("/api/admin/agents", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: user.id, action: "mark-paid", commissionId }),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || "Failed");
-      }
-      startTransition(() => router.refresh());
-    } catch (err: any) {
-      setError(err.message);
-    }
-  }
-
   return (
     <div className="mx-auto max-w-4xl space-y-7">
       {/* Header */}
@@ -459,13 +442,12 @@ export default function AgentDetailView({
                     </td>
                     <td className="px-5 py-3 text-end">
                       {c.status === "pending" && (
-                        <button
-                          type="button"
-                          onClick={() => handleMarkPaid(c.id)}
+                        <Link
+                          href={`/${locale}/admin/agent-withdrawals`}
                           className="rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
                         >
                           {t.markPaid}
-                        </button>
+                        </Link>
                       )}
                     </td>
                   </tr>
