@@ -16,6 +16,14 @@ export type PushSubscriber = {
   lastUpdatedAt: string;
 };
 
+type PushSendPayload = {
+  title: string;
+  body: string;
+  url?: string;
+  iconUrl?: string;
+  userIds?: string[];
+};
+
 export function AdminPushClient({
   locale,
   subscribers,
@@ -74,7 +82,7 @@ export function AdminPushClient({
     setSuccess(null);
     setBusy(true);
     try {
-      const payload: any = {
+      const payload: PushSendPayload = {
         title: title.trim(),
         body: body.trim(),
       };

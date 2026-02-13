@@ -4,9 +4,8 @@ import { notFound } from "next/navigation";
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { listBusinessRequests } from "@/lib/db/businessRequests";
-import { listUsers, type UserListItem } from "@/lib/db/users";
+import { listUsers } from "@/lib/db/users";
 import { listCategories } from "@/lib/db/categories";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { buttonVariants } from "@/components/ui/Button";
 import { RequestCard } from "./RequestCard";
@@ -22,7 +21,6 @@ export default async function AdminRequestsPage({
   if (!isLocale(locale)) notFound();
 
   await requireAdmin(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
 
   const requests = await listBusinessRequests();
   const users = await listUsers();

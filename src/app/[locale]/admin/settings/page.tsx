@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { AppPage } from "@/components/AppPage";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getAllSettings } from "@/lib/db/settings";
 import { isWAHAEnabled } from "@/lib/waha/client";
@@ -22,7 +21,6 @@ export default async function AdminSettingsPage({
     redirect(`/${locale}/login?next=/${locale}/admin/settings`);
   }
 
-  const dict = await getDictionary(locale as Locale);
   const settings = await getAllSettings();
   const wahaConfigured = isWAHAEnabled();
 

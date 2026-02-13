@@ -115,8 +115,8 @@ export default function AgentDetailView({
       }
       setEditing(false);
       startTransition(() => router.refresh());
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to update");
     } finally {
       setSaving(false);
     }
@@ -137,8 +137,8 @@ export default function AgentDetailView({
         throw new Error(d.error || "Failed");
       }
       startTransition(() => router.refresh());
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed");
     } finally {
       setSaving(false);
     }

@@ -9,11 +9,9 @@ import {
   HiXCircle,
   HiRefresh,
   HiChartBar,
-  HiCash,
-  HiUsers,
   HiArrowRight
 } from "react-icons/hi";
-import { RiWallet3Fill, RiMoneyDollarCircleFill } from "react-icons/ri";
+import { RiMoneyDollarCircleFill } from "react-icons/ri";
 
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -25,7 +23,6 @@ import {
   getDailySalesReport, 
   getProductSalesReport,
   getTreasuryBalance,
-  type OrderWithItems 
 } from "@/lib/db/orders";
 import { formatStorePrice } from "@/lib/store/utils";
 
@@ -79,13 +76,13 @@ export default async function AdminSalesPage({
 
   // Fetch all data in parallel
   const [
-    { orders, total: totalOrders },
+    orders,
     summary,
     dailyReport,
     productReport,
     treasury,
   ] = await Promise.all([
-    listAllOrders({ limit: 20 }),
+    listAllOrders({ limit: 20 }).then((result) => result.orders),
     getOrderSummary(),
     getDailySalesReport({ limit: 14 }),
     getProductSalesReport({ limit: 10 }),
@@ -354,7 +351,7 @@ export default async function AdminSalesPage({
           <div className="mt-6">
             {/* Simple bar chart visualization */}
             <div className="flex items-end justify-between gap-2" style={{ height: "200px" }}>
-              {dailyReport.slice().reverse().map((day, index) => {
+              {dailyReport.slice().reverse().map((day) => {
                 const maxRevenue = Math.max(...dailyReport.map(d => d.revenue), 1);
                 const heightPercent = (day.revenue / maxRevenue) * 100;
                 return (

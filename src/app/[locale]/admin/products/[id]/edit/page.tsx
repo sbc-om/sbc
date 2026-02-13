@@ -4,7 +4,6 @@ import Link from "next/link";
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getProductById } from "@/lib/db/products";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { buttonVariants } from "@/components/ui/Button";
 import { EditProductForm } from "./EditProductForm";
@@ -21,7 +20,6 @@ export default async function EditProductPage({
   if (!isLocale(locale)) notFound();
 
   await requireAdmin(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
 
   const product = await getProductById(id);
   if (!product) notFound();

@@ -60,9 +60,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ ok: true, url });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { ok: false, error: error?.message || "UPLOAD_FAILED" },
+      { ok: false, error: error instanceof Error ? error.message : "UPLOAD_FAILED" },
       { status: 500 }
     );
   }

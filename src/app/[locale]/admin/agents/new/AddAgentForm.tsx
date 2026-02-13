@@ -85,8 +85,8 @@ export default function AddAgentForm({
         router.push(`/${locale}/admin/agents`);
         router.refresh();
       });
-    } catch (err: any) {
-      setError(err.message || "Unknown error");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Unknown error");
       setSaving(false);
     }
   }

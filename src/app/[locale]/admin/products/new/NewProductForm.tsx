@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 
+type ProductProgram = "directory" | "loyalty" | "marketing";
+type ProductInterval = "" | "month" | "year" | "6mo";
+
 export function NewProductForm({ locale }: { locale: Locale }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -16,7 +19,7 @@ export function NewProductForm({ locale }: { locale: Locale }) {
 
   const [formData, setFormData] = useState({
     slug: "",
-    program: "directory" as "directory" | "loyalty" | "marketing",
+    program: "directory" as ProductProgram,
     plan: "",
     durationDays: 30,
     nameEn: "",
@@ -25,7 +28,7 @@ export function NewProductForm({ locale }: { locale: Locale }) {
     descriptionAr: "",
     priceAmount: 0,
     priceCurrency: "OMR",
-    priceInterval: "" as "" | "month" | "year" | "6mo",
+    priceInterval: "" as ProductInterval,
     featuresEn: "",
     featuresAr: "",
     badges: "",
@@ -76,8 +79,9 @@ export function NewProductForm({ locale }: { locale: Locale }) {
 
       router.push(`/${locale}/admin/products`);
       router.refresh();
-    } catch (error: any) {
-      toast({ message: ar ? `خطا: ${error.message}` : `Error: ${error.message}`, variant: "error" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to create product";
+      toast({ message: ar ? `خطا: ${message}` : `Error: ${message}`, variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -110,7 +114,7 @@ export function NewProductForm({ locale }: { locale: Locale }) {
           </label>
           <select
             value={formData.program}
-            onChange={(e) => setFormData({ ...formData, program: e.target.value as any })}
+            onChange={(e) => setFormData({ ...formData, program: e.target.value as ProductProgram })}
             className="w-full px-3 py-2 border rounded-lg bg-(--background) border-(--border)"
             required
           >
@@ -228,7 +232,7 @@ export function NewProductForm({ locale }: { locale: Locale }) {
           </label>
           <select
             value={formData.priceCurrency}
-            onChange={(e) => setFormData({ ...formData, priceCurrency: e.target.value as any })}
+            onChange={(e) => setFormData({ ...formData, priceCurrency: e.target.value })}
             className="w-full px-3 py-2 border rounded-lg bg-(--background) border-(--border)"
           >
             <option value="OMR">OMR</option>
@@ -241,7 +245,7 @@ export function NewProductForm({ locale }: { locale: Locale }) {
           </label>
           <select
             value={formData.priceInterval}
-            onChange={(e) => setFormData({ ...formData, priceInterval: e.target.value as any })}
+            onChange={(e) => setFormData({ ...formData, priceInterval: e.target.value as ProductInterval })}
             className="w-full px-3 py-2 border rounded-lg bg-(--background) border-(--border)"
           >
             <option value="">{ar ? "مرة واحدة" : "One-time"}</option>

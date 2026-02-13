@@ -9,7 +9,6 @@ import {
   HiUser,
   HiMail,
   HiPhone,
-  HiCreditCard,
   HiCalendar,
   HiShoppingBag,
   HiReceiptTax

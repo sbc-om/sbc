@@ -24,7 +24,7 @@ export default async function AdminAgentWithdrawalsPage({
   if (user.role !== "admin") redirect(`/${locale}/dashboard`);
 
   const valid = ["pending", "approved", "rejected", "all"] as const;
-  const currentStatus = valid.includes(status as any) ? status! : "pending";
+  const currentStatus = valid.includes((status ?? "") as (typeof valid)[number]) ? (status as (typeof valid)[number]) : "pending";
   const filterStatus = currentStatus === "all" ? undefined : (currentStatus as "pending" | "approved" | "rejected");
   const currentPage = Math.max(1, parseInt(page || "1", 10));
   const offset = (currentPage - 1) * PER_PAGE;

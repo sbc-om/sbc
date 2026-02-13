@@ -6,7 +6,7 @@ import type { Locale } from "@/lib/i18n/locales";
 
 interface SettingsFormProps {
   locale: Locale;
-  initialSettings: Record<string, any>;
+  initialSettings: Record<string, unknown>;
   wahaConfigured: boolean;
 }
 
@@ -109,7 +109,7 @@ export function SettingsForm({
       } else {
         setMessage({ type: "error", text: data.error || t.error });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: t.error });
     } finally {
       setLoading(false);

@@ -116,21 +116,27 @@ export function NewBusinessWizard({
   // Username validation effect
   useEffect(() => {
     if (!formData.username) {
-      setUsernameStatus("idle");
-      setUsernameMessage("");
-      return;
+      const resetTimer = setTimeout(() => {
+        setUsernameStatus("idle");
+        setUsernameMessage("");
+      }, 0);
+      return () => clearTimeout(resetTimer);
     }
 
     const normalized = formData.username.trim().toLowerCase();
     const formatError = getUsernameFormatError(normalized, ar);
     if (formatError) {
-      setUsernameStatus("invalid");
-      setUsernameMessage(formatError);
-      return;
+      const invalidTimer = setTimeout(() => {
+        setUsernameStatus("invalid");
+        setUsernameMessage(formatError);
+      }, 0);
+      return () => clearTimeout(invalidTimer);
     }
 
-    setUsernameStatus("checking");
-    setUsernameMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    const checkingTimer = setTimeout(() => {
+      setUsernameStatus("checking");
+      setUsernameMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    }, 0);
 
     const requestId = ++usernameCheckRef.current;
     const timer = setTimeout(async () => {
@@ -159,14 +165,20 @@ export function NewBusinessWizard({
       }
     }, 350);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(checkingTimer);
+      clearTimeout(timer);
+    };
   }, [formData.username, ar]);
 
   // Auto slug generation
   useEffect(() => {
     if (slugTouched) return;
     const next = slugifyEnglish(formData.name_en);
-    setSlugValue(next);
+    const slugTimer = setTimeout(() => {
+      setSlugValue(next);
+    }, 0);
+    return () => clearTimeout(slugTimer);
   }, [formData.name_en, slugTouched]);
 
   const handleFileSelect = (

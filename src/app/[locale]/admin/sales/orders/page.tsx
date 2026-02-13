@@ -8,7 +8,6 @@ import {
   HiRefresh,
   HiSearch,
   HiFilter,
-  HiDownload,
   HiEye
 } from "react-icons/hi";
 

@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getUserById } from "@/lib/db/users";
 import { listBusinessesByOwner } from "@/lib/db/businesses";
@@ -31,7 +30,6 @@ export default async function AdminUserDetailPage({
   if (!isLocale(locale)) notFound();
 
   await requireAdmin(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
   const user = await getUserById(id);
 
   if (!user) notFound();

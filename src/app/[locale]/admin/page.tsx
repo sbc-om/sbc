@@ -13,7 +13,6 @@ import { getAllWithdrawalRequests } from "@/lib/db/wallet";
 import { getOrderSummary } from "@/lib/db/orders";
 import { listAllProgramSubscriptions } from "@/lib/db/subscriptions";
 import { countAgentWithdrawalRequests, listAgents } from "@/lib/db/agents";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
 export const runtime = "nodejs";
@@ -90,7 +89,6 @@ export default async function AdminPage({
   if (!isLocale(locale)) notFound();
 
   await requireAdmin(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
 
   const businesses = await listBusinesses();
   const categories = await listCategories();

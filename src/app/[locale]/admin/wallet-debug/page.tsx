@@ -282,7 +282,7 @@ export default function WalletDebugPage() {
                 <div>
                   <h4 className="font-semibold mb-2">4. Verify on Device</h4>
                   <p className="text-muted-foreground">
-                    Check the customer's mobile wallet app to confirm the pass updates with new points.
+                    Check the customer&apos;s mobile wallet app to confirm the pass updates with new points.
                   </p>
                 </div>
               </div>

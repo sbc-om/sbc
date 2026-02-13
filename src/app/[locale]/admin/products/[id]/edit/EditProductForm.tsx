@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 
+type ProductProgram = "directory" | "loyalty" | "marketing";
+type ProductInterval = "" | "month" | "year" | "6mo";
+
 export function EditProductForm({ product, locale }: { product: StoreProduct; locale: Locale }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -17,7 +20,7 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
 
   const [formData, setFormData] = useState({
     slug: product.slug,
-    program: product.program,
+    program: product.program as ProductProgram,
     plan: product.plan,
     durationDays: product.durationDays,
     nameEn: product.name.en,
@@ -26,7 +29,7 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
     descriptionAr: product.description.ar,
     priceAmount: product.price.amount,
     priceCurrency: product.price.currency,
-    priceInterval: product.price.interval || "",
+    priceInterval: (product.price.interval || "") as ProductInterval,
     featuresEn: product.features.en.join("\n"),
     featuresAr: product.features.ar.join("\n"),
     badges: product.badges?.join(", ") || "",
@@ -77,8 +80,9 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
 
       router.push(`/${locale}/admin/products`);
       router.refresh();
-    } catch (error: any) {
-      toast({ message: ar ? `خطا: ${error.message}` : `Error: ${error.message}`, variant: "error" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update product";
+      toast({ message: ar ? `خطا: ${message}` : `Error: ${message}`, variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -111,7 +115,7 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
           </label>
           <select
             value={formData.program}
-            onChange={(e) => setFormData({ ...formData, program: e.target.value as any })}
+            onChange={(e) => setFormData({ ...formData, program: e.target.value as ProductProgram })}
             className="w-full px-3 py-2 border rounded-lg bg-(--background) border-(--border)"
             required
           >
@@ -229,7 +233,7 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
           </label>
           <select
             value={formData.priceCurrency}
-            onChange={(e) => setFormData({ ...formData, priceCurrency: e.target.value as any })}
+            onChange={(e) => setFormData({ ...formData, priceCurrency: e.target.value })}
             className="w-full px-3 py-2 border rounded-lg bg-(--background) border-(--border)"
           >
             <option value="OMR">OMR</option>
@@ -242,7 +246,7 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
           </label>
           <select
             value={formData.priceInterval}
-            onChange={(e) => setFormData({ ...formData, priceInterval: e.target.value as any })}
+            onChange={(e) => setFormData({ ...formData, priceInterval: e.target.value as ProductInterval })}
             className="w-full px-3 py-2 border rounded-lg bg-(--background) border-(--border)"
           >
             <option value="">{ar ? "مرة واحدة" : "One-time"}</option>

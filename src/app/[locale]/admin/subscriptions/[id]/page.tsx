@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
-import { getProgramSubscriptionById } from "@/lib/db/subscriptions";
 import { query } from "@/lib/db/postgres";
 import SubscriptionEditForm from "@/components/admin/SubscriptionEditForm";
 

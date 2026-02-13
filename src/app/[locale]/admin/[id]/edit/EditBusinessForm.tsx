@@ -11,7 +11,6 @@ import type { Category, Business } from "@/lib/db/types";
 import { updateBusinessAction, deleteBusinessAction } from "@/app/[locale]/admin/actions";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { UserSelect } from "@/components/ui/UserSelect";
@@ -72,30 +71,6 @@ function Field({
         {required && <span className="text-red-500 ms-1">*</span>}
       </span>
       <Input name={name} placeholder={placeholder} required={required} defaultValue={defaultValue} />
-    </label>
-  );
-}
-
-function TextArea({
-  label,
-  name,
-  placeholder,
-  required,
-  defaultValue,
-}: {
-  label: string;
-  name: string;
-  placeholder?: string;
-  required?: boolean;
-  defaultValue?: string;
-}) {
-  return (
-    <label className="group grid gap-2">
-      <span className="text-sm font-semibold text-foreground">
-        {label}
-        {required && <span className="text-red-500 ms-1">*</span>}
-      </span>
-      <Textarea name={name} placeholder={placeholder} required={required} defaultValue={defaultValue} />
     </label>
   );
 }
@@ -252,21 +227,27 @@ export function EditBusinessForm({
 
   useEffect(() => {
     if (!usernameValue) {
-      setUsernameStatus("idle");
-      setUsernameMessage("");
-      return;
+      const resetTimer = setTimeout(() => {
+        setUsernameStatus("idle");
+        setUsernameMessage("");
+      }, 0);
+      return () => clearTimeout(resetTimer);
     }
 
     const normalized = usernameValue.trim().toLowerCase();
     const formatError = getUsernameFormatError(normalized, ar);
     if (formatError) {
-      setUsernameStatus("invalid");
-      setUsernameMessage(formatError);
-      return;
+      const invalidTimer = setTimeout(() => {
+        setUsernameStatus("invalid");
+        setUsernameMessage(formatError);
+      }, 0);
+      return () => clearTimeout(invalidTimer);
     }
 
-    setUsernameStatus("checking");
-    setUsernameMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    const checkingUsernameTimer = setTimeout(() => {
+      setUsernameStatus("checking");
+      setUsernameMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    }, 0);
 
     const requestId = ++usernameCheckRef.current;
     const timer = setTimeout(async () => {
@@ -297,34 +278,45 @@ export function EditBusinessForm({
       }
     }, 350);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(checkingUsernameTimer);
+      clearTimeout(timer);
+    };
   }, [usernameValue, business.id, ar]);
 
   // Domain availability check
   useEffect(() => {
     const normalized = domainValue.trim().toLowerCase();
     if (!normalized) {
-      setDomainStatus("idle");
-      setDomainMessage("");
-      return;
+      const resetTimer = setTimeout(() => {
+        setDomainStatus("idle");
+        setDomainMessage("");
+      }, 0);
+      return () => clearTimeout(resetTimer);
     }
 
     // Basic domain validation
     if (!/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(normalized)) {
-      setDomainStatus("invalid");
-      setDomainMessage(ar ? "صيغة الدومين غير صحيحة" : "Invalid domain format");
-      return;
+      const invalidTimer = setTimeout(() => {
+        setDomainStatus("invalid");
+        setDomainMessage(ar ? "صيغة الدومين غير صحيحة" : "Invalid domain format");
+      }, 0);
+      return () => clearTimeout(invalidTimer);
     }
 
     // Skip if same as current
     if (normalized === business.customDomain) {
-      setDomainStatus("idle");
-      setDomainMessage(ar ? "الدومين الحالي" : "Current domain");
-      return;
+      const currentTimer = setTimeout(() => {
+        setDomainStatus("idle");
+        setDomainMessage(ar ? "الدومين الحالي" : "Current domain");
+      }, 0);
+      return () => clearTimeout(currentTimer);
     }
 
-    setDomainStatus("checking");
-    setDomainMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    const checkingDomainTimer = setTimeout(() => {
+      setDomainStatus("checking");
+      setDomainMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    }, 0);
 
     const requestId = ++domainCheckRef.current;
     const timer = setTimeout(async () => {
@@ -351,7 +343,10 @@ export function EditBusinessForm({
       }
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(checkingDomainTimer);
+      clearTimeout(timer);
+    };
   }, [domainValue, business.id, business.customDomain, ar]);
 
   const saveDomain = async () => {
@@ -395,7 +390,10 @@ export function EditBusinessForm({
     }
     if (slugTouched) return;
     const next = slugifyEnglish(nameEnValue);
-    setSlugValue(next);
+    const slugTimer = setTimeout(() => {
+      setSlugValue(next);
+    }, 0);
+    return () => clearTimeout(slugTimer);
   }, [nameEnValue, slugTouched]);
 
   const handleFileSelect = (

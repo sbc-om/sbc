@@ -2,7 +2,6 @@ import { notFound, redirect } from "next/navigation";
 
 import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getAllWithdrawalRequests, countWithdrawalRequests } from "@/lib/db/wallet";
 import { WithdrawalsClient } from "./WithdrawalsClient";
@@ -30,11 +29,11 @@ export default async function AdminWithdrawalsPage({
     redirect(`/${locale}/wallet`);
   }
 
-  const dict = await getDictionary(locale as Locale);
-
   // Get withdrawal requests (filter by status - default to pending)
   const validStatuses = ["pending", "approved", "rejected", "all"] as const;
-  const requestedStatus = validStatuses.includes(status as any) ? status : "pending";
+  const requestedStatus = validStatuses.includes((status ?? "") as (typeof validStatuses)[number])
+    ? (status as (typeof validStatuses)[number])
+    : "pending";
   const filterStatus = requestedStatus === "all" ? undefined : requestedStatus as "pending" | "approved" | "rejected";
   
   const currentPage = Math.max(1, parseInt(page || "1", 10));
@@ -51,7 +50,6 @@ export default async function AdminWithdrawalsPage({
     <AppPage>
       <WithdrawalsClient
         locale={locale as Locale}
-        dict={dict}
         initialRequests={requests}
         currentStatus={requestedStatus as "pending" | "approved" | "rejected" | "all"}
         initialSearch={search || ""}

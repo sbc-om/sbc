@@ -4,7 +4,6 @@ import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { listBusinessesPaginated, countBusinesses, type BusinessFilter } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { BusinessesClient } from "./BusinessesClient";
 
@@ -23,7 +22,6 @@ export default async function AdminBusinessesPage({
   if (!isLocale(locale)) notFound();
 
   await requireAdmin(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
 
   const sp = (await searchParams) ?? {};
   const q = typeof sp.q === "string" ? sp.q.trim() : "";

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -5,7 +6,6 @@ import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { listLoyaltyProfiles } from "@/lib/db/loyalty";
 import { listUsers } from "@/lib/db/users";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { buttonVariants } from "@/components/ui/Button";
 
@@ -20,7 +20,6 @@ export default async function AdminLoyaltyPage({
   if (!isLocale(locale)) notFound();
 
   await requireAdmin(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
 
   const profiles = await listLoyaltyProfiles();
   const users = await listUsers();
@@ -63,9 +62,11 @@ export default async function AdminLoyaltyPage({
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       {profile.logoUrl && (
-                        <img
+                        <Image
                           src={profile.logoUrl}
                           alt={profile.businessName}
+                          width={48}
+                          height={48}
                           className="h-12 w-12 rounded-lg object-cover"
                         />
                       )}

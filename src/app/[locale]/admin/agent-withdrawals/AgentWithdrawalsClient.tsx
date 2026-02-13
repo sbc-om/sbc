@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { HiOutlineBell, HiOutlineCheckCircle, HiOutlineClock, HiOutlineSearch, HiOutlineXCircle } from "react-icons/hi";
+import { HiOutlineBell, HiOutlineCheckCircle, HiOutlineSearch, HiOutlineXCircle } from "react-icons/hi";
 import { HiOutlineBanknotes, HiOutlineUserGroup } from "react-icons/hi2";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -12,7 +12,10 @@ import type { Locale } from "@/lib/i18n/locales";
 
 function playNotificationSound() {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContext = new (
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    )();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 
@@ -64,6 +67,26 @@ type RequestItem = {
   agentName: string;
   agentEmail: string;
   agentPhone: string;
+};
+
+type ActionResponse = {
+  ok?: boolean;
+  error?: string;
+  url?: string;
+};
+
+type ProcessPayload = {
+  requestId: string;
+  action: "approve" | "reject";
+  adminNote: string;
+  approvedAmount?: number;
+  payoutMethod?: string;
+  payoutReference?: string;
+  payoutReceiptUrl?: string;
+  payoutBankName?: string;
+  payoutAccountName?: string;
+  payoutAccountNumber?: string;
+  payoutIban?: string;
 };
 
 export default function AgentWithdrawalsClient({
@@ -266,15 +289,15 @@ export default function AgentWithdrawalsClient({
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
+      const data = (await res.json()) as ActionResponse;
       if (!data.ok || !data.url) {
         throw new Error(data.error || "UPLOAD_FAILED");
       }
 
       setPayoutReceiptUrl(data.url);
       setReceiptFileName(file.name);
-    } catch (e: any) {
-      setError(e?.message || t.uploadFailed);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : t.uploadFailed);
     } finally {
       setUploadingReceipt(false);
     }
@@ -295,7 +318,7 @@ export default function AgentWithdrawalsClient({
         throw new Error(t.minAmountError);
       }
 
-      const payload: any = {
+      const payload: ProcessPayload = {
         requestId: activeRequest.id,
         action,
         adminNote,
@@ -316,13 +339,13 @@ export default function AgentWithdrawalsClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = (await res.json()) as ActionResponse;
       if (!data.ok) throw new Error(data.error || "ACTION_FAILED");
 
       setActiveRequest(null);
       startTransition(() => router.refresh());
-    } catch (e: any) {
-      setError(e.message);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "ACTION_FAILED");
     } finally {
       setSaving(false);
     }

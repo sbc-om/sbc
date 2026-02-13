@@ -37,8 +37,9 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
       }
 
       router.refresh();
-    } catch (error: any) {
-      toast({ message: ar ? `خطا: ${error.message}` : `Error: ${error.message}`, variant: "error" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to toggle status";
+      toast({ message: ar ? `خطا: ${message}` : `Error: ${message}`, variant: "error" });
     } finally {
       setLoading(false);
     }
@@ -58,8 +59,9 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
       }
 
       router.refresh();
-    } catch (error: any) {
-      toast({ message: ar ? `خطا: ${error.message}` : `Error: ${error.message}`, variant: "error" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to delete product";
+      toast({ message: ar ? `خطا: ${message}` : `Error: ${message}`, variant: "error" });
     } finally {
       setLoading(false);
     }

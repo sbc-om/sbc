@@ -90,9 +90,10 @@ export async function POST(request: NextRequest) {
     broadcastAgentWithdrawalToAdmins(eventPayload);
 
     return NextResponse.json({ ok: true, request: result });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "ACTION_FAILED";
     return NextResponse.json(
-      { ok: false, error: error.message || "ACTION_FAILED" },
+      { ok: false, error: message },
       { status: 400 }
     );
   }

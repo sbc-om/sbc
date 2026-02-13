@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { listProducts } from "@/lib/db/products";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { buttonVariants } from "@/components/ui/Button";
 import { ProductCard } from "./ProductCard";
@@ -21,7 +20,6 @@ export default async function AdminProductsPage({
   if (!isLocale(locale)) notFound();
 
   await requireAdmin(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
 
   const products = await listProducts();
   const ar = locale === "ar";

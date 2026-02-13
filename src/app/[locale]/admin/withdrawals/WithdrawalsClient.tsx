@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
-import type { Dictionary } from "@/lib/i18n/getDictionary";
 import type { WithdrawalRequest } from "@/lib/db/wallet";
 import {
   HiOutlineCash,
@@ -30,7 +29,6 @@ interface Pagination {
 
 interface WithdrawalsClientProps {
   locale: Locale;
-  dict: Dictionary;
   initialRequests: WithdrawalRequest[];
   currentStatus?: "pending" | "approved" | "rejected" | "all";
   initialSearch?: string;
@@ -39,7 +37,6 @@ interface WithdrawalsClientProps {
 
 export function WithdrawalsClient({
   locale,
-  dict,
   initialRequests,
   currentStatus,
   initialSearch = "",
@@ -334,7 +331,7 @@ export function WithdrawalsClient({
                     {/* Admin Message (if exists) */}
                     {req.adminMessage && (
                       <div className="mt-2 text-sm italic text-(--muted-foreground)">
-                        "{req.adminMessage}"
+                        &ldquo;{req.adminMessage}&rdquo;
                       </div>
                     )}
                   </div>
