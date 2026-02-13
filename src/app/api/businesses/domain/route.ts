@@ -101,11 +101,12 @@ export async function POST(request: NextRequest) {
         customDomain: updated.customDomain,
       },
     });
-  } catch (error: any) {
-    if (error.message === "DOMAIN_TAKEN") {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "INTERNAL_ERROR";
+    if (message === "DOMAIN_TAKEN") {
       return NextResponse.json({ ok: false, error: "DOMAIN_TAKEN" }, { status: 409 });
     }
-    if (error.message === "INVALID_DOMAIN") {
+    if (message === "INVALID_DOMAIN") {
       return NextResponse.json({ ok: false, error: "INVALID_DOMAIN" }, { status: 400 });
     }
     console.error("Failed to update domain:", error);

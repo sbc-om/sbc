@@ -373,8 +373,16 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
 
       // Build overlays object (used for both images and videos)
       const overlays: StoryOverlays = {
-        textOverlays: textOverlays.map(({ id, ...rest }) => rest),
-        stickerOverlays: stickerOverlays.map(({ id, ...rest }) => rest),
+        textOverlays: textOverlays.map((overlay) => {
+          const copy = { ...overlay };
+          delete (copy as { id?: string }).id;
+          return copy;
+        }),
+        stickerOverlays: stickerOverlays.map((overlay) => {
+          const copy = { ...overlay };
+          delete (copy as { id?: string }).id;
+          return copy;
+        }),
         filter,
         brightness,
         contrast,
@@ -406,8 +414,8 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
 
       if (!data.ok) throw new Error(data.error || "Failed to publish story");
       onStoryCreated();
-    } catch (err: any) {
-      setPublishError(err.message || "Something went wrong");
+    } catch (err: unknown) {
+      setPublishError(err instanceof Error ? err.message : "Something went wrong");
     }
     setIsPublishing(false);
   }, [file, fileUrl, mediaType, businessId, caption, renderToCanvas, textOverlays, stickerOverlays, filter, brightness, contrast, saturation, imageScale, imagePosition, onStoryCreated]);
@@ -592,7 +600,7 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
           </div>
         );
     }
-  }, [activeTab, imageScale, brightness, contrast, saturation, filter, caption, ar, activeText, activeSticker, addText, addSticker, removeOverlay, textOverlays, stickerOverlays]);
+  }, [activeTab, imageScale, brightness, contrast, saturation, filter, caption, ar, activeText, activeSticker, addText, addSticker, removeOverlay]);
 
   /* ═══════ Tabs ═══════ */
   const tabs: { key: EditorTab; icon: React.ReactNode; label: string }[] = [

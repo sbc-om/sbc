@@ -24,7 +24,9 @@ export default async function MarketingPlatformPage({
 
   const ar = locale === "ar";
   const user = await getCurrentUser();
-  const sub = user ? await getProgramSubscriptionByUser(user.id) : null;
+  if (user) {
+    await getProgramSubscriptionByUser(user.id);
+  }
   const isActive = user ? await isProgramSubscriptionActive(user.id) : false;
 
   const marketingProducts = (await listStoreProducts()).filter((p) => p.program === "marketing");

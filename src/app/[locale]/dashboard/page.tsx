@@ -9,7 +9,6 @@ import {
   HiOutlineMegaphone,
   HiOutlineSparkles,
   HiOutlineShoppingBag,
-  HiXCircle,
 } from "react-icons/hi2";
 
 import { AppPage } from "@/components/AppPage";
@@ -139,7 +138,6 @@ export default async function DashboardPage({
       <div className="mt-8 flex flex-col gap-4">
         {await Promise.all((Object.keys(programMeta) as Array<keyof typeof programMeta>).map(async (programId) => {
           const meta = programMeta[programId];
-          const isMarketingDisabled = false;
           const sub = subscriptions.find((s) => s.program === programId) ?? null;
           const active = await hasActiveSubscription(user.id, programId);
           const daysLeft = sub ? remainingDays(sub.expiresAt) : 0;

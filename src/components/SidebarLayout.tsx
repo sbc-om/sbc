@@ -19,29 +19,24 @@ export function useSidebar() {
 }
 
 export function SidebarLayout({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  // Hydrate state after mount
-  useEffect(() => {
-    setMounted(true);
-    const savedCollapsed = localStorage.getItem("sidebarCollapsed") === "true";
-    setCollapsed(savedCollapsed);
-    setIsMobile(window.innerWidth < 1024);
-  }, []);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("sidebarCollapsed") === "true";
+  });
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < 1024;
+  });
 
   // Check if mobile on mount and window resize
   useEffect(() => {
-    if (!mounted) return;
-    
     const onResize = () => {
       setIsMobile(window.innerWidth < 1024);
     };
 
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [mounted]);
+  }, []);
 
   // Update CSS variable for sidebar width
   useEffect(() => {
@@ -62,11 +57,10 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
 
   // Save to localStorage when changed (only for desktop)
   useEffect(() => {
-    if (!mounted) return;
     if (!isMobile) {
       localStorage.setItem("sidebarCollapsed", String(collapsed));
     }
-  }, [collapsed, isMobile, mounted]);
+  }, [collapsed, isMobile]);
 
   return (
     <SidebarContext.Provider value={{ collapsed, setCollapsed, isMobile }}>

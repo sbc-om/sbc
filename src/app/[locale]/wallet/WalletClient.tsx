@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
@@ -24,7 +24,10 @@ import { IoWalletOutline } from "react-icons/io5";
 // Notification sound (simple beep using Web Audio API)
 function playNotificationSound() {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const webkitAudioContext = (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const AudioContextCtor = window.AudioContext || webkitAudioContext;
+    if (!AudioContextCtor) return;
+    const audioContext = new AudioContextCtor();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -115,40 +118,43 @@ export function WalletClient({
     setTimeout(() => setToast(null), 5000);
   }, []);
 
-  const walletDict = (dict as Record<string, any>).wallet ?? {
-    title: isRTL ? "المحفظة" : "Wallet",
-    balance: isRTL ? "الرصيد" : "Balance",
-    accountNumber: isRTL ? "رقم الحساب" : "Account Number",
-    deposit: isRTL ? "إيداع" : "Deposit",
-    withdraw: isRTL ? "سحب" : "Withdraw",
-    transfer: isRTL ? "تحويل" : "Transfer",
-    transactions: isRTL ? "المعاملات" : "Transactions",
-    noTransactions: isRTL ? "لا توجد معاملات بعد" : "No transactions yet",
-    amount: isRTL ? "المبلغ" : "Amount",
-    description: isRTL ? "الوصف" : "Description",
-    toAccount: isRTL ? "إلى رقم الحساب" : "To Account",
-    confirm: isRTL ? "تأكيد" : "Confirm",
-    cancel: isRTL ? "إلغاء" : "Cancel",
-    copied: isRTL ? "تم النسخ" : "Copied",
-    insufficientBalance: isRTL ? "رصيد غير كافٍ" : "Insufficient balance",
-    success: isRTL ? "نجاح" : "Success",
-    error: isRTL ? "خطأ" : "Error",
-    lookupUser: isRTL ? "البحث عن المستخدم" : "Lookup User",
-    receiverNotFound: isRTL ? "المستخدم غير موجود" : "User not found",
-    currency: isRTL ? "ر.ع" : "OMR",
-    withdrawalRequests: isRTL ? "طلبات السحب" : "Withdrawal Requests",
-    pending: isRTL ? "قيد الانتظار" : "Pending",
-    approved: isRTL ? "موافق عليه" : "Approved",
-    rejected: isRTL ? "مرفوض" : "Rejected",
-    cancelled: isRTL ? "ملغى" : "Cancelled",
-    noRequests: isRTL ? "لا توجد طلبات سحب" : "No withdrawal requests",
-    requestSubmitted: isRTL ? "تم تقديم طلب السحب" : "Withdrawal request submitted",
-    requestCancelled: isRTL ? "تم إلغاء طلب السحب" : "Withdrawal request cancelled",
-    availableBalance: isRTL ? "الرصيد المتاح" : "Available Balance",
-    pendingAmount: isRTL ? "قيد الانتظار" : "Pending",
-    max: isRTL ? "الحد الأقصى" : "Max",
-    cancelRequest: isRTL ? "إلغاء" : "Cancel",
-  };
+  const walletDict = useMemo(() => {
+    const root = dict as unknown as { wallet?: Record<string, string> };
+    return root.wallet ?? {
+      title: isRTL ? "المحفظة" : "Wallet",
+      balance: isRTL ? "الرصيد" : "Balance",
+      accountNumber: isRTL ? "رقم الحساب" : "Account Number",
+      deposit: isRTL ? "إيداع" : "Deposit",
+      withdraw: isRTL ? "سحب" : "Withdraw",
+      transfer: isRTL ? "تحويل" : "Transfer",
+      transactions: isRTL ? "المعاملات" : "Transactions",
+      noTransactions: isRTL ? "لا توجد معاملات بعد" : "No transactions yet",
+      amount: isRTL ? "المبلغ" : "Amount",
+      description: isRTL ? "الوصف" : "Description",
+      toAccount: isRTL ? "إلى رقم الحساب" : "To Account",
+      confirm: isRTL ? "تأكيد" : "Confirm",
+      cancel: isRTL ? "إلغاء" : "Cancel",
+      copied: isRTL ? "تم النسخ" : "Copied",
+      insufficientBalance: isRTL ? "رصيد غير كافٍ" : "Insufficient balance",
+      success: isRTL ? "نجاح" : "Success",
+      error: isRTL ? "خطأ" : "Error",
+      lookupUser: isRTL ? "البحث عن المستخدم" : "Lookup User",
+      receiverNotFound: isRTL ? "المستخدم غير موجود" : "User not found",
+      currency: isRTL ? "ر.ع" : "OMR",
+      withdrawalRequests: isRTL ? "طلبات السحب" : "Withdrawal Requests",
+      pending: isRTL ? "قيد الانتظار" : "Pending",
+      approved: isRTL ? "موافق عليه" : "Approved",
+      rejected: isRTL ? "مرفوض" : "Rejected",
+      cancelled: isRTL ? "ملغى" : "Cancelled",
+      noRequests: isRTL ? "لا توجد طلبات سحب" : "No withdrawal requests",
+      requestSubmitted: isRTL ? "تم تقديم طلب السحب" : "Withdrawal request submitted",
+      requestCancelled: isRTL ? "تم إلغاء طلب السحب" : "Withdrawal request cancelled",
+      availableBalance: isRTL ? "الرصيد المتاح" : "Available Balance",
+      pendingAmount: isRTL ? "قيد الانتظار" : "Pending",
+      max: isRTL ? "الحد الأقصى" : "Max",
+      cancelRequest: isRTL ? "إلغاء" : "Cancel",
+    };
+  }, [dict, isRTL]);
 
   const copyAccountNumber = useCallback(() => {
     navigator.clipboard.writeText(wallet.accountNumber);
@@ -673,8 +679,6 @@ export function WalletClient({
           type={modalType}
           locale={locale}
           walletDict={walletDict}
-          isAdmin={isAdmin}
-          currentBalance={wallet.balance}
           availableBalance={wallet.availableBalance}
           onClose={() => setModalType(null)}
           onSuccess={() => refreshWallet()}
@@ -712,8 +716,6 @@ function WalletModal({
   type,
   locale,
   walletDict,
-  isAdmin,
-  currentBalance,
   availableBalance,
   onClose,
   onSuccess,
@@ -721,8 +723,6 @@ function WalletModal({
   type: "deposit" | "withdraw" | "transfer";
   locale: Locale;
   walletDict: Record<string, string>;
-  isAdmin: boolean;
-  currentBalance: number;
   availableBalance: number;
   onClose: () => void;
   onSuccess: () => void;
@@ -786,7 +786,7 @@ function WalletModal({
 
     try {
       let endpoint = "";
-      let body: Record<string, any> = {};
+      let body: Record<string, unknown> = {};
 
       if (type === "deposit") {
         endpoint = "/api/wallet/deposit";

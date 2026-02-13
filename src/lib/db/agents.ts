@@ -107,14 +107,119 @@ export type AgentClientWithUser = AgentClient & {
   clientAvatar: string | null;
 };
 
+type AgentRow = {
+  user_id: string;
+  commission_rate: string | number | null;
+  total_earned: string | number | null;
+  total_withdrawn: string | number | null;
+  total_clients: string | number | null;
+  is_active: boolean | null;
+  notes: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type AgentWithUserRow = AgentRow & {
+  user_name: string | null;
+  user_email: string | null;
+  user_phone: string | null;
+  user_avatar: string | null;
+};
+
+type AgentCommissionRow = {
+  id: string;
+  agent_user_id: string;
+  client_user_id: string | null;
+  order_id: string | null;
+  subscription_id: string | null;
+  amount: string | number | null;
+  commission_rate: string | number | null;
+  commission_amount: string | number | null;
+  status: "pending" | "paid";
+  paid_at: Date | null;
+  created_at: Date | null;
+};
+
+type AgentCommissionWithClientRow = AgentCommissionRow & {
+  client_name: string | null;
+};
+
+type AgentCommissionWithNamesRow = AgentCommissionRow & {
+  agent_name: string | null;
+  client_name: string | null;
+};
+
+type AgentClientWithUserRow = {
+  agent_user_id: string;
+  client_user_id: string;
+  created_at: Date | null;
+  client_name: string | null;
+  client_email: string | null;
+  client_phone: string | null;
+  client_avatar: string | null;
+};
+
+type AgentWithdrawalRequestRow = {
+  id: string;
+  agent_user_id: string;
+  requested_amount: string | number | null;
+  approved_amount: string | number | null;
+  status: "pending" | "approved" | "rejected";
+  agent_note: string | null;
+  admin_note: string | null;
+  payout_method: string | null;
+  payout_reference: string | null;
+  payout_receipt_url: string | null;
+  payout_bank_name: string | null;
+  payout_account_name: string | null;
+  payout_account_number: string | null;
+  payout_iban: string | null;
+  processed_by: string | null;
+  processed_at: Date | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type AgentWithdrawalWithAgentRow = AgentWithdrawalRequestRow & {
+  agent_name: string | null;
+  agent_email: string | null;
+  agent_phone: string | null;
+};
+
+type AgentStatsRow = {
+  total_clients: string | number | null;
+  total_sales: string | number | null;
+  total_earned: string | number | null;
+  pending_amount: string | number | null;
+  total_withdrawn: string | number | null;
+  pending_withdraw_requests: string | number | null;
+  total_transactions: string | number | null;
+};
+
+type CountRow = { c: string };
+type AgentUserIdRow = { user_id: string };
+type ClientAgentRow = { agent_user_id: string };
+
+function toNumber(value: string | number | null | undefined): number {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") return parseFloat(value) || 0;
+  return 0;
+}
+
+function toInt(value: string | number | null | undefined): number {
+  if (typeof value === "number") return Math.trunc(value);
+  if (typeof value === "string") return parseInt(value, 10) || 0;
+  return 0;
+}
+
 /* ─── Row mappers ─── */
-function rowToAgent(row: any): Agent {
+function rowToAgent(row: AgentRow): Agent {
   return {
     userId: row.user_id,
-    commissionRate: parseFloat(row.commission_rate) || 0,
-    totalEarned: parseFloat(row.total_earned) || 0,
-    totalWithdrawn: parseFloat(row.total_withdrawn) || 0,
-    totalClients: parseInt(row.total_clients, 10) || 0,
+    commissionRate: toNumber(row.commission_rate),
+    totalEarned: toNumber(row.total_earned),
+    totalWithdrawn: toNumber(row.total_withdrawn),
+    totalClients: toInt(row.total_clients),
     isActive: row.is_active ?? true,
     notes: row.notes || null,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
@@ -122,12 +227,12 @@ function rowToAgent(row: any): Agent {
   };
 }
 
-function rowToAgentWithdrawalRequest(row: any): AgentWithdrawalRequest {
+function rowToAgentWithdrawalRequest(row: AgentWithdrawalRequestRow): AgentWithdrawalRequest {
   return {
     id: row.id,
     agentUserId: row.agent_user_id,
-    requestedAmount: parseFloat(row.requested_amount) || 0,
-    approvedAmount: row.approved_amount != null ? parseFloat(row.approved_amount) : null,
+    requestedAmount: toNumber(row.requested_amount),
+    approvedAmount: row.approved_amount != null ? toNumber(row.approved_amount) : null,
     status: row.status || "pending",
     agentNote: row.agent_note || null,
     adminNote: row.admin_note || null,
@@ -145,16 +250,16 @@ function rowToAgentWithdrawalRequest(row: any): AgentWithdrawalRequest {
   };
 }
 
-function rowToCommission(row: any): AgentCommission {
+function rowToCommission(row: AgentCommissionRow): AgentCommission {
   return {
     id: row.id,
     agentUserId: row.agent_user_id,
     clientUserId: row.client_user_id,
     orderId: row.order_id,
     subscriptionId: row.subscription_id,
-    amount: parseFloat(row.amount) || 0,
-    commissionRate: parseFloat(row.commission_rate) || 0,
-    commissionAmount: parseFloat(row.commission_amount) || 0,
+    amount: toNumber(row.amount),
+    commissionRate: toNumber(row.commission_rate),
+    commissionAmount: toNumber(row.commission_amount),
     status: row.status || "pending",
     paidAt: row.paid_at?.toISOString() || null,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
@@ -172,7 +277,7 @@ export async function createAgent(
   // Set user role to agent
   await query(`UPDATE users SET role = 'agent', updated_at = NOW() WHERE id = $1`, [userId]);
 
-  const result = await query(
+  const result = await query<AgentRow>(
     `INSERT INTO agents (user_id, commission_rate, notes, created_at, updated_at)
      VALUES ($1, $2, $3, NOW(), NOW())
      ON CONFLICT (user_id) DO UPDATE SET
@@ -187,26 +292,26 @@ export async function createAgent(
 
 /** Get agent by user ID */
 export async function getAgentByUserId(userId: string): Promise<Agent | null> {
-  const result = await query(`SELECT * FROM agents WHERE user_id = $1`, [userId]);
+  const result = await query<AgentRow>(`SELECT * FROM agents WHERE user_id = $1`, [userId]);
   return result.rows.length > 0 ? rowToAgent(result.rows[0]) : null;
 }
 
 /** Return just the user_ids of all active agents (lightweight) */
 export async function listAgentUserIds(): Promise<string[]> {
-  const result = await query(`SELECT user_id FROM agents WHERE is_active = true`);
-  return result.rows.map((r: any) => r.user_id);
+  const result = await query<AgentUserIdRow>(`SELECT user_id FROM agents WHERE is_active = true`);
+  return result.rows.map((r) => r.user_id);
 }
 
 /** List all agents with user info */
 export async function listAgents(): Promise<AgentWithUser[]> {
-  const result = await query(`
+  const result = await query<AgentWithUserRow>(`
     SELECT a.*, u.email as user_email, COALESCE(u.display_name, u.email) as user_name,
            u.phone as user_phone, u.avatar_url as user_avatar
     FROM agents a
     LEFT JOIN users u ON a.user_id = u.id
     ORDER BY a.created_at DESC
   `);
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row) => ({
     ...rowToAgent(row),
     userName: row.user_name || "",
     userEmail: row.user_email || "",
@@ -221,7 +326,7 @@ export async function updateAgent(
   updates: { commissionRate?: number; isActive?: boolean; notes?: string }
 ): Promise<Agent> {
   const sets: string[] = ["updated_at = NOW()"];
-  const vals: any[] = [];
+  const vals: unknown[] = [];
   let idx = 1;
 
   if (updates.commissionRate !== undefined) {
@@ -238,7 +343,7 @@ export async function updateAgent(
   }
   vals.push(userId);
 
-  const result = await query(
+  const result = await query<AgentRow>(
     `UPDATE agents SET ${sets.join(", ")} WHERE user_id = $${idx} RETURNING *`,
     vals
   );
@@ -287,7 +392,7 @@ export async function removeAgentClient(agentUserId: string, clientUserId: strin
 
 /** List agent's clients with user info */
 export async function listAgentClients(agentUserId: string): Promise<AgentClientWithUser[]> {
-  const result = await query(
+  const result = await query<AgentClientWithUserRow>(
     `SELECT ac.*, u.email as client_email, COALESCE(u.display_name, u.email) as client_name,
             u.phone as client_phone, u.avatar_url as client_avatar
      FROM agent_clients ac
@@ -296,7 +401,7 @@ export async function listAgentClients(agentUserId: string): Promise<AgentClient
      ORDER BY ac.created_at DESC`,
     [agentUserId]
   );
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row) => ({
     agentUserId: row.agent_user_id,
     clientUserId: row.client_user_id,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
@@ -318,7 +423,7 @@ export async function isAgentClient(agentUserId: string, clientUserId: string): 
 
 /** Get which agent manages a user */
 export async function getClientAgent(clientUserId: string): Promise<string | null> {
-  const result = await query(
+  const result = await query<ClientAgentRow>(
     `SELECT agent_user_id FROM agent_clients WHERE client_user_id = $1 LIMIT 1`,
     [clientUserId]
   );
@@ -339,7 +444,7 @@ export async function createCommission(data: {
   const id = nanoid();
   const commissionAmount = Math.round(data.amount * (data.commissionRate / 100) * 1000) / 1000;
 
-  const result = await query(
+  const result = await query<AgentCommissionRow>(
     `INSERT INTO agent_commissions (id, agent_user_id, client_user_id, order_id, subscription_id, amount, commission_rate, commission_amount, status, created_at)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending', NOW())
      RETURNING *`,
@@ -366,7 +471,7 @@ export async function createCommission(data: {
 
 /** List commissions for an agent */
 export async function listAgentCommissions(agentUserId: string): Promise<(AgentCommission & { clientName: string })[]> {
-  const result = await query(
+  const result = await query<AgentCommissionWithClientRow>(
     `SELECT ac.*, COALESCE(u.display_name, u.email) as client_name
      FROM agent_commissions ac
      LEFT JOIN users u ON ac.client_user_id = u.id
@@ -374,7 +479,7 @@ export async function listAgentCommissions(agentUserId: string): Promise<(AgentC
      ORDER BY ac.created_at DESC`,
     [agentUserId]
   );
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row) => ({
     ...rowToCommission(row),
     clientName: row.client_name || "",
   }));
@@ -382,7 +487,7 @@ export async function listAgentCommissions(agentUserId: string): Promise<(AgentC
 
 /** List all commissions (admin) */
 export async function listAllCommissions(): Promise<(AgentCommission & { agentName: string; clientName: string })[]> {
-  const result = await query(
+  const result = await query<AgentCommissionWithNamesRow>(
     `SELECT ac.*,
             COALESCE(au.display_name, au.email) as agent_name,
             COALESCE(cu.display_name, cu.email) as client_name
@@ -391,7 +496,7 @@ export async function listAllCommissions(): Promise<(AgentCommission & { agentNa
      LEFT JOIN users cu ON ac.client_user_id = cu.id
      ORDER BY ac.created_at DESC`
   );
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row) => ({
     ...rowToCommission(row),
     agentName: row.agent_name || "",
     clientName: row.client_name || "",
@@ -400,7 +505,7 @@ export async function listAllCommissions(): Promise<(AgentCommission & { agentNa
 
 /** Mark commission as paid */
 export async function markCommissionPaid(id: string): Promise<AgentCommission> {
-  const result = await query(
+  const result = await query<AgentCommissionRow>(
     `UPDATE agent_commissions SET status = 'paid', paid_at = NOW() WHERE id = $1 RETURNING *`,
     [id]
   );
@@ -412,7 +517,7 @@ export async function markCommissionPaid(id: string): Promise<AgentCommission> {
 export async function getAgentStats(agentUserId: string) {
   await ensureAgentWalletSchema();
 
-  const result = await query(
+  const result = await query<AgentStatsRow>(
     `SELECT
        (SELECT COUNT(*) FROM agent_clients WHERE agent_user_id = $1) as total_clients,
        (SELECT COALESCE(SUM(amount), 0) FROM agent_commissions WHERE agent_user_id = $1) as total_sales,
@@ -424,18 +529,18 @@ export async function getAgentStats(agentUserId: string) {
     [agentUserId]
   );
   const row = result.rows[0];
-  const totalEarned = parseFloat(row.total_earned) || 0;
-  const totalWithdrawn = parseFloat(row.total_withdrawn) || 0;
-  const pendingWithdrawRequests = parseFloat(row.pending_withdraw_requests) || 0;
+  const totalEarned = toNumber(row.total_earned);
+  const totalWithdrawn = toNumber(row.total_withdrawn);
+  const pendingWithdrawRequests = toNumber(row.pending_withdraw_requests);
   return {
-    totalClients: parseInt(row.total_clients, 10) || 0,
-    totalSales: parseFloat(row.total_sales) || 0,
+    totalClients: toInt(row.total_clients),
+    totalSales: toNumber(row.total_sales),
     totalEarned,
     totalWithdrawn,
     pendingWithdrawRequests,
     availableWallet: Math.max(0, totalEarned - totalWithdrawn - pendingWithdrawRequests),
-    pendingAmount: parseFloat(row.pending_amount) || 0,
-    totalTransactions: parseInt(row.total_transactions, 10) || 0,
+    pendingAmount: toNumber(row.pending_amount),
+    totalTransactions: toInt(row.total_transactions),
   };
 }
 
@@ -473,7 +578,7 @@ export async function createAgentWithdrawalRequest(input: {
   }
 
   const id = nanoid();
-  const result = await query(
+  const result = await query<AgentWithdrawalRequestRow>(
     `INSERT INTO agent_withdrawal_requests (
       id, agent_user_id, requested_amount, status, agent_note,
       payout_method, payout_bank_name, payout_account_name, payout_account_number, payout_iban,
@@ -499,7 +604,7 @@ export async function createAgentWithdrawalRequest(input: {
 export async function listAgentWithdrawalRequests(agentUserId: string, limit = 50, offset = 0) {
   await ensureAgentWalletSchema();
 
-  const result = await query(
+  const result = await query<AgentWithdrawalRequestRow>(
     `SELECT * FROM agent_withdrawal_requests
      WHERE agent_user_id = $1
      ORDER BY created_at DESC
@@ -517,7 +622,7 @@ export async function countAgentWithdrawalRequests(
   await ensureAgentWalletSchema();
 
   const clauses: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   let idx = 1;
 
   if (status) {
@@ -535,7 +640,7 @@ export async function countAgentWithdrawalRequests(
   }
 
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  const result = await query(
+  const result = await query<CountRow>(
     `SELECT COUNT(*) as c
      FROM agent_withdrawal_requests awr
      LEFT JOIN users u ON awr.agent_user_id = u.id
@@ -555,7 +660,7 @@ export async function listAllAgentWithdrawalRequests(
   await ensureAgentWalletSchema();
 
   const clauses: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
   let idx = 1;
 
   if (status) {
@@ -575,7 +680,7 @@ export async function listAllAgentWithdrawalRequests(
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   params.push(limit, offset);
 
-  const result = await query(
+  const result = await query<AgentWithdrawalWithAgentRow>(
     `SELECT awr.*, COALESCE(u.display_name, u.full_name, u.email) as agent_name, u.email as agent_email, u.phone as agent_phone
      FROM agent_withdrawal_requests awr
      LEFT JOIN users u ON awr.agent_user_id = u.id
@@ -585,7 +690,7 @@ export async function listAllAgentWithdrawalRequests(
     params
   );
 
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row) => ({
     ...rowToAgentWithdrawalRequest(row),
     agentName: row.agent_name || "",
     agentEmail: row.agent_email || "",
@@ -609,7 +714,7 @@ export async function processAgentWithdrawalRequest(input: {
 }) {
   await ensureAgentWalletSchema();
 
-  const requestRes = await query(
+  const requestRes = await query<AgentWithdrawalRequestRow>(
     `SELECT * FROM agent_withdrawal_requests WHERE id = $1`,
     [input.requestId]
   );
@@ -618,7 +723,7 @@ export async function processAgentWithdrawalRequest(input: {
   if (reqRow.status !== "pending") throw new Error("REQUEST_ALREADY_PROCESSED");
 
   if (input.action === "reject") {
-    const result = await query(
+    const result = await query<AgentWithdrawalRequestRow>(
       `UPDATE agent_withdrawal_requests
        SET status = 'rejected', admin_note = $2, processed_by = $3, processed_at = NOW(), updated_at = NOW()
        WHERE id = $1
@@ -628,13 +733,13 @@ export async function processAgentWithdrawalRequest(input: {
     return rowToAgentWithdrawalRequest(result.rows[0]);
   }
 
-  const approvedAmount = Math.round(((input.approvedAmount ?? parseFloat(reqRow.requested_amount)) as number) * 1000) / 1000;
+  const approvedAmount = Math.round((input.approvedAmount ?? toNumber(reqRow.requested_amount)) * 1000) / 1000;
   if (!Number.isFinite(approvedAmount) || approvedAmount <= 0) {
     throw new Error("INVALID_APPROVED_AMOUNT");
   }
 
   const stats = await getAgentStats(reqRow.agent_user_id);
-  if (approvedAmount > stats.availableWallet + parseFloat(reqRow.requested_amount)) {
+  if (approvedAmount > stats.availableWallet + toNumber(reqRow.requested_amount)) {
     throw new Error("INSUFFICIENT_AGENT_WALLET");
   }
 
@@ -646,7 +751,7 @@ export async function processAgentWithdrawalRequest(input: {
     [approvedAmount, reqRow.agent_user_id]
   );
 
-  const result = await query(
+  const result = await query<AgentWithdrawalRequestRow>(
     `UPDATE agent_withdrawal_requests
      SET status = 'approved',
          approved_amount = $2,

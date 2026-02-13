@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import {
   HiOutlineCog6Tooth,
   HiOutlineEye,
   HiOutlineGlobeAlt,
-  HiOutlinePlusCircle,
   HiArrowUpRight,
 } from "react-icons/hi2";
 
@@ -27,7 +26,7 @@ export default async function WebsiteEditorPage({
   if (!isLocale(locale)) notFound();
 
   const user = await requireUser(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
+  await getDictionary(locale as Locale);
   const ar = locale === "ar";
 
   let website = await getWebsiteById(id);

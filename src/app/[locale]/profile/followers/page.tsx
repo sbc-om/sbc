@@ -2,11 +2,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { IoArrowBack, IoArrowForward } from "react-icons/io5";
-import { HiUser } from "react-icons/hi2";
 
 import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
-import { listBusinessesByOwner } from "@/lib/db/businesses";
 import { getUserById } from "@/lib/db/users";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
@@ -20,9 +18,7 @@ export default async function ProfileFollowersPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const auth = await requireUser(locale as Locale);
-  const businesses = await listBusinessesByOwner(auth.id);
-  const businessIds = businesses.map(b => b.id);
+  await requireUser(locale as Locale);
 
   // TODO: getBusinessFollowers doesn't exist yet - followers feature needs implementation
   // For now, return empty array

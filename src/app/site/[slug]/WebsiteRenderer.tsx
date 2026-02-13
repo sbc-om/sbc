@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import type {
   Website,
@@ -115,27 +116,18 @@ function SocialIcon({ type }: { type: string }) {
 /* ─── theme toggle (hydration-safe, matches SBC main) ────── */
 
 function SiteThemeToggle({ locale }: { locale: Locale }) {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") return "light";
     const saved = localStorage.getItem("theme");
-    const initial =
-      saved === "dark" || saved === "light"
-        ? saved
-        : window.matchMedia?.("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
-    setTheme(initial);
-    setMounted(true);
-  }, []);
+    if (saved === "dark" || saved === "light") return saved;
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  });
 
   useEffect(() => {
-    if (!mounted) return;
     const root = document.documentElement;
     root.classList.toggle("dark", theme === "dark");
     root.style.colorScheme = theme === "dark" ? "dark" : "light";
-  }, [theme, mounted]);
+  }, [theme]);
 
   const toggle = () => {
     const next = theme === "dark" ? "light" : "dark";
@@ -143,9 +135,7 @@ function SiteThemeToggle({ locale }: { locale: Locale }) {
     try { localStorage.setItem("theme", next); } catch { /* */ }
   };
 
-  const label = !mounted
-    ? (locale === "ar" ? "تبديل المظهر" : "Toggle theme")
-    : theme === "dark"
+  const label = theme === "dark"
       ? (locale === "ar" ? "مظهر فاتح" : "Light mode")
       : (locale === "ar" ? "مظهر داكن" : "Dark mode");
 
@@ -156,11 +146,7 @@ function SiteThemeToggle({ locale }: { locale: Locale }) {
       title={label}
       className="p-2 rounded-xl text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-white/10 hover:bg-gray-200 dark:hover:bg-white/15 transition-colors"
     >
-      {!mounted ? (
-        <svg className="w-[18px] h-[18px] opacity-50" viewBox="0 0 24 24" fill="none">
-          <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
-        </svg>
-      ) : theme === "dark" ? (
+      {theme === "dark" ? (
         <IconSun className="w-[18px] h-[18px]" />
       ) : (
         <IconMoon className="w-[18px] h-[18px]" />
@@ -171,7 +157,7 @@ function SiteThemeToggle({ locale }: { locale: Locale }) {
 
 /* ─── language switcher (matches SBC main) ────────────────── */
 
-function SiteLanguageSwitcher({ locale, slug }: { locale: Locale; slug: string }) {
+function SiteLanguageSwitcher({ locale }: { locale: Locale }) {
   const pathname = usePathname();
   const target: Locale = locale === "en" ? "ar" : "en";
 
@@ -268,7 +254,7 @@ function BlockRenderer({ block, locale }: { block: WebsiteBlock; locale: Locale 
       return (
         <section className="mx-auto max-w-4xl px-6 py-14">
           <div className="overflow-hidden rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/30 ring-1 ring-gray-200/50 dark:ring-white/10">
-            <img src={block.data.url} alt={block.data.alt || ""} className="w-full object-cover" />
+            <Image src={block.data.url} alt={block.data.alt || ""} width={1600} height={900} className="w-full h-auto object-cover" />
           </div>
           {block.data.caption && (
             <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
@@ -288,9 +274,11 @@ function BlockRenderer({ block, locale }: { block: WebsiteBlock; locale: Locale 
                 key={i}
                 className="group relative aspect-square overflow-hidden rounded-xl ring-1 ring-gray-200/50 dark:ring-white/10"
               >
-                <img
+                <Image
                   src={img.url}
                   alt={img.alt || ""}
+                  fill
+                  sizes="(max-width: 768px) 50vw, 33vw"
                   className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -372,11 +360,9 @@ function BlockRenderer({ block, locale }: { block: WebsiteBlock; locale: Locale 
                 </p>
                 <div className="flex items-center gap-3">
                   {t.avatarUrl ? (
-                    <img
-                      src={t.avatarUrl}
-                      alt=""
-                      className="w-11 h-11 rounded-full object-cover ring-2 ring-[var(--site-primary)]/20"
-                    />
+                    <div className="relative w-11 h-11 rounded-full object-cover ring-2 ring-[var(--site-primary)]/20 overflow-hidden">
+                      <Image src={t.avatarUrl} alt="" fill sizes="44px" className="object-cover" />
+                    </div>
                   ) : (
                     <div className="w-11 h-11 rounded-full bg-[var(--site-primary)]/10 flex items-center justify-center text-[var(--site-primary)] font-bold text-sm">
                       {t.name.charAt(0)}
@@ -522,11 +508,9 @@ function SiteNavigation({
         {/* Logo + title */}
         <Link href={basePath} className="flex items-center gap-2.5 group">
           {website.branding.logoUrl ? (
-            <img
-              src={website.branding.logoUrl}
-              alt=""
-              className="h-9 w-9 rounded-lg object-contain ring-1 ring-gray-200 dark:ring-white/10"
-            />
+            <div className="relative h-9 w-9 rounded-lg overflow-hidden ring-1 ring-gray-200 dark:ring-white/10">
+              <Image src={website.branding.logoUrl} alt="" fill sizes="36px" className="object-contain" />
+            </div>
           ) : (
             <div className="h-9 w-9 rounded-lg bg-[var(--site-primary)] flex items-center justify-center text-white font-bold text-sm">
               {loc(website.title, locale).charAt(0)}
@@ -543,14 +527,14 @@ function SiteNavigation({
             <NavItem key={item.id} item={item} basePath={basePath} locale={locale} />
           ))}
           <div className="ms-3 ps-3 border-s border-gray-200 dark:border-white/10 flex items-center gap-2">
-            <SiteLanguageSwitcher locale={locale} slug={website.slug} />
+            <SiteLanguageSwitcher locale={locale} />
             <SiteThemeToggle locale={locale} />
           </div>
         </div>
 
         {/* Mobile */}
         <div className="flex md:hidden items-center gap-1.5">
-          <SiteLanguageSwitcher locale={locale} slug={website.slug} />
+          <SiteLanguageSwitcher locale={locale} />
           <SiteThemeToggle locale={locale} />
           <button
             className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 transition-colors"
@@ -574,7 +558,7 @@ function SiteNavigation({
           ))}
           {/* Mobile language switch row */}
           <div className="pt-3 mt-2 border-t border-gray-200/60 dark:border-white/10">
-            <SiteLanguageSwitcher locale={locale} slug={website.slug} />
+            <SiteLanguageSwitcher locale={locale} />
           </div>
         </div>
       </div>
@@ -696,12 +680,10 @@ function SiteFooter({ website, locale }: { website: Website; locale: Locale }) {
 export default function WebsiteRenderer({
   website,
   page,
-  pages,
   locale,
 }: {
   website: Website;
   page: WebsitePage;
-  pages: WebsitePage[];
   locale: Locale;
 }) {
   const basePath = `/${locale}/site/${website.slug}`;

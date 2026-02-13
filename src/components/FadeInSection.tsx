@@ -31,19 +31,15 @@ export function FadeInSection({
   threshold = 0.1,
   rootMargin = "0px 0px -50px 0px",
 }: FadeInSectionProps) {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
+  const [isVisible, setIsVisible] = useState(prefersReducedMotion);
+  const sectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const currentRef = sectionRef.current;
     if (!currentRef) return;
 
-    // If user prefers reduced motion, show immediately
-    if (prefersReducedMotion) {
-      setIsVisible(true);
-      return;
-    }
+    if (prefersReducedMotion) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {

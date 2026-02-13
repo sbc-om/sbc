@@ -39,6 +39,20 @@ interface StoryComment {
   userUsername?: string;
 }
 
+interface StoryStatsUser {
+  id: string;
+  userFullName?: string;
+  userAvatar?: string;
+}
+
+interface StoryStats {
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  likers?: StoryStatsUser[];
+  viewers?: StoryStatsUser[];
+}
+
 /* ═══════════════════════════════════════════════════════════════
    Constants & helpers
    ═══════════════════════════════════════════════════════════════ */
@@ -173,7 +187,6 @@ export function StoryViewer({
   initialBusinessId,
   locale,
   onClose,
-  currentUserId,
   isBusinessOwner = false,
   isAdmin = false,
 }: StoryViewerProps) {
@@ -213,7 +226,7 @@ export function StoryViewer({
   const [comments, setComments] = useState<StoryComment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [storyStats, setStoryStats] = useState<any>(null);
+  const [storyStats, setStoryStats] = useState<StoryStats | null>(null);
 
   /* ── Animations ── */
   const [showHeartBurst, setShowHeartBurst] = useState(false);
@@ -222,7 +235,25 @@ export function StoryViewer({
   /* ── Derived ── */
   const currentBusiness = businesses[currentBusinessIndex];
   const currentStory = currentBusiness?.stories[currentStoryIndex];
+  const currentStoryId = currentStory?.id;
+  const currentStoryMediaType = currentStory?.mediaType;
   const canViewComments = isBusinessOwner || isAdmin;
+
+  /* ═══════ Navigation ═══════ */
+  const resetProgress = useCallback(() => {
+    progressRef.current = 0;
+    lastTimeRef.current = null;
+    setProgress(0);
+  }, []);
+
+  const resetStoryUiState = useCallback(() => {
+    resetProgress();
+    setIsVideoLoaded(false);
+    setShowHeartBurst(false);
+    setPanelOpen(null);
+    setNewComment("");
+    if (videoRef.current) videoRef.current.currentTime = 0;
+  }, [resetProgress]);
 
   /* ═══════ Embla sync ═══════ */
   useEffect(() => {
@@ -232,52 +263,45 @@ export function StoryViewer({
       if (idx !== currentBusinessIndex) {
         setCurrentBusinessIndex(idx);
         setCurrentStoryIndex(0);
-        resetProgress();
+        resetStoryUiState();
       }
     };
     emblaApi.on("select", onSelect);
     return () => { emblaApi.off("select", onSelect); };
-  }, [emblaApi, currentBusinessIndex]);
-
-  /* ═══════ Navigation ═══════ */
-  const resetProgress = useCallback(() => {
-    progressRef.current = 0;
-    lastTimeRef.current = null;
-    setProgress(0);
-  }, []);
+  }, [emblaApi, currentBusinessIndex, resetStoryUiState]);
 
   const goNextStory = useCallback(() => {
     if (!currentBusiness) return;
     if (currentStoryIndex < currentBusiness.stories.length - 1) {
+      resetStoryUiState();
       setCurrentStoryIndex((p) => p + 1);
-      resetProgress();
     } else if (currentBusinessIndex < businesses.length - 1) {
       emblaApi?.scrollNext();
     } else {
       onClose();
     }
-  }, [currentBusiness, currentStoryIndex, currentBusinessIndex, businesses.length, emblaApi, onClose, resetProgress]);
+  }, [currentBusiness, currentStoryIndex, currentBusinessIndex, businesses.length, emblaApi, onClose, resetStoryUiState]);
 
   const goPrevStory = useCallback(() => {
     if (currentStoryIndex > 0) {
+      resetStoryUiState();
       setCurrentStoryIndex((p) => p - 1);
-      resetProgress();
     } else if (currentBusinessIndex > 0) {
       emblaApi?.scrollPrev();
     }
-  }, [currentStoryIndex, currentBusinessIndex, emblaApi, resetProgress]);
+  }, [currentStoryIndex, currentBusinessIndex, emblaApi, resetStoryUiState]);
 
   /* ═══════ RAF progress ═══════ */
   useEffect(() => {
-    if (!currentStory) return;
-    if (currentStory.mediaType === "video" && !isVideoLoaded) return;
+    if (!currentStoryId) return;
+    if (currentStoryMediaType === "video" && !isVideoLoaded) return;
 
     if (isPaused) {
-      if (currentStory.mediaType === "video" && videoRef.current) videoRef.current.pause();
+      if (currentStoryMediaType === "video" && videoRef.current) videoRef.current.pause();
       lastTimeRef.current = null;
       return;
     }
-    if (currentStory.mediaType === "video" && videoRef.current) videoRef.current.play().catch(() => {});
+    if (currentStoryMediaType === "video" && videoRef.current) videoRef.current.play().catch(() => {});
 
     const tick = (time: number) => {
       if (lastTimeRef.current === null) lastTimeRef.current = time;
@@ -289,46 +313,37 @@ export function StoryViewer({
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [currentStory?.id, isPaused, isVideoLoaded, goNextStory]);
-
-  useEffect(() => {
-    resetProgress();
-    setIsVideoLoaded(false);
-    setShowHeartBurst(false);
-    setPanelOpen(null);
-    setNewComment("");
-    if (videoRef.current) videoRef.current.currentTime = 0;
-  }, [currentStory?.id, resetProgress]);
+  }, [currentStoryId, currentStoryMediaType, isPaused, isVideoLoaded, goNextStory]);
 
   /* ═══════ Engagement fetch ═══════ */
   useEffect(() => {
-    if (!currentStory) return;
-    fetch(`/api/stories/${currentStory.id}/view`, { method: "POST" }).catch(() => {});
-    fetch(`/api/stories/${currentStory.id}/like`).then((r) => r.json()).then((d) => { if (d.ok) setEngagement((p) => ({ ...p, liked: d.data.userLiked, likeCount: d.data.likeCount })); }).catch(() => {});
+    if (!currentStoryId) return;
+    fetch(`/api/stories/${currentStoryId}/view`, { method: "POST" }).catch(() => {});
+    fetch(`/api/stories/${currentStoryId}/like`).then((r) => r.json()).then((d) => { if (d.ok) setEngagement((p) => ({ ...p, liked: d.data.userLiked, likeCount: d.data.likeCount })); }).catch(() => {});
     if (canViewComments) {
-      fetch(`/api/stories/${currentStory.id}/comments`).then((r) => r.json()).then((d) => { if (d.ok) { setComments(d.data); setEngagement((p) => ({ ...p, commentCount: d.data.length })); } }).catch(() => {});
+      fetch(`/api/stories/${currentStoryId}/comments`).then((r) => r.json()).then((d) => { if (d.ok) { setComments(d.data); setEngagement((p) => ({ ...p, commentCount: d.data.length })); } }).catch(() => {});
     }
-  }, [currentStory?.id, canViewComments]);
+  }, [currentStoryId, canViewComments]);
 
   useEffect(() => {
-    if (currentStory && (isBusinessOwner || isAdmin) && panelOpen === "stats") {
-      fetch(`/api/stories/${currentStory.id}/stats`).then((r) => r.json()).then((d) => { if (d.ok) setStoryStats(d.data.stats); }).catch(() => {});
+    if (currentStoryId && (isBusinessOwner || isAdmin) && panelOpen === "stats") {
+      fetch(`/api/stories/${currentStoryId}/stats`).then((r) => r.json()).then((d) => { if (d.ok) setStoryStats(d.data.stats); }).catch(() => {});
     }
-  }, [currentStory?.id, isBusinessOwner, isAdmin, panelOpen]);
+  }, [currentStoryId, isBusinessOwner, isAdmin, panelOpen]);
 
   /* ═══════ Like ═══════ */
   const handleLike = useCallback(async () => {
-    if (!currentStory) return;
+    if (!currentStoryId) return;
     try {
       if (engagement.liked) {
-        const d = await fetch(`/api/stories/${currentStory.id}/like`, { method: "DELETE", credentials: "include" }).then((r) => r.json());
+        const d = await fetch(`/api/stories/${currentStoryId}/like`, { method: "DELETE", credentials: "include" }).then((r) => r.json());
         if (d.ok) setEngagement((p) => ({ ...p, liked: false, likeCount: d.data.likeCount }));
       } else {
-        const d = await fetch(`/api/stories/${currentStory.id}/like`, { method: "POST", credentials: "include" }).then((r) => r.json());
+        const d = await fetch(`/api/stories/${currentStoryId}/like`, { method: "POST", credentials: "include" }).then((r) => r.json());
         if (d.ok) setEngagement((p) => ({ ...p, liked: true, likeCount: d.data.likeCount }));
       }
     } catch {}
-  }, [currentStory?.id, engagement.liked]);
+  }, [currentStoryId, engagement.liked]);
 
   const handleDoubleTap = useCallback(() => {
     if (engagement.liked) return;
@@ -339,10 +354,10 @@ export function StoryViewer({
 
   /* ═══════ Comment ═══════ */
   const handleSubmitComment = useCallback(async () => {
-    if (!currentStory || !newComment.trim()) return;
+    if (!currentStoryId || !newComment.trim()) return;
     setIsSubmitting(true);
     try {
-      const d = await fetch(`/api/stories/${currentStory.id}/comments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: newComment.trim() }), credentials: "include" }).then((r) => r.json());
+      const d = await fetch(`/api/stories/${currentStoryId}/comments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text: newComment.trim() }), credentials: "include" }).then((r) => r.json());
       if (d.ok) {
         if (canViewComments) setComments((p) => [...p, d.data]);
         setEngagement((p) => ({ ...p, commentCount: p.commentCount + 1 }));
@@ -350,7 +365,7 @@ export function StoryViewer({
       }
     } catch {}
     setIsSubmitting(false);
-  }, [currentStory?.id, newComment, canViewComments]);
+  }, [currentStoryId, newComment, canViewComments]);
 
   /* ═══════ Keyboard ═══════ */
   useEffect(() => {
@@ -362,8 +377,14 @@ export function StoryViewer({
       }
       if (panelOpen) { if (e.key === "Escape") setPanelOpen(null); return; }
       if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight") ar ? goPrevStory() : goNextStory();
-      if (e.key === "ArrowLeft") ar ? goNextStory() : goPrevStory();
+      if (e.key === "ArrowRight") {
+        if (ar) goPrevStory();
+        else goNextStory();
+      }
+      if (e.key === "ArrowLeft") {
+        if (ar) goNextStory();
+        else goPrevStory();
+      }
       if (e.key === " ") { e.preventDefault(); setHoldPaused((p) => !p); }
     };
     window.addEventListener("keydown", handler);
@@ -383,8 +404,13 @@ export function StoryViewer({
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const clientX = "touches" in e ? e.changedTouches[0].clientX : e.clientX;
     const zone = (clientX - rect.left) / rect.width;
-    if (zone < 0.33) ar ? goNextStory() : goPrevStory();
-    else if (zone > 0.67) ar ? goPrevStory() : goNextStory();
+    if (zone < 0.33) {
+      if (ar) goNextStory();
+      else goPrevStory();
+    } else if (zone > 0.67) {
+      if (ar) goPrevStory();
+      else goNextStory();
+    }
   };
 
   /* ═══════ Render ═══════ */
@@ -546,7 +572,7 @@ export function StoryViewer({
                             </div>
                           ) : comments.map((c) => (
                             <div key={c.id} className="flex gap-3 items-start">
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 overflow-hidden">{c.userAvatar ? <img src={c.userAvatar} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">{c.userFullName?.charAt(0)?.toUpperCase() || "?"}</div>}</div>
+                              <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0 overflow-hidden">{c.userAvatar ? <Image src={c.userAvatar} alt="" fill className="object-cover" sizes="32px" /> : <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">{c.userFullName?.charAt(0)?.toUpperCase() || "?"}</div>}</div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-baseline gap-2"><span className="text-white font-semibold text-sm">{c.userFullName || (ar ? "مستخدم" : "User")}</span><span className="text-white/30 text-[10px]">{getTimeAgo(c.createdAt, ar)}</span></div>
                                 <p className="text-white/90 text-sm mt-0.5">{c.text}</p>
@@ -562,23 +588,31 @@ export function StoryViewer({
                           <button type="button" onClick={() => setPanelOpen(null)} className="text-white/50 hover:text-white p-1"><svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
                         </div>
                         <div className="px-4 py-4 space-y-4 max-h-[50vh] overflow-y-auto">
+                          {(() => {
+                            const likers = storyStats.likers ?? [];
+                            const viewers = storyStats.viewers ?? [];
+                            return (
+                              <>
                           <div className="grid grid-cols-3 gap-3">
                             {[{ v: storyStats.viewCount, l: ar ? "مشاهدات" : "Views" }, { v: storyStats.likeCount, l: ar ? "إعجابات" : "Likes" }, { v: storyStats.commentCount, l: ar ? "تعليقات" : "Comments" }].map((s, i) => (
                               <div key={i} className="bg-white/5 rounded-2xl p-4 text-center"><div className="text-white text-2xl font-bold">{s.v}</div><div className="text-white/50 text-xs mt-1">{s.l}</div></div>
                             ))}
                           </div>
-                          {storyStats.likers?.length > 0 && (
+                          {likers.length > 0 && (
                             <div>
                               <h4 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2"><svg className="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>{ar ? "الإعجابات" : "Likes"}</h4>
-                              <div className="space-y-2">{storyStats.likers.slice(0, 15).map((l: any) => (<div key={l.id} className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-red-500 overflow-hidden">{l.userAvatar ? <img src={l.userAvatar} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">{l.userFullName?.charAt(0) || "?"}</div>}</div><span className="text-white text-sm">{l.userFullName || "User"}</span></div>))}</div>
+                              <div className="space-y-2">{likers.slice(0, 15).map((l) => (<div key={l.id} className="flex items-center gap-3"><div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 to-red-500 overflow-hidden">{l.userAvatar ? <Image src={l.userAvatar} alt="" fill className="object-cover" sizes="32px" /> : <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">{l.userFullName?.charAt(0) || "?"}</div>}</div><span className="text-white text-sm">{l.userFullName || "User"}</span></div>))}</div>
                             </div>
                           )}
-                          {storyStats.viewers?.length > 0 && (
+                          {viewers.length > 0 && (
                             <div>
                               <h4 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-3 flex items-center gap-2"><svg className="w-4 h-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>{ar ? "المشاهدون" : "Viewers"}</h4>
-                              <div className="space-y-2">{storyStats.viewers.slice(0, 15).map((v: any) => (<div key={v.id} className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 overflow-hidden">{v.userAvatar ? <img src={v.userAvatar} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">{v.userFullName?.charAt(0) || "?"}</div>}</div><span className="text-white text-sm">{v.userFullName || "User"}</span></div>))}</div>
+                              <div className="space-y-2">{viewers.slice(0, 15).map((v) => (<div key={v.id} className="flex items-center gap-3"><div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 overflow-hidden">{v.userAvatar ? <Image src={v.userAvatar} alt="" fill className="object-cover" sizes="32px" /> : <div className="w-full h-full flex items-center justify-center text-white text-xs font-bold">{v.userFullName?.charAt(0) || "?"}</div>}</div><span className="text-white text-sm">{v.userFullName || "User"}</span></div>))}</div>
                             </div>
                           )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     ) : panelOpen === "stats" ? (

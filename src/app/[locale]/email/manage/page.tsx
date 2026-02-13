@@ -23,7 +23,7 @@ export default async function EmailManagePage({
 
   const ar = locale === "ar";
 
-  const sub = await getProgramSubscriptionByUser(user.id);
+  await getProgramSubscriptionByUser(user.id);
   const active = await isProgramSubscriptionActive(user.id);
 
   return (

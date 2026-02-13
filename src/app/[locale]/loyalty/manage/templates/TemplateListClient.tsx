@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import type { LoyaltyCardTemplate } from "@/lib/db/types";
 import { useToast } from "@/components/ui/Toast";

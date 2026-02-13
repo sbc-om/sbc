@@ -5,6 +5,8 @@
  * Run: node scripts/migrate-custom-domain.js
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+
 const { Pool } = require('pg');
 
 const pool = new Pool({

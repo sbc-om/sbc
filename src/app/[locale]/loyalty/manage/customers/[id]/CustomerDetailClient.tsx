@@ -64,7 +64,7 @@ export function CustomerDetailClient({
     return () => {
       cancelled = true;
     };
-  }, [customer.id, locale]);
+  }, [customer.id, customer.cardId, locale]);
 
   function downloadLookupQr() {
     if (!lookupQrDataUrl) return;

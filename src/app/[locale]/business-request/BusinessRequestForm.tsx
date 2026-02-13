@@ -104,8 +104,9 @@ export function BusinessRequestForm({
 
       router.push(`/${locale}/business-request?success=1`);
       router.refresh();
-    } catch (error: any) {
-      toast({ message: ar ? `خطا: ${error.message}` : `Error: ${error.message}`, variant: "error" });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to submit request";
+      toast({ message: ar ? `خطا: ${message}` : `Error: ${message}`, variant: "error" });
     } finally {
       setLoading(false);
     }

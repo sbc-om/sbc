@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 
-import { resolvePasskeyOrigin, resolvePasskeyRpId } from "@/lib/auth/passkeyConfig";
+import { resolvePasskeyRpId } from "@/lib/auth/passkeyConfig";
 import { createPasskeyChallenge, listUserPasskeys } from "@/lib/db/passkeys";
 import { getUserByEmail, getUserByPhone } from "@/lib/db/users";
 
@@ -16,7 +16,6 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const { identifier } = bodySchema.parse(body);
 
-  const origin = resolvePasskeyOrigin(req);
   const rpID = resolvePasskeyRpId(req);
 
   let userId: string | undefined;

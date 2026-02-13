@@ -2,15 +2,11 @@
 
 import { useState, useCallback } from "react";
 import {
-  HiOutlinePlusCircle,
   HiOutlineDocumentText,
   HiOutlineTrash,
-  HiOutlinePencilSquare,
-  HiChevronUp,
-  HiChevronDown,
   HiOutlineHome,
-  HiOutlineEye,
   HiOutlineEyeSlash,
+  HiOutlinePlusCircle,
 } from "react-icons/hi2";
 
 import { Button } from "@/components/ui/Button";
@@ -252,7 +248,6 @@ export function WebsiteEditorClient({
 
             <PageBlockEditor
               locale={locale}
-              pageId={selectedPage.id}
               blocks={selectedPage.blocks}
               onSave={(blocks: WebsiteBlock[]) => handleSaveBlocks(selectedPage.id, blocks)}
             />

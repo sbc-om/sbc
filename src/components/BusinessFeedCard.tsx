@@ -16,7 +16,7 @@ import {
   IoCopyOutline,
   IoEyeOutline
 } from "react-icons/io5";
-import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
+import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
 import type { Locale } from "@/lib/i18n/locales";
 
 interface BusinessFeedCardProps {
@@ -97,7 +97,6 @@ export function BusinessFeedCard({
   const logo = business.media?.logo;
   const avatarMode = business.avatarMode ?? "icon";
   const showLogo = avatarMode === "logo" && !!logo;
-  const CategoryIcon = getCategoryIconComponent(categoryIconId);
 
   const handleLikeClick = () => {
     startTransition(async () => {
@@ -223,7 +222,7 @@ export function BusinessFeedCard({
                 </div>
               ) : categoryIconId ? (
                 <div className="w-9 h-9 rounded-full bg-(--chip-bg) border border-(--surface-border) flex items-center justify-center">
-                  <CategoryIcon className="h-5 w-5 text-(--muted-foreground)" />
+                  {renderCategoryIcon(categoryIconId, "h-5 w-5 text-(--muted-foreground)")}
                 </div>
               ) : (
                 <div className="w-9 h-9 rounded-full bg-linear-to-br from-accent to-accent-2 flex items-center justify-center">

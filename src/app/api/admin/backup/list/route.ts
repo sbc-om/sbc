@@ -4,11 +4,11 @@
  */
 
 import { cookies } from "next/headers";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getAuthCookieName, verifyAuthToken } from "@/lib/auth/jwt";
 import { listBackups } from "@/lib/db/backup";
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Verify authentication from cookie
     const cookieName = getAuthCookieName();

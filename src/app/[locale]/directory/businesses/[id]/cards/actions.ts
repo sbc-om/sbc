@@ -48,7 +48,7 @@ export async function updateBusinessCardAction(
   cardId: string,
   formData: FormData
 ) {
-  const user = await requireUser(locale);
+  await requireUser(locale);
 
   await updateBusinessCard(cardId, {
     fullName: String(formData.get("fullName") || "").trim(),

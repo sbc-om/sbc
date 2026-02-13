@@ -8,6 +8,10 @@ import { saveUpload } from "@/lib/uploads/storage";
 
 export const runtime = "nodejs";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Internal server error";
+}
+
 const storySchema = z.object({
   mediaType: z.enum(["image", "video"]),
   caption: z.string().max(500).optional().nullable(),
@@ -37,9 +41,9 @@ export async function GET(
     const { id } = await params;
     const stories = await getActiveStoriesByBusiness(id);
     return NextResponse.json({ ok: true, data: stories });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[business-stories] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -164,9 +168,9 @@ export async function POST(
     });
 
     return NextResponse.json({ ok: true, data: story }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[business-stories] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -232,8 +236,8 @@ export async function DELETE(
     }
 
     return NextResponse.json({ ok: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[business-stories] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

@@ -21,7 +21,7 @@ export default async function WebsiteSettingsPage({
   if (!isLocale(locale)) notFound();
 
   const user = await requireUser(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
+  await getDictionary(locale as Locale);
   const ar = locale === "ar";
 
   let website = await getWebsiteById(id);

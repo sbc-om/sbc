@@ -116,7 +116,7 @@ export function NewWebsiteForm({ locale }: { locale: Locale }) {
       }
 
       router.push(`/${locale}/dashboard/websites/${data.website.id}`);
-    } catch (err) {
+    } catch {
       setError(ar ? "خطأ في الاتصال" : "Connection error");
     } finally {
       setIsSubmitting(false);

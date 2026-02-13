@@ -16,12 +16,16 @@ import { sendText, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
 
 export const runtime = "nodejs";
 
-function isAgentOrAdmin(user: any) {
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function isAgentOrAdmin(user: { role?: string } | null) {
   return user && (user.role === "agent" || user.role === "admin");
 }
 
 /** GET /api/agent — get agent dashboard data */
-export async function GET(request: NextRequest) {
+export async function GET() {
   const user = await getCurrentUser();
   if (!user || !isAgentOrAdmin(user)) {
     return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
@@ -124,7 +128,7 @@ export async function POST(request: NextRequest) {
       if (!q || q.length < 3) {
         return NextResponse.json({ ok: false, error: "QUERY_TOO_SHORT" }, { status: 400 });
       }
-      const result = await query(
+      const result = await query<{ id: string; email: string | null; phone: string | null; name: string; avatar_url: string | null }>(
         `SELECT id, email, phone, COALESCE(display_name, email) as name, avatar_url
          FROM users
          WHERE (email ILIKE $1 OR phone ILIKE $1 OR display_name ILIKE $1)
@@ -134,7 +138,7 @@ export async function POST(request: NextRequest) {
       );
       return NextResponse.json({
         ok: true,
-        users: result.rows.map((r: any) => ({
+        users: result.rows.map((r: { id: string; email: string | null; phone: string | null; name: string; avatar_url: string | null }) => ({
           id: r.id,
           email: r.email,
           phone: r.phone,
@@ -255,10 +259,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ ok: false, error: "UNKNOWN_ACTION" }, { status: 400 });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("[Agent API]", e);
     return NextResponse.json(
-      { ok: false, error: e.message || "ACTION_FAILED" },
+      { ok: false, error: getErrorMessage(e, "ACTION_FAILED") },
       { status: 400 }
     );
   }

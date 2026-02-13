@@ -3,7 +3,22 @@
  * Browser-only - uses ml5.js and TensorFlow.js
  */
 
-let ml5Instance: any = null;
+type ClassificationResult = { label: string; confidence: number };
+
+type Ml5ImageClassifier = {
+  classify: (imageElement: HTMLImageElement) => Promise<ClassificationResult[]>;
+};
+
+type Ml5Sentiment = {
+  predict: (text: string) => Promise<number> | number;
+};
+
+type Ml5Like = {
+  imageClassifier?: (model: string) => Promise<Ml5ImageClassifier> | Ml5ImageClassifier;
+  sentiment?: (dataset: string) => Promise<Ml5Sentiment> | Ml5Sentiment;
+};
+
+let ml5Instance: Ml5Like | null = null;
 
 export async function loadML5() {
   if (typeof window === "undefined") {
@@ -14,15 +29,14 @@ export async function loadML5() {
 
   try {
     // Configure TensorFlow.js to disable WebGPU and use WebGL backend
-    // @ts-ignore - TensorFlow.js global flags
-    if (typeof window !== 'undefined' && !window.tf) {
+    const windowWithTF = window as Window & { tf?: unknown };
+    if (typeof window !== 'undefined' && !windowWithTF.tf) {
       const tf = await import('@tensorflow/tfjs');
       // Set flags to disable WebGPU
       tf.env().set('WEBGPU_ENABLED', false);
       tf.env().set('WEBGL_VERSION', 2);
       // Expose tf globally for ml5
-      // @ts-ignore
-      window.tf = tf;
+      windowWithTF.tf = tf;
     }
     
     // Suppress ml5.js console messages
@@ -38,8 +52,8 @@ export async function loadML5() {
     console.error = () => {};
     
     // Dynamic import for client-side only
-    const module = await import("ml5");
-    ml5Instance = module.default || module;
+    const importedMl5 = await import("ml5");
+    ml5Instance = (importedMl5.default || importedMl5) as Ml5Like;
     
     // Restore console
     console.log = originalLog;
@@ -48,7 +62,7 @@ export async function loadML5() {
     console.error = originalError;
     
     return ml5Instance;
-  } catch (error) {
+  } catch {
     // Silent fallback
     return null;
   }
@@ -58,8 +72,8 @@ export async function loadML5() {
  * Feature Extractor for semantic similarity
  */
 export class FeatureExtractor {
-  private extractor: any = null;
-  private ml5: any = null;
+  private extractor: Ml5ImageClassifier | null = null;
+  private ml5: Ml5Like | null = null;
 
   async initialize() {
     try {
@@ -75,14 +89,14 @@ export class FeatureExtractor {
         
         try {
           this.extractor = await this.ml5.imageClassifier("MobileNet");
-        } catch (e) {
+        } catch {
           // Silent fallback to text-only
         }
         
         console.error = originalError;
         console.warn = originalWarn;
       }
-    } catch (error) {
+    } catch {
       // Silently fallback to text-only features
     }
     return this;
@@ -132,7 +146,7 @@ export class FeatureExtractor {
       const results = await this.extractor.classify(imageElement);
       // Convert classification results to a feature vector
       const features = new Array(128).fill(0);
-      results.forEach((r: any, i: number) => {
+      results.forEach((r, i: number) => {
         if (i < 10) features[i * 12] = r.confidence;
       });
       return features;
@@ -164,17 +178,23 @@ export class FeatureExtractor {
  * Image Classifier for business category detection
  */
 export class ImageClassifier {
-  private classifier: any = null;
-  private ml5: any = null;
+  private classifier: Ml5ImageClassifier | null = null;
+  private ml5: Ml5Like | null = null;
 
   async initialize() {
     this.ml5 = await loadML5();
+    if (!this.ml5?.imageClassifier) {
+      throw new Error("ML5_IMAGE_CLASSIFIER_UNAVAILABLE");
+    }
     this.classifier = await this.ml5.imageClassifier("MobileNet");
     return this;
   }
 
   async classifyImage(imageElement: HTMLImageElement): Promise<Array<{ label: string; confidence: number }>> {
     if (!this.classifier) await this.initialize();
+    if (!this.classifier) {
+      throw new Error("ML5_IMAGE_CLASSIFIER_UNAVAILABLE");
+    }
     const results = await this.classifier.classify(imageElement);
     return results;
   }
@@ -184,18 +204,21 @@ export class ImageClassifier {
  * Sentiment Analysis for comments/reviews
  */
 export class SentimentAnalyzer {
-  private model: any = null;
-  private ml5: any = null;
+  private model: Ml5Sentiment | null = null;
+  private ml5: Ml5Like | null = null;
 
   async initialize() {
     this.ml5 = await loadML5();
+    if (!this.ml5?.sentiment) {
+      throw new Error("ML5_SENTIMENT_UNAVAILABLE");
+    }
     this.model = await this.ml5.sentiment("movieReviews");
     return this;
   }
 
   async analyzeSentiment(text: string): Promise<{ score: number; label: "positive" | "negative" | "neutral" }> {
     if (!this.model) await this.initialize();
-    const prediction = await this.model.predict(text);
+    const prediction = await this.model!.predict(text);
     
     let label: "positive" | "negative" | "neutral";
     if (prediction > 0.6) label = "positive";

@@ -14,7 +14,6 @@ import { RiWallet3Fill } from "react-icons/ri";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { StoreProduct } from "@/lib/store/types";
-import { localeDir } from "@/lib/i18n/locales";
 import { cn } from "@/lib/cn";
 import { formatStorePrice, getStoreProductText } from "@/lib/store/utils";
 import { Button, buttonVariants } from "@/components/ui/Button";
@@ -61,13 +60,12 @@ export function CheckoutClient({
   const [processing, setProcessing] = useState(false);
   const processingRef = useRef(false); // Prevent double submission
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{
+  const [success] = useState<{
     orderId: string;
     orderNumber: string;
     newBalance: number;
   } | null>(null);
 
-  const rtl = localeDir(locale) === "rtl";
   const ar = locale === "ar";
 
   const slugs = state.items.map((it) => it.slug);
@@ -117,8 +115,8 @@ export function CheckoutClient({
             pendingWithdrawals: data.pendingWithdrawals || 0,
           });
         }
-      } catch (e) {
-        console.error("Failed to fetch wallet:", e);
+      } catch (error) {
+        console.error("Failed to fetch wallet:", error);
       } finally {
         setLoadingWallet(false);
       }
@@ -153,7 +151,7 @@ export function CheckoutClient({
         setError(data.error || "Payment failed");
         processingRef.current = false;
       }
-    } catch (e) {
+    } catch {
       setError(ar ? "خطأ في الشبكة" : "Network error");
       processingRef.current = false;
     } finally {

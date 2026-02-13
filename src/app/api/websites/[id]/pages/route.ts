@@ -69,7 +69,7 @@ export async function POST(
     const body = await req.json();
     const page = await createWebsitePage(id, body);
     return NextResponse.json({ ok: true, page }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Create page error:", error);
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }

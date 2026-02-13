@@ -12,7 +12,7 @@ import { purchaseProgramSubscription } from "@/lib/db/subscriptions";
 import { getStoreProductBySlug, type StoreProduct } from "@/lib/store/products";
 import { getUserWallet, getAvailableBalance, ensureWallet } from "@/lib/db/wallet";
 import { createOrder, SBC_TREASURY_ACCOUNT_NUMBER, SBC_TREASURY_USER_ID } from "@/lib/db/orders";
-import { query, transaction, initSchema } from "@/lib/db/postgres";
+import { transaction, initSchema } from "@/lib/db/postgres";
 import { sendText, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
 
 export const runtime = "nodejs";

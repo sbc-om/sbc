@@ -99,8 +99,8 @@ export function ProfileClient({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatarUrl);
   const [email, setEmail] = useState(initial.email);
   const [phone, setPhone] = useState(initial.phone);
-  const [pendingEmail, setPendingEmail] = useState(initial.pendingEmail ?? null);
-  const [pendingPhone, setPendingPhone] = useState(initial.pendingPhone ?? null);
+  const [, setPendingEmail] = useState(initial.pendingEmail ?? null);
+  const [, setPendingPhone] = useState(initial.pendingPhone ?? null);
   const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved">(
     initial.approvalStatus ?? "approved",
   );
@@ -418,14 +418,16 @@ export function ProfileClient({
       });
 
       const optionsJson = (await optionsRes.json()) as
-        | { ok: true; options: any; requestId: string; label?: string }
+        | { ok: true; options: unknown; requestId: string; label?: string }
         | { ok: false; error: string };
 
       if (!optionsRes.ok || !optionsJson.ok) {
         throw new Error(optionsJson.ok ? "OPTIONS_FAILED" : optionsJson.error);
       }
 
-      const attestation = await startRegistration(optionsJson.options);
+      const attestation = await startRegistration({
+        optionsJSON: optionsJson.options as Parameters<typeof startRegistration>[0]["optionsJSON"],
+      });
 
       const verifyRes = await fetch("/api/auth/passkey/registration/verify", {
         method: "POST",
@@ -443,7 +445,7 @@ export function ProfileClient({
 
       setPasskeySuccess(t.passkeysSuccess);
       router.refresh();
-    } catch (e) {
+    } catch {
       setPasskeyError(t.passkeysFailed);
     } finally {
       setPasskeyBusy(false);

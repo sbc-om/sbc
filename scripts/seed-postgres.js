@@ -354,7 +354,7 @@ async function seedCategories(client) {
         RETURNING id
       `, [id, c.slug, c.name.en, c.name.ar, c.iconId, now]);
       count++;
-    } catch (e) {
+    } catch {
       // If conflict, get the existing id
       const existing = await client.query(`SELECT id FROM categories WHERE slug = $1`, [c.slug]);
       if (existing.rows[0]) categoryIds.set(c.slug, existing.rows[0].id);

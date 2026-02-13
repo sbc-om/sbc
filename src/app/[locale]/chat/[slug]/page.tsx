@@ -22,7 +22,7 @@ export default async function ChatConversationPage({
   const user = await requireUser(locale as Locale);
   
   // First try to find as business
-  let business = await getBusinessByUsername(cleanSlug) || await getBusinessBySlug(cleanSlug);
+  const business = await getBusinessByUsername(cleanSlug) || await getBusinessBySlug(cleanSlug);
   
   if (business) {
     // Business conversation
@@ -49,7 +49,7 @@ export default async function ChatConversationPage({
   }
 
   // Try to find as user
-  let targetUser = await getUserByUsername(cleanSlug) || await getUserById(cleanSlug);
+  const targetUser = await getUserByUsername(cleanSlug) || await getUserById(cleanSlug);
   
   if (targetUser) {
     // Prevent chatting with self

@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { createElement, type ComponentType } from "react";
 import {
   FaBriefcase,
   FaUtensils,
@@ -210,6 +210,11 @@ export function getCategoryIconOption(iconId: string | null | undefined): Catego
 
 export function getCategoryIconComponent(iconId: string | null | undefined): CategoryIconOption["Icon"] {
   return getCategoryIconOption(iconId).Icon;
+}
+
+export function renderCategoryIcon(iconId: string | null | undefined, className?: string) {
+  const Icon = getCategoryIconComponent(iconId);
+  return createElement(Icon, { className });
 }
 
 export function getCategoryIconLabel(iconId: string | null | undefined, locale: Locale): string {

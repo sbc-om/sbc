@@ -47,7 +47,7 @@ export async function addLoyaltyCustomerAction(locale: Locale, formData: FormDat
   const fullName = String(formData.get("fullName") || "").trim();
   const phone = String(formData.get("phone") || "").trim();
   const email = String(formData.get("email") || "").trim();
-  const notes = String(formData.get("notes") || "").trim();
+  void String(formData.get("notes") || "").trim();
 
   if (!phone) {
     redirect(returnTo ? `${returnTo}?error=PHONE_REQUIRED` : `/${locale}/loyalty/manage?error=PHONE_REQUIRED`);
@@ -67,7 +67,7 @@ export async function addLoyaltyCustomerAction(locale: Locale, formData: FormDat
 }
 
 export async function adjustLoyaltyCustomerPointsAction(locale: Locale, formData: FormData) {
-  const user = await requireUser(locale);
+  await requireUser(locale);
 
   const returnTo = safeReturnTo(locale, formData.get("returnTo"));
 

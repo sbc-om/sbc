@@ -12,7 +12,24 @@ import { sendText, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
 
 export const runtime = "nodejs";
 
-function isAdmin(user: any) {
+type ProgramSubscriptionView = {
+  program: string;
+  plan?: string | null;
+  productSlug?: string | null;
+  amount: number;
+  currency: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  paymentId?: string | null;
+  paymentMethod?: string | null;
+};
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function isAdmin(user: { role?: string } | null) {
   return user && user.role === "admin";
 }
 
@@ -39,7 +56,7 @@ async function notifyUser(phone: string, text: string) {
   }
 }
 
-function buildInvoiceText(sub: any, userName: string, locale: string) {
+function buildInvoiceText(sub: ProgramSubscriptionView, userName: string, locale: string) {
   const ar = locale === "ar";
   if (ar) {
     return [
@@ -166,7 +183,14 @@ export async function PATCH(request: NextRequest) {
     }
 
     // General update
-    const updatePayload: Record<string, any> = {};
+    const updatePayload: {
+      program?: string;
+      plan?: string;
+      isActive?: boolean;
+      endDate?: Date;
+      amount?: number;
+      currency?: string;
+    } = {};
     if (updates.program) updatePayload.program = updates.program;
     if (updates.plan) updatePayload.plan = updates.plan;
     if (updates.isActive !== undefined) updatePayload.isActive = updates.isActive;
@@ -176,9 +200,9 @@ export async function PATCH(request: NextRequest) {
 
     const sub = await updateProgramSubscription(id, updatePayload);
     return NextResponse.json({ ok: true, subscription: sub });
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json(
-      { ok: false, error: e.message || "UPDATE_FAILED" },
+      { ok: false, error: getErrorMessage(e, "UPDATE_FAILED") },
       { status: 400 }
     );
   }

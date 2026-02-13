@@ -9,7 +9,6 @@ import type { Business, Category } from "@/lib/db/types";
 import { updateOwnerBusinessAction } from "./actions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { MarkdownEditorField } from "@/components/ui/MarkdownEditor";
 
@@ -65,30 +64,6 @@ function Field({
         {required && <span className="text-red-500 ms-1">*</span>}
       </span>
       <Input name={name} placeholder={placeholder} required={required} defaultValue={defaultValue} />
-    </label>
-  );
-}
-
-function TextArea({
-  label,
-  name,
-  placeholder,
-  required,
-  defaultValue,
-}: {
-  label: string;
-  name: string;
-  placeholder?: string;
-  required?: boolean;
-  defaultValue?: string;
-}) {
-  return (
-    <label className="group grid gap-2">
-      <span className="text-sm font-semibold text-foreground">
-        {label}
-        {required && <span className="text-red-500 ms-1">*</span>}
-      </span>
-      <Textarea name={name} placeholder={placeholder} required={required} defaultValue={defaultValue} />
     </label>
   );
 }
@@ -220,21 +195,27 @@ export function OwnerEditBusinessForm({
 
   useEffect(() => {
     if (!usernameValue) {
-      setUsernameStatus("idle");
-      setUsernameMessage("");
+      queueMicrotask(() => {
+        setUsernameStatus("idle");
+        setUsernameMessage("");
+      });
       return;
     }
 
     const normalized = usernameValue.trim().toLowerCase();
     const formatError = getUsernameFormatError(normalized, ar);
     if (formatError) {
-      setUsernameStatus("invalid");
-      setUsernameMessage(formatError);
+      queueMicrotask(() => {
+        setUsernameStatus("invalid");
+        setUsernameMessage(formatError);
+      });
       return;
     }
 
-    setUsernameStatus("checking");
-    setUsernameMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    queueMicrotask(() => {
+      setUsernameStatus("checking");
+      setUsernameMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    });
 
     const requestId = ++usernameCheckRef.current;
     const timer = setTimeout(async () => {
@@ -272,27 +253,35 @@ export function OwnerEditBusinessForm({
   useEffect(() => {
     const normalized = domainValue.trim().toLowerCase();
     if (!normalized) {
-      setDomainStatus("idle");
-      setDomainMessage("");
+      queueMicrotask(() => {
+        setDomainStatus("idle");
+        setDomainMessage("");
+      });
       return;
     }
 
     // Basic domain validation
     if (!/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(normalized)) {
-      setDomainStatus("invalid");
-      setDomainMessage(ar ? "صيغة الدومين غير صحيحة" : "Invalid domain format");
+      queueMicrotask(() => {
+        setDomainStatus("invalid");
+        setDomainMessage(ar ? "صيغة الدومين غير صحيحة" : "Invalid domain format");
+      });
       return;
     }
 
     // Skip if same as current
     if (normalized === business.customDomain) {
-      setDomainStatus("idle");
-      setDomainMessage(ar ? "الدومين الحالي" : "Current domain");
+      queueMicrotask(() => {
+        setDomainStatus("idle");
+        setDomainMessage(ar ? "الدومين الحالي" : "Current domain");
+      });
       return;
     }
 
-    setDomainStatus("checking");
-    setDomainMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    queueMicrotask(() => {
+      setDomainStatus("checking");
+      setDomainMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    });
 
     const requestId = ++domainCheckRef.current;
     const timer = setTimeout(async () => {
@@ -363,7 +352,7 @@ export function OwnerEditBusinessForm({
     }
     if (slugTouched) return;
     const next = slugifyEnglish(nameEnValue);
-    setSlugValue(next);
+    queueMicrotask(() => setSlugValue(next));
   }, [nameEnValue, slugTouched]);
 
   const handleFileSelect = (

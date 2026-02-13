@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { getUserById, listUsers } from "@/lib/db/users";
+import { getUserById } from "@/lib/db/users";
 import { sendText, sendImage, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
 
 export const runtime = "nodejs";
@@ -199,7 +199,7 @@ export async function GET() {
       ok: true,
       enabled: isWAHAEnabled(),
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { ok: false, error: "Internal server error" },
       { status: 500 }

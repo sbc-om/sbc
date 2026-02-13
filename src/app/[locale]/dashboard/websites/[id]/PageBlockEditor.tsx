@@ -87,12 +87,11 @@ function createDefaultBlock(type: WebsiteBlock["type"]): WebsiteBlock {
 
 interface Props {
   locale: Locale;
-  pageId: string;
   blocks: WebsiteBlock[];
   onSave: (blocks: WebsiteBlock[]) => void;
 }
 
-export function PageBlockEditor({ locale, pageId, blocks: initialBlocks, onSave }: Props) {
+export function PageBlockEditor({ locale, blocks: initialBlocks, onSave }: Props) {
   const ar = locale === "ar";
   const [blocks, setBlocks] = useState<WebsiteBlock[]>(initialBlocks);
   const [showAddMenu, setShowAddMenu] = useState(false);

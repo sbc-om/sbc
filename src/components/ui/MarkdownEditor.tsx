@@ -17,13 +17,9 @@ import {
 import {
   RiDoubleQuotesL,
   RiListOrdered,
-  RiH1,
-  RiH2,
-  RiH3,
   RiCodeSSlashLine,
   RiTableLine,
   RiSeparator,
-  RiAtLine,
 } from "react-icons/ri";
 import { useToast } from "@/components/ui/Toast";
 

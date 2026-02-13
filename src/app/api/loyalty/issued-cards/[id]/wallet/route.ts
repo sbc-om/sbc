@@ -100,9 +100,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
           // Cache the URL
           await updateIssuedCardGoogleSaveUrl(card.id, saveUrl);
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error("Google Wallet error:", err);
-          response.google.error = err.message;
+          response.google.error = err instanceof Error ? err.message : "GOOGLE_WALLET_ERROR";
         }
       }
     }

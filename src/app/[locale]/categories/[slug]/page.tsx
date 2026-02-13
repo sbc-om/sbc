@@ -6,7 +6,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinesses } from "@/lib/db/businesses";
-import { listCategories, getCategoryById } from "@/lib/db/categories";
+import { listCategories } from "@/lib/db/categories";
 import { getUserFollowedCategoryIds } from "@/lib/db/follows";
 import { listBusinessesWithActiveStories } from "@/lib/db/stories";
 import {
@@ -18,7 +18,7 @@ import {
 import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "../../home/actions";
 import { AppPage } from "@/components/AppPage";
 import { BusinessFeedCard } from "@/components/BusinessFeedCard";
-import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
+import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
 import { followCategoryAction, unfollowCategoryAction } from "../actions";
 
 export const runtime = "nodejs";
@@ -69,8 +69,6 @@ export default async function CategoryDetailPage({
     };
   }));
 
-  const CategoryIcon = getCategoryIconComponent(category.iconId);
-
   const t = {
     back: locale === "ar" ? "رجوع" : "Back",
     businesses: locale === "ar" ? "بیزینس" : "businesses",
@@ -95,7 +93,7 @@ export default async function CategoryDetailPage({
       <div className="sbc-card rounded-2xl p-6 mb-6">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-            <CategoryIcon className="w-8 h-8 sm:w-10 sm:h-10 text-accent" />
+            {renderCategoryIcon(category.iconId, "w-8 h-8 sm:w-10 sm:h-10 text-accent")}
           </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-semibold tracking-tight">

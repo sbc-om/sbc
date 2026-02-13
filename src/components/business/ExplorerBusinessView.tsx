@@ -9,12 +9,12 @@ import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
 import { BusinessEngagement } from "@/components/business/BusinessEngagement";
 import { ShareActionButton } from "@/components/ShareActionButton";
 import { FollowBusinessButton } from "@/components/business/FollowBusinessButton";
-import { BusinessContentLanguageToggle } from "./BusinessContentLanguageToggle";
-import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
+import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
 import { StoryUpload } from "@/components/stories/StoryUpload";
 import { MarkdownRenderer } from "@/components/ui/MarkdownEditor";
 import type { Business, Category } from "@/lib/db/types";
 import type { Story } from "@/lib/db/stories";
+import type { BusinessComment } from "@/lib/db/businessEngagement";
 import type { Locale } from "@/lib/i18n/locales";
 
 type ContentLanguage = "en" | "ar";
@@ -30,9 +30,9 @@ interface ExplorerBusinessViewProps {
   mapsHref: string | null;
   likeCount: number;
   liked: boolean;
-  approvedComments: any[];
-  myPendingComments: any[];
-  pendingForModeration: any[];
+  approvedComments: BusinessComment[];
+  myPendingComments: BusinessComment[];
+  pendingForModeration: BusinessComment[];
   canModerate: boolean;
   usersById: Record<string, { displayName?: string; email?: string } | undefined>;
   isOwner?: boolean;
@@ -59,7 +59,6 @@ export function ExplorerBusinessView({
   stories = [],
 }: ExplorerBusinessViewProps) {
   const [contentLang, setContentLang] = useState<ContentLanguage>(siteLocale);
-  const CategoryIcon = getCategoryIconComponent(categoryIconId);
   const heroImage = business.media?.cover || business.media?.banner || business.media?.logo;
   const logo = business.media?.logo;
   const avatarMode = business.avatarMode ?? "icon";
@@ -186,7 +185,7 @@ export function ExplorerBusinessView({
                       />
                     ) : category ? (
                       <div className="h-10 w-10 rounded-xl bg-(--chip-bg) flex items-center justify-center">
-                        <CategoryIcon className="h-6 w-6 text-(--muted-foreground)" />
+                        {renderCategoryIcon(categoryIconId, "h-6 w-6 text-(--muted-foreground)")}
                       </div>
                     ) : (
                       <div className="text-xl font-bold bg-linear-to-br from-accent to-accent-2 bg-clip-text text-transparent opacity-80">

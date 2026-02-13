@@ -15,7 +15,7 @@ export default async function RulesPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const dict = await getDictionary(locale as Locale);
+  await getDictionary(locale as Locale);
 
   return (
     <PublicPage>

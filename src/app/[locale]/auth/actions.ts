@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { createUser, verifyUserPassword, getUserById } from "@/lib/db/users";
+import { createUser, verifyUserPassword } from "@/lib/db/users";
 import { getAuthCookieName, signAuthToken } from "@/lib/auth/jwt";
 import { verifyHumanChallenge } from "@/lib/auth/humanChallenge";
 import { isWAHAEnabled, sendLoginNotification } from "@/lib/waha/client";

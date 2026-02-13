@@ -150,10 +150,10 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ ok: true, request });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Agent business request error:", error);
     return NextResponse.json(
-      { ok: false, error: error.message || "Failed to submit request" },
+      { ok: false, error: error instanceof Error ? error.message : "Failed to submit request" },
       { status: 400 }
     );
   }

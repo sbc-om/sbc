@@ -65,8 +65,6 @@ export function CategorySelect({
   const displayText = selected 
     ? (locale === "ar" ? selected.name.ar : selected.name.en)
     : placeholder;
-  
-  const SelectedIcon = getCategoryIconComponent(selected?.iconId);
 
   const handleSelect = (categoryId: string) => {
     onChange(categoryId);
@@ -105,7 +103,9 @@ export function CategorySelect({
             </div>
           ) : selected ? (
             <div className="h-7 w-7 shrink-0 rounded-md bg-[var(--chip-bg)] flex items-center justify-center">
-              <SelectedIcon className="h-5 w-5 text-[var(--muted-foreground)]" />
+              {React.createElement(getCategoryIconComponent(selected.iconId), {
+                className: "h-5 w-5 text-[var(--muted-foreground)]",
+              })}
             </div>
           ) : null}
           <span className={!selected ? "text-[var(--muted-foreground)]" : "truncate"}>
@@ -154,7 +154,6 @@ export function CategorySelect({
               {categories.map((category) => {
                 const isSelected = category.id === value;
                 const name = locale === "ar" ? category.name.ar : category.name.en;
-                const OptIcon = getCategoryIconComponent(category.iconId);
 
                 return (
                   <button
@@ -180,7 +179,9 @@ export function CategorySelect({
                       </div>
                     ) : (
                       <div className="h-10 w-10 shrink-0 rounded-lg bg-[var(--chip-bg)] flex items-center justify-center">
-                        <OptIcon className="h-5 w-5 text-[var(--muted-foreground)]" />
+                        {React.createElement(getCategoryIconComponent(category.iconId), {
+                          className: "h-5 w-5 text-[var(--muted-foreground)]",
+                        })}
                       </div>
                     )}
                     <div className="flex-1 text-left min-w-0">

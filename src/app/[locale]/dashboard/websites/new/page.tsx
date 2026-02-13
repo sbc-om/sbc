@@ -18,7 +18,7 @@ export default async function NewWebsitePage({
   if (!isLocale(locale)) notFound();
 
   const user = await requireUser(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
+  await getDictionary(locale as Locale);
   const ar = locale === "ar";
 
   const hasSub = await hasActiveSubscription(user.id, "website");

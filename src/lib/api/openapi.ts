@@ -1179,7 +1179,7 @@ export const openApiSpec: OpenAPIV3.Document = {
                     profile: {
                       nullable: true,
                       allOf: [{ $ref: '#/components/schemas/LoyaltyProfile' }],
-                    } as any,
+                    },
                   },
                 },
               },

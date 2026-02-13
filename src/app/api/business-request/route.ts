@@ -35,10 +35,10 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(request);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Business request error:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to submit request" },
+      { error: error instanceof Error ? error.message : "Failed to submit request" },
       { status: 400 }
     );
   }

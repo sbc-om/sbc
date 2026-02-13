@@ -156,9 +156,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
           points: card.points,
         });
         walletUpdateResults.google.updated = true;
-      } catch (err: any) {
-        walletUpdateResults.google.error = err.message;
-        console.warn("Google Wallet update failed:", err.message);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "GOOGLE_WALLET_UPDATE_FAILED";
+        walletUpdateResults.google.error = message;
+        console.warn("Google Wallet update failed:", message);
       }
 
       // Send Apple Wallet push notification
@@ -166,9 +167,10 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         try {
           await notifyAppleWalletPassUpdated({ cardId: id });
           walletUpdateResults.apple.updated = true;
-        } catch (err: any) {
-          walletUpdateResults.apple.error = err.message;
-          console.warn("Apple Wallet update failed:", err.message);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "APPLE_WALLET_UPDATE_FAILED";
+          walletUpdateResults.apple.error = message;
+          console.warn("Apple Wallet update failed:", message);
         }
       }
 

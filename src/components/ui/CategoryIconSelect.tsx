@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createElement, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/cn";
 import {
@@ -32,7 +32,6 @@ export function CategoryIconSelect({
 
   const isControlled = value !== undefined;
   const currentValue = isControlled ? (value ?? DEFAULT_CATEGORY_ICON) : internalValue;
-  const Icon = getCategoryIconComponent(currentValue);
   const label = getCategoryIconLabel(currentValue, locale);
 
   const filtered = useMemo(() => {
@@ -75,7 +74,7 @@ export function CategoryIconSelect({
       >
         <div className="flex items-center gap-2 min-w-0">
           <div className="h-7 w-7 shrink-0 rounded-md bg-(--chip-bg) flex items-center justify-center">
-            <Icon className="h-5 w-5 text-(--muted-foreground)" />
+            {createElement(getCategoryIconComponent(currentValue), { className: "h-5 w-5 text-(--muted-foreground)" })}
           </div>
           <span className="truncate">{label}</span>
         </div>
@@ -106,7 +105,6 @@ export function CategoryIconSelect({
           <div className="max-h-60 overflow-y-auto p-2">
             {filtered.map((opt) => {
               const isSelected = opt.id === currentValue;
-              const OptIcon = opt.Icon;
               const optLabel = locale === "ar" ? opt.labelAr : opt.labelEn;
               return (
                 <button
@@ -126,7 +124,9 @@ export function CategoryIconSelect({
                           "h-7 w-7 shrink-0 rounded-md flex items-center justify-center",
                           isSelected ? "bg-white/15" : "bg-(--chip-bg)",
                         )}>
-                          <OptIcon className={cn("h-5 w-5", isSelected ? "text-(--accent-foreground)" : "text-(--muted-foreground)")} />
+                          {createElement(opt.Icon, {
+                            className: cn("h-5 w-5", isSelected ? "text-(--accent-foreground)" : "text-(--muted-foreground)"),
+                          })}
                       </div>
                       <span className="truncate">{optLabel}</span>
                     </div>

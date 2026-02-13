@@ -70,11 +70,12 @@ export async function PATCH(
 
     const updated = await updateWebsite(id, body);
     return NextResponse.json({ ok: true, website: updated });
-  } catch (error: any) {
-    if (error.message === "SLUG_TAKEN") {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "";
+    if (errorMessage === "SLUG_TAKEN") {
       return NextResponse.json({ ok: false, error: "SLUG_TAKEN" }, { status: 409 });
     }
-    if (error.message === "DOMAIN_TAKEN") {
+    if (errorMessage === "DOMAIN_TAKEN") {
       return NextResponse.json({ ok: false, error: "DOMAIN_TAKEN" }, { status: 409 });
     }
     console.error("Update website error:", error);

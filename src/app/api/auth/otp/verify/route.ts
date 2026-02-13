@@ -32,7 +32,7 @@ import { z } from "zod";
 import { verifyOTP, type OTPPurpose } from "@/lib/db/otp";
 import { getUserByPhone, setUserPhoneVerified } from "@/lib/db/users";
 import { signAuthToken, getAuthCookieName } from "@/lib/auth/jwt";
-import { isWhatsAppLoginEnabled, isWhatsAppVerificationRequired } from "@/lib/db/settings";
+import { isWhatsAppLoginEnabled } from "@/lib/db/settings";
 import { sendLoginNotification, isWAHAEnabled } from "@/lib/waha/client";
 
 const verifyOTPSchema = z.object({

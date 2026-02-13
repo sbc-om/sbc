@@ -22,7 +22,7 @@ export default async function DirectoryBusinessEditPage({
 
   const user = await requireUser(locale as Locale);
 
-  const sub = await getProgramSubscriptionByUser(user.id);
+  await getProgramSubscriptionByUser(user.id);
   if (!(await hasActiveSubscription(user.id, "directory"))) {
     redirect(`/${locale}/directory`);
   }

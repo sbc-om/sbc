@@ -80,7 +80,6 @@ function AgentMobileNav({
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    checkScroll();
     el.addEventListener("scroll", checkScroll, { passive: true });
     const ro = new ResizeObserver(checkScroll);
     ro.observe(el);

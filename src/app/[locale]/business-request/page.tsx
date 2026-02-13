@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import dynamic from "next/dynamic";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
@@ -8,7 +7,6 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { listCategories } from "@/lib/db/categories";
 import { isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 import { AppPage } from "@/components/AppPage";
-import { CategorySelectField } from "@/components/CategorySelectField";
 import { BusinessRequestForm } from "./BusinessRequestForm";
 import Link from "next/link";
 

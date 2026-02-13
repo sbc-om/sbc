@@ -176,22 +176,22 @@ export function CardTemplateDesigner({ locale, profile, template, onSave, isNew 
   const [design, setDesign] = useState(template?.design ?? defaultTemplate.design);
   const [passContent, setPassContent] = useState(template?.passContent ?? defaultTemplate.passContent);
   const [barcode, setBarcode] = useState(template?.barcode ?? defaultTemplate.barcode);
-  const [images, setImages] = useState(template?.images ?? defaultTemplate.images);
+  const [images] = useState(template?.images ?? defaultTemplate.images);
   const [support, setSupport] = useState(template?.support ?? defaultTemplate.support);
   const [terms, setTerms] = useState(template?.terms ?? defaultTemplate.terms);
   const [description, setDescription] = useState(template?.description ?? defaultTemplate.description);
-  const [notificationTitle, setNotificationTitle] = useState(template?.notificationTitle ?? defaultTemplate.notificationTitle);
-  const [notificationBody, setNotificationBody] = useState(template?.notificationBody ?? defaultTemplate.notificationBody);
+  const [notificationTitle] = useState(template?.notificationTitle ?? defaultTemplate.notificationTitle);
+  const [notificationBody] = useState(template?.notificationBody ?? defaultTemplate.notificationBody);
 
   const [activePreview, setActivePreview] = useState<"ios" | "android">("ios");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Aux fields and back fields management
-  const [auxFields, setAuxFields] = useState<Array<{ label: string; value: string }>>(
+  const [auxFields] = useState<Array<{ label: string; value: string }>>(
     passContent.auxFields ?? []
   );
-  const [backFields, setBackFields] = useState<Array<{ label: string; value: string }>>(
+  const [backFields] = useState<Array<{ label: string; value: string }>>(
     passContent.backFields ?? []
   );
 
@@ -953,7 +953,7 @@ function IOSPassPreview({
                 {[...Array(25)].map((_, i) => (
                   <div
                     key={i}
-                    className={`w-5 h-5 ${Math.random() > 0.5 ? "bg-black" : "bg-white"}`}
+                    className={`w-5 h-5 ${i % 2 === 0 ? "bg-black" : "bg-white"}`}
                   />
                 ))}
               </div>
@@ -964,7 +964,7 @@ function IOSPassPreview({
                 {[...Array(40)].map((_, i) => (
                   <div
                     key={i}
-                    className={`h-full ${Math.random() > 0.5 ? "bg-black w-0.5" : "bg-black w-1"}`}
+                    className={`h-full ${i % 3 === 0 ? "bg-black w-0.5" : "bg-black w-1"}`}
                   />
                 ))}
               </div>
@@ -1092,7 +1092,7 @@ function AndroidPassPreview({
                     {[...Array(25)].map((_, i) => (
                       <div
                         key={i}
-                        className={`w-4 h-4 ${Math.random() > 0.5 ? "bg-black" : "bg-white"}`}
+                        className={`w-4 h-4 ${i % 2 === 0 ? "bg-black" : "bg-white"}`}
                       />
                     ))}
                   </div>
@@ -1103,7 +1103,7 @@ function AndroidPassPreview({
                     {[...Array(35)].map((_, i) => (
                       <div
                         key={i}
-                        className={`h-full ${Math.random() > 0.5 ? "bg-black w-0.5" : "bg-black w-1"}`}
+                        className={`h-full ${i % 3 === 0 ? "bg-black w-0.5" : "bg-black w-1"}`}
                       />
                     ))}
                   </div>

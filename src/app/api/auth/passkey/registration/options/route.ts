@@ -3,7 +3,7 @@ import { z } from "zod";
 import { generateRegistrationOptions } from "@simplewebauthn/server";
 
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { resolvePasskeyOrigin, resolvePasskeyRpId, resolvePasskeyRpName } from "@/lib/auth/passkeyConfig";
+import { resolvePasskeyRpId, resolvePasskeyRpName } from "@/lib/auth/passkeyConfig";
 import { createPasskeyChallenge, listUserPasskeys } from "@/lib/db/passkeys";
 
 export const runtime = "nodejs";
@@ -18,7 +18,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "UNAUTHORIZED" }, { status: 401 });
   }
 
-  const origin = resolvePasskeyOrigin(req);
   const rpID = resolvePasskeyRpId(req);
   const rpName = resolvePasskeyRpName();
 

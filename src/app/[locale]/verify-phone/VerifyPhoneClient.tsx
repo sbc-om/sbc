@@ -69,7 +69,6 @@ const texts = {
 
 export function VerifyPhoneClient({
   locale,
-  dict,
   phone: initialPhone,
   userId,
 }: VerifyPhoneClientProps) {
@@ -117,7 +116,7 @@ export function VerifyPhoneClient({
       } else {
         setError(t.errors[data.error as keyof typeof t.errors] || t.errors.phone);
       }
-    } catch (err) {
+    } catch {
       setError(t.errors.network);
     } finally {
       setLoading(false);
@@ -162,7 +161,7 @@ export function VerifyPhoneClient({
             : t.errors.network
         );
       }
-    } catch (err) {
+    } catch {
       setError(t.errors.network);
     } finally {
       setVerifying(false);
@@ -189,7 +188,7 @@ export function VerifyPhoneClient({
       } else {
         setError(t.errors.updatePhone);
       }
-    } catch (err) {
+    } catch {
       setError(t.errors.network);
     } finally {
       setLoading(false);

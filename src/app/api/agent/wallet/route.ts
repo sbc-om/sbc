@@ -84,9 +84,9 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ ok: true, request: req });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json(
-      { ok: false, error: error.message || "ACTION_FAILED" },
+      { ok: false, error: error instanceof Error ? error.message : "ACTION_FAILED" },
       { status: 400 }
     );
   }

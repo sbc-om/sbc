@@ -42,7 +42,7 @@ export async function PATCH(
     const body = await req.json();
     const updated = await updateWebsitePage(pageId, body);
     return NextResponse.json({ ok: true, page: updated });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Update page error:", error);
     return NextResponse.json({ ok: false, error: "Internal error" }, { status: 500 });
   }

@@ -7,7 +7,6 @@ import {
   HiOutlinePlusCircle,
   HiOutlineCog6Tooth,
   HiArrowUpRight,
-  HiCheckBadge,
 } from "react-icons/hi2";
 
 import { AppPage } from "@/components/AppPage";
@@ -16,7 +15,6 @@ import { listWebsitesByOwner } from "@/lib/db/websites";
 import { hasActiveSubscription } from "@/lib/db/subscriptions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
-import { WEBSITE_PACKAGE_LIMITS } from "@/lib/db/types";
 
 export const runtime = "nodejs";
 
@@ -29,7 +27,7 @@ export default async function DashboardWebsitesPage({
   if (!isLocale(locale)) notFound();
 
   const user = await requireUser(locale as Locale);
-  const dict = await getDictionary(locale as Locale);
+  await getDictionary(locale as Locale);
   const ar = locale === "ar";
 
   const hasSub = await hasActiveSubscription(user.id, "website");
@@ -97,7 +95,6 @@ export default async function DashboardWebsitesPage({
       ) : (
         <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {websites.map((site) => {
-            const limits = WEBSITE_PACKAGE_LIMITS[site.package];
             return (
               <div
                 key={site.id}

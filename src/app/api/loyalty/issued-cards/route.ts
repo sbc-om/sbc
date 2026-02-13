@@ -162,9 +162,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ ok: true, card, template }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle unique constraint violation for duplicate memberId
-    if (error?.code === "23505") {
+    if (typeof error === "object" && error !== null && "code" in error && (error as { code?: string }).code === "23505") {
       return NextResponse.json(
         { error: "A card with this member ID already exists" },
         { status: 400 }

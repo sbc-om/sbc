@@ -126,7 +126,7 @@ function stemArabic(word: string): string {
 
 /** Simple English stemmer (Porter-like light stemming) */
 function stemEnglish(word: string): string {
-  let s = word.toLowerCase();
+  const s = word.toLowerCase();
   if (s.length <= 3) return s;
   // Simple suffix removal
   if (s.endsWith("ies") && s.length > 4) return s.slice(0, -3) + "y";
@@ -358,7 +358,8 @@ function fuzzyScore(query: string, target: string): number {
 
 /* ─── Intent Extraction ──────────────────────────────────────── */
 
-export function extractIntent(query: string, categories: Category[], locale: "en" | "ar"): SearchIntent {
+export function extractIntent(query: string, categories: Category[], _locale: "en" | "ar"): SearchIntent {
+  void _locale;
   const language = detectLanguage(query);
   const tokens = tokenize(query);
   const intentType = detectIntentType(query);
@@ -460,9 +461,7 @@ const WEIGHTS: ScoreWeights = {
 
 function scoreBusiness(
   business: Business,
-  intent: SearchIntent,
-  categories: Category[],
-  locale: "en" | "ar"
+  intent: SearchIntent
 ): ScoredBusiness {
   let score = 0;
   const matchReasons: string[] = [];
@@ -628,7 +627,7 @@ export function smartSearch(
   const intent = extractIntent(query, categories, locale);
 
   // Score all businesses
-  const scored = businesses.map(b => scoreBusiness(b, intent, categories, locale));
+  const scored = businesses.map((b) => scoreBusiness(b, intent));
 
   // Filter: only include businesses with a score > 0
   const results = scored
@@ -647,8 +646,9 @@ export function generateChatResponse(
   intent: SearchIntent,
   categories: Category[],
   locale: "en" | "ar",
-  conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = []
+  _conversationHistory: Array<{ role: "user" | "assistant"; content: string }> = []
 ): string {
+  void _conversationHistory;
   const isAr = locale === "ar";
   const count = results.length;
 
@@ -675,7 +675,7 @@ export function generateChatResponse(
     : null;
 
   // Context summary
-  let contextParts: string[] = [];
+  const contextParts: string[] = [];
   if (categoryObj) {
     contextParts.push(isAr ? `في تصنيف "${categoryObj.name[locale]}"` : `in "${categoryObj.name[locale]}" category`);
   }

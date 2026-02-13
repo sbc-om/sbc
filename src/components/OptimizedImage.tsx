@@ -14,6 +14,7 @@ export function OptimizedImage({
   showSkeleton = true,
   skeletonColor = "rgba(var(--foreground-rgb), 0.1)",
   className = "",
+  alt,
   ...props
 }: OptimizedImageProps) {
   const [isLoading, setIsLoading] = useState(true);
@@ -32,6 +33,7 @@ export function OptimizedImage({
       )}
       <Image
         {...props}
+        alt={alt ?? ""}
         className={`transition-opacity duration-500 ${isLoading ? "opacity-0" : "opacity-100"} ${className}`}
         onLoad={() => setIsLoading(false)}
         loading={props.loading || "lazy"}

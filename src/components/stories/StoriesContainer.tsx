@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { createPortal } from "react-dom";
 
 import type { BusinessWithStories } from "@/lib/db/stories";
@@ -23,14 +23,9 @@ export function StoriesContainer({
   ownedBusinessIds = [],
   isAdmin = false,
 }: StoriesContainerProps) {
-  const [businesses, setBusinesses] = useState(initialBusinesses);
+  const [businesses] = useState(initialBusinesses);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleOpenStory = (businessId: string) => {
     setSelectedBusinessId(businessId);
@@ -46,7 +41,7 @@ export function StoriesContainer({
   };
 
   // Check if current user owns the selected business
-  const isBusinessOwner = selectedBusinessId 
+  const isBusinessOwner = selectedBusinessId
     ? ownedBusinessIds.includes(selectedBusinessId)
     : false;
 
@@ -63,7 +58,7 @@ export function StoriesContainer({
         onOpenStory={handleOpenStory}
       />
 
-      {mounted && viewerOpen && selectedBusinessId && createPortal(
+      {typeof document !== "undefined" && viewerOpen && selectedBusinessId && createPortal(
         <StoryViewer
           businesses={businesses}
           initialBusinessId={selectedBusinessId}

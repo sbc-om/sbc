@@ -5,14 +5,17 @@ import {
   listAgents,
   updateAgent,
   deactivateAgent,
-  getAgentByUserId,
   markCommissionPaid,
 } from "@/lib/db/agents";
 import { query } from "@/lib/db/postgres";
 
 export const runtime = "nodejs";
 
-function isAdmin(user: any) {
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function isAdmin(user: { role?: string } | null) {
   return user && user.role === "admin";
 }
 
@@ -48,9 +51,9 @@ export async function POST(request: NextRequest) {
 
     const agent = await createAgent(userId, commissionRate || 0, notes);
     return NextResponse.json({ ok: true, agent });
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json(
-      { ok: false, error: e.message || "CREATE_FAILED" },
+      { ok: false, error: getErrorMessage(e, "CREATE_FAILED") },
       { status: 400 }
     );
   }
@@ -81,7 +84,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === "mark-paid") {
-      const { commissionId } = updates as any;
+      const { commissionId } = updates as { commissionId?: string };
       if (!commissionId) {
         return NextResponse.json({ ok: false, error: "COMMISSION_ID_REQUIRED" }, { status: 400 });
       }
@@ -89,16 +92,16 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ ok: true, commission });
     }
 
-    const updatePayload: Record<string, any> = {};
+    const updatePayload: { commissionRate?: number; isActive?: boolean; notes?: string } = {};
     if (updates.commissionRate !== undefined) updatePayload.commissionRate = parseFloat(updates.commissionRate);
     if (updates.isActive !== undefined) updatePayload.isActive = updates.isActive;
     if (updates.notes !== undefined) updatePayload.notes = updates.notes;
 
     const agent = await updateAgent(userId, updatePayload);
     return NextResponse.json({ ok: true, agent });
-  } catch (e: any) {
+  } catch (e: unknown) {
     return NextResponse.json(
-      { ok: false, error: e.message || "UPDATE_FAILED" },
+      { ok: false, error: getErrorMessage(e, "UPDATE_FAILED") },
       { status: 400 }
     );
   }

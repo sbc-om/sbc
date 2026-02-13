@@ -48,7 +48,7 @@ export function AISearchProvider({ children }: { children: ReactNode }) {
           setExtractor(fe);
           setIsReady(true);
         }
-      } catch (error) {
+      } catch {
         // Silently fallback to simple text features
         if (mounted) {
           setIsReady(true);
@@ -138,7 +138,7 @@ export function AISearchProvider({ children }: { children: ReactNode }) {
         return businesses;
       }
     },
-    [extractor]
+    [extractor, simpleFeatures]
   );
 
   const findVisuallySimilar = useCallback(

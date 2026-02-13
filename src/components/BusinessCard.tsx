@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getCategoryById } from "@/lib/db/categories";
-import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
+import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
 
 interface BusinessCardProps {
   business: {
@@ -47,7 +47,6 @@ export async function BusinessCard({ business, locale }: BusinessCardProps) {
   const logo = business.media?.logo;
   const avatarMode = business.avatarMode ?? "icon";
   const showLogo = avatarMode === "logo" && !!logo;
-  const CategoryIcon = getCategoryIconComponent(category?.iconId);
   const detailPath = business.username
     ? `/@${business.username}`
     : `/${locale}/businesses/${business.slug}`;
@@ -108,7 +107,7 @@ export async function BusinessCard({ business, locale }: BusinessCardProps) {
               />
             ) : category ? (
               <div className="h-11 w-11 rounded-lg bg-(--chip-bg) flex items-center justify-center">
-                <CategoryIcon className="h-7 w-7 text-(--muted-foreground)" />
+                {renderCategoryIcon(category?.iconId, "h-7 w-7 text-(--muted-foreground)")}
               </div>
             ) : (
               <div className="text-2xl font-bold bg-linear-to-br from-accent to-accent-2 bg-clip-text text-transparent opacity-80">

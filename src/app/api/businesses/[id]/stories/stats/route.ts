@@ -51,8 +51,8 @@ export async function GET(
     const stats = await getBusinessStoriesStats(businessId);
 
     return NextResponse.json({ ok: true, data: stats });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[business-stories-stats] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 });
   }
 }

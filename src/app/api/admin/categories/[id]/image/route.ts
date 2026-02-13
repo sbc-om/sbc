@@ -8,11 +8,6 @@ import {
 import { getCategoryById, updateCategory } from "@/lib/db/categories";
 import fs from "node:fs/promises";
 
-function isValidCategoryImageUrl(userId: string, categoryId: string, url: string) {
-  const prefix = `/media/categories/${categoryId}/`;
-  return url.startsWith(prefix);
-}
-
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -63,7 +58,7 @@ export async function POST(
 }
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {

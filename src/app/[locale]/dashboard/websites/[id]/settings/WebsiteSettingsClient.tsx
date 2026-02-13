@@ -6,7 +6,6 @@ import {
   HiOutlineGlobeAlt,
   HiOutlinePaintBrush,
   HiOutlineMegaphone,
-  HiOutlineEnvelope,
   HiOutlineLink,
   HiOutlineTrash,
 } from "react-icons/hi2";

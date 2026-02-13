@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
   createWebsite,
   listWebsitesByOwner,
-  websiteInputSchema,
   packageFromProductSlug,
 } from "@/lib/db/websites";
 import { hasActiveSubscription, getUserActiveSubscriptionForProgram } from "@/lib/db/subscriptions";
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Internal error";
+}
 
 /**
  * @swagger
@@ -55,11 +57,11 @@ export async function POST(req: NextRequest) {
 
     const website = await createWebsite(user.id, body);
     return NextResponse.json({ ok: true, website }, { status: 201 });
-  } catch (error: any) {
-    if (error.message === "SLUG_TAKEN") {
+  } catch (error: unknown) {
+    if (getErrorMessage(error) === "SLUG_TAKEN") {
       return NextResponse.json({ ok: false, error: "SLUG_TAKEN" }, { status: 409 });
     }
-    if (error.message === "DOMAIN_TAKEN") {
+    if (getErrorMessage(error) === "DOMAIN_TAKEN") {
       return NextResponse.json({ ok: false, error: "DOMAIN_TAKEN" }, { status: 409 });
     }
     console.error("Create website error:", error);
