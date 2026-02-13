@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getCategoryById } from "@/lib/db/categories";
 import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
+import { MarkdownRenderer } from "@/components/ui/MarkdownEditor";
 
 interface BusinessCardProps {
   business: {
@@ -54,7 +55,7 @@ export async function BusinessCard({ business, locale }: BusinessCardProps) {
   return (
     <Link
       href={detailPath}
-      className="group block"
+      className="group block h-full"
     >
       <article
         className="relative rounded-2xl overflow-hidden backdrop-blur-xl shadow-lg transition-all duration-300 hover:shadow-xl h-full"
@@ -146,9 +147,9 @@ export async function BusinessCard({ business, locale }: BusinessCardProps) {
 
           {/* Description */}
           {description && (
-            <p className="text-sm text-foreground opacity-70 line-clamp-2 mb-3">
-              {description}
-              </p>
+            <div className="mb-3 text-sm text-foreground opacity-70 [&>p]:m-0 [&>p]:line-clamp-1 [&>p]:overflow-hidden [&>p]:text-ellipsis [&>p]:break-words">
+              <MarkdownRenderer content={description} />
+            </div>
             )}
 
             {/* Meta Info */}

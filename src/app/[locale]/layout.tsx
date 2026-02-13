@@ -53,6 +53,7 @@ export default async function LocaleLayout({
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") || "";
   const isChatPage = pathname.includes("/chat");
+  const isLocaleHomePage = pathname === `/${locale}` || pathname === `/${locale}/`;
 
   return (
     <DictionaryProvider locale={locale as Locale} dict={dict}>
@@ -100,7 +101,7 @@ export default async function LocaleLayout({
         <div className="min-h-dvh bg-transparent text-foreground flex flex-col">
           <Header locale={locale as Locale} dict={dict} />
           <main className="flex-1">{children}</main>
-          <Footer locale={locale as Locale} dict={dict} />
+          <Footer locale={locale as Locale} dict={dict} homepageOnlyInstagram={isLocaleHomePage} />
         </div>
       )}
       </AISearchProvider>

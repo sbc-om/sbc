@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { FaInstagram, FaGithub, FaFacebook, FaTwitter, FaLinkedin } from "react-icons/fa";
+import { FaInstagram, FaFacebook, FaTwitter } from "react-icons/fa";
 import { Container } from "@/components/Container";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
@@ -8,24 +8,28 @@ import type { Dictionary } from "@/lib/i18n/getDictionary";
 interface FooterProps {
   locale: Locale;
   dict: Dictionary;
+  homepageOnlyInstagram?: boolean;
 }
 
-export function Footer({ locale, dict }: FooterProps) {
+export function Footer({ locale, dict, homepageOnlyInstagram = true }: FooterProps) {
 
   const brand = locale === "ar" ? "مركز الأعمال الذكية" : "Smart Business Center";
 
-  const socials = [
+  const socials = homepageOnlyInstagram
+    ? [
+      {
+        key: "instagram",
+        label: "Instagram",
+        href: "https://www.instagram.com/sbc._.om/",
+        icon: <FaInstagram className="h-4 w-4" />,
+      },
+    ]
+    : [
     {
       key: "instagram",
       label: "Instagram",
       href: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM,
       icon: <FaInstagram className="h-4 w-4" />,
-    },
-    {
-      key: "github",
-      label: "GitHub",
-      href: process.env.NEXT_PUBLIC_SOCIAL_GITHUB,
-      icon: <FaGithub className="h-4 w-4" />,
     },
     {
       key: "facebook",
@@ -38,12 +42,6 @@ export function Footer({ locale, dict }: FooterProps) {
       label: "Twitter",
       href: process.env.NEXT_PUBLIC_SOCIAL_TWITTER,
       icon: <FaTwitter className="h-4 w-4" />,
-    },
-    {
-      key: "linkedin",
-      label: "LinkedIn",
-      href: process.env.NEXT_PUBLIC_SOCIAL_LINKEDIN,
-      icon: <FaLinkedin className="h-4 w-4" />,
     },
   ].filter((s) => typeof s.href === "string" && s.href.trim().length > 0);
 

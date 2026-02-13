@@ -117,7 +117,7 @@ export default async function LocaleHome({
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {topRowBusinesses.map((business, index) => (
-                <FadeInSection key={business.id} duration={500} delay={index * 100}>
+                <FadeInSection key={business.id} duration={500} delay={index * 100} className="h-full">
                   <BusinessCard
                     business={business}
                     locale={locale as Locale}
@@ -147,7 +147,7 @@ export default async function LocaleHome({
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredBusinesses.map((business, index) => (
-                <FadeInSection key={business.id} duration={500} delay={Math.min(index * 80, 800)}>
+                <FadeInSection key={business.id} duration={500} delay={Math.min(index * 80, 800)} className="h-full">
                   <BusinessCard
                     business={business}
                     locale={locale as Locale}
@@ -177,7 +177,7 @@ export default async function LocaleHome({
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {latestBusinesses.map((business, index) => (
-                <FadeInSection key={business.id} duration={500} delay={Math.min(index * 80, 800)}>
+                <FadeInSection key={business.id} duration={500} delay={Math.min(index * 80, 800)} className="h-full">
                   <BusinessCard
                     business={business}
                     locale={locale as Locale}
