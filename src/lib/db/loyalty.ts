@@ -292,7 +292,7 @@ function rowToCustomer(row: LoyaltyCustomerRow): LoyaltyCustomer {
     email: row.email ?? undefined,
     notes: row.notes ?? undefined,
     tags: row.tags || [],
-    cardId: row.card_id ?? undefined,
+    cardId: row.card_id ?? row.id,
     points: row.points ?? 0,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
@@ -624,6 +624,6 @@ export async function redeemLoyaltyCustomerPoints(
 
 /** List all loyalty profiles (for admin) */
 export async function listLoyaltyProfiles(): Promise<LoyaltyProfile[]> {
-  const result = await query(`SELECT * FROM loyalty_profiles ORDER BY created_at DESC`);
+  const result = await query<LoyaltyProfileRow>(`SELECT * FROM loyalty_profiles ORDER BY created_at DESC`);
   return result.rows.map(rowToProfile);
 }

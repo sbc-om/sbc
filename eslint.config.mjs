@@ -8,6 +8,11 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
     plugins: {
       react: reactPlugin,
       "react-hooks": reactHooksPlugin,

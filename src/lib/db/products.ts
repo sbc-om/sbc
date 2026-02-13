@@ -71,25 +71,25 @@ type ProductRow = {
   updated_at: Date | null;
 };
 
-function rowToProduct(row: ProductRow): Product {
+function rowToProduct(r: ProductRow): Product {
   return {
-    id: row.id,
-    slug: row.slug,
-    name: { en: row.name_en, ar: row.name_ar },
-    description: row.description_en || row.description_ar
-      ? { en: row.description_en || "", ar: row.description_ar || "" }
+    id: r.id,
+    slug: r.slug,
+    name: { en: r.name_en, ar: r.name_ar },
+    description: r.description_en || r.description_ar
+      ? { en: r.description_en || "", ar: r.description_ar || "" }
       : undefined,
-    price: parseFloat(String(row.price ?? "0")) || 0,
-    currency: row.currency || "OMR",
-    program: row.program,
-    plan: row.plan || "basic",
-    durationDays: row.duration_days,
-    features: row.features || [],
-    badges: row.badges || [],
-    isActive: row.is_active ?? true,
-    sortOrder: row.sort_order ?? 0,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    price: parseFloat(String(r.price ?? "0")) || 0,
+    currency: r.currency || "OMR",
+    program: r.program,
+    plan: r.plan || "basic",
+    durationDays: r.duration_days ?? undefined,
+    features: r.features || [],
+    badges: r.badges || [],
+    isActive: r.is_active ?? true,
+    sortOrder: r.sort_order ?? 0,
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 
@@ -104,7 +104,7 @@ export async function createProduct(input: ProductInput): Promise<Product> {
     throw new Error("SLUG_TAKEN");
   }
 
-  const result = await query(`
+  const result = await query<ProductRow>(`
     INSERT INTO products (
       id, slug, name_en, name_ar, description_en, description_ar, price, currency,
       program, plan, duration_days, features, badges, is_active, sort_order, created_at, updated_at
@@ -121,7 +121,7 @@ export async function createProduct(input: ProductInput): Promise<Product> {
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
-  const result = await query(`SELECT * FROM products WHERE id = $1`, [id]);
+  const result = await query<ProductRow>(`SELECT * FROM products WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToProduct(result.rows[0]) : null;
 }
 
@@ -129,29 +129,29 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   const key = slugSchema.safeParse(slug);
   if (!key.success) return null;
 
-  const result = await query(`SELECT * FROM products WHERE slug = $1`, [key.data]);
+  const result = await query<ProductRow>(`SELECT * FROM products WHERE slug = $1`, [key.data]);
   return result.rows.length > 0 ? rowToProduct(result.rows[0]) : null;
 }
 
 export async function listProducts(): Promise<Product[]> {
-  const result = await query(`SELECT * FROM products ORDER BY sort_order, name_en`);
+  const result = await query<ProductRow>(`SELECT * FROM products ORDER BY sort_order, name_en`);
   return result.rows.map(rowToProduct);
 }
 
 export async function listActiveProducts(): Promise<Product[]> {
-  const result = await query(`SELECT * FROM products WHERE is_active = true ORDER BY sort_order, name_en`);
+  const result = await query<ProductRow>(`SELECT * FROM products WHERE is_active = true ORDER BY sort_order, name_en`);
   return result.rows.map(rowToProduct);
 }
 
 export async function listProductsByProgram(program: string): Promise<Product[]> {
-  const result = await query(`
+  const result = await query<ProductRow>(`
     SELECT * FROM products WHERE program = $1 AND is_active = true ORDER BY sort_order, name_en
   `, [program]);
   return result.rows.map(rowToProduct);
 }
 
 export async function updateProduct(id: string, input: Partial<ProductInput>): Promise<Product> {
-  const currentRes = await query(`SELECT * FROM products WHERE id = $1`, [id]);
+  const currentRes = await query<ProductRow>(`SELECT * FROM products WHERE id = $1`, [id]);
   if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
   const current = rowToProduct(currentRes.rows[0]);
 
@@ -163,7 +163,7 @@ export async function updateProduct(id: string, input: Partial<ProductInput>): P
     }
   }
 
-  const result = await query(`
+  const result = await query<ProductRow>(`
     UPDATE products SET
       slug = COALESCE($1, slug),
       name_en = COALESCE($2, name_en),
@@ -206,7 +206,7 @@ export async function deleteProduct(id: string): Promise<boolean> {
 }
 
 export async function setProductActive(id: string, isActive: boolean): Promise<Product> {
-  const result = await query(`
+  const result = await query<ProductRow>(`
     UPDATE products SET is_active = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [isActive, new Date(), id]);
 

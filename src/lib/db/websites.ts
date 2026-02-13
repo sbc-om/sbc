@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import type { QueryResultRow } from "pg";
 
 import { query } from "./postgres";
 import type { Website, WebsitePage, WebsitePackage } from "./types";
@@ -131,48 +132,50 @@ type WebsitePageRow = {
   updated_at: Date | null;
 };
 
-function rowToWebsite(row: WebsiteRow): Website {
+function rowToWebsite(row: QueryResultRow): Website {
+  const r = row as WebsiteRow;
   return {
-    id: row.id,
-    ownerId: row.owner_id,
-    slug: row.slug,
-    customDomain: row.custom_domain || undefined,
-    title: { en: row.title_en || "", ar: row.title_ar || "" },
-    tagline: row.tagline_en || row.tagline_ar
-      ? { en: row.tagline_en || "", ar: row.tagline_ar || "" }
+    id: r.id,
+    ownerId: r.owner_id,
+    slug: r.slug,
+    customDomain: r.custom_domain || undefined,
+    title: { en: r.title_en || "", ar: r.title_ar || "" },
+    tagline: r.tagline_en || r.tagline_ar
+      ? { en: r.tagline_en || "", ar: r.tagline_ar || "" }
       : undefined,
-    metaDescription: row.meta_description_en || row.meta_description_ar
-      ? { en: row.meta_description_en || "", ar: row.meta_description_ar || "" }
+    metaDescription: r.meta_description_en || r.meta_description_ar
+      ? { en: r.meta_description_en || "", ar: r.meta_description_ar || "" }
       : undefined,
-    package: row.package || "starter",
-    isPublished: row.is_published ?? false,
-    templateId: row.template_id || "minimal",
-    branding: row.branding || { primaryColor: "#2563eb", secondaryColor: "#7c3aed" },
-    navigation: row.navigation || [],
-    socials: row.socials || undefined,
-    footerText: row.footer_text_en || row.footer_text_ar
-      ? { en: row.footer_text_en || "", ar: row.footer_text_ar || "" }
+    package: r.package || "starter",
+    isPublished: r.is_published ?? false,
+    templateId: r.template_id || "minimal",
+    branding: r.branding || { primaryColor: "#2563eb", secondaryColor: "#7c3aed" },
+    navigation: r.navigation || [],
+    socials: r.socials || undefined,
+    footerText: r.footer_text_en || r.footer_text_ar
+      ? { en: r.footer_text_en || "", ar: r.footer_text_ar || "" }
       : undefined,
-    contact: row.contact || undefined,
-    analytics: row.analytics || undefined,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    contact: r.contact || undefined,
+    analytics: r.analytics || undefined,
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 
-function rowToWebsitePage(row: WebsitePageRow): WebsitePage {
+function rowToWebsitePage(row: QueryResultRow): WebsitePage {
+  const r = row as WebsitePageRow;
   return {
-    id: row.id,
-    websiteId: row.website_id,
-    slug: row.slug,
-    title: { en: row.title_en || "", ar: row.title_ar || "" },
-    isHomepage: row.is_homepage ?? false,
-    blocks: row.blocks || [],
-    seo: row.seo || undefined,
-    sortOrder: row.sort_order ?? 0,
-    isPublished: row.is_published ?? true,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    id: r.id,
+    websiteId: r.website_id,
+    slug: r.slug,
+    title: { en: r.title_en || "", ar: r.title_ar || "" },
+    isHomepage: r.is_homepage ?? false,
+    blocks: r.blocks || [],
+    seo: r.seo || undefined,
+    sortOrder: r.sort_order ?? 0,
+    isPublished: r.is_published ?? true,
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 

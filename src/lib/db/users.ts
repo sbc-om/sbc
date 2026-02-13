@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { createHash } from "node:crypto";
+import type { QueryResultRow } from "pg";
 
 import { query, transaction } from "./postgres";
 import type { Role, User, UserPushSubscription } from "./types";
@@ -99,31 +100,32 @@ type UserPushSubscriptionRow = {
   updated_at: Date | null;
 };
 
-function rowToUser(row: UserRow): User {
+function rowToUser(row: QueryResultRow): User {
+  const r = row as UserRow;
   return {
-    id: row.id,
-    email: row.email,
-    phone: row.phone || "",
-    username: row.username || undefined,
-    fullName: row.full_name,
-    passwordHash: row.password_hash,
-    role: row.role as Role,
-    isActive: row.is_active ?? true,
-    isVerified: row.is_verified ?? false,
-    isPhoneVerified: row.is_phone_verified ?? false,
-    isArchived: row.is_archived ?? false,
-    archivedAt: row.archived_at?.toISOString(),
-    displayName: row.display_name ?? undefined,
-    bio: row.bio ?? undefined,
-    avatarUrl: row.avatar_url ?? undefined,
-    approvalStatus: row.approval_status,
-    approvalReason: row.approval_reason ?? undefined,
-    approvalRequestedAt: row.approval_requested_at?.toISOString(),
-    approvedAt: row.approved_at?.toISOString(),
-    pendingEmail: row.pending_email ?? undefined,
-    pendingPhone: row.pending_phone ?? undefined,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString(),
+    id: r.id,
+    email: r.email,
+    phone: r.phone || "",
+    username: r.username || undefined,
+    fullName: r.full_name,
+    passwordHash: r.password_hash,
+    role: r.role as Role,
+    isActive: r.is_active ?? true,
+    isVerified: r.is_verified ?? false,
+    isPhoneVerified: r.is_phone_verified ?? false,
+    isArchived: r.is_archived ?? false,
+    archivedAt: r.archived_at?.toISOString(),
+    displayName: r.display_name ?? undefined,
+    bio: r.bio ?? undefined,
+    avatarUrl: r.avatar_url ?? undefined,
+    approvalStatus: r.approval_status,
+    approvalReason: r.approval_reason ?? undefined,
+    approvalRequestedAt: r.approval_requested_at?.toISOString(),
+    approvedAt: r.approved_at?.toISOString(),
+    pendingEmail: r.pending_email ?? undefined,
+    pendingPhone: r.pending_phone ?? undefined,
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: r.updated_at?.toISOString(),
   };
 }
 
@@ -606,26 +608,29 @@ export async function listUsers(includeArchived = false): Promise<UserListItem[]
     ORDER BY created_at DESC
   `);
 
-  return result.rows.map((row: UserListRow) => ({
-    id: row.id,
-    email: row.email,
-    phone: row.phone ?? "",
-    fullName: row.full_name ?? row.email.split("@")[0],
-    role: row.role as Role,
-    isActive: row.is_active ?? true,
-    isVerified: row.is_verified ?? undefined,
-    isPhoneVerified: row.is_phone_verified ?? false,
-    isArchived: row.is_archived ?? false,
-    archivedAt: row.archived_at?.toISOString(),
-    createdAt: row.created_at?.toISOString() || "",
-    updatedAt: row.updated_at?.toISOString(),
-    approvalStatus: row.approval_status,
-    approvalReason: row.approval_reason ?? undefined,
-    approvalRequestedAt: row.approval_requested_at?.toISOString(),
-    pendingEmail: row.pending_email ?? undefined,
-    pendingPhone: row.pending_phone ?? undefined,
-    approvedAt: row.approved_at?.toISOString(),
-  }));
+  return result.rows.map((row) => {
+    const r = row as UserListRow;
+    return {
+      id: r.id,
+      email: r.email,
+      phone: r.phone ?? "",
+      fullName: r.full_name ?? r.email.split("@")[0],
+      role: r.role as Role,
+      isActive: r.is_active ?? true,
+      isVerified: r.is_verified ?? undefined,
+      isPhoneVerified: r.is_phone_verified ?? false,
+      isArchived: r.is_archived ?? false,
+      archivedAt: r.archived_at?.toISOString(),
+      createdAt: r.created_at?.toISOString() || "",
+      updatedAt: r.updated_at?.toISOString(),
+      approvalStatus: r.approval_status,
+      approvalReason: r.approval_reason ?? undefined,
+      approvalRequestedAt: r.approval_requested_at?.toISOString(),
+      pendingEmail: r.pending_email ?? undefined,
+      pendingPhone: r.pending_phone ?? undefined,
+      approvedAt: r.approved_at?.toISOString(),
+    };
+  });
 }
 
 export async function listArchivedUsers(): Promise<UserListItem[]> {
@@ -638,26 +643,29 @@ export async function listArchivedUsers(): Promise<UserListItem[]> {
     ORDER BY archived_at DESC
   `);
 
-  return result.rows.map((row: UserListRow) => ({
-    id: row.id,
-    email: row.email,
-    phone: row.phone ?? "",
-    fullName: row.full_name ?? row.email.split("@")[0],
-    role: row.role as Role,
-    isActive: row.is_active ?? true,
-    isVerified: row.is_verified ?? undefined,
-    isPhoneVerified: row.is_phone_verified ?? false,
-    isArchived: row.is_archived ?? false,
-    archivedAt: row.archived_at?.toISOString(),
-    createdAt: row.created_at?.toISOString() || "",
-    updatedAt: row.updated_at?.toISOString(),
-    approvalStatus: row.approval_status,
-    approvalReason: row.approval_reason ?? undefined,
-    approvalRequestedAt: row.approval_requested_at?.toISOString(),
-    pendingEmail: row.pending_email ?? undefined,
-    pendingPhone: row.pending_phone ?? undefined,
-    approvedAt: row.approved_at?.toISOString(),
-  }));
+  return result.rows.map((row) => {
+    const r = row as UserListRow;
+    return {
+      id: r.id,
+      email: r.email,
+      phone: r.phone ?? "",
+      fullName: r.full_name ?? r.email.split("@")[0],
+      role: r.role as Role,
+      isActive: r.is_active ?? true,
+      isVerified: r.is_verified ?? undefined,
+      isPhoneVerified: r.is_phone_verified ?? false,
+      isArchived: r.is_archived ?? false,
+      archivedAt: r.archived_at?.toISOString(),
+      createdAt: r.created_at?.toISOString() || "",
+      updatedAt: r.updated_at?.toISOString(),
+      approvalStatus: r.approval_status,
+      approvalReason: r.approval_reason ?? undefined,
+      approvalRequestedAt: r.approval_requested_at?.toISOString(),
+      pendingEmail: r.pending_email ?? undefined,
+      pendingPhone: r.pending_phone ?? undefined,
+      approvedAt: r.approved_at?.toISOString(),
+    };
+  });
 }
 
 const userPushSubscriptionSchema = z
@@ -739,29 +747,35 @@ export async function listUserPushSubscriptionsByUser(input: {
 
   const result = await query(`SELECT * FROM user_push_subscriptions WHERE user_id = $1`, [userId]);
 
-  return result.rows.map((row: UserPushSubscriptionRow) => ({
-    id: row.id,
-    userId: row.user_id,
-    endpoint: row.endpoint,
-    keys: row.keys,
-    userAgent: row.user_agent ?? undefined,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
-  }));
+  return result.rows.map((row) => {
+    const r = row as UserPushSubscriptionRow;
+    return {
+      id: r.id,
+      userId: r.user_id,
+      endpoint: r.endpoint,
+      keys: r.keys,
+      userAgent: r.user_agent ?? undefined,
+      createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+      updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
+    };
+  });
 }
 
 export async function listAllUserPushSubscriptions(): Promise<UserPushSubscription[]> {
   const result = await query(`SELECT * FROM user_push_subscriptions`);
 
-  return result.rows.map((row: UserPushSubscriptionRow) => ({
-    id: row.id,
-    userId: row.user_id,
-    endpoint: row.endpoint,
-    keys: row.keys,
-    userAgent: row.user_agent ?? undefined,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
-  }));
+  return result.rows.map((row) => {
+    const r = row as UserPushSubscriptionRow;
+    return {
+      id: r.id,
+      userId: r.user_id,
+      endpoint: r.endpoint,
+      keys: r.keys,
+      userAgent: r.user_agent ?? undefined,
+      createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+      updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
+    };
+  });
 }
 
 // ========== Username Management ==========

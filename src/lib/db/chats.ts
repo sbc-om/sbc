@@ -1,4 +1,5 @@
 import { nanoid } from "nanoid";
+import type { QueryResultRow } from "pg";
 
 import { query, transaction } from "./postgres";
 
@@ -51,30 +52,32 @@ type ChatMessageRow = {
   created_at: Date | null;
 };
 
-function rowToConversation(row: ChatConversationRow): ChatConversation {
+function rowToConversation(row: QueryResultRow): ChatConversation {
+  const r = row as ChatConversationRow;
   return {
-    id: row.id,
-    participantIds: row.participant_ids || [],
-    lastMessageAt: row.last_message_at?.toISOString(),
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    id: r.id,
+    participantIds: r.participant_ids || [],
+    lastMessageAt: r.last_message_at?.toISOString(),
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 
-function rowToMessage(row: ChatMessageRow): ChatMessage {
+function rowToMessage(row: QueryResultRow): ChatMessage {
+  const r = row as ChatMessageRow;
   return {
-    id: row.id,
-    conversationId: row.conversation_id,
-    senderId: row.sender_id,
-    text: row.text || "",
-    status: row.status || "sent",
-    readAt: row.read_at?.toISOString(),
-    messageType: row.message_type || "text",
-    mediaUrl: row.media_url,
-    mediaType: row.media_type,
-    locationLat: row.location_lat,
-    locationLng: row.location_lng,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
+    id: r.id,
+    conversationId: r.conversation_id,
+    senderId: r.sender_id,
+    text: r.text || "",
+    status: r.status || "sent",
+    readAt: r.read_at?.toISOString(),
+    messageType: r.message_type || "text",
+    mediaUrl: r.media_url ?? undefined,
+    mediaType: r.media_type ?? undefined,
+    locationLat: r.location_lat ?? undefined,
+    locationLng: r.location_lng ?? undefined,
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
   };
 }
 

@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
+import type { QueryResultRow } from "pg";
 
 import { query } from "./postgres";
 
@@ -77,32 +78,33 @@ type BusinessRequestRow = {
   updated_at: Date | null;
 };
 
-function rowToRequest(row: BusinessRequestRow): BusinessRequest {
-  const businessName = row.business_name || "";
+function rowToRequest(row: QueryResultRow): BusinessRequest {
+  const r = row as BusinessRequestRow;
+  const businessName = r.business_name || "";
   return {
-    id: row.id,
-    userId: row.user_id,
-    agentUserId: row.agent_user_id || undefined,
+    id: r.id,
+    userId: r.user_id ?? undefined,
+    agentUserId: r.agent_user_id || undefined,
     name: { 
-      en: row.name_en || businessName, 
-      ar: row.name_ar || businessName 
+      en: r.name_en || businessName, 
+      ar: r.name_ar || businessName 
     },
     businessName,
-    category: row.category,
-    categoryId: row.category_id,
-    description: row.description,
-    city: row.city,
-    phone: row.phone,
-    email: row.email,
-    website: row.website,
-    contactEmail: row.contact_email,
-    contactPhone: row.contact_phone,
-    status: row.status,
-    adminNotes: row.admin_notes,
-    adminResponse: row.admin_response,
-    respondedAt: row.responded_at?.toISOString(),
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    category: r.category ?? undefined,
+    categoryId: r.category_id ?? undefined,
+    description: r.description ?? undefined,
+    city: r.city ?? undefined,
+    phone: r.phone ?? undefined,
+    email: r.email ?? undefined,
+    website: r.website ?? undefined,
+    contactEmail: r.contact_email ?? undefined,
+    contactPhone: r.contact_phone ?? undefined,
+    status: r.status,
+    adminNotes: r.admin_notes ?? undefined,
+    adminResponse: r.admin_response ?? undefined,
+    respondedAt: r.responded_at?.toISOString(),
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 

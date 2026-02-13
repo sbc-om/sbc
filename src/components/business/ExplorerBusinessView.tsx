@@ -14,7 +14,7 @@ import { StoryUpload } from "@/components/stories/StoryUpload";
 import { MarkdownRenderer } from "@/components/ui/MarkdownEditor";
 import type { Business, Category } from "@/lib/db/types";
 import type { Story } from "@/lib/db/stories";
-import type { BusinessComment } from "@/lib/db/businessEngagement";
+import type { BusinessComment } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
 
 type ContentLanguage = "en" | "ar";

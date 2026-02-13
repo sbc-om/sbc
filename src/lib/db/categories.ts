@@ -31,21 +31,21 @@ type CategoryWithCountRow = CategoryRow & {
   business_count: number;
 };
 
-function rowToCategory(row: CategoryRow): Category {
+function rowToCategory(r: CategoryRow): Category {
   return {
-    id: row.id,
-    slug: row.slug,
-    name: { en: row.name_en, ar: row.name_ar },
-    image: row.image,
-    iconId: row.icon_id,
-    parentId: row.parent_id,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    id: r.id,
+    slug: r.slug,
+    name: { en: r.name_en, ar: r.name_ar },
+    image: r.image ?? undefined,
+    iconId: r.icon_id ?? undefined,
+    parentId: r.parent_id ?? undefined,
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 
 export async function getCategoryById(id: string): Promise<Category | null> {
-  const result = await query(`SELECT * FROM categories WHERE id = $1`, [id]);
+  const result = await query<CategoryRow>(`SELECT * FROM categories WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToCategory(result.rows[0]) : null;
 }
 
@@ -53,22 +53,22 @@ export async function getCategoryBySlug(slug: string): Promise<Category | null> 
   const key = slugSchema.safeParse(slug);
   if (!key.success) return null;
 
-  const result = await query(`SELECT * FROM categories WHERE slug = $1`, [key.data]);
+  const result = await query<CategoryRow>(`SELECT * FROM categories WHERE slug = $1`, [key.data]);
   return result.rows.length > 0 ? rowToCategory(result.rows[0]) : null;
 }
 
 export async function listCategories(): Promise<Category[]> {
-  const result = await query(`SELECT * FROM categories ORDER BY name_en`);
+  const result = await query<CategoryRow>(`SELECT * FROM categories ORDER BY name_en`);
   return result.rows.map(rowToCategory);
 }
 
 export async function listRootCategories(): Promise<Category[]> {
-  const result = await query(`SELECT * FROM categories WHERE parent_id IS NULL ORDER BY name_en`);
+  const result = await query<CategoryRow>(`SELECT * FROM categories WHERE parent_id IS NULL ORDER BY name_en`);
   return result.rows.map(rowToCategory);
 }
 
 export async function listChildCategories(parentId: string): Promise<Category[]> {
-  const result = await query(`SELECT * FROM categories WHERE parent_id = $1 ORDER BY name_en`, [parentId]);
+  const result = await query<CategoryRow>(`SELECT * FROM categories WHERE parent_id = $1 ORDER BY name_en`, [parentId]);
   return result.rows.map(rowToCategory);
 }
 
@@ -90,7 +90,7 @@ export async function createCategory(input: {
     throw new Error("SLUG_TAKEN");
   }
 
-  const result = await query(`
+  const result = await query<CategoryRow>(`
     INSERT INTO categories (id, slug, name_en, name_ar, image, icon_id, parent_id, created_at, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)
     RETURNING *
@@ -174,7 +174,7 @@ export async function countBusinessesInCategory(categoryId: string): Promise<num
 }
 
 export async function getCategoriesWithCount(): Promise<(Category & { businessCount: number })[]> {
-  const result = await query(`
+  const result = await query<CategoryWithCountRow>(`
     SELECT c.*, COALESCE(bc.count, 0)::int as business_count
     FROM categories c
     LEFT JOIN (
@@ -186,8 +186,8 @@ export async function getCategoriesWithCount(): Promise<(Category & { businessCo
     ORDER BY c.name_en
   `);
 
-  return result.rows.map((row: CategoryWithCountRow) => ({
-    ...rowToCategory(row),
-    businessCount: row.business_count,
+  return result.rows.map((r) => ({
+    ...rowToCategory(r),
+    businessCount: r.business_count,
   }));
 }

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
 
-import { getWebsiteBySlug, getWebsiteHomepage, getWebsitePageBySlug, listWebsitePages } from "@/lib/db/websites";
+import { getWebsiteBySlug, getWebsiteHomepage, getWebsitePageBySlug } from "@/lib/db/websites";
 import type { Locale } from "@/lib/db/types";
 import WebsiteRenderer from "../WebsiteRenderer";
 
@@ -66,13 +66,10 @@ export default async function SitePage({ params }: Props) {
 
   if (!page || !page.isPublished) notFound();
 
-  const pages = await listWebsitePages(website.id);
-
   return (
     <WebsiteRenderer
       website={website}
       page={page}
-      pages={pages.filter((p) => p.isPublished)}
       locale={locale}
     />
   );

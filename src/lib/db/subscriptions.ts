@@ -58,25 +58,25 @@ type SubscriptionWithUserRow = ProgramSubscriptionRow & {
   user_avatar: string | null;
 };
 
-function rowToSubscription(row: ProgramSubscriptionRow): ProgramSubscription {
-  const endDateStr = row.end_date?.toISOString() || new Date().toISOString();
+function rowToSubscription(r: ProgramSubscriptionRow): ProgramSubscription {
+  const endDateStr = r.end_date?.toISOString() || new Date().toISOString();
   return {
-    id: row.id,
-    userId: row.user_id,
-    productId: row.product_id,
-    productSlug: row.product_slug,
-    program: row.program,
-    plan: row.plan || row.product_slug,
-    startDate: row.start_date?.toISOString() || new Date().toISOString(),
+    id: r.id,
+    userId: r.user_id,
+    productId: r.product_id,
+    productSlug: r.product_slug,
+    program: r.program,
+    plan: r.plan || r.product_slug,
+    startDate: r.start_date?.toISOString() || new Date().toISOString(),
     endDate: endDateStr,
     expiresAt: endDateStr,
-    isActive: row.is_active ?? true,
-    paymentId: row.payment_id ?? undefined,
-    paymentMethod: row.payment_method ?? undefined,
-    amount: parseFloat(String(row.amount ?? "0")) || 0,
-    currency: row.currency || "OMR",
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    isActive: r.is_active ?? true,
+    paymentId: r.payment_id ?? undefined,
+    paymentMethod: r.payment_method ?? undefined,
+    amount: parseFloat(String(r.amount ?? "0")) || 0,
+    currency: r.currency || "OMR",
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 
@@ -105,7 +105,7 @@ export async function createProgramSubscription(input: ProgramSubscriptionInput)
 
   const endDate = new Date(baseDate.getTime() + durationMs);
 
-  const result = await query(`
+  const result = await query<ProgramSubscriptionRow>(`
     INSERT INTO program_subscriptions (
       id, user_id, product_id, product_slug, program, start_date, end_date,
       is_active, payment_id, payment_method, amount, currency, created_at, updated_at
@@ -128,19 +128,19 @@ export async function purchaseProgramSubscription(input: ProgramSubscriptionInpu
 }
 
 export async function getProgramSubscriptionById(id: string): Promise<ProgramSubscription | null> {
-  const result = await query(`SELECT * FROM program_subscriptions WHERE id = $1`, [id]);
+  const result = await query<ProgramSubscriptionRow>(`SELECT * FROM program_subscriptions WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToSubscription(result.rows[0]) : null;
 }
 
 export async function listUserProgramSubscriptions(userId: string): Promise<ProgramSubscription[]> {
-  const result = await query(`
+  const result = await query<ProgramSubscriptionRow>(`
     SELECT * FROM program_subscriptions WHERE user_id = $1 ORDER BY created_at DESC
   `, [userId]);
   return result.rows.map(rowToSubscription);
 }
 
 export async function listActiveUserProgramSubscriptions(userId: string): Promise<ProgramSubscription[]> {
-  const result = await query(`
+  const result = await query<ProgramSubscriptionRow>(`
     SELECT * FROM program_subscriptions 
     WHERE user_id = $1 AND is_active = true AND end_date > NOW()
     ORDER BY created_at DESC
@@ -152,7 +152,7 @@ export async function getUserActiveSubscriptionForProgram(
   userId: string,
   program: string
 ): Promise<ProgramSubscription | null> {
-  const result = await query(`
+  const result = await query<ProgramSubscriptionRow>(`
     SELECT * FROM program_subscriptions 
     WHERE user_id = $1 AND program = $2 AND is_active = true AND end_date > NOW()
     ORDER BY end_date DESC
@@ -162,7 +162,7 @@ export async function getUserActiveSubscriptionForProgram(
 }
 
 export async function hasActiveSubscription(userId: string, program: string): Promise<boolean> {
-  const result = await query(`
+  const result = await query<ProgramSubscriptionRow>(`
     SELECT 1 FROM program_subscriptions 
     WHERE user_id = $1 AND program = $2 AND is_active = true AND end_date > NOW()
     LIMIT 1
@@ -171,7 +171,7 @@ export async function hasActiveSubscription(userId: string, program: string): Pr
 }
 
 export async function cancelProgramSubscription(id: string): Promise<ProgramSubscription> {
-  const result = await query(`
+  const result = await query<ProgramSubscriptionRow>(`
     UPDATE program_subscriptions SET is_active = false, updated_at = $1 WHERE id = $2 RETURNING *
   `, [new Date(), id]);
 
@@ -180,14 +180,14 @@ export async function cancelProgramSubscription(id: string): Promise<ProgramSubs
 }
 
 export async function extendProgramSubscription(id: string, additionalDays: number): Promise<ProgramSubscription> {
-  const currentRes = await query(`SELECT * FROM program_subscriptions WHERE id = $1`, [id]);
+  const currentRes = await query<ProgramSubscriptionRow>(`SELECT * FROM program_subscriptions WHERE id = $1`, [id]);
   if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
   
   const current = rowToSubscription(currentRes.rows[0]);
   const currentEndDate = new Date(current.endDate);
   const newEndDate = new Date(currentEndDate.getTime() + additionalDays * 24 * 60 * 60 * 1000);
 
-  const result = await query(`
+  const result = await query<ProgramSubscriptionRow>(`
     UPDATE program_subscriptions SET end_date = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [newEndDate, new Date(), id]);
 
@@ -195,12 +195,12 @@ export async function extendProgramSubscription(id: string, additionalDays: numb
 }
 
 export async function listAllProgramSubscriptions(): Promise<ProgramSubscription[]> {
-  const result = await query(`SELECT * FROM program_subscriptions ORDER BY created_at DESC`);
+  const result = await query<ProgramSubscriptionRow>(`SELECT * FROM program_subscriptions ORDER BY created_at DESC`);
   return result.rows.map(rowToSubscription);
 }
 
 export async function listProgramSubscriptionsByProduct(productId: string): Promise<ProgramSubscription[]> {
-  const result = await query(`
+  const result = await query<ProgramSubscriptionRow>(`
     SELECT * FROM program_subscriptions WHERE product_id = $1 ORDER BY created_at DESC
   `, [productId]);
   return result.rows.map(rowToSubscription);
@@ -272,7 +272,7 @@ export async function updateProgramSubscription(
   }
 
   params.push(id);
-  const result = await query(
+  const result = await query<ProgramSubscriptionRow>(
     `UPDATE program_subscriptions SET ${setClauses.join(", ")} WHERE id = $${paramIdx} RETURNING *`,
     params
   );
@@ -287,17 +287,17 @@ export async function updateProgramSubscription(
 export async function listAllSubscriptionsWithUsers(): Promise<
   (ProgramSubscription & { userEmail: string; userName: string; userAvatar: string | null })[]
 > {
-  const result = await query(`
+  const result = await query<SubscriptionWithUserRow>(`
     SELECT ps.*, u.email as user_email, COALESCE(u.display_name, u.email) as user_name, u.avatar_url as user_avatar
     FROM program_subscriptions ps
     LEFT JOIN users u ON ps.user_id = u.id
     ORDER BY ps.created_at DESC
   `);
-  return result.rows.map((row: SubscriptionWithUserRow) => ({
-    ...rowToSubscription(row),
-    userEmail: row.user_email || "",
-    userName: row.user_name || "",
-    userAvatar: row.user_avatar || null,
+  return result.rows.map((r) => ({
+    ...rowToSubscription(r),
+    userEmail: r.user_email || "",
+    userName: r.user_name || "",
+    userAvatar: r.user_avatar || null,
   }));
 }
 
@@ -315,7 +315,7 @@ export async function expireOldSubscriptions(): Promise<number> {
  * Get program subscription by user for any program
  */
 export async function getProgramSubscriptionByUser(userId: string): Promise<ProgramSubscription | null> {
-  const result = await query(`
+  const result = await query<ProgramSubscriptionRow>(`
     SELECT * FROM program_subscriptions 
     WHERE user_id = $1 AND is_active = true AND end_date > NOW()
     ORDER BY end_date DESC

@@ -32,28 +32,28 @@ type PasskeyChallengeRow = {
   expires_at: Date | null;
 };
 
-function rowToCredential(row: PasskeyCredentialRow): PasskeyCredential {
+function rowToCredential(r: PasskeyCredentialRow): PasskeyCredential {
   return {
-    id: row.id,
-    userId: row.user_id,
-    publicKey: row.public_key,
-    counter: row.counter ?? 0,
-    transports: row.transports,
-    deviceType: row.device_type,
-    backedUp: row.backed_up ?? false,
-    label: row.label,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    lastUsedAt: row.last_used_at?.toISOString(),
+    id: r.id,
+    userId: r.user_id,
+    publicKey: r.public_key,
+    counter: r.counter ?? 0,
+    transports: r.transports,
+    deviceType: r.device_type,
+    backedUp: r.backed_up ?? false,
+    label: r.label ?? undefined,
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    lastUsedAt: r.last_used_at?.toISOString(),
   };
 }
 
-function rowToChallenge(row: PasskeyChallengeRow): PasskeyChallenge {
+function rowToChallenge(r: PasskeyChallengeRow): PasskeyChallenge {
   return {
-    id: row.id,
-    challenge: row.challenge,
-    userId: row.user_id,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    expiresAt: row.expires_at?.toISOString() || new Date().toISOString(),
+    id: r.id,
+    challenge: r.challenge,
+    userId: r.user_id ?? undefined,
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    expiresAt: r.expires_at?.toISOString() || new Date().toISOString(),
   };
 }
 
@@ -68,7 +68,7 @@ export async function createPasskeyChallenge(input: {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + (input.expiresInMs || 5 * 60 * 1000));
 
-  const result = await query(`
+  const result = await query<PasskeyChallengeRow>(`
     INSERT INTO passkey_challenges (id, challenge, user_id, created_at, expires_at)
     VALUES ($1, $2, $3, $4, $5)
     RETURNING *
@@ -78,7 +78,7 @@ export async function createPasskeyChallenge(input: {
 }
 
 export async function getPasskeyChallenge(id: string): Promise<PasskeyChallenge | null> {
-  const result = await query(`SELECT * FROM passkey_challenges WHERE id = $1`, [id]);
+  const result = await query<PasskeyChallengeRow>(`SELECT * FROM passkey_challenges WHERE id = $1`, [id]);
   if (result.rows.length === 0) return null;
 
   const challenge = rowToChallenge(result.rows[0]);
@@ -117,7 +117,7 @@ export async function createPasskeyCredential(input: {
 }): Promise<PasskeyCredential> {
   const now = new Date();
 
-  const result = await query(`
+  const result = await query<PasskeyCredentialRow>(`
     INSERT INTO passkey_credentials (
       id, user_id, public_key, counter, transports, device_type, backed_up, label, created_at
     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -132,17 +132,17 @@ export async function createPasskeyCredential(input: {
 }
 
 export async function getPasskeyCredential(id: string): Promise<PasskeyCredential | null> {
-  const result = await query(`SELECT * FROM passkey_credentials WHERE id = $1`, [id]);
+  const result = await query<PasskeyCredentialRow>(`SELECT * FROM passkey_credentials WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToCredential(result.rows[0]) : null;
 }
 
 export async function getUserPasskeyCredentials(userId: string): Promise<PasskeyCredential[]> {
-  const result = await query(`SELECT * FROM passkey_credentials WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
+  const result = await query<PasskeyCredentialRow>(`SELECT * FROM passkey_credentials WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
   return result.rows.map(rowToCredential);
 }
 
 export async function updatePasskeyCredentialCounter(id: string, counter: number): Promise<PasskeyCredential> {
-  const result = await query(`
+  const result = await query<PasskeyCredentialRow>(`
     UPDATE passkey_credentials SET counter = $1, last_used_at = $2 WHERE id = $3 RETURNING *
   `, [counter, new Date(), id]);
 

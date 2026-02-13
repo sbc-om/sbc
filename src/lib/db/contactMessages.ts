@@ -26,17 +26,17 @@ type ContactMessageRow = {
   read_at: Date | null;
 };
 
-function rowToContactMessage(row: ContactMessageRow): ContactMessage {
+function rowToContactMessage(r: ContactMessageRow): ContactMessage {
   return {
-    id: row.id,
-    name: row.name,
-    email: row.email,
-    subject: row.subject,
-    message: row.message,
-    locale: row.locale as Locale,
-    isRead: row.is_read ?? false,
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    readAt: row.read_at?.toISOString(),
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    subject: r.subject,
+    message: r.message,
+    locale: r.locale as Locale,
+    isRead: r.is_read ?? false,
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    readAt: r.read_at?.toISOString(),
   };
 }
 
@@ -45,7 +45,7 @@ export async function createContactMessage(input: ContactMessageInput): Promise<
   const id = nanoid();
   const now = new Date();
 
-  const result = await query(`
+  const result = await query<ContactMessageRow>(`
     INSERT INTO contact_messages (id, name, email, subject, message, locale, is_read, created_at)
     VALUES ($1, $2, $3, $4, $5, $6, false, $7)
     RETURNING *
@@ -55,22 +55,22 @@ export async function createContactMessage(input: ContactMessageInput): Promise<
 }
 
 export async function getContactMessageById(id: string): Promise<ContactMessage | null> {
-  const result = await query(`SELECT * FROM contact_messages WHERE id = $1`, [id]);
+  const result = await query<ContactMessageRow>(`SELECT * FROM contact_messages WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToContactMessage(result.rows[0]) : null;
 }
 
 export async function listContactMessages(): Promise<ContactMessage[]> {
-  const result = await query(`SELECT * FROM contact_messages ORDER BY created_at DESC`);
+  const result = await query<ContactMessageRow>(`SELECT * FROM contact_messages ORDER BY created_at DESC`);
   return result.rows.map(rowToContactMessage);
 }
 
 export async function listUnreadContactMessages(): Promise<ContactMessage[]> {
-  const result = await query(`SELECT * FROM contact_messages WHERE is_read = false ORDER BY created_at DESC`);
+  const result = await query<ContactMessageRow>(`SELECT * FROM contact_messages WHERE is_read = false ORDER BY created_at DESC`);
   return result.rows.map(rowToContactMessage);
 }
 
 export async function markContactMessageAsRead(id: string): Promise<ContactMessage> {
-  const result = await query(`
+  const result = await query<ContactMessageRow>(`
     UPDATE contact_messages SET is_read = true, read_at = $1 WHERE id = $2 RETURNING *
   `, [new Date(), id]);
 

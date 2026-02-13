@@ -37,23 +37,23 @@ type BusinessCardRow = {
   updated_at: Date | null;
 };
 
-function rowToBusinessCard(row: BusinessCardRow): BusinessCard {
+function rowToBusinessCard(r: BusinessCardRow): BusinessCard {
   return {
-    id: row.id,
-    businessId: row.business_id,
-    ownerId: row.owner_id,
-    fullName: row.full_name,
-    title: row.title,
-    email: row.email,
-    phone: row.phone,
-    website: row.website,
-    avatarUrl: row.avatar_url,
-    bio: row.bio,
-    isPublic: row.is_public ?? true,
-    isApproved: row.is_approved ?? false,
-    approvedAt: row.approved_at?.toISOString(),
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    id: r.id,
+    businessId: r.business_id,
+    ownerId: r.owner_id,
+    fullName: r.full_name,
+    title: r.title ?? undefined,
+    email: r.email ?? undefined,
+    phone: r.phone ?? undefined,
+    website: r.website ?? undefined,
+    avatarUrl: r.avatar_url ?? undefined,
+    bio: r.bio ?? undefined,
+    isPublic: r.is_public ?? true,
+    isApproved: r.is_approved ?? false,
+    approvedAt: r.approved_at?.toISOString(),
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 
@@ -62,7 +62,7 @@ export async function createBusinessCard(input: BusinessCardInput): Promise<Busi
   const id = nanoid();
   const now = new Date();
 
-  const result = await query(`
+  const result = await query<BusinessCardRow>(`
     INSERT INTO business_cards (
       id, business_id, owner_id, full_name, title, email, phone, website,
       avatar_url, bio, is_public, is_approved, created_at, updated_at
@@ -78,19 +78,19 @@ export async function createBusinessCard(input: BusinessCardInput): Promise<Busi
 }
 
 export async function getBusinessCardById(id: string): Promise<BusinessCard | null> {
-  const result = await query(`SELECT * FROM business_cards WHERE id = $1`, [id]);
+  const result = await query<BusinessCardRow>(`SELECT * FROM business_cards WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToBusinessCard(result.rows[0]) : null;
 }
 
 export async function getBusinessCardsByBusinessId(businessId: string): Promise<BusinessCard[]> {
-  const result = await query(`
+  const result = await query<BusinessCardRow>(`
     SELECT * FROM business_cards WHERE business_id = $1 ORDER BY created_at DESC
   `, [businessId]);
   return result.rows.map(rowToBusinessCard);
 }
 
 export async function getBusinessCardsByOwnerId(ownerId: string): Promise<BusinessCard[]> {
-  const result = await query(`
+  const result = await query<BusinessCardRow>(`
     SELECT * FROM business_cards WHERE owner_id = $1 ORDER BY created_at DESC
   `, [ownerId]);
   return result.rows.map(rowToBusinessCard);
@@ -100,11 +100,11 @@ export async function updateBusinessCard(
   id: string,
   input: Partial<BusinessCardInput>
 ): Promise<BusinessCard> {
-  const currentRes = await query(`SELECT * FROM business_cards WHERE id = $1`, [id]);
+  const currentRes = await query<BusinessCardRow>(`SELECT * FROM business_cards WHERE id = $1`, [id]);
   if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
   const current = rowToBusinessCard(currentRes.rows[0]);
 
-  const result = await query(`
+  const result = await query<BusinessCardRow>(`
     UPDATE business_cards SET
       full_name = COALESCE($1, full_name),
       title = $2,
@@ -140,7 +140,7 @@ export async function deleteBusinessCard(id: string): Promise<boolean> {
 
 export async function setBusinessCardApproved(id: string, isApproved: boolean): Promise<BusinessCard> {
   const now = new Date();
-  const result = await query(`
+  const result = await query<BusinessCardRow>(`
     UPDATE business_cards SET
       is_approved = $1,
       approved_at = CASE WHEN $1 THEN $2::timestamptz ELSE NULL END,
@@ -154,12 +154,12 @@ export async function setBusinessCardApproved(id: string, isApproved: boolean): 
 }
 
 export async function listAllBusinessCards(): Promise<BusinessCard[]> {
-  const result = await query(`SELECT * FROM business_cards ORDER BY created_at DESC`);
+  const result = await query<BusinessCardRow>(`SELECT * FROM business_cards ORDER BY created_at DESC`);
   return result.rows.map(rowToBusinessCard);
 }
 
 export async function listApprovedBusinessCards(): Promise<BusinessCard[]> {
-  const result = await query(`
+  const result = await query<BusinessCardRow>(`
     SELECT * FROM business_cards WHERE is_approved = true AND is_public = true ORDER BY created_at DESC
   `);
   return result.rows.map(rowToBusinessCard);
@@ -172,7 +172,7 @@ export async function listBusinessCardsByBusiness(input: {
   ownerId: string;
   businessId: string;
 }): Promise<BusinessCard[]> {
-  const result = await query(`
+  const result = await query<BusinessCardRow>(`
     SELECT * FROM business_cards 
     WHERE business_id = $1 AND owner_id = $2
     ORDER BY created_at DESC
@@ -182,7 +182,7 @@ export async function listBusinessCardsByBusiness(input: {
 
 /** List public business cards for a business */
 export async function listPublicBusinessCardsByBusiness(businessId: string): Promise<BusinessCard[]> {
-  const result = await query(`
+  const result = await query<BusinessCardRow>(`
     SELECT * FROM business_cards 
     WHERE business_id = $1 AND is_public = true AND is_approved = true
     ORDER BY created_at DESC

@@ -1,4 +1,5 @@
 import { query } from "./postgres";
+import type { QueryResultRow } from "pg";
 
 // Business likes
 export async function likeBusiness(userId: string, businessId: string): Promise<void> {
@@ -31,7 +32,7 @@ export async function getUserLikedBusinessIds(userId: string): Promise<string[]>
   const result = await query(`
     SELECT business_id FROM user_business_likes WHERE user_id = $1
   `, [userId]);
-  return result.rows.map((row: { business_id: string }) => row.business_id);
+  return result.rows.map((row) => (row as { business_id: string }).business_id);
 }
 
 // Business saves
@@ -58,7 +59,7 @@ export async function getUserSavedBusinessIds(userId: string): Promise<string[]>
   const result = await query(`
     SELECT business_id FROM user_business_saves WHERE user_id = $1 ORDER BY created_at DESC
   `, [userId]);
-  return result.rows.map((row: { business_id: string }) => row.business_id);
+  return result.rows.map((row) => (row as { business_id: string }).business_id);
 }
 
 // Business comments
@@ -77,17 +78,18 @@ type BusinessCommentRow = {
   updated_at: Date | null;
 };
 
-function rowToComment(row: BusinessCommentRow): BusinessComment {
+function rowToComment(row: QueryResultRow): BusinessComment {
+  const r = row as BusinessCommentRow;
   return {
-    id: row.id,
-    businessId: row.business_id,
-    userId: row.user_id,
-    text: row.text,
-    status: row.status as BusinessCommentStatus,
-    moderatedByUserId: row.moderated_by_user_id,
-    moderatedAt: row.moderated_at?.toISOString(),
-    createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
+    id: r.id,
+    businessId: r.business_id,
+    userId: r.user_id,
+    text: r.text,
+    status: r.status as BusinessCommentStatus,
+    moderatedByUserId: r.moderated_by_user_id ?? undefined,
+    moderatedAt: r.moderated_at?.toISOString(),
+    createdAt: r.created_at?.toISOString() || new Date().toISOString(),
+    updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 
