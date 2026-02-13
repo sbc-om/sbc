@@ -233,7 +233,7 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
           </label>
           <select
             value={formData.priceCurrency}
-            onChange={(e) => setFormData({ ...formData, priceCurrency: e.target.value })}
+            onChange={(e) => setFormData({ ...formData, priceCurrency: e.target.value as "OMR" })}
             className="w-full px-3 py-2 border rounded-lg bg-(--background) border-(--border)"
           >
             <option value="OMR">OMR</option>

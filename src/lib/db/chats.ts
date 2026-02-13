@@ -28,7 +28,30 @@ export type ChatMessage = {
   createdAt: string;
 };
 
-function rowToConversation(row: any): ChatConversation {
+type ChatConversationRow = {
+  id: string;
+  participant_ids: string[] | null;
+  last_message_at: Date | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type ChatMessageRow = {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  text: string | null;
+  status: MessageStatus | null;
+  read_at: Date | null;
+  message_type: MessageType | null;
+  media_url: string | null;
+  media_type: string | null;
+  location_lat: number | null;
+  location_lng: number | null;
+  created_at: Date | null;
+};
+
+function rowToConversation(row: ChatConversationRow): ChatConversation {
   return {
     id: row.id,
     participantIds: row.participant_ids || [],
@@ -38,7 +61,7 @@ function rowToConversation(row: any): ChatConversation {
   };
 }
 
-function rowToMessage(row: any): ChatMessage {
+function rowToMessage(row: ChatMessageRow): ChatMessage {
   return {
     id: row.id,
     conversationId: row.conversation_id,

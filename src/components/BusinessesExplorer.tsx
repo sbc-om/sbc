@@ -158,7 +158,8 @@ export function BusinessesExplorer({
       
       if (data.ok) {
         // Map result IDs to full business objects preserving server-side ranking
-        const idOrder = new Map(data.resultIds.map((id: string, i: number) => [id, i]));
+        const resultIds: string[] = Array.isArray(data.resultIds) ? data.resultIds : [];
+        const idOrder = new Map<string, number>(resultIds.map((id, i) => [id, i]));
         const orderedResults = businesses
           .filter(b => idOrder.has(b.id))
           .sort((a, b) => (idOrder.get(a.id) ?? 999) - (idOrder.get(b.id) ?? 999));
@@ -334,7 +335,7 @@ export function BusinessesExplorer({
             <div className="flex gap-2 flex-wrap">
               <Button
                 type="button"
-                variant={activeMode === "advanced" ? "default" : "secondary"}
+                variant={activeMode === "advanced" ? "primary" : "secondary"}
                 size="sm"
                 onClick={() => toggleMode("advanced")}
                 className={activeMode === "advanced" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : ""}
@@ -345,7 +346,7 @@ export function BusinessesExplorer({
               
               <Button
                 type="button"
-                variant={activeMode === "image" ? "default" : "secondary"}
+                variant={activeMode === "image" ? "primary" : "secondary"}
                 size="sm"
                 onClick={() => {
                   if (activeMode === "image") {
@@ -372,7 +373,7 @@ export function BusinessesExplorer({
 
               <Button
                 type="button"
-                variant={activeMode === "chat" ? "default" : "secondary"}
+                variant={activeMode === "chat" ? "primary" : "secondary"}
                 size="sm"
                 onClick={() => toggleMode("chat")}
                 className={activeMode === "chat" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : ""}

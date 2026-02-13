@@ -53,7 +53,31 @@ const businessRequestSchema = z.object({
 
 export type BusinessRequestInput = z.infer<typeof businessRequestSchema>;
 
-function rowToRequest(row: any): BusinessRequest {
+type BusinessRequestRow = {
+  id: string;
+  user_id: string | null;
+  agent_user_id: string | null;
+  business_name: string | null;
+  name_en: string | null;
+  name_ar: string | null;
+  category: string | null;
+  category_id: string | null;
+  description: string | null;
+  city: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  status: BusinessRequest["status"];
+  admin_notes: string | null;
+  admin_response: string | null;
+  responded_at: Date | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+function rowToRequest(row: BusinessRequestRow): BusinessRequest {
   const businessName = row.business_name || "";
   return {
     id: row.id,

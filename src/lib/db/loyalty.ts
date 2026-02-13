@@ -1,5 +1,4 @@
 import { nanoid } from "nanoid";
-import { z } from "zod";
 import { createHash } from "node:crypto";
 
 import { query, transaction } from "./postgres";
@@ -16,7 +15,102 @@ import type {
 
 // ==================== Subscriptions ====================
 
-function rowToSubscription(row: any): LoyaltySubscription {
+type LoyaltySubscriptionRow = {
+  user_id: string;
+  plan: LoyaltySubscription["plan"];
+  status: LoyaltySubscription["status"];
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type LoyaltyProfileRow = {
+  user_id: string;
+  business_name: string;
+  logo_url: string | null;
+  join_code: string;
+  location: LoyaltyProfile["location"] | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type LoyaltySettingsRow = {
+  user_id: string;
+  points_required_per_redemption: number | null;
+  points_deduct_per_redemption: number | null;
+  points_icon_mode: LoyaltySettings["pointsIconMode"] | null;
+  points_icon_url: string | null;
+  card_design: LoyaltySettings["cardDesign"] | null;
+  wallet_pass_description: string | null;
+  wallet_pass_terms: string | null;
+  wallet_website_url: string | null;
+  wallet_support_email: string | null;
+  wallet_support_phone: string | null;
+  wallet_address: string | null;
+  wallet_barcode_format: LoyaltySettings["walletBarcodeFormat"] | null;
+  wallet_barcode_message: string | null;
+  wallet_notification_title: string | null;
+  wallet_notification_body: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type LoyaltyCustomerRow = {
+  id: string;
+  user_id: string;
+  business_id: string | null;
+  full_name: string;
+  member_id: string;
+  phone: string | null;
+  email: string | null;
+  notes: string | null;
+  tags: string[] | null;
+  card_id: string | null;
+  points: number | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type LoyaltyCardRow = {
+  id: string;
+  user_id: string;
+  customer_id: string;
+  business_id: string | null;
+  status: LoyaltyCard["status"];
+  points: number | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type LoyaltyMessageRow = {
+  id: string;
+  user_id: string;
+  customer_id: string | null;
+  title: string;
+  body: string;
+  created_at: Date | null;
+};
+
+type LoyaltyPushSubscriptionRow = {
+  id: string;
+  user_id: string;
+  customer_id: string;
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  user_agent: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type AppleWalletRegistrationRow = {
+  id: string;
+  pass_type_identifier: string;
+  serial_number: string;
+  device_library_identifier: string;
+  push_token: string;
+  updated_at: Date | null;
+};
+
+function rowToSubscription(row: LoyaltySubscriptionRow): LoyaltySubscription {
   return {
     userId: row.user_id,
     plan: row.plan,
@@ -27,13 +121,13 @@ function rowToSubscription(row: any): LoyaltySubscription {
 }
 
 export async function getLoyaltySubscription(userId: string): Promise<LoyaltySubscription | null> {
-  const result = await query(`SELECT * FROM loyalty_subscriptions WHERE user_id = $1`, [userId]);
+  const result = await query<LoyaltySubscriptionRow>(`SELECT * FROM loyalty_subscriptions WHERE user_id = $1`, [userId]);
   return result.rows.length > 0 ? rowToSubscription(result.rows[0]) : null;
 }
 
 export async function createLoyaltySubscription(userId: string, plan: string): Promise<LoyaltySubscription> {
   const now = new Date();
-  const result = await query(`
+  const result = await query<LoyaltySubscriptionRow>(`
     INSERT INTO loyalty_subscriptions (user_id, plan, status, created_at, updated_at)
     VALUES ($1, $2, 'active', $3, $3)
     ON CONFLICT (user_id) DO UPDATE SET plan = $2, status = 'active', updated_at = $3
@@ -44,25 +138,25 @@ export async function createLoyaltySubscription(userId: string, plan: string): P
 
 // ==================== Profiles ====================
 
-function rowToProfile(row: any): LoyaltyProfile {
+function rowToProfile(row: LoyaltyProfileRow): LoyaltyProfile {
   return {
     userId: row.user_id,
     businessName: row.business_name,
-    logoUrl: row.logo_url,
+    logoUrl: row.logo_url ?? undefined,
     joinCode: row.join_code,
-    location: row.location,
+    location: row.location ?? undefined,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 
 export async function getLoyaltyProfile(userId: string): Promise<LoyaltyProfile | null> {
-  const result = await query(`SELECT * FROM loyalty_profiles WHERE user_id = $1`, [userId]);
+  const result = await query<LoyaltyProfileRow>(`SELECT * FROM loyalty_profiles WHERE user_id = $1`, [userId]);
   return result.rows.length > 0 ? rowToProfile(result.rows[0]) : null;
 }
 
 export async function getLoyaltyProfileByJoinCode(joinCode: string): Promise<LoyaltyProfile | null> {
-  const result = await query(`SELECT * FROM loyalty_profiles WHERE join_code = $1`, [joinCode]);
+  const result = await query<LoyaltyProfileRow>(`SELECT * FROM loyalty_profiles WHERE join_code = $1`, [joinCode]);
   return result.rows.length > 0 ? rowToProfile(result.rows[0]) : null;
 }
 
@@ -74,7 +168,7 @@ export async function createOrUpdateLoyaltyProfile(input: {
   location?: LoyaltyProfile["location"];
 }): Promise<LoyaltyProfile> {
   const now = new Date();
-  const result = await query(`
+  const result = await query<LoyaltyProfileRow>(`
     INSERT INTO loyalty_profiles (user_id, business_name, logo_url, join_code, location, created_at, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, $6)
     ON CONFLICT (user_id) DO UPDATE SET
@@ -90,24 +184,24 @@ export async function createOrUpdateLoyaltyProfile(input: {
 
 // ==================== Settings ====================
 
-function rowToSettings(row: any): LoyaltySettings {
+function rowToSettings(row: LoyaltySettingsRow): LoyaltySettings {
   return {
     userId: row.user_id,
     pointsRequiredPerRedemption: row.points_required_per_redemption ?? 10,
     pointsDeductPerRedemption: row.points_deduct_per_redemption ?? 10,
     pointsIconMode: row.points_icon_mode ?? "logo",
-    pointsIconUrl: row.points_icon_url,
-    cardDesign: row.card_design,
-    walletPassDescription: row.wallet_pass_description,
-    walletPassTerms: row.wallet_pass_terms,
-    walletWebsiteUrl: row.wallet_website_url,
-    walletSupportEmail: row.wallet_support_email,
-    walletSupportPhone: row.wallet_support_phone,
-    walletAddress: row.wallet_address,
+    pointsIconUrl: row.points_icon_url ?? undefined,
+    cardDesign: row.card_design ?? undefined,
+    walletPassDescription: row.wallet_pass_description ?? undefined,
+    walletPassTerms: row.wallet_pass_terms ?? undefined,
+    walletWebsiteUrl: row.wallet_website_url ?? undefined,
+    walletSupportEmail: row.wallet_support_email ?? undefined,
+    walletSupportPhone: row.wallet_support_phone ?? undefined,
+    walletAddress: row.wallet_address ?? undefined,
     walletBarcodeFormat: row.wallet_barcode_format ?? "qr",
-    walletBarcodeMessage: row.wallet_barcode_message,
-    walletNotificationTitle: row.wallet_notification_title,
-    walletNotificationBody: row.wallet_notification_body,
+    walletBarcodeMessage: row.wallet_barcode_message ?? undefined,
+    walletNotificationTitle: row.wallet_notification_title ?? undefined,
+    walletNotificationBody: row.wallet_notification_body ?? undefined,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
@@ -128,7 +222,7 @@ export function defaultLoyaltySettings(userId: string): LoyaltySettings {
 }
 
 export async function getLoyaltySettings(userId: string): Promise<LoyaltySettings | null> {
-  const result = await query(`SELECT * FROM loyalty_settings WHERE user_id = $1`, [userId]);
+  const result = await query<LoyaltySettingsRow>(`SELECT * FROM loyalty_settings WHERE user_id = $1`, [userId]);
   return result.rows.length > 0 ? rowToSettings(result.rows[0]) : null;
 }
 
@@ -137,7 +231,7 @@ export async function createOrUpdateLoyaltySettings(
   settings: Partial<Omit<LoyaltySettings, "userId" | "createdAt" | "updatedAt">>
 ): Promise<LoyaltySettings> {
   const now = new Date();
-  const result = await query(`
+  const result = await query<LoyaltySettingsRow>(`
     INSERT INTO loyalty_settings (
       user_id, points_required_per_redemption, points_deduct_per_redemption,
       points_icon_mode, points_icon_url, card_design, wallet_pass_description,
@@ -187,18 +281,18 @@ export async function createOrUpdateLoyaltySettings(
 
 // ==================== Customers ====================
 
-function rowToCustomer(row: any): LoyaltyCustomer {
+function rowToCustomer(row: LoyaltyCustomerRow): LoyaltyCustomer {
   return {
     id: row.id,
     userId: row.user_id,
-    businessId: row.business_id,
+    businessId: row.business_id ?? undefined,
     fullName: row.full_name,
     memberId: row.member_id,
-    phone: row.phone,
-    email: row.email,
-    notes: row.notes,
+    phone: row.phone ?? undefined,
+    email: row.email ?? undefined,
+    notes: row.notes ?? undefined,
     tags: row.tags || [],
-    cardId: row.card_id,
+    cardId: row.card_id ?? undefined,
     points: row.points ?? 0,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
@@ -229,23 +323,23 @@ export async function createLoyaltyCustomer(input: {
       VALUES ($1, $2, $3, 'active', 0, $4, $4)
     `, [cardId, input.userId, customerId, now]);
 
-    const result = await client.query(`SELECT * FROM loyalty_customers WHERE id = $1`, [customerId]);
+    const result = await client.query<LoyaltyCustomerRow>(`SELECT * FROM loyalty_customers WHERE id = $1`, [customerId]);
     return rowToCustomer(result.rows[0]);
   });
 }
 
 export async function getLoyaltyCustomerById(id: string): Promise<LoyaltyCustomer | null> {
-  const result = await query(`SELECT * FROM loyalty_customers WHERE id = $1`, [id]);
+  const result = await query<LoyaltyCustomerRow>(`SELECT * FROM loyalty_customers WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToCustomer(result.rows[0]) : null;
 }
 
 export async function getLoyaltyCustomerByMemberId(userId: string, memberId: string): Promise<LoyaltyCustomer | null> {
-  const result = await query(`SELECT * FROM loyalty_customers WHERE user_id = $1 AND member_id = $2`, [userId, memberId]);
+  const result = await query<LoyaltyCustomerRow>(`SELECT * FROM loyalty_customers WHERE user_id = $1 AND member_id = $2`, [userId, memberId]);
   return result.rows.length > 0 ? rowToCustomer(result.rows[0]) : null;
 }
 
 export async function listLoyaltyCustomers(userId: string): Promise<LoyaltyCustomer[]> {
-  const result = await query(`SELECT * FROM loyalty_customers WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
+  const result = await query<LoyaltyCustomerRow>(`SELECT * FROM loyalty_customers WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
   return result.rows.map(rowToCustomer);
 }
 
@@ -253,7 +347,7 @@ export async function updateLoyaltyCustomer(
   id: string,
   update: Partial<Pick<LoyaltyCustomer, "fullName" | "phone" | "email" | "notes" | "tags">>
 ): Promise<LoyaltyCustomer> {
-  const result = await query(`
+  const result = await query<LoyaltyCustomerRow>(`
     UPDATE loyalty_customers SET
       full_name = COALESCE($1, full_name),
       phone = $2,
@@ -271,7 +365,7 @@ export async function updateLoyaltyCustomer(
 
 export async function adjustCustomerPoints(id: string, delta: number): Promise<LoyaltyCustomer> {
   return transaction(async (client) => {
-    const customerRes = await client.query(`SELECT * FROM loyalty_customers WHERE id = $1 FOR UPDATE`, [id]);
+    const customerRes = await client.query<LoyaltyCustomerRow>(`SELECT * FROM loyalty_customers WHERE id = $1 FOR UPDATE`, [id]);
     if (customerRes.rows.length === 0) throw new Error("NOT_FOUND");
     const customer = rowToCustomer(customerRes.rows[0]);
 
@@ -281,7 +375,7 @@ export async function adjustCustomerPoints(id: string, delta: number): Promise<L
     await client.query(`UPDATE loyalty_customers SET points = $1, updated_at = $2 WHERE id = $3`, [newPoints, now, id]);
     await client.query(`UPDATE loyalty_cards SET points = $1, updated_at = $2 WHERE id = $3`, [newPoints, now, customer.cardId]);
 
-    const result = await client.query(`SELECT * FROM loyalty_customers WHERE id = $1`, [id]);
+    const result = await client.query<LoyaltyCustomerRow>(`SELECT * FROM loyalty_customers WHERE id = $1`, [id]);
     return rowToCustomer(result.rows[0]);
   });
 }
@@ -293,12 +387,12 @@ export async function deleteLoyaltyCustomer(id: string): Promise<boolean> {
 
 // ==================== Cards ====================
 
-function rowToCard(row: any): LoyaltyCard {
+function rowToCard(row: LoyaltyCardRow): LoyaltyCard {
   return {
     id: row.id,
     userId: row.user_id,
     customerId: row.customer_id,
-    businessId: row.business_id,
+    businessId: row.business_id ?? undefined,
     status: row.status,
     points: row.points ?? 0,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
@@ -307,22 +401,22 @@ function rowToCard(row: any): LoyaltyCard {
 }
 
 export async function getLoyaltyCardById(id: string): Promise<LoyaltyCard | null> {
-  const result = await query(`SELECT * FROM loyalty_cards WHERE id = $1`, [id]);
+  const result = await query<LoyaltyCardRow>(`SELECT * FROM loyalty_cards WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToCard(result.rows[0]) : null;
 }
 
 export async function getLoyaltyCardByCustomerId(customerId: string): Promise<LoyaltyCard | null> {
-  const result = await query(`SELECT * FROM loyalty_cards WHERE customer_id = $1`, [customerId]);
+  const result = await query<LoyaltyCardRow>(`SELECT * FROM loyalty_cards WHERE customer_id = $1`, [customerId]);
   return result.rows.length > 0 ? rowToCard(result.rows[0]) : null;
 }
 
 // ==================== Messages ====================
 
-function rowToMessage(row: any): LoyaltyMessage {
+function rowToMessage(row: LoyaltyMessageRow): LoyaltyMessage {
   return {
     id: row.id,
     userId: row.user_id,
-    customerId: row.customer_id,
+    customerId: row.customer_id ?? undefined,
     title: row.title,
     body: row.body,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
@@ -338,7 +432,7 @@ export async function createLoyaltyMessage(input: {
   const id = nanoid();
   const now = new Date();
 
-  const result = await query(`
+  const result = await query<LoyaltyMessageRow>(`
     INSERT INTO loyalty_messages (id, user_id, customer_id, title, body, created_at)
     VALUES ($1, $2, $3, $4, $5, $6)
     RETURNING *
@@ -348,7 +442,7 @@ export async function createLoyaltyMessage(input: {
 }
 
 export async function listLoyaltyMessages(userId: string): Promise<LoyaltyMessage[]> {
-  const result = await query(`SELECT * FROM loyalty_messages WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
+  const result = await query<LoyaltyMessageRow>(`SELECT * FROM loyalty_messages WHERE user_id = $1 ORDER BY created_at DESC`, [userId]);
   return result.rows.map(rowToMessage);
 }
 
@@ -358,7 +452,7 @@ export async function listLoyaltyMessagesForCustomer(input: {
   limit?: number;
 }): Promise<LoyaltyMessage[]> {
   const limit = input.limit ?? 100;
-  const result = await query(`
+  const result = await query<LoyaltyMessageRow>(`
     SELECT * FROM loyalty_messages 
     WHERE user_id = $1 AND (customer_id = $2 OR customer_id IS NULL)
     ORDER BY created_at DESC
@@ -369,14 +463,14 @@ export async function listLoyaltyMessagesForCustomer(input: {
 
 // ==================== Push Subscriptions ====================
 
-function rowToPushSub(row: any): LoyaltyPushSubscription {
+function rowToPushSub(row: LoyaltyPushSubscriptionRow): LoyaltyPushSubscription {
   return {
     id: row.id,
     userId: row.user_id,
     customerId: row.customer_id,
     endpoint: row.endpoint,
     keys: row.keys,
-    userAgent: row.user_agent,
+    userAgent: row.user_agent ?? undefined,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
@@ -396,7 +490,7 @@ export async function upsertLoyaltyPushSubscription(input: {
   const id = `${input.customerId}:${hashEndpoint(input.endpoint)}`;
   const now = new Date();
 
-  const result = await query(`
+  const result = await query<LoyaltyPushSubscriptionRow>(`
     INSERT INTO loyalty_push_subscriptions (id, user_id, customer_id, endpoint, keys, user_agent, created_at, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
     ON CONFLICT (id) DO UPDATE SET
@@ -411,12 +505,12 @@ export async function upsertLoyaltyPushSubscription(input: {
 }
 
 export async function listLoyaltyPushSubscriptionsByCustomer(customerId: string): Promise<LoyaltyPushSubscription[]> {
-  const result = await query(`SELECT * FROM loyalty_push_subscriptions WHERE customer_id = $1`, [customerId]);
+  const result = await query<LoyaltyPushSubscriptionRow>(`SELECT * FROM loyalty_push_subscriptions WHERE customer_id = $1`, [customerId]);
   return result.rows.map(rowToPushSub);
 }
 
 export async function listLoyaltyPushSubscriptionsByBusiness(userId: string): Promise<LoyaltyPushSubscription[]> {
-  const result = await query(`SELECT * FROM loyalty_push_subscriptions WHERE user_id = $1`, [userId]);
+  const result = await query<LoyaltyPushSubscriptionRow>(`SELECT * FROM loyalty_push_subscriptions WHERE user_id = $1`, [userId]);
   return result.rows.map(rowToPushSub);
 }
 
@@ -427,7 +521,7 @@ export async function removeLoyaltyPushSubscription(id: string): Promise<boolean
 
 // ==================== Apple Wallet Registrations ====================
 
-function rowToAppleWalletReg(row: any): AppleWalletRegistration {
+function rowToAppleWalletReg(row: AppleWalletRegistrationRow): AppleWalletRegistration {
   return {
     id: row.id,
     passTypeIdentifier: row.pass_type_identifier,
@@ -447,7 +541,7 @@ export async function upsertAppleWalletRegistration(input: {
   const id = `${input.passTypeIdentifier}:${input.serialNumber}:${input.deviceLibraryIdentifier}`;
   const now = new Date();
 
-  const result = await query(`
+  const result = await query<AppleWalletRegistrationRow>(`
     INSERT INTO apple_wallet_registrations (id, pass_type_identifier, serial_number, device_library_identifier, push_token, updated_at)
     VALUES ($1, $2, $3, $4, $5, $6)
     ON CONFLICT (id) DO UPDATE SET push_token = $5, updated_at = $6
@@ -471,7 +565,7 @@ export async function listAppleWalletRegistrationsForDevice(
   deviceLibraryIdentifier: string,
   passTypeIdentifier: string
 ): Promise<AppleWalletRegistration[]> {
-  const result = await query(`
+  const result = await query<AppleWalletRegistrationRow>(`
     SELECT * FROM apple_wallet_registrations
     WHERE device_library_identifier = $1 AND pass_type_identifier = $2
   `, [deviceLibraryIdentifier, passTypeIdentifier]);
@@ -482,7 +576,7 @@ export async function listAppleWalletRegistrationsForPass(
   passTypeIdentifier: string,
   serialNumber: string
 ): Promise<AppleWalletRegistration[]> {
-  const result = await query(`
+  const result = await query<AppleWalletRegistrationRow>(`
     SELECT * FROM apple_wallet_registrations
     WHERE pass_type_identifier = $1 AND serial_number = $2
   `, [passTypeIdentifier, serialNumber]);

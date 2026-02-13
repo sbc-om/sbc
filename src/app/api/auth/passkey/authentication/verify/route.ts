@@ -17,14 +17,14 @@ const bodySchema = z.object({
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { requestId, response } = bodySchema.parse(body);
+  const { requestId, response: authResponse } = bodySchema.parse(body);
 
   const challenge = await consumePasskeyChallenge(requestId);
   if (!challenge) {
     return NextResponse.json({ ok: false, error: "CHALLENGE_INVALID" }, { status: 400 });
   }
 
-  const credentialId = response?.id as string | undefined;
+  const credentialId = authResponse?.id as string | undefined;
   if (!credentialId) {
     return NextResponse.json({ ok: false, error: "CREDENTIAL_MISSING" }, { status: 400 });
   }
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   const expectedRPID = resolvePasskeyRpId(req);
 
   const verification = await verifyAuthenticationResponse({
-    response,
+    response: authResponse,
     expectedChallenge: challenge.challenge,
     expectedOrigin,
     expectedRPID,
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     sendLoginNotification(user.phone, "en", "passkey").catch(console.error);
   }
 
-  const response = NextResponse.json({
+  const authRes = NextResponse.json({
     ok: true,
     user: {
       id: user.id,
@@ -91,12 +91,12 @@ export async function POST(req: Request) {
     },
   });
 
-  response.cookies.set(cookieName, token, {
+  authRes.cookies.set(cookieName, token, {
     httpOnly: true,
     sameSite: "lax",
     secure,
     path: "/",
   });
 
-  return response;
+  return authRes;
 }

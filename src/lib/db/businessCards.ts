@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { z } from "zod";
 
-import { query, transaction } from "./postgres";
+import { query } from "./postgres";
 import type { BusinessCard } from "./types";
 
 const businessCardSchema = z.object({
@@ -19,7 +19,25 @@ const businessCardSchema = z.object({
 
 export type BusinessCardInput = z.infer<typeof businessCardSchema>;
 
-function rowToBusinessCard(row: any): BusinessCard {
+type BusinessCardRow = {
+  id: string;
+  business_id: string;
+  owner_id: string;
+  full_name: string;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  website: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  is_public: boolean | null;
+  is_approved: boolean | null;
+  approved_at: Date | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+function rowToBusinessCard(row: BusinessCardRow): BusinessCard {
   return {
     id: row.id,
     businessId: row.business_id,

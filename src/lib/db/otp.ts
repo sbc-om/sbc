@@ -93,7 +93,7 @@ export async function verifyOTP(
   const now = new Date();
 
   // Find the latest valid OTP for this phone and purpose
-  const result = await query(
+  const result = await query<OTPRow>(
     `SELECT * FROM otp_codes 
      WHERE phone = $1 AND purpose = $2 AND verified = false AND expires_at > $3
      ORDER BY created_at DESC LIMIT 1`,
@@ -132,14 +132,14 @@ export async function verifyOTP(
     [otp.id]
   );
 
-  return { success: true, userId: otp.user_id };
+  return { success: true, userId: otp.user_id ?? undefined };
 }
 
 /**
  * Get OTP record by ID
  */
 export async function getOTPById(id: string): Promise<OTPRecord | null> {
-  const result = await query(`SELECT * FROM otp_codes WHERE id = $1`, [id]);
+  const result = await query<OTPRow>(`SELECT * FROM otp_codes WHERE id = $1`, [id]);
   if (result.rows.length === 0) return null;
   return rowToOTP(result.rows[0]);
 }
@@ -171,7 +171,20 @@ export async function cleanupExpiredOTPs(): Promise<number> {
   return result.rowCount || 0;
 }
 
-function rowToOTP(row: any): OTPRecord {
+type OTPRow = {
+  id: string;
+  phone: string;
+  code: string;
+  purpose: OTPPurpose;
+  attempts: number;
+  max_attempts: number;
+  verified: boolean;
+  user_id: string | null;
+  created_at: Date | string;
+  expires_at: Date | string;
+};
+
+function rowToOTP(row: OTPRow): OTPRecord {
   return {
     id: row.id,
     phone: row.phone,

@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { query, transaction } from "./postgres";
-import type { Business, Locale, LocalizedString } from "./types";
+import type { Business, Locale } from "./types";
 
 const slugSchema = z
   .string()
@@ -53,12 +53,52 @@ export type BusinessInput = z.infer<typeof businessInputSchema>;
 
 export type BusinessMediaKind = "cover" | "logo" | "banner" | "gallery" | "video";
 
-function rowToBusiness(row: any): Business {
+type BusinessRow = {
+  id: string;
+  slug: string;
+  username: string | null;
+  owner_id: string | null;
+  name_en: string;
+  name_ar: string;
+  description_en: string | null;
+  description_ar: string | null;
+  is_approved: boolean | null;
+  is_verified: boolean | null;
+  is_special: boolean | null;
+  homepage_featured: boolean | null;
+  homepage_top: boolean | null;
+  category: string | null;
+  category_id: string | null;
+  city: string | null;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  email: string | null;
+  tags: string[] | null;
+  custom_domain: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  avatar_mode: Business["avatarMode"];
+  show_similar_businesses: boolean | null;
+  media: Business["media"] | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type OwnerIdRow = { owner_id: string };
+
+type BusinessCountRow = {
+  total: string;
+  pending: string;
+  approved: string;
+};
+
+function rowToBusiness(row: BusinessRow): Business {
   return {
     id: row.id,
     slug: row.slug,
-    username: row.username,
-    ownerId: row.owner_id,
+    username: row.username ?? undefined,
+    ownerId: row.owner_id ?? undefined,
     name: { en: row.name_en, ar: row.name_ar },
     description: row.description_en || row.description_ar
       ? { en: row.description_en || "", ar: row.description_ar || "" }
@@ -68,17 +108,17 @@ function rowToBusiness(row: any): Business {
     isSpecial: row.is_special ?? false,
     homepageFeatured: row.homepage_featured ?? false,
     homepageTop: row.homepage_top ?? false,
-    category: row.category,
-    categoryId: row.category_id,
-    city: row.city,
-    address: row.address,
-    phone: row.phone,
-    website: row.website,
-    email: row.email,
+    category: row.category ?? undefined,
+    categoryId: row.category_id ?? undefined,
+    city: row.city ?? undefined,
+    address: row.address ?? undefined,
+    phone: row.phone ?? undefined,
+    website: row.website ?? undefined,
+    email: row.email ?? undefined,
     tags: row.tags || [],
-    customDomain: row.custom_domain,
-    latitude: row.latitude,
-    longitude: row.longitude,
+    customDomain: row.custom_domain ?? undefined,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
     avatarMode: row.avatar_mode,
     showSimilarBusinesses: row.show_similar_businesses ?? true,
     media: row.media || {},
@@ -88,7 +128,7 @@ function rowToBusiness(row: any): Business {
 }
 
 export async function getBusinessById(id: string): Promise<Business | null> {
-  const result = await query(`SELECT * FROM businesses WHERE id = $1`, [id]);
+  const result = await query<BusinessRow>(`SELECT * FROM businesses WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
 }
 
@@ -96,7 +136,7 @@ export async function getBusinessBySlug(slug: string): Promise<Business | null> 
   const key = slugSchema.safeParse(slug);
   if (!key.success) return null;
 
-  const result = await query(`SELECT * FROM businesses WHERE slug = $1`, [key.data]);
+  const result = await query<BusinessRow>(`SELECT * FROM businesses WHERE slug = $1`, [key.data]);
   return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
 }
 
@@ -106,16 +146,16 @@ export async function getBusinessByUsername(username: string): Promise<Business 
   if (!key.success) return null;
 
   // Try username first
-  let result = await query(`SELECT * FROM businesses WHERE username = $1`, [key.data]);
+  let result = await query<BusinessRow>(`SELECT * FROM businesses WHERE username = $1`, [key.data]);
   if (result.rows.length > 0) return rowToBusiness(result.rows[0]);
 
   // Fall back to slug
-  result = await query(`SELECT * FROM businesses WHERE slug = $1`, [key.data]);
+  result = await query<BusinessRow>(`SELECT * FROM businesses WHERE slug = $1`, [key.data]);
   return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
 }
 
 export async function getBusinessByOwnerId(ownerId: string): Promise<Business | null> {
-  const result = await query(`SELECT * FROM businesses WHERE owner_id = $1 LIMIT 1`, [ownerId]);
+  const result = await query<BusinessRow>(`SELECT * FROM businesses WHERE owner_id = $1 LIMIT 1`, [ownerId]);
   return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
 }
 
@@ -123,11 +163,11 @@ export async function getBusinessByOwnerId(ownerId: string): Promise<Business | 
 export async function getOwnerIdsWithBusiness(userIds: string[]): Promise<Set<string>> {
   if (userIds.length === 0) return new Set();
   const placeholders = userIds.map((_, i) => `$${i + 1}`).join(", ");
-  const result = await query(
+  const result = await query<OwnerIdRow>(
     `SELECT DISTINCT owner_id FROM businesses WHERE owner_id IN (${placeholders})`,
     userIds
   );
-  return new Set(result.rows.map((r: any) => r.owner_id));
+  return new Set(result.rows.map((r) => r.owner_id));
 }
 
 /**
@@ -136,7 +176,7 @@ export async function getOwnerIdsWithBusiness(userIds: string[]): Promise<Set<st
 export async function getBusinessByDomain(domain: string): Promise<Business | null> {
   const normalized = domain.trim().toLowerCase();
   if (!normalized) return null;
-  const result = await query(`SELECT * FROM businesses WHERE custom_domain = $1`, [normalized]);
+  const result = await query<BusinessRow>(`SELECT * FROM businesses WHERE custom_domain = $1`, [normalized]);
   return result.rows.length > 0 ? rowToBusiness(result.rows[0]) : null;
 }
 
@@ -173,12 +213,12 @@ export async function checkDomainAvailability(
  */
 export async function getUserIdsWithBusiness(excludeBusinessId?: string): Promise<Set<string>> {
   const result = excludeBusinessId
-    ? await query(
+    ? await query<OwnerIdRow>(
         `SELECT DISTINCT owner_id FROM businesses WHERE owner_id IS NOT NULL AND id != $1`,
         [excludeBusinessId]
       )
-    : await query(`SELECT DISTINCT owner_id FROM businesses WHERE owner_id IS NOT NULL`);
-  return new Set(result.rows.map((row: any) => row.owner_id));
+    : await query<OwnerIdRow>(`SELECT DISTINCT owner_id FROM businesses WHERE owner_id IS NOT NULL`);
+  return new Set(result.rows.map((row) => row.owner_id));
 }
 
 export function normalizeBusinessUsername(input: string): string | null {
@@ -230,7 +270,7 @@ export async function checkBusinessUsernameAvailability(
 }
 
 export async function listBusinesses(): Promise<Business[]> {
-  const result = await query(`SELECT * FROM businesses ORDER BY created_at DESC`);
+  const result = await query<BusinessRow>(`SELECT * FROM businesses ORDER BY created_at DESC`);
   return result.rows.map(rowToBusiness);
 }
 
@@ -277,18 +317,18 @@ export async function listBusinessesPaginated(
   queryStr += ` ORDER BY created_at DESC LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
   params.push(limit, offset);
 
-  const result = await query(queryStr, params);
+  const result = await query<BusinessRow>(queryStr, params);
   return result.rows.map(rowToBusiness);
 }
 
 export async function countBusinesses(
   options: Omit<ListBusinessesOptions, "limit" | "offset"> = {}
 ): Promise<{ total: number; pending: number; approved: number }> {
-  const { filter = "all", search } = options;
+  const { search } = options;
   
   let baseCondition = `WHERE 1=1`;
   const params: string[] = [];
-  let paramIndex = 1;
+  const paramIndex = 1;
 
   if (search) {
     baseCondition += ` AND (
@@ -303,7 +343,7 @@ export async function countBusinesses(
     params.push(`%${search}%`);
   }
 
-  const result = await query(`
+  const result = await query<BusinessCountRow>(`
     SELECT 
       COUNT(*) as total,
       COUNT(*) FILTER (WHERE is_approved = false OR is_approved IS NULL) as pending,
@@ -319,7 +359,7 @@ export async function countBusinesses(
 }
 
 export async function listApprovedBusinesses(): Promise<Business[]> {
-  const result = await query(`SELECT * FROM businesses WHERE is_approved = true ORDER BY name_en`);
+  const result = await query<BusinessRow>(`SELECT * FROM businesses WHERE is_approved = true ORDER BY name_en`);
   return result.rows.map(rowToBusiness);
 }
 
@@ -342,7 +382,7 @@ export async function createBusiness(input: BusinessInput): Promise<Business> {
     }
   }
 
-  const result = await query(`
+  const result = await query<BusinessRow>(`
     INSERT INTO businesses (
       id, slug, username, owner_id, name_en, name_ar, description_en, description_ar,
       is_approved, is_verified, is_special, homepage_featured, homepage_top,
@@ -368,7 +408,7 @@ export async function createBusiness(input: BusinessInput): Promise<Business> {
 
 export async function updateBusiness(id: string, input: Partial<BusinessInput>): Promise<Business> {
   return transaction(async (client) => {
-    const currentRes = await client.query(`SELECT * FROM businesses WHERE id = $1 FOR UPDATE`, [id]);
+    const currentRes = await client.query<BusinessRow>(`SELECT * FROM businesses WHERE id = $1 FOR UPDATE`, [id]);
     if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
     const current = rowToBusiness(currentRes.rows[0]);
 
@@ -390,7 +430,7 @@ export async function updateBusiness(id: string, input: Partial<BusinessInput>):
       }
     }
 
-    const result = await client.query(`
+    const result = await client.query<BusinessRow>(`
       UPDATE businesses SET
         slug = COALESCE($1, slug),
         username = $2,
@@ -458,7 +498,7 @@ export async function deleteBusiness(id: string): Promise<boolean> {
 }
 
 export async function setBusinessApproved(id: string, isApproved: boolean): Promise<Business> {
-  const result = await query(`
+  const result = await query<BusinessRow>(`
     UPDATE businesses SET is_approved = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [isApproved, new Date(), id]);
 
@@ -467,7 +507,7 @@ export async function setBusinessApproved(id: string, isApproved: boolean): Prom
 }
 
 export async function setBusinessVerified(id: string, isVerified: boolean): Promise<Business> {
-  const result = await query(`
+  const result = await query<BusinessRow>(`
     UPDATE businesses SET is_verified = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [isVerified, new Date(), id]);
 
@@ -476,7 +516,7 @@ export async function setBusinessVerified(id: string, isVerified: boolean): Prom
 }
 
 export async function setBusinessSpecial(id: string, isSpecial: boolean): Promise<Business> {
-  const result = await query(`
+  const result = await query<BusinessRow>(`
     UPDATE businesses SET is_special = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [isSpecial, new Date(), id]);
 
@@ -485,7 +525,7 @@ export async function setBusinessSpecial(id: string, isSpecial: boolean): Promis
 }
 
 export async function setBusinessHomepageFeatured(id: string, homepageFeatured: boolean): Promise<Business> {
-  const result = await query(`
+  const result = await query<BusinessRow>(`
     UPDATE businesses SET homepage_featured = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [homepageFeatured, new Date(), id]);
 
@@ -494,7 +534,7 @@ export async function setBusinessHomepageFeatured(id: string, homepageFeatured: 
 }
 
 export async function setBusinessHomepageTop(id: string, homepageTop: boolean): Promise<Business> {
-  const result = await query(`
+  const result = await query<BusinessRow>(`
     UPDATE businesses SET homepage_top = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [homepageTop, new Date(), id]);
 
@@ -513,7 +553,7 @@ export async function setBusinessCustomDomain(id: string, customDomain: string |
     }
   }
   
-  const result = await query(`
+  const result = await query<BusinessRow>(`
     UPDATE businesses SET custom_domain = $1, updated_at = $2 WHERE id = $3 RETURNING *
   `, [normalized, new Date(), id]);
 
@@ -546,7 +586,7 @@ export async function setBusinessMedia(
       }
     }
 
-    const result = await client.query(`
+    const result = await client.query<BusinessRow>(`
       UPDATE businesses SET media = $1, updated_at = $2 WHERE id = $3 RETURNING *
     `, [JSON.stringify(media), new Date(), id]);
 
@@ -555,26 +595,26 @@ export async function setBusinessMedia(
 }
 
 export async function listBusinessesByCategory(categoryId: string): Promise<Business[]> {
-  const result = await query(`
+  const result = await query<BusinessRow>(`
     SELECT * FROM businesses WHERE category_id = $1 AND is_approved = true ORDER BY name_en
   `, [categoryId]);
   return result.rows.map(rowToBusiness);
 }
 
 export async function listBusinessesByOwner(ownerId: string): Promise<Business[]> {
-  const result = await query(`SELECT * FROM businesses WHERE owner_id = $1 ORDER BY created_at DESC`, [ownerId]);
+  const result = await query<BusinessRow>(`SELECT * FROM businesses WHERE owner_id = $1 ORDER BY created_at DESC`, [ownerId]);
   return result.rows.map(rowToBusiness);
 }
 
 export async function getBusinessesByIds(ids: string[]): Promise<Business[]> {
   if (ids.length === 0) return [];
-  const result = await query(`SELECT * FROM businesses WHERE id = ANY($1)`, [ids]);
+  const result = await query<BusinessRow>(`SELECT * FROM businesses WHERE id = ANY($1)`, [ids]);
   return result.rows.map(rowToBusiness);
 }
 
 export async function searchBusinesses(searchTerm: string, locale: Locale = "en"): Promise<Business[]> {
   const term = `%${searchTerm.toLowerCase()}%`;
-  const result = await query(`
+  const result = await query<BusinessRow>(`
     SELECT * FROM businesses
     WHERE is_approved = true AND (
       LOWER(name_en) LIKE $1 OR

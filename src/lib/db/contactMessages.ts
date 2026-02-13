@@ -14,7 +14,19 @@ const contactMessageSchema = z.object({
 
 export type ContactMessageInput = z.infer<typeof contactMessageSchema>;
 
-function rowToContactMessage(row: any): ContactMessage {
+type ContactMessageRow = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  locale: Locale;
+  is_read: boolean | null;
+  created_at: Date | null;
+  read_at: Date | null;
+};
+
+function rowToContactMessage(row: ContactMessageRow): ContactMessage {
   return {
     id: row.id,
     name: row.name,

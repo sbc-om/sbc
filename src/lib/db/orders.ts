@@ -75,15 +75,53 @@ export interface ProductSalesReport {
   totalRevenue: number;
 }
 
-function rowToOrder(row: any): Order {
+type OrderRow = {
+  id: string;
+  order_number: string;
+  user_id: string;
+  status: OrderStatus;
+  payment_method: PaymentMethod;
+  subtotal: string | number;
+  total: string | number;
+  currency: string;
+  wallet_transaction_id: string | null;
+  notes: string | null;
+  created_at: Date;
+  updated_at: Date;
+};
+
+type OrderItemRow = {
+  id: string;
+  order_id: string;
+  product_id: string;
+  product_slug: string;
+  product_name: string;
+  quantity: number;
+  unit_price: string | number;
+  total: string | number;
+  currency: string;
+  created_at: Date;
+};
+
+type OrderWithUserRow = OrderRow & {
+  email: string;
+  full_name: string;
+  phone: string | null;
+};
+
+function toNumber(value: string | number): number {
+  return typeof value === "number" ? value : parseFloat(value);
+}
+
+function rowToOrder(row: OrderRow): Order {
   return {
     id: row.id,
     orderNumber: row.order_number,
     userId: row.user_id,
     status: row.status as OrderStatus,
     paymentMethod: row.payment_method as PaymentMethod,
-    subtotal: parseFloat(row.subtotal),
-    total: parseFloat(row.total),
+    subtotal: toNumber(row.subtotal),
+    total: toNumber(row.total),
     currency: row.currency,
     walletTransactionId: row.wallet_transaction_id,
     notes: row.notes,
@@ -92,7 +130,7 @@ function rowToOrder(row: any): Order {
   };
 }
 
-function rowToOrderItem(row: any): OrderItem {
+function rowToOrderItem(row: OrderItemRow): OrderItem {
   return {
     id: row.id,
     orderId: row.order_id,
@@ -100,8 +138,8 @@ function rowToOrderItem(row: any): OrderItem {
     productSlug: row.product_slug,
     productName: row.product_name,
     quantity: row.quantity,
-    unitPrice: parseFloat(row.unit_price),
-    total: parseFloat(row.total),
+    unitPrice: toNumber(row.unit_price),
+    total: toNumber(row.total),
     currency: row.currency,
     createdAt: row.created_at,
   };
@@ -150,7 +188,7 @@ export async function createOrder(input: {
       const currency = input.items[0]?.currency || "OMR";
 
     // Create order
-    const orderResult = await client.query(
+    const orderResult = await client.query<OrderRow>(
       `INSERT INTO store_orders (
         id, order_number, user_id, status, payment_method, 
         subtotal, total, currency, wallet_transaction_id, notes, 
@@ -180,7 +218,7 @@ export async function createOrder(input: {
       const itemId = nanoid();
       const itemTotal = item.unitPrice * item.quantity;
       
-      const itemResult = await client.query(
+      const itemResult = await client.query<OrderItemRow>(
         `INSERT INTO store_order_items (
           id, order_id, product_id, product_slug, product_name,
           quantity, unit_price, total, currency, created_at
@@ -216,7 +254,7 @@ export async function createOrder(input: {
  * Get order by ID
  */
 export async function getOrderById(id: string): Promise<OrderWithItems | null> {
-  const orderResult = await query(
+  const orderResult = await query<OrderWithUserRow>(
     `SELECT o.*, u.email, u.full_name, u.phone 
      FROM store_orders o
      LEFT JOIN users u ON o.user_id = u.id
@@ -229,7 +267,7 @@ export async function getOrderById(id: string): Promise<OrderWithItems | null> {
   const row = orderResult.rows[0];
   const order = rowToOrder(row);
 
-  const itemsResult = await query(
+  const itemsResult = await query<OrderItemRow>(
     `SELECT * FROM store_order_items WHERE order_id = $1 ORDER BY created_at`,
     [id]
   );
@@ -250,7 +288,7 @@ export async function getOrderById(id: string): Promise<OrderWithItems | null> {
  * Get order by order number
  */
 export async function getOrderByNumber(orderNumber: string): Promise<OrderWithItems | null> {
-  const orderResult = await query(
+  const orderResult = await query<OrderWithUserRow>(
     `SELECT o.*, u.email, u.full_name, u.phone 
      FROM store_orders o
      LEFT JOIN users u ON o.user_id = u.id
@@ -263,7 +301,7 @@ export async function getOrderByNumber(orderNumber: string): Promise<OrderWithIt
   const row = orderResult.rows[0];
   const order = rowToOrder(row);
 
-  const itemsResult = await query(
+  const itemsResult = await query<OrderItemRow>(
     `SELECT * FROM store_order_items WHERE order_id = $1 ORDER BY created_at`,
     [order.id]
   );
@@ -284,7 +322,7 @@ export async function getOrderByNumber(orderNumber: string): Promise<OrderWithIt
  * List orders for a user
  */
 export async function listUserOrders(userId: string): Promise<OrderWithItems[]> {
-  const ordersResult = await query(
+  const ordersResult = await query<OrderRow>(
     `SELECT * FROM store_orders WHERE user_id = $1 ORDER BY created_at DESC`,
     [userId]
   );
@@ -292,7 +330,7 @@ export async function listUserOrders(userId: string): Promise<OrderWithItems[]> 
   const orders: OrderWithItems[] = [];
   for (const row of ordersResult.rows) {
     const order = rowToOrder(row);
-    const itemsResult = await query(
+    const itemsResult = await query<OrderItemRow>(
       `SELECT * FROM store_order_items WHERE order_id = $1`,
       [order.id]
     );
@@ -319,7 +357,7 @@ export async function listAllOrders(options?: {
     await initSchema(); // Ensure tables exist
     
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramIndex = 1;
 
     if (options?.status) {
@@ -350,7 +388,7 @@ export async function listAllOrders(options?: {
     const limit = options?.limit || 50;
     const offset = options?.offset || 0;
     
-    const ordersResult = await query(
+    const ordersResult = await query<OrderWithUserRow>(
       `SELECT o.*, u.email, u.full_name, u.phone 
        FROM store_orders o
        LEFT JOIN users u ON o.user_id = u.id
@@ -363,7 +401,7 @@ export async function listAllOrders(options?: {
     const orders: OrderWithItems[] = [];
     for (const row of ordersResult.rows) {
       const order = rowToOrder(row);
-      const itemsResult = await query(
+      const itemsResult = await query<OrderItemRow>(
         `SELECT * FROM store_order_items WHERE order_id = $1`,
         [order.id]
       );
@@ -397,7 +435,7 @@ export async function getOrderSummary(options?: {
     await initSchema(); // Ensure tables exist
     
     const conditions: string[] = [];
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramIndex = 1;
 
     if (options?.startDate) {
@@ -461,7 +499,7 @@ export async function getDailySalesReport(options?: {
     await initSchema(); // Ensure tables exist
     
     const conditions: string[] = ["o.status = 'completed'"];
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramIndex = 1;
 
     if (options?.startDate) {
@@ -516,7 +554,7 @@ export async function getProductSalesReport(options?: {
     await initSchema(); // Ensure tables exist
     
     const conditions: string[] = ["o.status = 'completed'"];
-    const params: any[] = [];
+    const params: unknown[] = [];
     let paramIndex = 1;
 
     if (options?.startDate) {
@@ -568,7 +606,7 @@ export async function updateOrderStatus(
   orderId: string,
   status: OrderStatus
 ): Promise<Order> {
-  const result = await query(
+  const result = await query<OrderRow>(
     `UPDATE store_orders 
      SET status = $1, updated_at = NOW() 
      WHERE id = $2 

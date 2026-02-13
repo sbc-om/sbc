@@ -5,9 +5,7 @@
 import pg from "pg";
 
 declare global {
-  // eslint-disable-next-line no-var
   var __sbcPgPool: pg.Pool | undefined;
-  // eslint-disable-next-line no-var
   var __sbcDbInitialized: boolean | undefined;
 }
 
@@ -57,13 +55,13 @@ async function doEnsureSchema(): Promise<void> {
   globalThis.__sbcDbInitialized = true;
 }
 
-export async function query<T extends pg.QueryResultRow = any>(
+export async function query<T extends pg.QueryResultRow = pg.QueryResultRow>(
   text: string,
-  params?: any[]
+  params?: readonly unknown[]
 ): Promise<pg.QueryResult<T>> {
   await ensureSchema();
   const pool = getPool();
-  return pool.query<T>(text, params);
+  return pool.query<T>(text, params ? [...params] : undefined);
 }
 
 export async function getClient(): Promise<pg.PoolClient> {

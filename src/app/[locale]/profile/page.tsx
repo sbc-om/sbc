@@ -34,7 +34,7 @@ export default async function ProfilePage({
     pendingPhone: user.pendingPhone ?? null,
     approvalStatus: user.approvalStatus ?? "approved",
     approvalReason: user.approvalReason ?? null,
-    role: user.role,
+    role: (user.role === "admin" ? "admin" : "user") as "admin" | "user",
     fullName: user.fullName,
     displayName: user.displayName ?? user.email.split("@")[0],
     bio: user.bio ?? "",

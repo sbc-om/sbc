@@ -4,21 +4,90 @@ import type { LoyaltyCardTemplate, LoyaltyIssuedCard } from "./types";
 
 // ==================== Card Templates ====================
 
-function rowToTemplate(row: any): LoyaltyCardTemplate {
+type LoyaltyTemplateRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  is_default: boolean | null;
+  design: LoyaltyCardTemplate["design"] | null;
+  pass_content: LoyaltyCardTemplate["passContent"] | null;
+  barcode: LoyaltyCardTemplate["barcode"] | null;
+  images: LoyaltyCardTemplate["images"] | null;
+  support: LoyaltyCardTemplate["support"] | null;
+  terms: string | null;
+  description: string | null;
+  notification_title: string | null;
+  notification_body: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type LoyaltyIssuedCardRow = {
+  id: string;
+  user_id: string;
+  template_id: string;
+  customer_id: string;
+  points: number | null;
+  status: LoyaltyIssuedCard["status"] | null;
+  member_id: string;
+  overrides: LoyaltyIssuedCard["overrides"] | null;
+  google_save_url: string | null;
+  apple_registered: boolean | null;
+  last_points_update: Date | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type LoyaltyIssuedCardWithTemplateRow = LoyaltyIssuedCardRow & {
+  t_id: string;
+  t_user_id: string;
+  t_name: string;
+  t_is_default: boolean | null;
+  t_design: LoyaltyCardTemplate["design"] | null;
+  t_pass_content: LoyaltyCardTemplate["passContent"] | null;
+  t_barcode: LoyaltyCardTemplate["barcode"] | null;
+  t_images: LoyaltyCardTemplate["images"] | null;
+  t_support: LoyaltyCardTemplate["support"] | null;
+  t_terms: string | null;
+  t_description: string | null;
+  t_notification_title: string | null;
+  t_notification_body: string | null;
+  t_created_at: Date | null;
+  t_updated_at: Date | null;
+};
+
+const DEFAULT_CARD_DESIGN: LoyaltyCardTemplate["design"] = {
+  primaryColor: "#0f172a",
+  secondaryColor: "#1e293b",
+  textColor: "#ffffff",
+  backgroundColor: "#0f172a",
+  backgroundStyle: "solid",
+  logoPosition: "top",
+  showBusinessName: true,
+  showCustomerName: true,
+  cornerRadius: 12,
+};
+
+const DEFAULT_PASS_CONTENT: LoyaltyCardTemplate["passContent"] = {
+  programName: "Loyalty Program",
+  pointsLabel: "Points",
+};
+
+function rowToTemplate(row: LoyaltyTemplateRow): LoyaltyCardTemplate {
   return {
     id: row.id,
     userId: row.user_id,
     name: row.name,
     isDefault: row.is_default ?? false,
-    design: row.design ?? {},
-    passContent: row.pass_content ?? {},
+    design: row.design ?? DEFAULT_CARD_DESIGN,
+    passContent: row.pass_content ?? DEFAULT_PASS_CONTENT,
     barcode: row.barcode ?? { format: "qr" },
     images: row.images ?? {},
     support: row.support ?? {},
-    terms: row.terms,
-    description: row.description,
-    notificationTitle: row.notification_title,
-    notificationBody: row.notification_body,
+    terms: row.terms ?? undefined,
+    description: row.description ?? undefined,
+    notificationTitle: row.notification_title ?? undefined,
+    notificationBody: row.notification_body ?? undefined,
     createdAt: row.created_at?.toISOString() ?? new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() ?? new Date().toISOString(),
   };
@@ -28,7 +97,7 @@ function rowToTemplate(row: any): LoyaltyCardTemplate {
  * Get all card templates for a user
  */
 export async function listLoyaltyCardTemplates(userId: string): Promise<LoyaltyCardTemplate[]> {
-  const result = await query(
+  const result = await query<LoyaltyTemplateRow>(
     `SELECT * FROM loyalty_card_templates WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC`,
     [userId]
   );
@@ -39,7 +108,7 @@ export async function listLoyaltyCardTemplates(userId: string): Promise<LoyaltyC
  * Get a single card template by ID
  */
 export async function getLoyaltyCardTemplateById(id: string): Promise<LoyaltyCardTemplate | null> {
-  const result = await query(`SELECT * FROM loyalty_card_templates WHERE id = $1`, [id]);
+  const result = await query<LoyaltyTemplateRow>(`SELECT * FROM loyalty_card_templates WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToTemplate(result.rows[0]) : null;
 }
 
@@ -47,14 +116,14 @@ export async function getLoyaltyCardTemplateById(id: string): Promise<LoyaltyCar
  * Get the default card template for a user
  */
 export async function getDefaultLoyaltyCardTemplate(userId: string): Promise<LoyaltyCardTemplate | null> {
-  const result = await query(
+  const result = await query<LoyaltyTemplateRow>(
     `SELECT * FROM loyalty_card_templates WHERE user_id = $1 AND is_default = true LIMIT 1`,
     [userId]
   );
   if (result.rows.length > 0) return rowToTemplate(result.rows[0]);
   
   // If no default, return the first template
-  const fallback = await query(
+  const fallback = await query<LoyaltyTemplateRow>(
     `SELECT * FROM loyalty_card_templates WHERE user_id = $1 ORDER BY created_at ASC LIMIT 1`,
     [userId]
   );
@@ -90,7 +159,7 @@ export async function createLoyaltyCardTemplate(input: {
       );
     }
 
-    const result = await client.query(`
+    const result = await client.query<LoyaltyTemplateRow>(`
       INSERT INTO loyalty_card_templates (
         id, user_id, name, is_default, design, pass_content, barcode, images, support,
         terms, description, notification_title, notification_body, created_at, updated_at
@@ -138,7 +207,7 @@ export async function updateLoyaltyCardTemplate(
       );
     }
 
-    const result = await client.query(`
+    const result = await client.query<LoyaltyTemplateRow>(`
       UPDATE loyalty_card_templates SET
         name = COALESCE($2, name),
         is_default = COALESCE($3, is_default),
@@ -184,7 +253,7 @@ export async function deleteLoyaltyCardTemplate(id: string): Promise<boolean> {
 
 // ==================== Issued Cards ====================
 
-function rowToIssuedCard(row: any): LoyaltyIssuedCard {
+function rowToIssuedCard(row: LoyaltyIssuedCardRow): LoyaltyIssuedCard {
   return {
     id: row.id,
     userId: row.user_id,
@@ -193,8 +262,8 @@ function rowToIssuedCard(row: any): LoyaltyIssuedCard {
     points: row.points ?? 0,
     status: row.status ?? "active",
     memberId: row.member_id,
-    overrides: row.overrides,
-    googleSaveUrl: row.google_save_url,
+    overrides: row.overrides ?? undefined,
+    googleSaveUrl: row.google_save_url ?? undefined,
     appleRegistered: row.apple_registered ?? false,
     lastPointsUpdate: row.last_points_update?.toISOString(),
     createdAt: row.created_at?.toISOString() ?? new Date().toISOString(),
@@ -229,7 +298,7 @@ export async function listLoyaltyIssuedCards(input: {
   offset?: number;
 }): Promise<LoyaltyIssuedCard[]> {
   let sql = `SELECT * FROM loyalty_issued_cards WHERE user_id = $1`;
-  const params: any[] = [input.userId];
+  const params: unknown[] = [input.userId];
   let paramIndex = 2;
 
   if (input.templateId) {
@@ -252,7 +321,7 @@ export async function listLoyaltyIssuedCards(input: {
     params.push(input.offset);
   }
 
-  const result = await query(sql, params);
+  const result = await query<LoyaltyIssuedCardRow>(sql, params);
   return result.rows.map(rowToIssuedCard);
 }
 
@@ -260,7 +329,7 @@ export async function listLoyaltyIssuedCards(input: {
  * Get an issued card by ID
  */
 export async function getLoyaltyIssuedCardById(id: string): Promise<LoyaltyIssuedCard | null> {
-  const result = await query(`SELECT * FROM loyalty_issued_cards WHERE id = $1`, [id]);
+  const result = await query<LoyaltyIssuedCardRow>(`SELECT * FROM loyalty_issued_cards WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToIssuedCard(result.rows[0]) : null;
 }
 
@@ -268,7 +337,7 @@ export async function getLoyaltyIssuedCardById(id: string): Promise<LoyaltyIssue
  * Get an issued card by customer ID
  */
 export async function getLoyaltyIssuedCardByCustomerId(customerId: string): Promise<LoyaltyIssuedCard | null> {
-  const result = await query(`SELECT * FROM loyalty_issued_cards WHERE customer_id = $1`, [customerId]);
+  const result = await query<LoyaltyIssuedCardRow>(`SELECT * FROM loyalty_issued_cards WHERE customer_id = $1`, [customerId]);
   return result.rows.length > 0 ? rowToIssuedCard(result.rows[0]) : null;
 }
 
@@ -276,7 +345,7 @@ export async function getLoyaltyIssuedCardByCustomerId(customerId: string): Prom
  * Get an issued card by member ID
  */
 export async function getLoyaltyIssuedCardByMemberId(userId: string, memberId: string): Promise<LoyaltyIssuedCard | null> {
-  const result = await query(
+  const result = await query<LoyaltyIssuedCardRow>(
     `SELECT * FROM loyalty_issued_cards WHERE user_id = $1 AND member_id = $2`,
     [userId, memberId]
   );
@@ -298,7 +367,7 @@ export async function issueNewLoyaltyCard(input: {
   const now = new Date();
   const memberId = input.memberId || generateMemberId();
 
-  const result = await query(`
+  const result = await query<LoyaltyIssuedCardRow>(`
     INSERT INTO loyalty_issued_cards (
       id, user_id, template_id, customer_id, points, status, member_id, overrides,
       created_at, updated_at
@@ -326,7 +395,7 @@ export async function updateIssuedCardPoints(
   points: number
 ): Promise<LoyaltyIssuedCard | null> {
   const now = new Date();
-  const result = await query(`
+  const result = await query<LoyaltyIssuedCardRow>(`
     UPDATE loyalty_issued_cards 
     SET points = $2, last_points_update = $3, updated_at = $3
     WHERE id = $1
@@ -344,7 +413,7 @@ export async function addPointsToIssuedCard(
   pointsToAdd: number
 ): Promise<LoyaltyIssuedCard | null> {
   const now = new Date();
-  const result = await query(`
+  const result = await query<LoyaltyIssuedCardRow>(`
     UPDATE loyalty_issued_cards 
     SET points = points + $2, last_points_update = $3, updated_at = $3
     WHERE id = $1
@@ -362,7 +431,7 @@ export async function deductPointsFromIssuedCard(
   pointsToDeduct: number
 ): Promise<LoyaltyIssuedCard | null> {
   const now = new Date();
-  const result = await query(`
+  const result = await query<LoyaltyIssuedCardRow>(`
     UPDATE loyalty_issued_cards 
     SET points = GREATEST(0, points - $2), last_points_update = $3, updated_at = $3
     WHERE id = $1
@@ -380,7 +449,7 @@ export async function updateIssuedCardStatus(
   status: LoyaltyIssuedCard["status"]
 ): Promise<LoyaltyIssuedCard | null> {
   const now = new Date();
-  const result = await query(`
+  const result = await query<LoyaltyIssuedCardRow>(`
     UPDATE loyalty_issued_cards 
     SET status = $2, updated_at = $3
     WHERE id = $1
@@ -435,7 +504,7 @@ export async function getIssuedCardWithTemplate(cardId: string): Promise<{
   card: LoyaltyIssuedCard;
   template: LoyaltyCardTemplate;
 } | null> {
-  const result = await query(`
+  const result = await query<LoyaltyIssuedCardWithTemplateRow>(`
     SELECT 
       c.*,
       t.id as t_id, t.user_id as t_user_id, t.name as t_name, t.is_default as t_is_default,
@@ -459,15 +528,15 @@ export async function getIssuedCardWithTemplate(cardId: string): Promise<{
       userId: row.t_user_id,
       name: row.t_name,
       isDefault: row.t_is_default ?? false,
-      design: row.t_design ?? {},
-      passContent: row.t_pass_content ?? {},
+      design: row.t_design ?? DEFAULT_CARD_DESIGN,
+      passContent: row.t_pass_content ?? DEFAULT_PASS_CONTENT,
       barcode: row.t_barcode ?? { format: "qr" },
       images: row.t_images ?? {},
       support: row.t_support ?? {},
-      terms: row.t_terms,
-      description: row.t_description,
-      notificationTitle: row.t_notification_title,
-      notificationBody: row.t_notification_body,
+      terms: row.t_terms ?? undefined,
+      description: row.t_description ?? undefined,
+      notificationTitle: row.t_notification_title ?? undefined,
+      notificationBody: row.t_notification_body ?? undefined,
       createdAt: row.t_created_at?.toISOString() ?? new Date().toISOString(),
       updatedAt: row.t_updated_at?.toISOString() ?? new Date().toISOString(),
     },

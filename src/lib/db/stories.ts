@@ -39,13 +39,70 @@ export type BusinessWithStories = {
   hasUnviewed: boolean;
 };
 
-function rowToStory(row: any): Story {
+type StoryRow = {
+  id: string;
+  business_id: string;
+  media_url: string;
+  media_type: "image" | "video";
+  caption: string | null;
+  overlays: StoryOverlays | null;
+  created_at: Date | null;
+  expires_at: Date | null;
+  view_count: number | null;
+};
+
+type StoryWithBusinessRow = StoryRow & {
+  name_en: string | null;
+  name_ar: string | null;
+  media: { logo?: string | null } | null;
+  username: string | null;
+};
+
+type FollowedStoryRow = StoryWithBusinessRow & {
+  is_followed: boolean;
+  is_unfollowed: boolean;
+  category_followed: boolean;
+};
+
+type StoryViewRow = {
+  id: string;
+  story_id: string;
+  user_id: string;
+  viewed_at: Date | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  username: string | null;
+};
+
+type StoryLikeRow = {
+  id: string;
+  story_id: string;
+  user_id: string;
+  created_at: Date | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  username: string | null;
+};
+
+type StoryCommentRow = {
+  id: string;
+  story_id: string;
+  user_id: string;
+  text: string;
+  created_at: Date | null;
+  updated_at: Date | null;
+  full_name: string | null;
+  avatar_url: string | null;
+  username: string | null;
+};
+
+function rowToStory(row: StoryRow): Story {
   return {
     id: row.id,
     businessId: row.business_id,
     mediaUrl: row.media_url,
     mediaType: row.media_type,
-    caption: row.caption,
+    caption: row.caption ?? undefined,
     overlays: row.overlays || undefined,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     expiresAt: row.expires_at?.toISOString() || new Date().toISOString(),
@@ -53,13 +110,13 @@ function rowToStory(row: any): Story {
   };
 }
 
-function rowToStoryWithBusiness(row: any): StoryWithBusiness {
+function rowToStoryWithBusiness(row: StoryWithBusinessRow): StoryWithBusiness {
   // media is stored as JSONB, extract logo from it
-  const media = row.media || {};
+  const mediaLogo = row.media?.logo ?? null;
   return {
     ...rowToStory(row),
     businessName: { en: row.name_en || "", ar: row.name_ar || "" },
-    businessAvatar: media.logo || null,
+    businessAvatar: mediaLogo,
     businessUsername: row.username,
   };
 }
@@ -78,7 +135,7 @@ export async function createStory(input: {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
 
-  const result = await query(`
+  const result = await query<StoryRow>(`
     INSERT INTO stories (id, business_id, media_url, media_type, caption, overlays, created_at, expires_at, view_count)
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0)
     RETURNING *
@@ -91,7 +148,7 @@ export async function createStory(input: {
  * Get a story by ID
  */
 export async function getStoryById(id: string): Promise<Story | null> {
-  const result = await query(`SELECT * FROM stories WHERE id = $1`, [id]);
+  const result = await query<StoryRow>(`SELECT * FROM stories WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToStory(result.rows[0]) : null;
 }
 
@@ -99,7 +156,7 @@ export async function getStoryById(id: string): Promise<Story | null> {
  * Get all active stories for a business (not expired)
  */
 export async function getActiveStoriesByBusiness(businessId: string): Promise<Story[]> {
-  const result = await query(`
+  const result = await query<StoryRow>(`
     SELECT * FROM stories 
     WHERE business_id = $1 AND expires_at > NOW()
     ORDER BY created_at DESC
@@ -111,7 +168,7 @@ export async function getActiveStoriesByBusiness(businessId: string): Promise<St
  * Get all active stories with business info
  */
 export async function listActiveStoriesWithBusiness(): Promise<StoryWithBusiness[]> {
-  const result = await query(`
+  const result = await query<StoryWithBusinessRow>(`
     SELECT s.*, b.name_en, b.name_ar, b.media, b.username
     FROM stories s
     JOIN businesses b ON s.business_id = b.id
@@ -190,7 +247,7 @@ export async function listFollowedBusinessesWithActiveStoriesWithCategory(
   userId: string
 ): Promise<BusinessWithStories[]> {
   // Get stories with business category info
-  const result = await query(`
+  const result = await query<FollowedStoryRow>(`
     SELECT s.*, b.name_en, b.name_ar, b.media, b.username, b.category_id,
            EXISTS(SELECT 1 FROM user_business_follows WHERE user_id = $1 AND business_id = b.id) as is_followed,
            EXISTS(SELECT 1 FROM user_business_unfollows WHERE user_id = $1 AND business_id = b.id) as is_unfollowed,
@@ -202,7 +259,7 @@ export async function listFollowedBusinessesWithActiveStoriesWithCategory(
   `, [userId]);
   
   // Filter: include if (followed OR category_followed) AND NOT unfollowed
-  const filteredRows = result.rows.filter((row: any) => {
+  const filteredRows = result.rows.filter((row) => {
     if (row.is_unfollowed) return false;
     return row.is_followed || row.category_followed;
   });
@@ -296,15 +353,15 @@ export type StoryView = {
   userUsername?: string;
 };
 
-function rowToStoryView(row: any): StoryView {
+function rowToStoryView(row: StoryViewRow): StoryView {
   return {
     id: row.id,
     storyId: row.story_id,
     userId: row.user_id,
     viewedAt: row.viewed_at?.toISOString() || new Date().toISOString(),
-    userFullName: row.full_name,
-    userAvatar: row.avatar_url,
-    userUsername: row.username,
+    userFullName: row.full_name ?? undefined,
+    userAvatar: row.avatar_url ?? undefined,
+    userUsername: row.username ?? undefined,
   };
 }
 
@@ -327,7 +384,7 @@ export async function recordStoryView(storyId: string, userId: string): Promise<
  * Get viewers for a story with user info
  */
 export async function getStoryViewers(storyId: string): Promise<StoryView[]> {
-  const result = await query(`
+  const result = await query<StoryViewRow>(`
     SELECT sv.*, u.full_name, u.avatar_url, u.username
     FROM story_views sv
     JOIN users u ON sv.user_id = u.id
@@ -372,15 +429,15 @@ export type StoryLike = {
   userUsername?: string;
 };
 
-function rowToStoryLike(row: any): StoryLike {
+function rowToStoryLike(row: StoryLikeRow): StoryLike {
   return {
     id: row.id,
     storyId: row.story_id,
     userId: row.user_id,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
-    userFullName: row.full_name,
-    userAvatar: row.avatar_url,
-    userUsername: row.username,
+    userFullName: row.full_name ?? undefined,
+    userAvatar: row.avatar_url ?? undefined,
+    userUsername: row.username ?? undefined,
   };
 }
 
@@ -412,7 +469,7 @@ export async function unlikeStory(storyId: string, userId: string): Promise<bool
  * Get likers for a story with user info
  */
 export async function getStoryLikers(storyId: string): Promise<StoryLike[]> {
-  const result = await query(`
+  const result = await query<StoryLikeRow>(`
     SELECT sl.*, u.full_name, u.avatar_url, u.username
     FROM story_likes sl
     JOIN users u ON sl.user_id = u.id
@@ -459,7 +516,7 @@ export type StoryComment = {
   userUsername?: string;
 };
 
-function rowToStoryComment(row: any): StoryComment {
+function rowToStoryComment(row: StoryCommentRow): StoryComment {
   return {
     id: row.id,
     storyId: row.story_id,
@@ -467,9 +524,9 @@ function rowToStoryComment(row: any): StoryComment {
     text: row.text,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
-    userFullName: row.full_name,
-    userAvatar: row.avatar_url,
-    userUsername: row.username,
+    userFullName: row.full_name ?? undefined,
+    userAvatar: row.avatar_url ?? undefined,
+    userUsername: row.username ?? undefined,
   };
 }
 
@@ -484,7 +541,7 @@ export async function addStoryComment(storyId: string, userId: string, text: str
   `, [id, storyId, userId, text]);
   
   // Fetch the comment with user info
-  const result = await query(`
+  const result = await query<StoryCommentRow>(`
     SELECT sc.*, u.full_name, u.avatar_url, u.username
     FROM story_comments sc
     JOIN users u ON sc.user_id = u.id
@@ -508,7 +565,7 @@ export async function deleteStoryComment(commentId: string): Promise<boolean> {
  * Get a comment by ID with user info
  */
 export async function getStoryCommentById(commentId: string): Promise<StoryComment | null> {
-  const result = await query(`
+  const result = await query<StoryCommentRow>(`
     SELECT sc.*, u.full_name, u.avatar_url, u.username
     FROM story_comments sc
     JOIN users u ON sc.user_id = u.id
@@ -521,7 +578,7 @@ export async function getStoryCommentById(commentId: string): Promise<StoryComme
  * Get comments for a story with user info
  */
 export async function getStoryComments(storyId: string): Promise<StoryComment[]> {
-  const result = await query(`
+  const result = await query<StoryCommentRow>(`
     SELECT sc.*, u.full_name, u.avatar_url, u.username
     FROM story_comments sc
     JOIN users u ON sc.user_id = u.id

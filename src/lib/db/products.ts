@@ -51,7 +51,27 @@ const productSchema = z.object({
 
 export type ProductInput = z.infer<typeof productSchema>;
 
-function rowToProduct(row: any): Product {
+type ProductRow = {
+  id: string;
+  slug: string;
+  name_en: string;
+  name_ar: string;
+  description_en: string | null;
+  description_ar: string | null;
+  price: string | number | null;
+  currency: string | null;
+  program: string;
+  plan: string | null;
+  duration_days: number | null;
+  features: string[] | null;
+  badges: string[] | null;
+  is_active: boolean | null;
+  sort_order: number | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+function rowToProduct(row: ProductRow): Product {
   return {
     id: row.id,
     slug: row.slug,
@@ -59,7 +79,7 @@ function rowToProduct(row: any): Product {
     description: row.description_en || row.description_ar
       ? { en: row.description_en || "", ar: row.description_ar || "" }
       : undefined,
-    price: parseFloat(row.price) || 0,
+    price: parseFloat(String(row.price ?? "0")) || 0,
     currency: row.currency || "OMR",
     program: row.program,
     plan: row.plan || "basic",

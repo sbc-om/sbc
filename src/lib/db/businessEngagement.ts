@@ -65,7 +65,19 @@ export async function getUserSavedBusinessIds(userId: string): Promise<string[]>
 import { nanoid } from "nanoid";
 import type { BusinessComment, BusinessCommentStatus } from "./types";
 
-function rowToComment(row: any): BusinessComment {
+type BusinessCommentRow = {
+  id: string;
+  business_id: string;
+  user_id: string;
+  text: string;
+  status: BusinessCommentStatus;
+  moderated_by_user_id: string | null;
+  moderated_at: Date | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+function rowToComment(row: BusinessCommentRow): BusinessComment {
   return {
     id: row.id,
     businessId: row.business_id,

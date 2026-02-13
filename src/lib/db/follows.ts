@@ -1,24 +1,67 @@
 import { query } from "./postgres";
 import type { Category, Business } from "./types";
 
-function rowToCategory(row: any): Category {
+type CategoryRow = {
+  id: string;
+  slug: string;
+  name_en: string;
+  name_ar: string;
+  image: string | null;
+  icon_id: string | null;
+  parent_id: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type BusinessRow = {
+  id: string;
+  slug: string;
+  username: string | null;
+  owner_id: string;
+  name_en: string;
+  name_ar: string;
+  description_en: string | null;
+  description_ar: string | null;
+  is_approved: boolean | null;
+  is_verified: boolean | null;
+  is_special: boolean | null;
+  homepage_featured: boolean | null;
+  homepage_top: boolean | null;
+  category: string | null;
+  category_id: string | null;
+  city: string | null;
+  address: string | null;
+  phone: string | null;
+  website: string | null;
+  email: string | null;
+  tags: string[] | null;
+  latitude: number | null;
+  longitude: number | null;
+  avatar_mode: Business["avatarMode"];
+  show_similar_businesses: boolean | null;
+  media: Business["media"] | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+function rowToCategory(row: CategoryRow): Category {
   return {
     id: row.id,
     slug: row.slug,
     name: { en: row.name_en, ar: row.name_ar },
-    image: row.image,
-    iconId: row.icon_id,
-    parentId: row.parent_id,
+    image: row.image ?? undefined,
+    iconId: row.icon_id ?? undefined,
+    parentId: row.parent_id ?? undefined,
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: row.updated_at?.toISOString() || new Date().toISOString(),
   };
 }
 
-function rowToBusiness(row: any): Business {
+function rowToBusiness(row: BusinessRow): Business {
   return {
     id: row.id,
     slug: row.slug,
-    username: row.username,
+    username: row.username ?? undefined,
     ownerId: row.owner_id,
     name: { en: row.name_en, ar: row.name_ar },
     description: row.description_en || row.description_ar
@@ -29,16 +72,16 @@ function rowToBusiness(row: any): Business {
     isSpecial: row.is_special ?? false,
     homepageFeatured: row.homepage_featured ?? false,
     homepageTop: row.homepage_top ?? false,
-    category: row.category,
-    categoryId: row.category_id,
-    city: row.city,
-    address: row.address,
-    phone: row.phone,
-    website: row.website,
-    email: row.email,
+    category: row.category ?? undefined,
+    categoryId: row.category_id ?? undefined,
+    city: row.city ?? undefined,
+    address: row.address ?? undefined,
+    phone: row.phone ?? undefined,
+    website: row.website ?? undefined,
+    email: row.email ?? undefined,
     tags: row.tags || [],
-    latitude: row.latitude,
-    longitude: row.longitude,
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
     avatarMode: row.avatar_mode,
     showSimilarBusinesses: row.show_similar_businesses ?? true,
     media: row.media || {},
@@ -67,7 +110,7 @@ export async function isFollowingCategory(userId: string, categoryId: string): P
 }
 
 export async function getUserFollowedCategories(userId: string): Promise<Category[]> {
-  const result = await query(`
+  const result = await query<CategoryRow>(`
     SELECT c.* FROM categories c
     INNER JOIN user_category_follows f ON c.id = f.category_id
     WHERE f.user_id = $1
@@ -77,10 +120,10 @@ export async function getUserFollowedCategories(userId: string): Promise<Categor
 }
 
 export async function getUserFollowedCategoryIds(userId: string): Promise<string[]> {
-  const result = await query(`
+  const result = await query<{ category_id: string }>(`
     SELECT category_id FROM user_category_follows WHERE user_id = $1
   `, [userId]);
-  return result.rows.map((row: { category_id: string }) => row.category_id);
+  return result.rows.map((row) => row.category_id);
 }
 
 export async function getCategoryFollowerCount(categoryId: string): Promise<number> {
@@ -168,7 +211,7 @@ export async function getBusinessFollowStatus(
  * Get all businesses the user has explicitly followed
  */
 export async function getUserFollowedBusinesses(userId: string): Promise<Business[]> {
-  const result = await query(`
+  const result = await query<BusinessRow>(`
     SELECT b.* FROM businesses b
     INNER JOIN user_business_follows f ON b.id = f.business_id
     WHERE f.user_id = $1 AND b.is_approved = true
@@ -181,20 +224,20 @@ export async function getUserFollowedBusinesses(userId: string): Promise<Busines
  * Get IDs of businesses the user has explicitly followed
  */
 export async function getUserFollowedBusinessIds(userId: string): Promise<string[]> {
-  const result = await query(`
+  const result = await query<{ business_id: string }>(`
     SELECT business_id FROM user_business_follows WHERE user_id = $1
   `, [userId]);
-  return result.rows.map((row: { business_id: string }) => row.business_id);
+  return result.rows.map((row) => row.business_id);
 }
 
 /**
  * Get IDs of businesses the user has unfollowed (hidden)
  */
 export async function getUserUnfollowedBusinessIds(userId: string): Promise<string[]> {
-  const result = await query(`
+  const result = await query<{ business_id: string }>(`
     SELECT business_id FROM user_business_unfollows WHERE user_id = $1
   `, [userId]);
-  return result.rows.map((row: { business_id: string }) => row.business_id);
+  return result.rows.map((row) => row.business_id);
 }
 
 /**

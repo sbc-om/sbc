@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { query, transaction } from "./postgres";
-import type { Category, Locale, LocalizedString } from "./types";
+import type { Category, LocalizedString } from "./types";
 
 const slugSchema = z
   .string()
@@ -15,7 +15,23 @@ const localizedStringSchema = z.object({
   ar: z.string().trim().min(1),
 });
 
-function rowToCategory(row: any): Category {
+type CategoryRow = {
+  id: string;
+  slug: string;
+  name_en: string;
+  name_ar: string;
+  image: string | null;
+  icon_id: string | null;
+  parent_id: string | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type CategoryWithCountRow = CategoryRow & {
+  business_count: number;
+};
+
+function rowToCategory(row: CategoryRow): Category {
   return {
     id: row.id,
     slug: row.slug,
@@ -170,7 +186,7 @@ export async function getCategoriesWithCount(): Promise<(Category & { businessCo
     ORDER BY c.name_en
   `);
 
-  return result.rows.map((row: any) => ({
+  return result.rows.map((row: CategoryWithCountRow) => ({
     ...rowToCategory(row),
     businessCount: row.business_count,
   }));

@@ -11,7 +11,28 @@ export type PasskeyChallenge = {
   expiresAt: string;
 };
 
-function rowToCredential(row: any): PasskeyCredential {
+type PasskeyCredentialRow = {
+  id: string;
+  user_id: string;
+  public_key: string;
+  counter: number | null;
+  transports: PasskeyCredential["transports"];
+  device_type: PasskeyCredential["deviceType"];
+  backed_up: boolean | null;
+  label: string | null;
+  created_at: Date | null;
+  last_used_at: Date | null;
+};
+
+type PasskeyChallengeRow = {
+  id: string;
+  challenge: string;
+  user_id: string | null;
+  created_at: Date | null;
+  expires_at: Date | null;
+};
+
+function rowToCredential(row: PasskeyCredentialRow): PasskeyCredential {
   return {
     id: row.id,
     userId: row.user_id,
@@ -26,7 +47,7 @@ function rowToCredential(row: any): PasskeyCredential {
   };
 }
 
-function rowToChallenge(row: any): PasskeyChallenge {
+function rowToChallenge(row: PasskeyChallengeRow): PasskeyChallenge {
   return {
     id: row.id,
     challenge: row.challenge,
