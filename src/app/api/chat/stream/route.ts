@@ -11,7 +11,7 @@ const connections = new Map<string, Set<ReadableStreamDefaultController>>();
 /**
  * Broadcast a message to all listeners of a conversation
  */
-export function broadcastToConversation(conversationId: string, data: any) {
+export function broadcastToConversation(conversationId: string, data: unknown) {
   const listeners = connections.get(conversationId);
   if (!listeners) return;
 

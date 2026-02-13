@@ -6,6 +6,10 @@ import { getBusinessById } from "@/lib/db/businesses";
 
 export const runtime = "nodejs";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Internal server error";
+}
+
 /**
  * @swagger
  * /api/stories/{id}/view:
@@ -49,9 +53,9 @@ export async function POST(
     await recordStoryView(storyId, user.id);
 
     return NextResponse.json({ ok: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[story-view] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -105,8 +109,8 @@ export async function GET(
     const viewers = await getStoryViewers(storyId);
 
     return NextResponse.json({ ok: true, data: viewers });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[story-view] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

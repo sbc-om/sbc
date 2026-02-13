@@ -13,6 +13,10 @@ import { getBusinessById } from "@/lib/db/businesses";
 
 export const runtime = "nodejs";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Internal server error";
+}
+
 const commentSchema = z.object({
   text: z.string().min(1).max(500),
 });
@@ -75,9 +79,9 @@ export async function POST(
     const comment = await addStoryComment(storyId, user.id, validation.data.text);
 
     return NextResponse.json({ ok: true, data: comment }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[story-comment] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -119,9 +123,9 @@ export async function GET(
     const comments = await getStoryComments(storyId);
 
     return NextResponse.json({ ok: true, data: comments });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[story-comment] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -208,8 +212,8 @@ export async function DELETE(
     await deleteStoryComment(commentId);
 
     return NextResponse.json({ ok: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[story-comment] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

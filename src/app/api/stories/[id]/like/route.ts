@@ -13,6 +13,10 @@ import { getBusinessById } from "@/lib/db/businesses";
 
 export const runtime = "nodejs";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Internal server error";
+}
+
 /**
  * @swagger
  * /api/stories/{id}/like:
@@ -60,9 +64,9 @@ export async function POST(
       ok: true, 
       data: { liked, likeCount } 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[story-like] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -108,9 +112,9 @@ export async function DELETE(
       ok: true, 
       data: { liked: false, likeCount } 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[story-like] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -178,8 +182,8 @@ export async function GET(
         data: { userLiked, likeCount } 
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[story-like] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

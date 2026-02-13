@@ -6,6 +6,10 @@ import { getBusinessById } from "@/lib/db/businesses";
 
 export const runtime = "nodejs";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Internal server error";
+}
+
 /**
  * @swagger
  * /api/stories/{id}/stats:
@@ -62,8 +66,8 @@ export async function GET(
         stats,
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[story-stats] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

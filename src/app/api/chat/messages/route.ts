@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getConversationMessages, sendMessage, getOrCreateConversation, markMessagesAsRead, type MessageType } from "@/lib/db/chats";
+import { getConversationMessages, sendMessage, getOrCreateConversation, type MessageType } from "@/lib/db/chats";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getBusinessBySlug, getBusinessByUsername, getBusinessById } from "@/lib/db/businesses";
-import { getUserByUsername, getUserById, getUserByUsernameOrId } from "@/lib/db/users";
+import { getUserByUsernameOrId } from "@/lib/db/users";
 import { broadcastToConversation } from "../stream/route";
 import { broadcastToUsers } from "../user-stream/route";
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unexpected error";
+}
 
 const getSchema = z.object({
   conversationId: z.string().min(1),
@@ -61,10 +65,10 @@ export async function GET(request: NextRequest) {
 
     const messages = await getConversationMessages(params.conversationId);
     return NextResponse.json({ ok: true, messages });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[GET /api/chat/messages]", error);
     return NextResponse.json(
-      { ok: false, error: error.message || "Failed to fetch messages" },
+      { ok: false, error: getErrorMessage(error) || "Failed to fetch messages" },
       { status: 400 }
     );
   }
@@ -231,10 +235,10 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ ok: true, message, conversation: conv });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[POST /api/chat/messages]", error);
     return NextResponse.json(
-      { ok: false, error: error.message || "Failed to send message" },
+      { ok: false, error: getErrorMessage(error) || "Failed to send message" },
       { status: 400 }
     );
   }

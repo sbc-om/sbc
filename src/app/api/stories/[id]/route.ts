@@ -3,6 +3,10 @@ import { getStoryById, incrementStoryViewCount } from "@/lib/db/stories";
 
 export const runtime = "nodejs";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Internal server error";
+}
+
 /**
  * @swagger
  * /api/stories/{id}:
@@ -34,9 +38,9 @@ export async function GET(
     }
 
     return NextResponse.json({ ok: true, data: story });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[stories] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }
 
@@ -64,8 +68,8 @@ export async function POST(
     const { id } = await params;
     await incrementStoryViewCount(id);
     return NextResponse.json({ ok: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[stories] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

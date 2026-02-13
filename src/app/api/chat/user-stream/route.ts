@@ -10,7 +10,7 @@ const userConnections = new Map<string, Set<ReadableStreamDefaultController>>();
 /**
  * Broadcast to a specific user (for sidebar updates, notifications, etc.)
  */
-export function broadcastToUser(userId: string, data: any) {
+export function broadcastToUser(userId: string, data: unknown) {
   const listeners = userConnections.get(userId);
   if (!listeners) return;
 
@@ -28,7 +28,7 @@ export function broadcastToUser(userId: string, data: any) {
 /**
  * Broadcast to multiple users
  */
-export function broadcastToUsers(userIds: string[], data: any) {
+export function broadcastToUsers(userIds: string[], data: unknown) {
   for (const userId of userIds) {
     broadcastToUser(userId, data);
   }

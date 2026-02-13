@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { listBusinessesWithActiveStories } from "@/lib/db/stories";
 
 export const runtime = "nodejs";
@@ -14,12 +14,16 @@ export const runtime = "nodejs";
  *       200:
  *         description: List of businesses with their stories
  */
-export async function GET(req: NextRequest) {
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Internal server error";
+}
+
+export async function GET() {
   try {
     const businessesWithStories = await listBusinessesWithActiveStories();
     return NextResponse.json({ ok: true, data: businessesWithStories });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[stories] Error:", error);
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: false, error: getErrorMessage(error) }, { status: 500 });
   }
 }

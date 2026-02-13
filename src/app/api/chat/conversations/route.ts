@@ -18,7 +18,7 @@ import { z } from "zod";
  *       401:
  *         description: Unauthorized
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });

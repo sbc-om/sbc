@@ -5,6 +5,10 @@ import { getCurrentUser } from "@/lib/auth/currentUser";
 import { broadcastToConversation } from "../stream/route";
 import { broadcastToUsers } from "../user-stream/route";
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Unexpected error";
+}
+
 const schema = z.object({
   conversationId: z.string().min(1),
 });
@@ -67,10 +71,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ ok: true, count });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[POST /api/chat/read]", error);
     return NextResponse.json(
-      { ok: false, error: error.message || "Failed to mark as read" },
+      { ok: false, error: getErrorMessage(error) || "Failed to mark as read" },
       { status: 400 }
     );
   }
