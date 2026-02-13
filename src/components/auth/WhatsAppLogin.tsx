@@ -111,7 +111,7 @@ export function WhatsAppLogin({ locale, next }: WhatsAppLoginProps) {
 
       setStep("otp");
       setCountdown(60);
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
@@ -144,7 +144,7 @@ export function WhatsAppLogin({ locale, next }: WhatsAppLoginProps) {
         router.push(next || `/${locale}/dashboard`);
       }
       router.refresh();
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);

@@ -18,7 +18,15 @@ import type { AgentWithdrawalRequest } from "@/lib/db/agents";
 
 function playNotificationSound() {
   try {
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const audioContextClass =
+      window.AudioContext ||
+      (
+        window as Window & {
+          webkitAudioContext?: typeof AudioContext;
+        }
+      ).webkitAudioContext;
+    if (!audioContextClass) return;
+    const audioContext = new audioContextClass();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
 

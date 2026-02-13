@@ -39,8 +39,9 @@ export function StoryUpload({ businessId, locale, existingStories, onStoryAdded 
       }
 
       router.refresh();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error && err.message ? err.message : "Delete failed";
+      setError(message);
     }
   };
 

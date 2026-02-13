@@ -206,7 +206,7 @@ export function AgentBusinessForm({
   success,
   clients,
   preselectedClientId,
-  preselectedClientName,
+  preselectedClientName: _preselectedClientName,
   products,
   clientWallets,
   clientSubscriptions,
@@ -225,6 +225,7 @@ export function AgentBusinessForm({
   const { toast } = useToast();
   const t = texts[locale];
   const ar = locale === "ar";
+  void _preselectedClientName;
 
   // ── Step management ──
   const [step, setStep] = useState<1 | 2>(1);
@@ -374,8 +375,12 @@ export function AgentBusinessForm({
 
       router.push(`/${locale}/agent/businesses/new?success=1`);
       router.refresh();
-    } catch (error: any) {
-      toast({ message: ar ? `خطأ: ${error.message}` : `Error: ${error.message}`, variant: "error" });
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Failed to submit request";
+      toast({ message: ar ? `خطأ: ${message}` : `Error: ${message}`, variant: "error" });
     } finally {
       setLoading(false);
     }

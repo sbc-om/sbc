@@ -57,6 +57,21 @@ const texts = {
 
 type Tab = "search" | "create";
 
+type SearchUser = {
+  id: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+};
+
+type AgentApiResponse = {
+  ok?: boolean;
+  error?: string;
+  users?: SearchUser[];
+};
+
+type IconComponent = React.ComponentType<{ className?: string }>;
+
 export function AddClientForm({ locale }: { locale: Locale }) {
   const router = useRouter();
   const t = texts[locale];
@@ -69,7 +84,7 @@ export function AddClientForm({ locale }: { locale: Locale }) {
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [searchDone, setSearchDone] = useState(false);
   const [adding, setAdding] = useState(false);
 
@@ -82,6 +97,11 @@ export function AddClientForm({ locale }: { locale: Locale }) {
 
   const [error, setError] = useState("");
 
+  function getErrorMessage(err: unknown): string {
+    if (err instanceof Error && err.message) return err.message;
+    return ar ? "حدث خطأ غير متوقع" : "Unexpected error";
+  }
+
   async function handleSearch() {
     if (!searchQuery.trim()) return;
     setSearching(true);
@@ -93,12 +113,12 @@ export function AddClientForm({ locale }: { locale: Locale }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "search-user", query: searchQuery.trim() }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as AgentApiResponse;
       if (!data.ok) throw new Error(data.error);
       setSearchResults(data.users || []);
       setSearchDone(true);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
     } finally {
       setSearching(false);
     }
@@ -113,11 +133,11 @@ export function AddClientForm({ locale }: { locale: Locale }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "add-client", clientId: userId }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as AgentApiResponse;
       if (!data.ok) throw new Error(data.error);
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
       setAdding(false);
     }
   }
@@ -142,11 +162,11 @@ export function AddClientForm({ locale }: { locale: Locale }) {
           password: newPassword.trim(),
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as AgentApiResponse;
       if (!data.ok) throw new Error(data.error);
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
       setCreating(false);
     }
   }
@@ -205,7 +225,7 @@ export function AddClientForm({ locale }: { locale: Locale }) {
           [
             ["search", t.tabSearch, HiOutlineSearch],
             ["create", t.tabCreate, HiOutlineUserAdd],
-          ] as [Tab, string, any][]
+          ] as [Tab, string, IconComponent][]
         ).map(([key, label, Icon]) => (
           <button
             key={key}
@@ -250,7 +270,7 @@ export function AddClientForm({ locale }: { locale: Locale }) {
 
           {searchResults.length > 0 && (
             <div className="max-h-72 overflow-y-auto rounded-xl border border-gray-100 dark:border-white/[0.04]">
-              {searchResults.map((u: any) => (
+              {searchResults.map((u) => (
                 <div
                   key={u.id}
                   className="flex items-center gap-3 border-b border-gray-100/80 px-4 py-3 last:border-0 dark:border-white/[0.03]"

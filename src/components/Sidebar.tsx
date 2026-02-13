@@ -18,8 +18,6 @@ import {
   HiOutlineViewGrid,
   HiShoppingBag,
   HiOutlineShoppingBag,
-  HiSearch,
-  HiOutlineSearch,
   HiChartSquareBar,
   HiOutlineChartSquareBar,
   HiCog,

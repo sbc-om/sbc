@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import Image from "next/image";
 
-import type { BusinessWithStories, Story } from "@/lib/db/stories";
+import type { BusinessWithStories } from "@/lib/db/stories";
 import type { Locale } from "@/lib/i18n/locales";
 
 interface StoriesCarouselProps {
@@ -14,7 +13,7 @@ interface StoriesCarouselProps {
 }
 
 export function StoriesCarousel({ businesses, locale, onOpenStory }: StoriesCarouselProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
+  const [emblaRef] = useEmblaCarousel({
     align: "start",
     containScroll: "trimSnaps",
     dragFree: true,

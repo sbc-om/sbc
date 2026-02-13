@@ -84,6 +84,11 @@ export default function AgentDashboard({
     return code;
   }
 
+  function getErrorMessage(err: unknown): string {
+    if (err instanceof Error && err.message) return err.message;
+    return "ACTION_FAILED";
+  }
+
   const [modal, setModal] = useState<ModalType>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -189,8 +194,8 @@ export default function AgentDashboard({
         resetModal();
         startTransition(() => router.refresh());
       }, 1000);
-    } catch (err: any) {
-      setError(humanError(err.message));
+    } catch (err: unknown) {
+      setError(humanError(getErrorMessage(err)));
       setSaving(false);
     }
   }
@@ -216,8 +221,8 @@ export default function AgentDashboard({
         resetModal();
         startTransition(() => router.refresh());
       }, 1000);
-    } catch (err: any) {
-      setError(humanError(err.message));
+    } catch (err: unknown) {
+      setError(humanError(getErrorMessage(err)));
       setSaving(false);
     }
   }

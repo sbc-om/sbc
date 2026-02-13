@@ -85,8 +85,14 @@ export default function RequestWithdrawalClient({ locale, availableWallet, pendi
         router.push(`/${locale}/agent/wallet`);
         router.refresh();
       });
-    } catch (e: any) {
-      setError(e.message || (ar ? "حدث خطأ أثناء إرسال الطلب" : "Failed to submit request"));
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error && e.message
+          ? e.message
+          : ar
+            ? "حدث خطأ أثناء إرسال الطلب"
+            : "Failed to submit request";
+      setError(message);
     } finally {
       setSaving(false);
     }

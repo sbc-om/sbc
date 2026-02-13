@@ -198,7 +198,6 @@ export function AgentClientsList({
         <div className="overflow-hidden rounded-2xl border border-gray-200/70 bg-white dark:border-white/[0.06] dark:bg-white/[0.02]">
           <div className="divide-y divide-gray-100/80 dark:divide-white/[0.03]">
             {filtered.map((c) => {
-              const noBiz = !c.hasBusiness && c.requestStatus !== "approved";
               return (
                 <div
                   key={c.clientUserId}

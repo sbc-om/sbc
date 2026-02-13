@@ -2,7 +2,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { query } from "./postgres";
-import type { Website, WebsitePage, WebsiteBlock, WebsiteNavItem, LocalizedString, WebsitePackage } from "./types";
+import type { Website, WebsitePage, WebsitePackage } from "./types";
 
 /* ─── Package from subscription slug ───────────────────────── */
 
@@ -91,7 +91,47 @@ export type WebsitePageInput = z.infer<typeof websitePageInputSchema>;
 
 /* ─── Row Mappers ──────────────────────────────────────────── */
 
-function rowToWebsite(row: any): Website {
+type WebsiteRow = {
+  id: string;
+  owner_id: string;
+  slug: string;
+  custom_domain: string | null;
+  title_en: string | null;
+  title_ar: string | null;
+  tagline_en: string | null;
+  tagline_ar: string | null;
+  meta_description_en: string | null;
+  meta_description_ar: string | null;
+  package: WebsitePackage | null;
+  is_published: boolean | null;
+  template_id: string | null;
+  branding: Website["branding"] | null;
+  navigation: Website["navigation"] | null;
+  socials: Website["socials"] | null;
+  footer_text_en: string | null;
+  footer_text_ar: string | null;
+  contact: Website["contact"] | null;
+  analytics: Website["analytics"] | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+type WebsitePageRow = {
+  id: string;
+  website_id: string;
+  slug: string;
+  title_en: string | null;
+  title_ar: string | null;
+  is_homepage: boolean | null;
+  blocks: WebsitePage["blocks"] | null;
+  seo: WebsitePage["seo"] | null;
+  sort_order: number | null;
+  is_published: boolean | null;
+  created_at: Date | null;
+  updated_at: Date | null;
+};
+
+function rowToWebsite(row: WebsiteRow): Website {
   return {
     id: row.id,
     ownerId: row.owner_id,
@@ -120,7 +160,7 @@ function rowToWebsite(row: any): Website {
   };
 }
 
-function rowToWebsitePage(row: any): WebsitePage {
+function rowToWebsitePage(row: WebsitePageRow): WebsitePage {
   return {
     id: row.id,
     websiteId: row.website_id,

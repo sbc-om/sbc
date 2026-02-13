@@ -102,7 +102,7 @@ function VoiceMessage({ url, locale }: { url: string; locale: string }) {
 }
 
 // File message component
-function FileMessage({ url, mediaType, locale }: { url: string; mediaType?: string; locale: string }) {
+function FileMessage({ url, locale }: { url: string; locale: string }) {
   const fileName = url.split("/").pop() || (locale === "ar" ? "ملف" : "File");
   return (
     <a
@@ -238,7 +238,7 @@ export function ChatMessages({ messages, business, locale }: ChatMessagesProps) 
                 ) : messageType === "voice" && msg.mediaUrl ? (
                   <VoiceMessage url={msg.mediaUrl} locale={locale} />
                 ) : messageType === "file" && msg.mediaUrl ? (
-                  <FileMessage url={msg.mediaUrl} mediaType={msg.mediaType} locale={locale} />
+                  <FileMessage url={msg.mediaUrl} locale={locale} />
                 ) : messageType === "location" && msg.locationLat && msg.locationLng ? (
                   <LocationMessage lat={msg.locationLat} lng={msg.locationLng} locale={locale} />
                 ) : (

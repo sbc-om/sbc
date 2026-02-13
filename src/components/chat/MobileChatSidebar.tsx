@@ -62,3 +62,5 @@ export const MobileChatSidebar = forwardRef<MobileChatSidebarRef, MobileChatSide
     );
   }
 );
+
+MobileChatSidebar.displayName = "MobileChatSidebar";

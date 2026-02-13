@@ -12,16 +12,12 @@ import {
   HiOutlinePlus,
   HiOutlineBan,
   HiOutlinePlay,
-  HiOutlineUser,
   HiOutlineMail,
   HiOutlineCalendar,
-  HiOutlineCreditCard,
   HiOutlineTag,
   HiOutlineCurrencyDollar,
-  HiOutlineIdentification,
   HiOutlineClipboardCheck,
   HiOutlinePhone,
-  HiOutlineDocumentText,
 } from "react-icons/hi";
 import { HiPaperAirplane } from "react-icons/hi2";
 

@@ -34,7 +34,6 @@ export function MapViewer({ lat, lng, label, locale }: MapViewerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [showCopied, setShowCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
@@ -123,7 +122,6 @@ export function MapViewer({ lat, lng, label, locale }: MapViewerProps) {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        setUserLocation({ lat: latitude, lng: longitude });
 
         if (mapInstanceRef.current) {
           const L = (await import("leaflet")).default;

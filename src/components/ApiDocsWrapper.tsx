@@ -16,7 +16,7 @@ export default function ApiDocsWrapper(props: React.ComponentProps<typeof Swagge
     const originalError = console.error;
     const originalWarn = console.warn;
 
-    console.error = (...args: any[]) => {
+    console.error = (...args: unknown[]) => {
       if (
         typeof args[0] === "string" &&
         (args[0].includes("UNSAFE_componentWillReceiveProps") ||
@@ -27,7 +27,7 @@ export default function ApiDocsWrapper(props: React.ComponentProps<typeof Swagge
       originalError.apply(console, args);
     };
 
-    console.warn = (...args: any[]) => {
+    console.warn = (...args: unknown[]) => {
       if (
         typeof args[0] === "string" &&
         (args[0].includes("UNSAFE_componentWillReceiveProps") ||

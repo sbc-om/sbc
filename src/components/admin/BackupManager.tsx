@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FiDownload, FiTrash2, FiUpload, FiRefreshCw, FiDatabase, FiAlertCircle, FiX } from "react-icons/fi";
 import { Button } from "@/components/ui/Button";
 
@@ -135,7 +135,7 @@ export default function BackupManager({ locale }: BackupManagerProps) {
   const ar = locale === "ar";
 
   // Load backups
-  const loadBackups = async () => {
+  const loadBackups = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/backup/list");
@@ -144,7 +144,7 @@ export default function BackupManager({ locale }: BackupManagerProps) {
 
       const data = await res.json();
       setBackups(data.backups || []);
-    } catch (error) {
+    } catch {
       setMessage({ 
         type: "error", 
         text: ar ? "خطأ في تحميل قائمة النسخ الاحتياطية" : "Failed to load backups list"
@@ -152,7 +152,7 @@ export default function BackupManager({ locale }: BackupManagerProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [ar]);
 
   // Create backup
   const createBackup = async (type: "full" | "database-only" | "files-only") => {
@@ -180,7 +180,7 @@ export default function BackupManager({ locale }: BackupManagerProps) {
         text: ar ? "تم إنشاء النسخة الاحتياطية بنجاح" : "Backup created successfully"
       });
       loadBackups();
-    } catch (error) {
+    } catch {
       setMessage({ 
         type: "error", 
         text: ar ? "خطأ في إنشاء النسخة الاحتياطية" : "Failed to create backup"
@@ -220,7 +220,7 @@ export default function BackupManager({ locale }: BackupManagerProps) {
         text: ar ? "تم حذف النسخة الاحتياطية" : "Backup deleted successfully"
       });
       loadBackups();
-    } catch (error) {
+    } catch {
       setMessage({ 
         type: "error", 
         text: ar ? "خطأ في حذف النسخة الاحتياطية" : "Failed to delete backup"
@@ -249,7 +249,7 @@ export default function BackupManager({ locale }: BackupManagerProps) {
         type: "success", 
         text: ar ? "بدأ تنزيل النسخة الاحتياطية" : "Backup download started"
       });
-    } catch (error) {
+    } catch {
       setMessage({ 
         type: "error", 
         text: ar ? "خطأ في تنزيل النسخة الاحتياطية" : "Failed to download backup"
@@ -294,7 +294,7 @@ export default function BackupManager({ locale }: BackupManagerProps) {
         type: "success", 
         text: ar ? "تمت استعادة النسخة الاحتياطية بنجاح" : "Backup restored successfully"
       });
-    } catch (error) {
+    } catch {
       setMessage({ 
         type: "error", 
         text: ar ? "خطأ في استعادة النسخة الاحتياطية" : "Failed to restore backup"
@@ -326,7 +326,7 @@ export default function BackupManager({ locale }: BackupManagerProps) {
         text: ar ? "تم رفع ملف النسخة الاحتياطية" : "Backup file uploaded successfully"
       });
       loadBackups();
-    } catch (error) {
+    } catch {
       setMessage({ 
         type: "error", 
         text: ar ? "خطأ في رفع الملف" : "Failed to upload file"
@@ -337,8 +337,8 @@ export default function BackupManager({ locale }: BackupManagerProps) {
   };
 
   useEffect(() => {
-    loadBackups();
-  }, []);
+    void loadBackups();
+  }, [loadBackups]);
 
   const formatSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -559,6 +559,22 @@ export default function BackupManager({ locale }: BackupManagerProps) {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={modalConfig.isOpen}
+        onClose={() =>
+          setModalConfig((prev) => ({
+            ...prev,
+            isOpen: false,
+          }))
+        }
+        onConfirm={modalConfig.onConfirm}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText={modalConfig.confirmText}
+        cancelText={modalConfig.cancelText}
+        type={modalConfig.type}
+      />
     </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { browserSupportsWebAuthn, startAuthentication } from "@simplewebauthn/browser";
 import { Button } from "@/components/ui/Button";
@@ -107,7 +106,6 @@ const texts = {
 };
 
 export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsProps) {
-  const router = useRouter();
   const t = texts[locale];
   const [activeTab, setActiveTab] = useState<TabId>("password");
   // WhatsApp state
@@ -203,7 +201,7 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
       });
 
       const optionsJson = (await optionsRes.json()) as
-        | { ok: true; options: any; requestId: string }
+        | { ok: true; options: unknown; requestId: string }
         | { ok: false; error: string };
 
       if (!optionsRes.ok || !optionsJson.ok) {
@@ -235,9 +233,11 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
 
       const dest = next && next.startsWith(`/${locale}/`) ? next : `/${locale}/dashboard`;
       window.location.href = dest;
-    } catch (e: any) {
+    } catch (e: unknown) {
       // User cancelled or closed the prompt
-      if (e?.name === "NotAllowedError" || e?.message?.includes("cancelled")) {
+      const errName = e instanceof Error ? e.name : "";
+      const errMessage = e instanceof Error ? e.message : "";
+      if (errName === "NotAllowedError" || errMessage.includes("cancelled")) {
         setPasskeyError(t.passkey.cancelled);
       } else {
         console.error("Passkey login error:", e);

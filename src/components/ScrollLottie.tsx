@@ -41,7 +41,6 @@ export function ScrollLottie({
     if (!isReady) return;
 
     let ticking = false;
-    let lastScrollY = window.scrollY;
     let currentFrame = 0;
 
     // Easing function for smooth transitions
@@ -58,7 +57,6 @@ export function ScrollLottie({
           const animation = lottieRef.current;
           const totalFrames = animation.getDuration(true) ?? 0;
           if (totalFrames <= 0) {
-            lastScrollY = currentScrollY;
             ticking = false;
             return;
           }
@@ -80,7 +78,6 @@ export function ScrollLottie({
           animation.goToAndStop(Math.round(currentFrame), true);
         }
 
-        lastScrollY = currentScrollY;
         ticking = false;
       });
     };

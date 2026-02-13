@@ -1,7 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
-import Image from "next/image";
+import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";

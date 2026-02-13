@@ -6,6 +6,7 @@
 
 import { notifyAppleWalletPassUpdated, isAppleApnsConfigured } from "./appleApns";
 import { isSbcwalletGoogleConfigured, updateGoogleWalletLoyaltyPoints } from "./sbcwallet";
+import { resolve } from "node:path";
 
 export interface WalletUpdateResult {
   success: boolean;
@@ -166,14 +167,6 @@ export function getWalletStatus(): {
 import { GoogleWalletAdapter, getProfile } from "sbcwallet";
 import type { LoyaltyCardTemplate, LoyaltyProfile } from "@/lib/db/types";
 
-function hexToRgb(hex: string): string {
-  const h = hex.replace(/^#/, "");
-  const r = Number.parseInt(h.substring(0, 2), 16);
-  const g = Number.parseInt(h.substring(2, 4), 16);
-  const b = Number.parseInt(h.substring(4, 6), 16);
-  return `rgb(${r}, ${g}, ${b})`;
-}
-
 function normalizeHexColor(input?: string): string | undefined {
   if (!input) return undefined;
   const v = input.trim();
@@ -193,7 +186,7 @@ function getGoogleAdapter(): GoogleWalletAdapter {
   const serviceAccountPath = process.env.GOOGLE_SA_JSON || "";
   const resolvedPath = serviceAccountPath.startsWith("/") 
     ? serviceAccountPath 
-    : require("path").resolve(process.cwd(), serviceAccountPath);
+    : resolve(process.cwd(), serviceAccountPath);
 
   return new GoogleWalletAdapter({
     issuerId,

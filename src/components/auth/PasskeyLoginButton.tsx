@@ -55,7 +55,7 @@ export function PasskeyLoginButton({ locale, next }: PasskeyLoginButtonProps) {
       });
 
       const optionsJson = (await optionsRes.json()) as
-        | { ok: true; options: any; requestId: string }
+        | { ok: true; options: unknown; requestId: string }
         | { ok: false; error: string };
 
       if (!optionsRes.ok || !optionsJson.ok) {
@@ -84,7 +84,7 @@ export function PasskeyLoginButton({ locale, next }: PasskeyLoginButtonProps) {
         router.push(`/${locale}/dashboard`);
       }
       router.refresh();
-    } catch (e) {
+    } catch {
       setError(t.failed);
     } finally {
       setBusy(false);

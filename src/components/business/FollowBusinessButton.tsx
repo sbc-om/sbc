@@ -64,7 +64,6 @@ export function FollowBusinessButton({
   const handleClick = async () => {
     if (status === "guest") {
       // Get the current URL info to build proper redirect
-      const currentHost = window.location.host;
       const currentHostname = window.location.hostname;
       
       // Check if we're on a subdomain (e.g., spirithub.sbc.om or spirithub.localhost)
@@ -98,33 +97,27 @@ export function FollowBusinessButton({
     setUpdating(true);
     try {
       let method: string;
-      let expectedStatus: FollowStatus;
 
       if (status === "following") {
         // User is following, wants to unfollow
         method = "DELETE";
-        expectedStatus = "unfollowed";
       } else if (status === "unfollowed") {
         // User has unfollowed, wants to re-follow (remove from blocklist)
         if (followsCategory) {
           // If they follow the category, just remove from unfollows
           method = "PATCH";
-          expectedStatus = "neutral";
         } else {
           // If they don't follow the category, add to follows
           method = "POST";
-          expectedStatus = "following";
         }
       } else {
         // Neutral: user hasn't interacted
         if (followsCategory) {
           // If they follow category, clicking means unfollow this specific business
           method = "DELETE";
-          expectedStatus = "unfollowed";
         } else {
           // If they don't follow category, clicking means follow this business
           method = "POST";
-          expectedStatus = "following";
         }
       }
 

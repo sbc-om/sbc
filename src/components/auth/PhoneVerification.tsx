@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { Locale } from "@/lib/i18n/locales";
@@ -58,27 +58,7 @@ export function PhoneVerification({
 
   const otpInputRef = useRef<HTMLInputElement>(null);
 
-  // Send OTP on mount
-  useEffect(() => {
-    sendOTP();
-  }, []);
-
-  // Countdown timer
-  useEffect(() => {
-    if (countdown > 0 && codeSent) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown, codeSent]);
-
-  // Focus OTP input when code is sent
-  useEffect(() => {
-    if (codeSent && otpInputRef.current) {
-      otpInputRef.current.focus();
-    }
-  }, [codeSent]);
-
-  const sendOTP = async () => {
+  const sendOTP = useCallback(async () => {
     setError("");
     setSending(true);
 
@@ -102,12 +82,32 @@ export function PhoneVerification({
 
       setCodeSent(true);
       setCountdown(60);
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setSending(false);
     }
-  };
+  }, [locale, phone]);
+
+  // Send OTP on mount
+  useEffect(() => {
+    void sendOTP();
+  }, [sendOTP]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (countdown > 0 && codeSent) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [countdown, codeSent]);
+
+  // Focus OTP input when code is sent
+  useEffect(() => {
+    if (codeSent && otpInputRef.current) {
+      otpInputRef.current.focus();
+    }
+  }, [codeSent]);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,7 +133,7 @@ export function PhoneVerification({
       }
 
       onVerified();
-    } catch (err) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);

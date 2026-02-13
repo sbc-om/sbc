@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PhoneInput } from "@/components/ui/PhoneInput";
@@ -70,7 +69,6 @@ export function RegisterForm({
   next,
   challenge,
 }: RegisterFormProps) {
-  const router = useRouter();
   const t = texts[locale];
 
   const [formData, setFormData] = useState({

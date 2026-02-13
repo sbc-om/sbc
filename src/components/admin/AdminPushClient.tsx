@@ -74,7 +74,13 @@ export function AdminPushClient({
     setSuccess(null);
     setBusy(true);
     try {
-      const payload: any = {
+      const payload: {
+        title: string;
+        body: string;
+        url?: string;
+        iconUrl?: string;
+        userIds?: string[];
+      } = {
         title: title.trim(),
         body: body.trim(),
       };
