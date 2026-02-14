@@ -30,6 +30,8 @@ import {
   HiUser,
   HiOutlineUser,
   HiX,
+  HiBell,
+  HiOutlineBell,
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline, IoWallet, IoWalletOutline } from "react-icons/io5";
 import { HiPlus, HiOutlinePlus, HiBriefcase, HiOutlineBriefcase, HiUserGroup, HiOutlineUserGroup } from "react-icons/hi";
@@ -38,6 +40,31 @@ interface SidebarProps {
   locale: Locale;
   dict: Dictionary;
   user: { displayName: string; role: string; email: string; avatarUrl: string | null; hasBusiness?: boolean };
+}
+
+function playNotificationSound() {
+  try {
+    const webkitAudioContext = (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const AudioContextCtor = window.AudioContext || webkitAudioContext;
+    if (!AudioContextCtor) return;
+
+    const audioContext = new AudioContextCtor();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.frequency.value = 880;
+    oscillator.type = "sine";
+    gainNode.gain.value = 0.18;
+
+    oscillator.start();
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.22);
+    oscillator.stop(audioContext.currentTime + 0.22);
+  } catch {
+    // ignore audio errors
+  }
 }
 
 type NavItem = {
@@ -54,6 +81,8 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileMenuOpenedAtPath, setProfileMenuOpenedAtPath] = useState<string | null>(null);
+  const [notificationUnread, setNotificationUnread] = useState(0);
+  const [notificationPulse, setNotificationPulse] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const iconOnly = collapsed && !isMobile;
@@ -100,6 +129,51 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [isProfileMenuVisible]);
+
+  useEffect(() => {
+    let eventSource: EventSource | null = null;
+    let pulseTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    const connect = () => {
+      eventSource = new EventSource("/api/notifications/stream");
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data) as {
+            type?: "connected" | "read" | "new";
+            unreadCount?: number;
+          };
+
+          if (typeof data.unreadCount === "number") {
+            setNotificationUnread(data.unreadCount);
+          }
+
+          if (data.type === "new") {
+            playNotificationSound();
+            setNotificationPulse(true);
+            if (pulseTimeout) clearTimeout(pulseTimeout);
+            pulseTimeout = setTimeout(() => setNotificationPulse(false), 850);
+          }
+        } catch {
+          // ignore malformed events
+        }
+      };
+
+      eventSource.onerror = () => {
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+      };
+    };
+
+    connect();
+
+    return () => {
+      if (pulseTimeout) clearTimeout(pulseTimeout);
+      if (eventSource) eventSource.close();
+    };
+  }, []);
 
   const baseNavItems: NavItem[] = [
     {
@@ -176,25 +250,46 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     <>
       {/* Logo */}
       <div className={`px-3 pt-4 transition-all duration-300 ${collapsed ? "mb-4" : "mb-8"}`}>
-        <Link
-          href={`/${locale}`}
-          className={`flex items-center gap-3 group ${iconOnly ? "justify-center" : "justify-start"}`}
-          title={iconOnly ? "SBC" : undefined}
-        >
-          <Image
-            src="/images/sbc.svg"
-            alt="SBC"
-            width={40}
-            height={40}
-            className="h-10 w-10 transition-transform group-hover:scale-105 shrink-0"
-            priority
-          />
-          {!collapsed && (
-            <span className="sbc-sidebar-brand font-bold text-xl bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent overflow-hidden">
-              SBC
-            </span>
-          )}
-        </Link>
+        <div className="flex items-center justify-between gap-2">
+          <Link
+            href={`/${locale}`}
+            className={`flex items-center gap-3 group min-w-0 ${iconOnly ? "justify-center" : "justify-start"}`}
+            title={iconOnly ? "SBC" : undefined}
+          >
+            <Image
+              src="/images/sbc.svg"
+              alt="SBC"
+              width={40}
+              height={40}
+              className="h-10 w-10 transition-transform group-hover:scale-105 shrink-0"
+              priority
+            />
+            {!collapsed && (
+              <span className="sbc-sidebar-brand font-bold text-xl bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent overflow-hidden">
+                SBC
+              </span>
+            )}
+          </Link>
+
+          <Link
+            href={`/${locale}/notifications`}
+            onClick={() => isMobile && setMobileOpen(false)}
+            className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
+              isActive("/notifications")
+                ? "border-accent/40 bg-linear-to-r from-accent/10 to-accent-2/10 text-accent"
+                : "border-(--surface-border) bg-(--chip-bg) text-(--muted-foreground) hover:text-foreground"
+            } ${notificationPulse ? "motion-safe:animate-pulse" : ""}`}
+            aria-label={locale === "ar" ? "الإشعارات" : "Notifications"}
+            title={locale === "ar" ? "الإشعارات" : "Notifications"}
+          >
+            {isActive("/notifications") ? <HiBell className="h-5 w-5" /> : <HiOutlineBell className="h-5 w-5" />}
+            {notificationUnread > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-5 text-center shadow">
+                {notificationUnread > 99 ? "99+" : notificationUnread}
+              </span>
+            )}
+          </Link>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -362,6 +457,22 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 return <ChatIcon className="h-5 w-5 shrink-0" />;
               })()}
               <span className="min-w-0 truncate">{dict.nav.chat ?? (locale === "ar" ? "الدردشة" : "Chat")}</span>
+            </Link>
+
+            <Link
+              role="menuitem"
+              href={`/${locale}/notifications`}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                if (isMobile) setMobileOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+            >
+              {(() => {
+                const NotificationIcon = isActive("/notifications") ? HiBell : HiOutlineBell;
+                return <NotificationIcon className="h-5 w-5 shrink-0" />;
+              })()}
+              <span className="min-w-0 truncate">{locale === "ar" ? "الإشعارات" : "Notifications"}</span>
             </Link>
 
             <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />

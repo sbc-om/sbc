@@ -19,6 +19,27 @@ import {
 import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
 import type { Locale } from "@/lib/i18n/locales";
 
+function renderInlineMarkdownToHtml(text: string): string {
+  if (!text) return "";
+
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\r?\n+/g, " ");
+
+  html = html
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/__(.+?)__/g, "<strong>$1</strong>")
+    .replace(/~~(.+?)~~/g, "<del>$1</del>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/_(.+?)_/g, "<em>$1</em>");
+
+  return html;
+}
+
 interface BusinessFeedCardProps {
   business: {
     id: string;
@@ -417,9 +438,10 @@ export function BusinessFeedCard({
             {name}
           </Link>
           {description && (
-            <span className={`${locale === "ar" ? "mr-2" : "ml-2"} text-foreground`}>
-              {description}
-            </span>
+            <span
+              className={`${locale === "ar" ? "mr-2" : "ml-2"} text-foreground [&_a]:text-(--accent) [&_a]:underline [&_a]:underline-offset-2 [&_code]:rounded [&_code]:bg-(--chip-bg) [&_code]:px-1`}
+              dangerouslySetInnerHTML={{ __html: renderInlineMarkdownToHtml(description) }}
+            />
           )}
         </div>
 

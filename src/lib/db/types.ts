@@ -343,6 +343,24 @@ export type UserPushSubscription = {
   updatedAt: string;
 };
 
+export type UserNotificationType = "business_like" | "business_comment";
+
+export type UserNotification = {
+  id: string;
+  userId: string;
+  type: UserNotificationType;
+  title: string;
+  body: string;
+  href?: string;
+  actorUserId?: string;
+  actorName?: string;
+  businessId?: string;
+  businessName?: string;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+};
+
 /**
  * Apple Wallet device registration (PassKit web service).
  * This is required to deliver pass updates and Wallet-style alerts via APNs.

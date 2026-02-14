@@ -6,6 +6,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import type { BusinessComment } from "@/lib/db/types";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
+import { IoHeart, IoHeartOutline, IoChatbubbleEllipsesOutline } from "react-icons/io5";
 import {
   approveBusinessCommentAction,
   createBusinessCommentAction,
@@ -58,6 +59,7 @@ export function BusinessEngagement({
 
   const [liked, setLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialLikeCount);
+  const [likeAnimating, setLikeAnimating] = useState(false);
 
   const [commentText, setCommentText] = useState("");
   const [localMyPending, setLocalMyPending] = useState<BusinessComment[]>(myPendingComments);
@@ -92,6 +94,9 @@ export function BusinessEngagement({
   }
 
   const onToggleLike = () => {
+    setLikeAnimating(true);
+    window.setTimeout(() => setLikeAnimating(false), 380);
+
     startTransition(async () => {
       try {
         const r = await toggleBusinessLikeAction(locale, businessId, businessSlug);
@@ -148,26 +153,50 @@ export function BusinessEngagement({
   };
 
   return (
-    <section className="sbc-card rounded-2xl p-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight">{t.title}</h2>
-          <div className="mt-1 text-sm text-(--muted-foreground)">
+    <section className="sbc-card rounded-2xl p-6 md:p-7">
+      <div className="flex items-center justify-between gap-3 border-b border-(--surface-border) pb-4">
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-(--chip-bg) border border-(--surface-border)">
+              <IoChatbubbleEllipsesOutline className="h-4 w-4" />
+            </span>
+            {t.title}
+          </h2>
+          <div className="mt-2 text-sm text-(--muted-foreground)">
             {t.comments}: {commentCount}
           </div>
         </div>
 
-        <Button
-          variant={liked ? "primary" : "secondary"}
-          size="sm"
+        <button
+          type="button"
           disabled={isPending}
           onClick={onToggleLike}
-          className="min-w-28"
+          className={`group relative isolate inline-flex min-w-[11.5rem] items-center justify-between gap-2 rounded-2xl border px-4 py-2.5 shadow-sm transition-[background-color,border-color,color,box-shadow,transform] duration-200 disabled:opacity-60 motion-reduce:transition-none ${
+            liked
+              ? "border-red-500/35 bg-red-500/10 text-red-500 hover:shadow-red-500/20"
+              : "border-(--surface-border) bg-(--chip-bg) text-(--muted-foreground) hover:text-foreground hover:shadow-[var(--shadow)]"
+          }`}
+          aria-label={liked ? t.liked : t.like}
         >
-          <span aria-hidden>♥</span>
-          {liked ? t.liked : t.like}
-          <span className="text-xs opacity-80">{likeCount}</span>
-        </Button>
+          <span className={`relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${liked ? "bg-red-500/15" : "bg-(--surface)"}`}>
+            {likeAnimating ? (
+              <>
+                <span className="pointer-events-none absolute inset-0 rounded-full bg-red-500/20 motion-safe:animate-ping" aria-hidden />
+                <span className="pointer-events-none absolute -inset-1 rounded-full border border-red-500/30 motion-safe:animate-ping" aria-hidden />
+              </>
+            ) : null}
+            {liked ? (
+              <IoHeart className={`relative z-10 h-4.5 w-4.5 text-red-500 ${likeAnimating ? "motion-safe:animate-[pulse_260ms_ease-out_1]" : ""}`} />
+            ) : (
+              <IoHeartOutline className="relative z-10 h-4.5 w-4.5" />
+            )}
+          </span>
+
+          <span className="text-sm font-semibold truncate">{liked ? t.liked : t.like}</span>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${liked ? "bg-red-500/15 text-red-500" : "bg-(--surface) text-(--muted-foreground)"}`}>
+            {likeCount}
+          </span>
+        </button>
       </div>
 
       <div className="mt-6 grid gap-3">
@@ -176,11 +205,11 @@ export function BusinessEngagement({
           onChange={(e) => setCommentText(e.target.value)}
           placeholder={t.write}
           disabled={isPending}
-          className="min-h-28"
+          className="min-h-28 rounded-2xl border-(--surface-border) bg-(--background) focus:border-(--accent)"
         />
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-(--surface-border) bg-(--chip-bg) px-3 py-2.5">
           <div className="text-xs text-(--muted-foreground)">{t.pendingHint}</div>
-          <Button variant="primary" size="sm" disabled={isPending || !commentText.trim()} onClick={onPostComment}>
+          <Button variant="primary" size="sm" disabled={isPending || !commentText.trim()} onClick={onPostComment} className="min-w-20">
             {t.post}
           </Button>
         </div>
@@ -191,7 +220,7 @@ export function BusinessEngagement({
           <div className="text-sm font-semibold">{t.pendingTitle}</div>
           <div className="mt-3 grid gap-3">
             {localMyPending.map((c) => (
-              <div key={c.id} className="rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4">
+              <div key={c.id} className="rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4 shadow-[var(--shadow)]">
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-xs text-(--muted-foreground)">
                     {fmtTime(c.createdAt, locale)}
@@ -214,7 +243,7 @@ export function BusinessEngagement({
         ) : (
           <div className="mt-3 grid gap-3">
             {localApproved.map((c) => (
-              <div key={c.id} className="rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+              <div key={c.id} className="rounded-xl border border-(--surface-border) bg-(--surface) p-4 shadow-[var(--shadow)]">
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-sm font-semibold truncate">{userLabel(c.userId)}</div>
                   <div className="text-xs text-(--muted-foreground)">{fmtTime(c.createdAt, locale)}</div>
@@ -240,7 +269,7 @@ export function BusinessEngagement({
           ) : (
             <div className="mt-3 grid gap-3">
               {localModerationQueue.map((c) => (
-                <div key={c.id} className="rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+                <div key={c.id} className="rounded-xl border border-(--surface-border) bg-(--surface) p-4 shadow-[var(--shadow)]">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold truncate">{userLabel(c.userId)}</div>
@@ -266,6 +295,7 @@ export function BusinessEngagement({
           )}
         </div>
       ) : null}
+
     </section>
   );
 }

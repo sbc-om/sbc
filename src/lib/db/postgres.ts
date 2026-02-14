@@ -285,6 +285,47 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    -- User notifications (in-app)
+    CREATE TABLE IF NOT EXISTS user_notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      href TEXT,
+      actor_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      business_id TEXT REFERENCES businesses(id) ON DELETE SET NULL,
+      is_read BOOLEAN NOT NULL DEFAULT false,
+      read_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    -- Cleanup historical duplicates before adding anti-spam unique index
+    DELETE FROM user_notifications un
+    USING (
+      SELECT id
+      FROM (
+        SELECT
+          id,
+          ROW_NUMBER() OVER (
+            PARTITION BY user_id, actor_user_id, business_id, type
+            ORDER BY created_at ASC, id ASC
+          ) AS row_num
+        FROM user_notifications
+        WHERE type = 'business_like'
+          AND actor_user_id IS NOT NULL
+          AND business_id IS NOT NULL
+      ) ranked
+      WHERE ranked.row_num > 1
+    ) dups
+    WHERE un.id = dups.id;
+
+    CREATE INDEX IF NOT EXISTS idx_user_notifications_user_id_created_at ON user_notifications(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_user_notifications_user_id_is_read ON user_notifications(user_id, is_read);
+    CREATE UNIQUE INDEX IF NOT EXISTS ux_user_notifications_business_like_once
+      ON user_notifications(user_id, actor_user_id, business_id, type)
+      WHERE type = 'business_like' AND actor_user_id IS NOT NULL AND business_id IS NOT NULL;
+
     -- Chat conversations
     CREATE TABLE IF NOT EXISTS chat_conversations (
       id TEXT PRIMARY KEY,

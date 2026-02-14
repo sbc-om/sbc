@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 type Message = {
@@ -67,10 +67,23 @@ function MessageTicks({ status, isUser }: { status?: string; isUser: boolean }) 
 }
 
 // Image message component
-function ImageMessage({ url, locale }: { url: string; locale: string }) {
+function ImageMessage({
+  url,
+  locale,
+  onPreview,
+}: {
+  url: string;
+  locale: string;
+  onPreview: (url: string) => void;
+}) {
   return (
     <div className="max-w-[240px] rounded-xl overflow-hidden">
-      <a href={url} target="_blank" rel="noopener noreferrer">
+      <button
+        type="button"
+        onClick={() => onPreview(url)}
+        className="block cursor-zoom-in"
+        aria-label={locale === "ar" ? "عرض الصورة بحجم أكبر" : "View image larger"}
+      >
         <Image
           src={url}
           alt={locale === "ar" ? "صورة" : "Image"}
@@ -78,7 +91,7 @@ function ImageMessage({ url, locale }: { url: string; locale: string }) {
           height={180}
           className="object-cover"
         />
-      </a>
+      </button>
     </div>
   );
 }
@@ -161,12 +174,26 @@ function LocationMessage({ lat, lng, locale }: { lat: number; lng: number; local
 
 export function ChatMessages({ messages, business, locale }: ChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const name = locale === "ar" ? business.name.ar : business.name.en;
   const logo = business.media?.logo || business.media?.cover;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!previewImageUrl) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setPreviewImageUrl(null);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [previewImageUrl]);
 
   if (messages.length === 0) {
     return (
@@ -234,7 +261,11 @@ export function ChatMessages({ messages, business, locale }: ChatMessagesProps) 
               >
                 {/* Render based on message type */}
                 {messageType === "image" && msg.mediaUrl ? (
-                  <ImageMessage url={msg.mediaUrl} locale={locale} />
+                  <ImageMessage
+                    url={msg.mediaUrl}
+                    locale={locale}
+                    onPreview={setPreviewImageUrl}
+                  />
                 ) : messageType === "voice" && msg.mediaUrl ? (
                   <VoiceMessage url={msg.mediaUrl} locale={locale} />
                 ) : messageType === "file" && msg.mediaUrl ? (
@@ -261,6 +292,42 @@ export function ChatMessages({ messages, business, locale }: ChatMessagesProps) 
         );
       })}
       <div ref={messagesEndRef} />
+
+      {previewImageUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={locale === "ar" ? "معاينة الصورة" : "Image preview"}
+          onClick={() => setPreviewImageUrl(null)}
+        >
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+          <div
+            className="relative z-10 max-h-[90vh] max-w-[95vw]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setPreviewImageUrl(null)}
+              className="absolute -top-3 -right-3 z-20 h-9 w-9 rounded-full bg-(--surface) border border-(--surface-border) shadow-lg flex items-center justify-center"
+              aria-label={locale === "ar" ? "إغلاق" : "Close"}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <Image
+              src={previewImageUrl}
+              alt={locale === "ar" ? "معاينة الصورة" : "Image preview"}
+              width={1400}
+              height={1050}
+              className="max-h-[85vh] w-auto rounded-2xl object-contain"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
