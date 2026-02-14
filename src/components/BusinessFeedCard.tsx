@@ -18,6 +18,7 @@ import {
 } from "react-icons/io5";
 import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
 import type { Locale } from "@/lib/i18n/locales";
+import { useBusinessEngagementRealtime } from "@/lib/hooks/useBusinessEngagementRealtime";
 
 function renderInlineMarkdownToHtml(text: string): string {
   if (!text) return "";
@@ -102,10 +103,13 @@ export function BusinessFeedCard({
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [liked, setLiked] = useState(initialLiked);
-  const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [saved, setSaved] = useState(initialSaved);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const liveCounts = useBusinessEngagementRealtime(business.id, {
+    likes: initialLikeCount,
+    comments: commentCount,
+  });
   
   const name = locale === "ar" ? business.name.ar : business.name.en;
   const description = business.description
@@ -124,7 +128,6 @@ export function BusinessFeedCard({
       try {
         const result = await onToggleLike(business.id);
         setLiked(result.liked);
-        setLikeCount(result.count);
       } catch (err) {
         console.error("Failed to toggle like:", err);
       }
@@ -411,20 +414,20 @@ export function BusinessFeedCard({
 
         {/* Likes and Comments Count */}
         <div className="space-y-1 mb-2">
-          {likeCount > 0 && (
+          {liveCounts.likes > 0 && (
             <div className="text-sm font-semibold">
-              {likeCount.toLocaleString()}{" "}
-              {locale === "ar" ? "إعجاب" : likeCount === 1 ? "like" : "likes"}
+              {liveCounts.likes.toLocaleString()} {" "}
+              {locale === "ar" ? "إعجاب" : liveCounts.likes === 1 ? "like" : "likes"}
             </div>
           )}
-          {commentCount > 0 && (
+          {liveCounts.comments > 0 && (
             <Link
               href={business.username ? `/${locale}/businesses/@${business.username}` : `/${locale}/businesses/${business.slug}`}
               className="text-sm text-(--muted-foreground) hover:text-foreground transition-colors block"
             >
               {locale === "ar"
-                ? `عرض جميع التعليقات (${commentCount})`
-                : `View all ${commentCount} comment${commentCount === 1 ? "" : "s"}`}
+                ? `عرض جميع التعليقات (${liveCounts.comments})`
+                : `View all ${liveCounts.comments} comment${liveCounts.comments === 1 ? "" : "s"}`}
             </Link>
           )}
         </div>

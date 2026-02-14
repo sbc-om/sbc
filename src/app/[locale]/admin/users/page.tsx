@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth/requireUser";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { listUsers } from "@/lib/db/users";
-import { listAgentUserIds } from "@/lib/db/agents";
+import { listAgentUserIds, getAgentNamesForClientUsers } from "@/lib/db/agents";
 import { getAllWalletBalances } from "@/lib/db/wallet";
 import { UserRoleManagement } from "./UserRoleManagement";
 
@@ -28,9 +28,10 @@ export default async function AdminUsersPage({
   const showArchived = archived === "true";
   // Always fetch all users to get accurate counts
   const allUsers = await listUsers(true);
-  const [agentUserIds, walletBalances] = await Promise.all([
+  const [agentUserIds, walletBalances, assignedAgentsByUserId] = await Promise.all([
     listAgentUserIds(),
     getAllWalletBalances(),
+    getAgentNamesForClientUsers(allUsers.map((u) => u.id)),
   ]);
   const activeUsers = allUsers.filter(u => !u.isArchived);
   const archivedUsers = allUsers.filter(u => u.isArchived);
@@ -61,6 +62,7 @@ export default async function AdminUsersPage({
         currentUserId={currentUser.id}
         agentUserIds={agentUserIds}
         walletBalances={walletBalances}
+        assignedAgentsByUserId={assignedAgentsByUserId}
       />
     </AppPage>
   );

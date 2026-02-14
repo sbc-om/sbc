@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -12,6 +13,7 @@ import { approveUserAction, restoreUserAction, updateUserActiveAction, updateUse
 import type { Role } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
 import type { UserListItem } from "@/lib/db/users";
+import type { AssignedAgentSummary } from "@/lib/db/agents";
 
 interface UserRoleManagementProps {
   users: UserListItem[];
@@ -23,6 +25,8 @@ interface UserRoleManagementProps {
   agentUserIds: Set<string> | string[];
   /** Map of userId → wallet balance */
   walletBalances: Record<string, number>;
+  /** Map of userId -> assigned agent summary (if any) */
+  assignedAgentsByUserId?: Record<string, AssignedAgentSummary>;
 }
 
 function formatDate(iso: string, locale: Locale) {
@@ -38,7 +42,7 @@ function formatDate(iso: string, locale: Locale) {
   }
 }
 
-export function UserRoleManagement({ users, archivedCount, showArchived, locale, currentUserId, agentUserIds, walletBalances }: UserRoleManagementProps) {
+export function UserRoleManagement({ users, archivedCount, showArchived, locale, currentUserId, agentUserIds, walletBalances, assignedAgentsByUserId = {} }: UserRoleManagementProps) {
   const router = useRouter();
   const { toast } = useToast();
   const agentSet = useMemo(() => new Set(agentUserIds), [agentUserIds]);
@@ -284,6 +288,19 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
+                        {u.avatarUrl ? (
+                          <Image
+                            src={u.avatarUrl}
+                            alt={u.fullName}
+                            width={28}
+                            height={28}
+                            className="h-7 w-7 shrink-0 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-(--chip-bg) text-[11px] font-semibold text-(--muted-foreground)">
+                            {(u.fullName || u.email).trim().charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div className="text-base font-semibold truncate">
                           {u.fullName}
                         </div>
@@ -436,6 +453,7 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
               <thead className="text-xs uppercase bg-(--chip-bg) text-(--muted-foreground)">
                 <tr>
                   <th scope="col" className="px-5 py-3">{locale === "ar" ? "المستخدم" : "User"}</th>
+                  <th scope="col" className="px-5 py-3">{locale === "ar" ? "الوكيل" : "Agent"}</th>
                   <th scope="col" className="px-5 py-3">{locale === "ar" ? "الرصيد" : "Balance"}</th>
                   <th scope="col" className="px-5 py-3">{locale === "ar" ? "الحالة" : "Status"}</th>
                   <th scope="col" className="px-5 py-3">{locale === "ar" ? "التوثيق" : "Verified"}</th>
@@ -447,6 +465,7 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
               </thead>
               <tbody>
                 {pagedUsers.map((u) => {
+                  const assignedAgent = assignedAgentsByUserId[u.id];
                   const currentRole = roleOverrides[u.id] ?? u.role;
                   const isCurrentUser = u.id === currentUserId;
                   const isSavingRole = savingRoleUserId === u.id;
@@ -463,6 +482,19 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <div className="flex items-center gap-2 min-w-0">
+                              {u.avatarUrl ? (
+                                <Image
+                                  src={u.avatarUrl}
+                                  alt={u.fullName}
+                                  width={28}
+                                  height={28}
+                                  className="h-7 w-7 shrink-0 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-(--chip-bg) text-[11px] font-semibold text-(--muted-foreground)">
+                                  {(u.fullName || u.email).trim().charAt(0).toUpperCase()}
+                                </div>
+                              )}
                               <Link 
                                 href={`/${locale}/admin/users/${u.id}`}
                                 className="truncate text-sm font-semibold text-foreground hover:text-accent transition-colors"
@@ -495,6 +527,34 @@ export function UserRoleManagement({ users, archivedCount, showArchived, locale,
                           <div className="mt-1 text-xs text-(--muted-foreground) truncate">{u.email}</div>
                           {u.phone ? <div className="text-xs text-(--muted-foreground) truncate">{u.phone}</div> : null}
                         </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        {assignedAgent ? (
+                          <Link
+                            href={`/${locale}/admin/agents/${assignedAgent.agentUserId}`}
+                            className="inline-flex max-w-[220px] items-center gap-2 rounded-lg px-2 py-1 text-xs font-medium text-foreground hover:bg-(--chip-bg)"
+                            title={locale === "ar" ? "فتح ملف الوكيل" : "Open agent profile"}
+                          >
+                            {assignedAgent.agentAvatar ? (
+                              <Image
+                                src={assignedAgent.agentAvatar}
+                                alt={assignedAgent.agentName}
+                                width={24}
+                                height={24}
+                                className="h-6 w-6 shrink-0 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-(--chip-bg) text-[10px] font-semibold text-(--muted-foreground)">
+                                {assignedAgent.agentName.trim().charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <span className="truncate underline-offset-2 hover:underline">
+                              {assignedAgent.agentName}
+                            </span>
+                          </Link>
+                        ) : (
+                          <div className="text-xs text-(--muted-foreground)">-</div>
+                        )}
                       </td>
                       <td className="px-5 py-4">
                         <div className="text-sm font-medium tabular-nums">

@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { BusinessComment } from "@/lib/db/types";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { IoHeart, IoHeartOutline, IoChatbubbleEllipsesOutline } from "react-icons/io5";
+import { useBusinessEngagementRealtime } from "@/lib/hooks/useBusinessEngagementRealtime";
 import {
   approveBusinessCommentAction,
   createBusinessCommentAction,
@@ -58,7 +59,6 @@ export function BusinessEngagement({
   const [isPending, startTransition] = useTransition();
 
   const [liked, setLiked] = useState(initialLiked);
-  const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [likeAnimating, setLikeAnimating] = useState(false);
 
   const [commentText, setCommentText] = useState("");
@@ -66,7 +66,10 @@ export function BusinessEngagement({
   const [localApproved, setLocalApproved] = useState<BusinessComment[]>(approvedComments);
   const [localModerationQueue, setLocalModerationQueue] = useState<BusinessComment[]>(pendingForModeration);
 
-  const commentCount = useMemo(() => localApproved.length, [localApproved.length]);
+  const liveCounts = useBusinessEngagementRealtime(businessId, {
+    likes: initialLikeCount,
+    comments: approvedComments.length,
+  });
 
   const t = {
     title: locale === "ar" ? "التفاعل" : "Engagement",
@@ -101,7 +104,6 @@ export function BusinessEngagement({
       try {
         const r = await toggleBusinessLikeAction(locale, businessId, businessSlug);
         setLiked(r.liked);
-        setLikeCount(r.count);
       } catch {
         // noop (could toast)
       }
@@ -163,7 +165,7 @@ export function BusinessEngagement({
             {t.title}
           </h2>
           <div className="mt-2 text-sm text-(--muted-foreground)">
-            {t.comments}: {commentCount}
+            {t.comments}: {Math.max(liveCounts.comments, localApproved.length)}
           </div>
         </div>
 
@@ -194,7 +196,7 @@ export function BusinessEngagement({
 
           <span className="text-sm font-semibold truncate">{liked ? t.liked : t.like}</span>
           <span className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${liked ? "bg-red-500/15 text-red-500" : "bg-(--surface) text-(--muted-foreground)"}`}>
-            {likeCount}
+            {liveCounts.likes}
           </span>
         </button>
       </div>

@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: "Admin access required" }, { status: 403 });
     }
 
-    // Check if WAHA is enabled
+    // Check if WhatsApp gateway is enabled
     if (!isWAHAEnabled()) {
       return NextResponse.json({ ok: false, error: "WhatsApp is not configured" }, { status: 400 });
     }

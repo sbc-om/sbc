@@ -23,7 +23,10 @@ import type { Locale } from "@/lib/i18n/locales";
 import type { Agent, AgentClientWithUser } from "@/lib/db/agents";
 import type { Product } from "@/lib/db/products";
 
-type ClientItem = AgentClientWithUser & { walletBalance: number };
+type ClientItem = AgentClientWithUser & {
+  walletBalance: number;
+  activeProducts: Array<{ slug: string; name: string; endDate: string }>;
+};
 
 type Props = {
   locale: Locale;
@@ -76,6 +79,7 @@ export default function AgentDashboard({
       MISSING_PARAMS:               ["Missing required parameters",            "بيانات ناقصة"],
       PRODUCT_NOT_FOUND:            ["Product not found",                      "المنتج غير موجود"],
       CLIENT_INSUFFICIENT_BALANCE:  ["Client has insufficient balance",        "رصيد العميل غير كافٍ"],
+      CLIENT_PHONE_NOT_VERIFIED:    ["Client phone is not verified",           "رقم العميل غير مفعّل"],
       UNKNOWN_ACTION:               ["Unknown action",                         "إجراء غير معروف"],
       ACTION_FAILED:                ["Action failed, please try again",        "فشل الإجراء، يرجى المحاولة مجدداً"],
     };
@@ -131,6 +135,9 @@ export default function AgentDashboard({
     noClientsSub: ar ? "أضف أو أنشئ عميل جديد للبدء" : "Add or create a new client to get started",
     searchClients: ar ? "بحث في العملاء..." : "Search clients...",
     balance: ar ? "الرصيد" : "Balance",
+    activeProducts: ar ? "المنتجات المفعلة" : "Active Products",
+    noActiveProducts: ar ? "بدون منتج مفعل" : "No active product",
+    needsActivation: ar ? "يحتاج تفعيل" : "Needs activation",
     transfer: ar ? "تحويل" : "Transfer",
     purchase: ar ? "شراء اشتراك" : "Purchase",
     registerBusiness: ar ? "تسجيل عمل" : "Register Business",
@@ -315,10 +322,41 @@ export default function AgentDashboard({
                   )}
 
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-semibold">{c.clientName}</p>
+                    <Link
+                      href={`/${locale}/agent/clients/${encodeURIComponent(c.clientUserId)}`}
+                      className="truncate text-[13px] font-semibold text-blue-600 hover:underline dark:text-blue-400"
+                    >
+                      {c.clientName}
+                    </Link>
                     <p className="truncate text-xs text-(--muted-foreground)">
                       {c.clientPhone || c.clientEmail}
                     </p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      {c.activeProducts.length > 0 ? (
+                        c.activeProducts.slice(0, 2).map((product) => (
+                          <span
+                            key={`${c.clientUserId}-${product.slug}`}
+                            className="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                          >
+                            {product.name}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          {t.noActiveProducts}
+                        </span>
+                      )}
+                      {c.activeProducts.length > 2 ? (
+                        <span className="text-[10px] text-(--muted-foreground)">
+                          +{c.activeProducts.length - 2} {t.activeProducts}
+                        </span>
+                      ) : null}
+                      {!c.clientIsPhoneVerified ? (
+                        <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                          {t.needsActivation}
+                        </span>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
@@ -329,28 +367,32 @@ export default function AgentDashboard({
 
                     <button
                       type="button"
+                      disabled={!c.clientIsPhoneVerified}
                       onClick={() => {
+                        if (!c.clientIsPhoneVerified) return;
                         setSelectedClientId(c.clientUserId);
                         setError("");
                         setSuccess("");
                         setModal("transfer");
                       }}
                       title={t.transfer}
-                      className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-950/50"
+                      className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 p-2 text-blue-600 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-45 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-950/50"
                     >
                       <HiOutlineCash className="h-3.5 w-3.5" />
                     </button>
 
                     <button
                       type="button"
+                      disabled={!c.clientIsPhoneVerified}
                       onClick={() => {
+                        if (!c.clientIsPhoneVerified) return;
                         setSelectedClientId(c.clientUserId);
                         setError("");
                         setSuccess("");
                         setModal("purchase");
                       }}
                       title={t.purchase}
-                      className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-emerald-600 transition-colors hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
+                      className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-emerald-600 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-45 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-950/50"
                     >
                       <HiOutlineShoppingCart className="h-3.5 w-3.5" />
                     </button>
@@ -358,7 +400,11 @@ export default function AgentDashboard({
                     <Link
                       href={`/${locale}/agent/businesses/new?clientId=${encodeURIComponent(c.clientUserId)}&clientName=${encodeURIComponent(c.clientName)}`}
                       title={t.registerBusiness}
-                      className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 p-2 text-indigo-600 transition-colors hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-400 dark:hover:bg-indigo-950/50"
+                      aria-disabled={!c.clientIsPhoneVerified}
+                      onClick={(event) => {
+                        if (!c.clientIsPhoneVerified) event.preventDefault();
+                      }}
+                      className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 p-2 text-indigo-600 transition-colors hover:bg-indigo-100 aria-disabled:pointer-events-none aria-disabled:opacity-45 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-400 dark:hover:bg-indigo-950/50"
                     >
                       <HiOutlineCheckBadge className="h-3.5 w-3.5" />
                     </Link>

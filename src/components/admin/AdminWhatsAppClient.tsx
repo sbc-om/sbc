@@ -54,7 +54,7 @@ export function AdminWhatsAppClient({
     return {
       title: ar ? "إرسال رسالة واتساب" : "Send WhatsApp Message",
       subtitle: ar ? "إرسال رسالة نصية أو صورة لمستخدمين محددين" : "Send text or image message to selected users",
-      notEnabled: ar ? "واتساب غير مفعّل. تحقق من إعدادات WAHA." : "WhatsApp is not enabled. Check WAHA settings.",
+      notEnabled: ar ? "واتساب غير مفعّل. تحقق من إعدادات WhatsApp." : "WhatsApp is not enabled. Check WhatsApp settings.",
       textTab: ar ? "رسالة نصية" : "Text Message",
       imageTab: ar ? "صورة" : "Image",
       messageLabel: ar ? "نص الرسالة" : "Message text",

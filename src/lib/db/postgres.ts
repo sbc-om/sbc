@@ -326,6 +326,22 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       ON user_notifications(user_id, actor_user_id, business_id, type)
       WHERE type = 'business_like' AND actor_user_id IS NOT NULL AND business_id IS NOT NULL;
 
+    -- Realtime engagement health logs (diagnostics)
+    CREATE TABLE IF NOT EXISTS realtime_engagement_health_logs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      mode TEXT NOT NULL,
+      subscribed_businesses INTEGER NOT NULL DEFAULT 0,
+      reconnect_attempts INTEGER NOT NULL DEFAULT 0,
+      stream_errors INTEGER NOT NULL DEFAULT 0,
+      visible BOOLEAN NOT NULL DEFAULT true,
+      source TEXT,
+      path TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_realtime_engagement_health_logs_user_id_created_at
+      ON realtime_engagement_health_logs(user_id, created_at DESC);
+
     -- Chat conversations
     CREATE TABLE IF NOT EXISTS chat_conversations (
       id TEXT PRIMARY KEY,

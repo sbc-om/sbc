@@ -7,6 +7,7 @@ import { listAgentClients } from "@/lib/db/agents";
 import { getUserWallet } from "@/lib/db/wallet";
 import { getOwnerIdsWithBusiness } from "@/lib/db/businesses";
 import { getBusinessRequestStatusByUserIds } from "@/lib/db/businessRequests";
+import { listActiveProgramSubscriptionsForUsers } from "@/lib/db/subscriptions";
 import { AgentClientsList } from "./AgentClientsList";
 
 export const runtime = "nodejs";
@@ -24,7 +25,7 @@ export default async function AgentClientsPage({
   const clientIds = clients.map((c) => c.clientUserId);
 
   // Fetch business ownership, pending requests, and wallet balances in parallel
-  const [ownersWithBiz, requestStatusMap, walletsArr] = await Promise.all([
+  const [ownersWithBiz, requestStatusMap, walletsArr, activeSubscriptionsByUser] = await Promise.all([
     getOwnerIdsWithBusiness(clientIds),
     getBusinessRequestStatusByUserIds(clientIds),
     Promise.all(
@@ -33,6 +34,7 @@ export default async function AgentClientsPage({
         return { id: c.clientUserId, balance: w ? parseFloat(String(w.balance)) : 0 };
       })
     ),
+    listActiveProgramSubscriptionsForUsers(clientIds),
   ]);
 
   const walletMap = new Map(walletsArr.map((w) => [w.id, w.balance]));
@@ -42,6 +44,11 @@ export default async function AgentClientsPage({
     walletBalance: walletMap.get(c.clientUserId) ?? 0,
     hasBusiness: ownersWithBiz.has(c.clientUserId),
     requestStatus: requestStatusMap.get(c.clientUserId) ?? null,
+    activeProducts: (activeSubscriptionsByUser.get(c.clientUserId) || []).map((s) => ({
+      slug: s.productSlug,
+      name: locale === "ar" ? s.productNameAr : s.productNameEn,
+      endDate: s.endDate,
+    })),
   }));
 
   return (

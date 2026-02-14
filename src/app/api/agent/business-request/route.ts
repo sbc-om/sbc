@@ -40,6 +40,20 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { clientUserId, productSlug } = body;
 
+    if (clientUserId) {
+      const verifiedRes = await query<{ is_phone_verified: boolean | null }>(
+        `SELECT is_phone_verified FROM users WHERE id = $1 LIMIT 1`,
+        [clientUserId]
+      );
+      const isVerified = (verifiedRes.rows[0]?.is_phone_verified ?? false) === true;
+      if (!isVerified) {
+        return NextResponse.json(
+          { ok: false, error: "CLIENT_PHONE_NOT_VERIFIED" },
+          { status: 403 }
+        );
+      }
+    }
+
     // ── Plan purchase: deduct from client wallet & create subscription ──
     if (clientUserId && productSlug) {
       // Verify this is the agent's client

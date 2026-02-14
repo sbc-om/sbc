@@ -58,6 +58,16 @@ type SubscriptionWithUserRow = ProgramSubscriptionRow & {
   user_avatar: string | null;
 };
 
+export type ActiveProgramSubscriptionWithProduct = ProgramSubscription & {
+  productNameEn: string;
+  productNameAr: string;
+};
+
+type ActiveProgramSubscriptionWithProductRow = ProgramSubscriptionRow & {
+  product_name_en: string | null;
+  product_name_ar: string | null;
+};
+
 function rowToSubscription(r: ProgramSubscriptionRow): ProgramSubscription {
   const endDateStr = r.end_date?.toISOString() || new Date().toISOString();
   return {
@@ -146,6 +156,43 @@ export async function listActiveUserProgramSubscriptions(userId: string): Promis
     ORDER BY created_at DESC
   `, [userId]);
   return result.rows.map(rowToSubscription);
+}
+
+export async function listActiveProgramSubscriptionsForUsers(
+  userIds: string[]
+): Promise<Map<string, ActiveProgramSubscriptionWithProduct[]>> {
+  if (userIds.length === 0) return new Map();
+
+  const placeholders = userIds.map((_, i) => `$${i + 1}`).join(", ");
+  const result = await query<ActiveProgramSubscriptionWithProductRow>(
+    `
+    SELECT
+      ps.*,
+      p.name_en AS product_name_en,
+      p.name_ar AS product_name_ar
+    FROM program_subscriptions ps
+    LEFT JOIN products p ON p.id = ps.product_id
+    WHERE ps.user_id IN (${placeholders})
+      AND ps.is_active = true
+      AND ps.end_date > NOW()
+    ORDER BY ps.user_id, ps.end_date DESC
+    `,
+    userIds
+  );
+
+  const out = new Map<string, ActiveProgramSubscriptionWithProduct[]>();
+  for (const row of result.rows) {
+    const item: ActiveProgramSubscriptionWithProduct = {
+      ...rowToSubscription(row),
+      productNameEn: row.product_name_en || row.product_slug,
+      productNameAr: row.product_name_ar || row.product_slug,
+    };
+    const list = out.get(item.userId) || [];
+    list.push(item);
+    out.set(item.userId, list);
+  }
+
+  return out;
 }
 
 export async function getUserActiveSubscriptionForProgram(

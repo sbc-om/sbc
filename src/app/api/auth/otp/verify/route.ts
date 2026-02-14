@@ -153,6 +153,13 @@ export async function POST(request: NextRequest) {
     }
 
     // For other purposes, just return success
+    if (purpose === "phone_verification") {
+      const user = await getUserByPhone(phone);
+      if (user && !user.isPhoneVerified) {
+        await setUserPhoneVerified(user.id, true);
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       message: "OTP verified successfully",

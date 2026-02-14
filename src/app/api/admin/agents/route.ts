@@ -7,6 +7,8 @@ import {
   deactivateAgent,
   markCommissionPaid,
 } from "@/lib/db/agents";
+import { getUserWallet, transferFunds } from "@/lib/db/wallet";
+import { broadcastWalletEvent } from "@/app/api/wallet/stream/route";
 import { query } from "@/lib/db/postgres";
 
 export const runtime = "nodejs";
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
 /** PATCH /api/admin/agents — update agent */
 export async function PATCH(request: NextRequest) {
   const user = await getCurrentUser();
-  if (!isAdmin(user)) {
+  if (!user || user.role !== "admin") {
     return NextResponse.json({ ok: false, error: "FORBIDDEN" }, { status: 403 });
   }
 
@@ -90,6 +92,69 @@ export async function PATCH(request: NextRequest) {
       }
       const commission = await markCommissionPaid(commissionId);
       return NextResponse.json({ ok: true, commission });
+    }
+
+    if (action === "charge-wallet") {
+      const { amount, description } = updates as {
+        amount?: number | string;
+        description?: string;
+      };
+      const parsedAmount = typeof amount === "number" ? amount : parseFloat(String(amount ?? ""));
+      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+        return NextResponse.json({ ok: false, error: "INVALID_AMOUNT" }, { status: 400 });
+      }
+
+      const recipientRes = await query<{ id: string; phone: string | null }>(
+        `SELECT id, phone FROM users WHERE id = $1`,
+        [userId]
+      );
+      if (recipientRes.rows.length === 0) {
+        return NextResponse.json({ ok: false, error: "USER_NOT_FOUND" }, { status: 404 });
+      }
+
+      const recipientPhone = (recipientRes.rows[0].phone || "").trim();
+      if (!recipientPhone) {
+        return NextResponse.json({ ok: false, error: "AGENT_PHONE_REQUIRED" }, { status: 400 });
+      }
+
+      const senderWallet = await getUserWallet(user.id);
+      if (!senderWallet) {
+        return NextResponse.json({ ok: false, error: "ADMIN_WALLET_NOT_FOUND" }, { status: 404 });
+      }
+
+      const transfer = await transferFunds(
+        user.id,
+        recipientPhone,
+        parsedAmount,
+        description?.trim() || `Admin transfer to agent ${userId}`
+      );
+
+      broadcastWalletEvent(user.id, {
+        type: "transfer_out",
+        amount: parsedAmount,
+        balance: transfer.fromWallet.balance,
+        toUser: transfer.toWallet.accountNumber,
+        description: description?.trim() || `Admin transfer to agent ${userId}`,
+      });
+
+      broadcastWalletEvent(userId, {
+        type: "transfer_in",
+        amount: parsedAmount,
+        balance: transfer.toWallet.balance,
+        fromUser: transfer.fromWallet.accountNumber,
+        description: description?.trim() || "Received from admin",
+      });
+
+      return NextResponse.json({
+        ok: true,
+        transfer: {
+          amount: parsedAmount,
+          fromAccountNumber: transfer.fromWallet.accountNumber,
+          toAccountNumber: transfer.toWallet.accountNumber,
+          fromBalance: transfer.fromWallet.balance,
+          toBalance: transfer.toWallet.balance,
+        },
+      });
     }
 
     const updatePayload: { commissionRate?: number; isActive?: boolean; notes?: string } = {};

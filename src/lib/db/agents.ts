@@ -105,6 +105,7 @@ export type AgentClientWithUser = AgentClient & {
   clientEmail: string;
   clientPhone: string;
   clientAvatar: string | null;
+  clientIsPhoneVerified: boolean;
 };
 
 type AgentRow = {
@@ -157,6 +158,7 @@ type AgentClientWithUserRow = {
   client_email: string | null;
   client_phone: string | null;
   client_avatar: string | null;
+  client_is_phone_verified: boolean | null;
 };
 
 type AgentWithdrawalRequestRow = {
@@ -199,6 +201,18 @@ type AgentStatsRow = {
 type CountRow = { c: string };
 type AgentUserIdRow = { user_id: string };
 type ClientAgentRow = { agent_user_id: string };
+type ClientAgentNameRow = {
+  client_user_id: string;
+  agent_user_id: string;
+  agent_name: string | null;
+  agent_avatar: string | null;
+};
+
+export type AssignedAgentSummary = {
+  agentUserId: string;
+  agentName: string;
+  agentAvatar: string | null;
+};
 
 function toNumber(value: string | number | null | undefined): number {
   if (typeof value === "number") return value;
@@ -394,7 +408,8 @@ export async function removeAgentClient(agentUserId: string, clientUserId: strin
 export async function listAgentClients(agentUserId: string): Promise<AgentClientWithUser[]> {
   const result = await query<AgentClientWithUserRow>(
     `SELECT ac.*, u.email as client_email, COALESCE(u.display_name, u.email) as client_name,
-            u.phone as client_phone, u.avatar_url as client_avatar
+            u.phone as client_phone, u.avatar_url as client_avatar,
+            u.is_phone_verified as client_is_phone_verified
      FROM agent_clients ac
      LEFT JOIN users u ON ac.client_user_id = u.id
      WHERE ac.agent_user_id = $1
@@ -409,6 +424,7 @@ export async function listAgentClients(agentUserId: string): Promise<AgentClient
     clientEmail: row.client_email || "",
     clientPhone: row.client_phone || "",
     clientAvatar: row.client_avatar || null,
+    clientIsPhoneVerified: row.client_is_phone_verified ?? false,
   }));
 }
 
@@ -428,6 +444,39 @@ export async function getClientAgent(clientUserId: string): Promise<string | nul
     [clientUserId]
   );
   return result.rows.length > 0 ? result.rows[0].agent_user_id : null;
+}
+
+/** Get a map of client user id -> assigned agent summary */
+export async function getAgentNamesForClientUsers(
+  userIds: string[]
+): Promise<Record<string, AssignedAgentSummary>> {
+  if (userIds.length === 0) return {};
+
+  const placeholders = userIds.map((_, i) => `$${i + 1}`).join(", ");
+  const result = await query<ClientAgentNameRow>(
+    `SELECT DISTINCT ON (ac.client_user_id)
+        ac.client_user_id,
+        ac.agent_user_id,
+        COALESCE(au.display_name, au.full_name, au.email) AS agent_name,
+        au.avatar_url AS agent_avatar
+     FROM agent_clients ac
+     LEFT JOIN users au ON au.id = ac.agent_user_id
+     WHERE ac.client_user_id IN (${placeholders})
+     ORDER BY ac.client_user_id, ac.created_at DESC`,
+    userIds
+  );
+
+  const out: Record<string, AssignedAgentSummary> = {};
+  for (const row of result.rows) {
+    if (row.agent_name) {
+      out[row.client_user_id] = {
+        agentUserId: row.agent_user_id,
+        agentName: row.agent_name,
+        agentAvatar: row.agent_avatar ?? null,
+      };
+    }
+  }
+  return out;
 }
 
 /* ─── Commissions ─── */

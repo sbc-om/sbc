@@ -15,6 +15,7 @@ import { MobileNav } from "@/components/MobileNav";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { CartProvider } from "@/components/store/CartProvider";
 import { CartFloating } from "@/components/store/CartFloating";
+import { RealtimeEngagementHealthIndicator } from "@/components/RealtimeEngagementHealthIndicator";
 import { listStoreProducts } from "@/lib/store/products";
 import { AISearchProvider } from "@/lib/ai/AISearchProvider";
 import { getBusinessByOwnerId } from "@/lib/db/businesses";
@@ -84,6 +85,7 @@ export default async function LocaleLayout({
                   hasBusiness: !!userBusiness,
                 }}
               />
+              <RealtimeEngagementHealthIndicator />
               <div
                 className="min-h-dvh transition-[margin] duration-300 ease-in-out"
                 style={{

@@ -113,6 +113,9 @@ const texts = {
       "Client does not have enough balance. Please top up their wallet first.",
     topUpWallet: "Transfer to Client",
     noClientSelected: "Please select a client first",
+    needsActivation: "Phone activation required",
+    needsActivationMsg:
+      "This client is not phone-verified yet. Send and verify activation code from Clients > New before continuing.",
     proceedToForm: "Continue to Business Form",
     backToPlans: "Back to Plan Selection",
     perYear: "/year",
@@ -190,6 +193,9 @@ const texts = {
       "رصيد العميل غير كافٍ. يرجى شحن محفظته أولاً.",
     topUpWallet: "تحويل للعميل",
     noClientSelected: "يرجى اختيار عميل أولاً",
+    needsActivation: "يتطلب تفعيل الهاتف",
+    needsActivationMsg:
+      "هذا العميل غير مفعّل رقمه بعد. أرسل وتحقق من كود التفعيل من صفحة العملاء قبل المتابعة.",
     proceedToForm: "متابعة لنموذج العمل",
     backToPlans: "العودة لاختيار الطرح",
     perYear: "/سنة",
@@ -272,6 +278,7 @@ export function AgentBusinessForm({
   const selectedProduct = products.find(
     (p) => p.slug === selectedProductSlug
   );
+  const selectedClientVerified = !!selectedClient?.clientIsPhoneVerified;
 
   const directoryProducts = useMemo(
     () => products.filter((product) => product.program === "directory"),
@@ -308,7 +315,7 @@ export function AgentBusinessForm({
   }, [directoryProducts, clientSubs]);
 
   const canProceed =
-    !!selectedClientId && !!selectedProductSlug && canAffordSelected;
+    !!selectedClientId && !!selectedProductSlug && canAffordSelected && selectedClientVerified;
 
   // ── Handlers ──
   const handleFileSelect = (
@@ -349,6 +356,11 @@ export function AgentBusinessForm({
             : "Please select a client and plan",
         variant: "error",
       });
+      return;
+    }
+
+    if (!selectedClientVerified) {
+      toast({ message: t.needsActivationMsg, variant: "error" });
       return;
     }
 
@@ -522,6 +534,13 @@ export function AgentBusinessForm({
                   {t.topUpWallet}
                 </Link>
               )}
+            </div>
+          )}
+
+          {selectedClientId && !selectedClientVerified && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-950/20">
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">{t.needsActivation}</p>
+              <p className="mt-1 text-xs text-amber-700/90 dark:text-amber-300/90">{t.needsActivationMsg}</p>
             </div>
           )}
         </div>

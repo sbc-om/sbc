@@ -24,10 +24,10 @@ export default async function VerifyPhonePage({
     redirect(`/${locale}/dashboard`);
   }
 
-  // Check if WAHA is enabled for OTP functionality
+  // Check if WhatsApp gateway is enabled for OTP functionality
   const wahaEnabled = isWAHAEnabled();
   if (!wahaEnabled) {
-    // Can't verify without WAHA, redirect to dashboard
+    // Can't verify without WhatsApp gateway, redirect to dashboard
     redirect(`/${locale}/dashboard`);
   }
 

@@ -27,6 +27,61 @@ export async function getBusinessLikeCount(businessId: string): Promise<number> 
   return parseInt(result.rows[0].count);
 }
 
+type BusinessEngagementCountRow = {
+  business_id: string;
+  like_count: number;
+  comment_count: number;
+};
+
+export async function getBusinessEngagementCounts(
+  businessIds: string[]
+): Promise<Record<string, { likes: number; comments: number }>> {
+  const ids = Array.from(new Set(businessIds.filter(Boolean)));
+  if (ids.length === 0) return {};
+
+  const result = await query<BusinessEngagementCountRow>(
+    `
+    WITH ids AS (
+      SELECT UNNEST($1::text[]) AS business_id
+    ), likes AS (
+      SELECT business_id, COUNT(*)::int AS like_count
+      FROM user_business_likes
+      WHERE business_id = ANY($1::text[])
+      GROUP BY business_id
+    ), comments AS (
+      SELECT business_id, COUNT(*)::int AS comment_count
+      FROM business_comments
+      WHERE status = 'approved' AND business_id = ANY($1::text[])
+      GROUP BY business_id
+    )
+    SELECT
+      i.business_id,
+      COALESCE(l.like_count, 0)::int AS like_count,
+      COALESCE(c.comment_count, 0)::int AS comment_count
+    FROM ids i
+    LEFT JOIN likes l ON l.business_id = i.business_id
+    LEFT JOIN comments c ON c.business_id = i.business_id
+    `,
+    [ids]
+  );
+
+  const counts: Record<string, { likes: number; comments: number }> = {};
+  for (const row of result.rows) {
+    counts[row.business_id] = {
+      likes: Number(row.like_count ?? 0),
+      comments: Number(row.comment_count ?? 0),
+    };
+  }
+
+  for (const id of ids) {
+    if (!counts[id]) {
+      counts[id] = { likes: 0, comments: 0 };
+    }
+  }
+
+  return counts;
+}
+
 export async function getUserLikedBusinessIds(userId: string): Promise<string[]> {
   const result = await query<{ business_id: string }>(`
     SELECT business_id FROM user_business_likes WHERE user_id = $1

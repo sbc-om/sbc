@@ -297,6 +297,18 @@ export default async function AdminPage({
       label: ar ? "الإعدادات" : "Settings",
       color: "slate",
     },
+    {
+      href: `/${locale}/admin/realtime-health`,
+      icon: (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.5l4.5-4.5 4 4 7-7 2.5 2.5" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M20 6h-5m5 0v5" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 20h18" />
+        </svg>
+      ),
+      label: ar ? "مراقبة الاتصال الفوري" : "Realtime Health",
+      color: "rose",
+    },
   ];
 
   return (

@@ -12,6 +12,7 @@ export type UserListItem = Pick<
   | "email"
   | "phone"
   | "fullName"
+  | "avatarUrl"
   | "role"
   | "isActive"
   | "isVerified"
@@ -73,6 +74,7 @@ type UserListRow = {
   email: string;
   phone: string | null;
   full_name: string | null;
+  avatar_url: string | null;
   role: Role;
   is_active: boolean | null;
   is_verified: boolean | null;
@@ -598,7 +600,7 @@ export async function restoreUser(id: string): Promise<User> {
 
 export async function listUsers(includeArchived = false): Promise<UserListItem[]> {
   const result = await query<UserListRow>(`
-    SELECT id, email, phone, full_name, role, is_active, is_verified, is_phone_verified, 
+    SELECT id, email, phone, full_name, avatar_url, role, is_active, is_verified, is_phone_verified, 
            is_archived, archived_at, created_at, updated_at,
            approval_status, approval_reason, approval_requested_at, pending_email, pending_phone, approved_at
     FROM users
@@ -612,6 +614,7 @@ export async function listUsers(includeArchived = false): Promise<UserListItem[]
       email: r.email,
       phone: r.phone ?? "",
       fullName: r.full_name ?? r.email.split("@")[0],
+      avatarUrl: r.avatar_url ?? undefined,
       role: r.role as Role,
       isActive: r.is_active ?? true,
       isVerified: r.is_verified ?? undefined,
@@ -632,7 +635,7 @@ export async function listUsers(includeArchived = false): Promise<UserListItem[]
 
 export async function listArchivedUsers(): Promise<UserListItem[]> {
   const result = await query<UserListRow>(`
-    SELECT id, email, phone, full_name, role, is_active, is_verified, is_phone_verified, 
+    SELECT id, email, phone, full_name, avatar_url, role, is_active, is_verified, is_phone_verified, 
            is_archived, archived_at, created_at, updated_at,
            approval_status, approval_reason, approval_requested_at, pending_email, pending_phone, approved_at
     FROM users
@@ -646,6 +649,7 @@ export async function listArchivedUsers(): Promise<UserListItem[]> {
       email: r.email,
       phone: r.phone ?? "",
       fullName: r.full_name ?? r.email.split("@")[0],
+      avatarUrl: r.avatar_url ?? undefined,
       role: r.role as Role,
       isActive: r.is_active ?? true,
       isVerified: r.is_verified ?? undefined,

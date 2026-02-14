@@ -20,6 +20,7 @@ type EnrichedClient = AgentClientWithUser & {
   walletBalance: number;
   hasBusiness: boolean;
   requestStatus: "pending" | "approved" | "rejected" | null;
+  activeProducts: Array<{ slug: string; name: string; endDate: string }>;
 };
 
 const texts = {
@@ -41,6 +42,9 @@ const texts = {
     filterAll: "All",
     filterNoBiz: "Without Business",
     filterHasBiz: "With Business",
+    activeProducts: "Active Products",
+    noActiveProducts: "No active product",
+    needsActivation: "Needs activation",
   },
   ar: {
     title: "عملائي",
@@ -60,6 +64,9 @@ const texts = {
     filterAll: "الكل",
     filterNoBiz: "بدون عمل",
     filterHasBiz: "لديهم عمل",
+    activeProducts: "المنتجات المفعلة",
+    noActiveProducts: "بدون منتج مفعل",
+    needsActivation: "يحتاج تفعيل",
   },
 };
 
@@ -220,10 +227,41 @@ export function AgentClientsList({
                     )}
 
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-semibold">{c.clientName}</p>
+                      <Link
+                        href={`/${locale}/agent/clients/${encodeURIComponent(c.clientUserId)}`}
+                        className="truncate text-[13px] font-semibold text-blue-600 hover:underline dark:text-blue-400"
+                      >
+                        {c.clientName}
+                      </Link>
                       <p className="truncate text-xs text-(--muted-foreground)">
                         {c.clientPhone || c.clientEmail}
                       </p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                        {c.activeProducts.length > 0 ? (
+                          c.activeProducts.slice(0, 3).map((product) => (
+                            <span
+                              key={`${c.clientUserId}-${product.slug}`}
+                              className="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                            >
+                              {product.name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="inline-flex items-center rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            {t.noActiveProducts}
+                          </span>
+                        )}
+                        {c.activeProducts.length > 3 ? (
+                          <span className="text-[10px] text-(--muted-foreground)">
+                            +{c.activeProducts.length - 3} {t.activeProducts}
+                          </span>
+                        ) : null}
+                        {!c.clientIsPhoneVerified ? (
+                          <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                            {t.needsActivation}
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
 
@@ -254,7 +292,11 @@ export function AgentClientsList({
                         </span>
                         <Link
                           href={`/${locale}/agent/businesses/new?clientId=${c.clientUserId}&clientName=${encodeURIComponent(c.clientName)}`}
-                          className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-950/50"
+                          aria-disabled={!c.clientIsPhoneVerified}
+                          onClick={(event) => {
+                            if (!c.clientIsPhoneVerified) event.preventDefault();
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-100 aria-disabled:pointer-events-none aria-disabled:opacity-45 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-950/50"
                         >
                           <HiOutlineOfficeBuilding className="h-3.5 w-3.5" />
                           {t.registerBusiness}
@@ -268,7 +310,11 @@ export function AgentClientsList({
                         </span>
                         <Link
                           href={`/${locale}/agent/businesses/new?clientId=${c.clientUserId}&clientName=${encodeURIComponent(c.clientName)}`}
-                          className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-950/50"
+                          aria-disabled={!c.clientIsPhoneVerified}
+                          onClick={(event) => {
+                            if (!c.clientIsPhoneVerified) event.preventDefault();
+                          }}
+                          className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600 transition-colors hover:bg-blue-100 aria-disabled:pointer-events-none aria-disabled:opacity-45 dark:bg-blue-950/30 dark:text-blue-400 dark:hover:bg-blue-950/50"
                         >
                           <HiOutlineOfficeBuilding className="h-3.5 w-3.5" />
                           {t.registerBusiness}

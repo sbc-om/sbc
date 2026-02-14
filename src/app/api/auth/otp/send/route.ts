@@ -43,7 +43,7 @@ const sendOTPSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if WAHA is enabled
+    // Check if WhatsApp gateway is enabled
     if (!isWAHAEnabled()) {
       return NextResponse.json(
         { ok: false, error: "WhatsApp service is not available" },

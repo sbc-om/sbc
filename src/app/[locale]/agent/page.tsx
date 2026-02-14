@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/agents";
 import { getUserWallet } from "@/lib/db/wallet";
 import { listActiveProducts } from "@/lib/db/products";
+import { listActiveProgramSubscriptionsForUsers } from "@/lib/db/subscriptions";
 import AgentDashboard from "./AgentDashboard";
 
 export const runtime = "nodejs";
@@ -39,6 +40,9 @@ export default async function AgentPage({
   };
 
   const clients = await listAgentClients(user.id);
+  const activeSubscriptionsByUser = await listActiveProgramSubscriptionsForUsers(
+    clients.map((c) => c.clientUserId)
+  );
   const stats = await getAgentStats(user.id);
   const wallet = await getUserWallet(user.id);
   const products = await listActiveProducts();
@@ -50,6 +54,11 @@ export default async function AgentPage({
       return {
         ...c,
         walletBalance: cw ? parseFloat(String(cw.balance)) : 0,
+        activeProducts: (activeSubscriptionsByUser.get(c.clientUserId) || []).map((s) => ({
+          slug: s.productSlug,
+          name: locale === "ar" ? s.productNameAr : s.productNameEn,
+          endDate: s.endDate,
+        })),
       };
     })
   );

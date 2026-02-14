@@ -59,6 +59,15 @@ export default function AgentDetailView({
   const [notes, setNotes] = useState(agent.notes || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [chargeAmount, setChargeAmount] = useState("");
+  const [chargeDescription, setChargeDescription] = useState("");
+  const [chargeLoading, setChargeLoading] = useState(false);
+  const [chargeError, setChargeError] = useState("");
+  const [chargeSuccess, setChargeSuccess] = useState<{
+    amount: number;
+    fromBalance: number;
+    toBalance: number;
+  } | null>(null);
 
   const t = {
     back: ar ? "الوكلاء" : "Agents",
@@ -88,7 +97,70 @@ export default function AgentDetailView({
     pendingStatus: ar ? "بانتظار المراجعة" : "Awaiting review",
     markPaid: ar ? "مراجعة" : "Review",
     saving_: ar ? "جاري..." : "Saving...",
+    walletTopUp: ar ? "شحن محفظة الوكيل" : "Charge Agent Wallet",
+    walletTopUpSub: ar
+      ? "يتم الخصم من محفظة الأدمن والتحويل مباشرة إلى الوكيل"
+      : "Funds are transferred from your admin wallet directly to this agent",
+    amountInput: ar ? "المبلغ (OMR)" : "Amount (OMR)",
+    noteInput: ar ? "ملاحظة (اختياري)" : "Note (optional)",
+    notePlaceholder: ar ? "سبب التحويل أو مرجع داخلي" : "Reason or internal reference",
+    transferNow: ar ? "تحويل الآن" : "Transfer Now",
+    transfering: ar ? "جارٍ التحويل..." : "Transferring...",
+    walletCharged: ar ? "تم شحن محفظة الوكيل بنجاح" : "Agent wallet charged successfully",
+    adminBalanceAfter: ar ? "رصيد الأدمن بعد التحويل" : "Admin balance after transfer",
+    agentBalanceAfter: ar ? "رصيد الوكيل بعد التحويل" : "Agent balance after transfer",
+    invalidAmount: ar ? "أدخل مبلغًا صحيحًا أكبر من صفر" : "Enter a valid amount greater than zero",
+    agentPhoneMissing: ar ? "رقم هاتف الوكيل غير متوفر لربط المحفظة" : "Agent phone is required for wallet transfer",
   };
+
+  async function handleChargeWallet() {
+    const amount = parseFloat(chargeAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setChargeError(t.invalidAmount);
+      return;
+    }
+
+    setChargeLoading(true);
+    setChargeError("");
+    setChargeSuccess(null);
+    try {
+      const res = await fetch("/api/admin/agents", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          action: "charge-wallet",
+          amount,
+          description: chargeDescription.trim() || undefined,
+        }),
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload?.ok) {
+        const apiError = String(payload?.error || "");
+        if (apiError === "AGENT_PHONE_REQUIRED") {
+          throw new Error(t.agentPhoneMissing);
+        }
+        if (apiError === "INVALID_AMOUNT") {
+          throw new Error(t.invalidAmount);
+        }
+        throw new Error(apiError || "Transfer failed");
+      }
+
+      setChargeSuccess({
+        amount,
+        fromBalance: Number(payload.transfer?.fromBalance || 0),
+        toBalance: Number(payload.transfer?.toBalance || 0),
+      });
+      setChargeAmount("");
+      setChargeDescription("");
+      startTransition(() => router.refresh());
+    } catch (err: unknown) {
+      setChargeError(err instanceof Error ? err.message : "Transfer failed");
+    } finally {
+      setChargeLoading(false);
+    }
+  }
 
   async function handleSave() {
     const rate = parseFloat(commissionRate);
@@ -326,6 +398,79 @@ export default function AgentDetailView({
                 {t.activate}
               </>
             )}
+          </button>
+        </div>
+      </div>
+
+      {/* Wallet Charge Card */}
+      <div className="overflow-hidden rounded-2xl border border-gray-200/70 bg-white dark:border-white/[0.06] dark:bg-white/[0.02]">
+        <div className="border-b border-gray-100 px-5 py-4 dark:border-white/[0.04]">
+          <h2 className="text-sm font-semibold">{t.walletTopUp}</h2>
+          <p className="mt-1 text-xs text-(--muted-foreground)">{t.walletTopUpSub}</p>
+        </div>
+
+        <div className="space-y-4 px-5 py-5">
+          {chargeError ? (
+            <p className="rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 dark:bg-red-950/30 dark:text-red-400">
+              {chargeError}
+            </p>
+          ) : null}
+
+          {chargeSuccess ? (
+            <div className="rounded-xl bg-emerald-50 px-4 py-3 text-xs font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+              <p className="font-semibold">{t.walletCharged}</p>
+              <p className="mt-1 tabular-nums">+{chargeSuccess.amount.toFixed(3)} OMR</p>
+              <p className="mt-1 text-emerald-700/90 dark:text-emerald-300/90 tabular-nums">
+                {t.adminBalanceAfter}: {chargeSuccess.fromBalance.toFixed(3)} OMR
+              </p>
+              <p className="text-emerald-700/90 dark:text-emerald-300/90 tabular-nums">
+                {t.agentBalanceAfter}: {chargeSuccess.toBalance.toFixed(3)} OMR
+              </p>
+            </div>
+          ) : null}
+
+          {!user.phone ? (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+              {t.agentPhoneMissing}
+            </p>
+          ) : null}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-(--muted-foreground)">
+                {t.amountInput}
+              </label>
+              <input
+                type="number"
+                min={0.001}
+                step={0.001}
+                value={chargeAmount}
+                onChange={(e) => setChargeAmount(e.target.value)}
+                className="w-full rounded-xl border border-gray-200/80 bg-transparent px-4 py-2.5 text-sm tabular-nums transition-colors focus:border-gray-300 focus:outline-none dark:border-white/[0.08] dark:focus:border-white/[0.15]"
+                placeholder="0.000"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-(--muted-foreground)">
+                {t.noteInput}
+              </label>
+              <input
+                type="text"
+                value={chargeDescription}
+                onChange={(e) => setChargeDescription(e.target.value)}
+                className="w-full rounded-xl border border-gray-200/80 bg-transparent px-4 py-2.5 text-sm transition-colors focus:border-gray-300 focus:outline-none dark:border-white/[0.08] dark:focus:border-white/[0.15]"
+                placeholder={t.notePlaceholder}
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={chargeLoading || isPending || !user.phone}
+            onClick={handleChargeWallet}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-(--foreground) px-4 py-2.5 text-xs font-semibold text-(--background) transition-all hover:opacity-90 disabled:opacity-50"
+          >
+            {chargeLoading ? t.transfering : t.transferNow}
           </button>
         </div>
       </div>

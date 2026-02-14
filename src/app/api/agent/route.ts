@@ -12,7 +12,9 @@ import {
 import { query } from "@/lib/db/postgres";
 import { ensureWallet, depositToWallet, getAvailableBalance, withdrawFromWallet } from "@/lib/db/wallet";
 import { purchaseProgramSubscription } from "@/lib/db/subscriptions";
-import { sendText, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
+import { sendTextSafe, sendOTP, formatChatId, isWAHAEnabled } from "@/lib/waha/client";
+import { createOTP, hasRecentOTP, verifyOTP } from "@/lib/db/otp";
+import { setUserPhoneVerified } from "@/lib/db/users";
 
 export const runtime = "nodejs";
 
@@ -22,6 +24,14 @@ function getErrorMessage(error: unknown, fallback: string): string {
 
 function isAgentOrAdmin(user: { role?: string } | null) {
   return user && (user.role === "agent" || user.role === "admin");
+}
+
+async function isClientPhoneVerified(clientId: string): Promise<boolean> {
+  const result = await query<{ is_phone_verified: boolean | null }>(
+    `SELECT is_phone_verified FROM users WHERE id = $1 LIMIT 1`,
+    [clientId]
+  );
+  return (result.rows[0]?.is_phone_verified ?? false) === true;
 }
 
 /** GET /api/agent — get agent dashboard data */
@@ -148,6 +158,129 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    // ── Edit client info before phone verification ──
+    if (action === "update-client-profile") {
+      const { clientId, fullName, email, phone } = body;
+      if (!clientId || !fullName || !phone) {
+        return NextResponse.json({ ok: false, error: "MISSING_FIELDS" }, { status: 400 });
+      }
+
+      const isClient = await isAgentClient(agentId, clientId);
+      if (!isClient) {
+        return NextResponse.json({ ok: false, error: "NOT_YOUR_CLIENT" }, { status: 403 });
+      }
+
+      const verified = await isClientPhoneVerified(clientId);
+      if (verified) {
+        return NextResponse.json({ ok: false, error: "CLIENT_ALREADY_VERIFIED" }, { status: 400 });
+      }
+
+      const normalizedPhone = String(phone).replace(/\D/g, "");
+      const normalizedEmail = email ? String(email).trim().toLowerCase() : null;
+
+      const phoneExists = await query<{ id: string }>(
+        `SELECT id FROM users WHERE phone = $1 AND id != $2 LIMIT 1`,
+        [normalizedPhone, clientId]
+      );
+      if (phoneExists.rows.length > 0) {
+        return NextResponse.json({ ok: false, error: "PHONE_TAKEN" }, { status: 409 });
+      }
+
+      if (normalizedEmail) {
+        const emailExists = await query<{ id: string }>(
+          `SELECT id FROM users WHERE email = $1 AND id != $2 LIMIT 1`,
+          [normalizedEmail, clientId]
+        );
+        if (emailExists.rows.length > 0) {
+          return NextResponse.json({ ok: false, error: "EMAIL_TAKEN" }, { status: 409 });
+        }
+      }
+
+      await query(
+        `UPDATE users
+         SET full_name = $1,
+             display_name = $1,
+             phone = $2,
+             email = COALESCE($3, email),
+             is_phone_verified = false,
+             updated_at = NOW()
+         WHERE id = $4`,
+        [String(fullName).trim(), normalizedPhone, normalizedEmail, clientId]
+      );
+
+      return NextResponse.json({ ok: true });
+    }
+
+    // ── Send activation OTP to client phone ──
+    if (action === "send-client-activation-code") {
+      const { clientId, locale } = body;
+      if (!clientId) {
+        return NextResponse.json({ ok: false, error: "CLIENT_ID_REQUIRED" }, { status: 400 });
+      }
+
+      const isClient = await isAgentClient(agentId, clientId);
+      if (!isClient) {
+        return NextResponse.json({ ok: false, error: "NOT_YOUR_CLIENT" }, { status: 403 });
+      }
+
+      const userRes = await query<{ phone: string | null; is_phone_verified: boolean | null }>(
+        `SELECT phone, is_phone_verified FROM users WHERE id = $1 LIMIT 1`,
+        [clientId]
+      );
+      const phone = userRes.rows[0]?.phone;
+      const isVerified = (userRes.rows[0]?.is_phone_verified ?? false) === true;
+
+      if (!phone) {
+        return NextResponse.json({ ok: false, error: "CLIENT_NO_PHONE" }, { status: 400 });
+      }
+      if (isVerified) {
+        return NextResponse.json({ ok: false, error: "CLIENT_ALREADY_VERIFIED" }, { status: 400 });
+      }
+      if (!isWAHAEnabled()) {
+        return NextResponse.json({ ok: false, error: "WAHA_UNAVAILABLE" }, { status: 503 });
+      }
+
+      const recent = await hasRecentOTP(phone, "phone_verification");
+      if (recent) {
+        return NextResponse.json({ ok: false, error: "OTP_RATE_LIMIT" }, { status: 429 });
+      }
+
+      const otp = await createOTP(phone, "phone_verification", clientId);
+      await sendOTP(phone, otp.code, locale === "ar" ? "ar" : "en");
+
+      return NextResponse.json({ ok: true, expiresIn: 120 });
+    }
+
+    // ── Verify activation OTP code ──
+    if (action === "verify-client-activation-code") {
+      const { clientId, code } = body;
+      if (!clientId || !code) {
+        return NextResponse.json({ ok: false, error: "MISSING_PARAMS" }, { status: 400 });
+      }
+
+      const isClient = await isAgentClient(agentId, clientId);
+      if (!isClient) {
+        return NextResponse.json({ ok: false, error: "NOT_YOUR_CLIENT" }, { status: 403 });
+      }
+
+      const userRes = await query<{ phone: string | null }>(
+        `SELECT phone FROM users WHERE id = $1 LIMIT 1`,
+        [clientId]
+      );
+      const phone = userRes.rows[0]?.phone;
+      if (!phone) {
+        return NextResponse.json({ ok: false, error: "CLIENT_NO_PHONE" }, { status: 400 });
+      }
+
+      const result = await verifyOTP(phone, String(code), "phone_verification");
+      if (!result.success) {
+        return NextResponse.json({ ok: false, error: result.error || "OTP_VERIFY_FAILED" }, { status: 401 });
+      }
+
+      await setUserPhoneVerified(clientId, true);
+      return NextResponse.json({ ok: true, verified: true });
+    }
+
     // ── Transfer funds to client wallet ──
     if (action === "transfer-to-client") {
       const { clientId, amount } = body;
@@ -159,6 +292,11 @@ export async function POST(request: NextRequest) {
       const isClient = await isAgentClient(agentId, clientId);
       if (!isClient) {
         return NextResponse.json({ ok: false, error: "NOT_YOUR_CLIENT" }, { status: 403 });
+      }
+
+      const phoneVerified = await isClientPhoneVerified(clientId);
+      if (!phoneVerified) {
+        return NextResponse.json({ ok: false, error: "CLIENT_PHONE_NOT_VERIFIED" }, { status: 403 });
       }
 
       // Check agent wallet balance
@@ -184,18 +322,30 @@ export async function POST(request: NextRequest) {
       await depositToWallet(clientId, amount, `Deposit from agent: ${user.displayName}`);
 
       // Notify client via WhatsApp
+      let whatsappStatus: "sent" | "failed" | "disabled" = "disabled";
       if (clientPhone && isWAHAEnabled()) {
-        try {
-          await sendText({
+        const waResult = await sendTextSafe(
+          {
             chatId: formatChatId(clientPhone),
             text: `${amount} OMR has been added to your wallet by ${user.displayName}.`,
-          });
-        } catch (err) {
-          console.error("[Agent] WhatsApp transfer notification failed:", err);
+          },
+          { retryCount: 1, retryDelayMs: 350 }
+        );
+        if (!waResult.ok) {
+          whatsappStatus = "failed";
+          console.warn(
+            `[Agent] WhatsApp transfer notification skipped for client=${clientId}: ${waResult.error || "UNKNOWN"}`
+          );
+        } else {
+          whatsappStatus = "sent";
         }
       }
 
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({
+        ok: true,
+        whatsappStatus,
+        whatsappNotified: whatsappStatus === "sent",
+      });
     }
 
     // ── Purchase subscription for client ──
@@ -209,6 +359,11 @@ export async function POST(request: NextRequest) {
       const isClient = await isAgentClient(agentId, clientId);
       if (!isClient) {
         return NextResponse.json({ ok: false, error: "NOT_YOUR_CLIENT" }, { status: 403 });
+      }
+
+      const phoneVerified = await isClientPhoneVerified(clientId);
+      if (!phoneVerified) {
+        return NextResponse.json({ ok: false, error: "CLIENT_PHONE_NOT_VERIFIED" }, { status: 403 });
       }
 
       // Fetch product

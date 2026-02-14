@@ -1,6 +1,6 @@
 /**
- * WAHA (WhatsApp HTTP API) Client
- * Handles sending WhatsApp messages via WAHA API
+ * WhatsApp HTTP API Client
+ * Handles sending WhatsApp messages via the WhatsApp API gateway
  */
 
 const WAHA_API_URL = process.env.WAHA_API_URL || "https://waha.sbc.om/api";
@@ -30,6 +30,12 @@ export interface SendTextOptions {
   linkPreview?: boolean;
 }
 
+export interface SendTextSafeResult {
+  ok: boolean;
+  error?: string;
+  data?: WAHAResponse;
+}
+
 export interface SendImageOptions {
   chatId: string;
   imageUrl?: string;
@@ -41,7 +47,7 @@ export interface SendImageOptions {
 }
 
 /**
- * Check if WAHA is enabled and configured
+ * Check if WhatsApp gateway is enabled and configured
  */
 export function isWAHAEnabled(): boolean {
   return WAHA_ENABLED && !!WAHA_API_KEY && !!WAHA_API_URL;
@@ -65,7 +71,7 @@ export function formatChatId(phone: string): string {
  */
 export async function sendText(options: SendTextOptions): Promise<WAHAResponse> {
   if (!isWAHAEnabled()) {
-    throw new Error("WAHA is not enabled or not configured");
+    throw new Error("WhatsApp is not enabled or not configured");
   }
 
   const response = await fetch(`${WAHA_API_URL}/sendText`, {
@@ -87,11 +93,41 @@ export async function sendText(options: SendTextOptions): Promise<WAHAResponse> 
 
   if (!response.ok) {
     const error = await response.text();
-    console.error("[WAHA] Send error:", error);
-    throw new Error(`WAHA API error: ${response.status}`);
+    console.error("[WhatsApp] Send error:", error);
+    throw new Error(`WhatsApp API error: ${response.status}`);
   }
 
   return response.json();
+}
+
+/**
+ * Safe wrapper for sendText.
+ * Does not throw and can retry once for transient failures.
+ */
+export async function sendTextSafe(
+  options: SendTextOptions,
+  opts?: { retryCount?: number; retryDelayMs?: number }
+): Promise<SendTextSafeResult> {
+  const retryCount = Math.max(0, Math.min(opts?.retryCount ?? 1, 2));
+  const retryDelayMs = Math.max(100, Math.min(opts?.retryDelayMs ?? 800, 2000));
+
+  let attempt = 0;
+  while (attempt <= retryCount) {
+    try {
+      const data = await sendText(options);
+      return { ok: true, data };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "WAHA_SEND_FAILED";
+      const isLast = attempt >= retryCount;
+      if (isLast) {
+        return { ok: false, error: message };
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+      attempt += 1;
+    }
+  }
+
+  return { ok: false, error: "WAHA_SEND_FAILED" };
 }
 
 /**
@@ -99,7 +135,7 @@ export async function sendText(options: SendTextOptions): Promise<WAHAResponse> 
  */
 export async function sendImage(options: SendImageOptions): Promise<WAHAResponse> {
   if (!isWAHAEnabled()) {
-    throw new Error("WAHA is not enabled or not configured");
+    throw new Error("WhatsApp is not enabled or not configured");
   }
 
   const file: Record<string, string> = {
@@ -133,8 +169,8 @@ export async function sendImage(options: SendImageOptions): Promise<WAHAResponse
 
   if (!response.ok) {
     const error = await response.text();
-    console.error("[WAHA] Send image error:", error);
-    throw new Error(`WAHA API error: ${response.status}`);
+    console.error("[WhatsApp] Send image error:", error);
+    throw new Error(`WhatsApp API error: ${response.status}`);
   }
 
   return response.json();
@@ -245,12 +281,12 @@ export async function sendLoyaltyPointsNotification(
   options: LoyaltyPointsNotificationOptions
 ): Promise<WAHAResponse | null> {
   if (!isWAHAEnabled()) {
-    console.log("[WAHA] WhatsApp notifications disabled, skipping loyalty notification");
+    console.log("[WhatsApp] Notifications disabled, skipping loyalty notification");
     return null;
   }
 
   if (!options.phone) {
-    console.log("[WAHA] No phone number provided, skipping loyalty notification");
+    console.log("[WhatsApp] No phone number provided, skipping loyalty notification");
     return null;
   }
 
@@ -331,10 +367,10 @@ Thank you for choosing us 💚`;
 
   try {
     const result = await sendText({ chatId, text: message });
-    console.log(`[WAHA] Loyalty notification sent to ${options.phone}:`, options.type);
+    console.log(`[WhatsApp] Loyalty notification sent to ${options.phone}:`, options.type);
     return result;
   } catch (error) {
-    console.error(`[WAHA] Failed to send loyalty notification:`, error);
+    console.error(`[WhatsApp] Failed to send loyalty notification:`, error);
     throw error;
   }
 }

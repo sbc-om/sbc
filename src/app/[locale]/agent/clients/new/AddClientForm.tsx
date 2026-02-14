@@ -30,6 +30,17 @@ const texts = {
     creating: "Creating…",
     successTitle: "Client Added!",
     successMsg: "The client has been added to your list.",
+    activateTitle: "Activate Client Phone",
+    activateMsg: "Send an activation code to this phone and verify it before using client actions.",
+    sendCode: "Send Activation Code",
+    sendingCode: "Sending...",
+    code: "Activation Code",
+    verifyCode: "Verify Code",
+    verifyingCode: "Verifying...",
+    activationSent: "Activation code sent.",
+    activationDone: "Phone activated successfully.",
+    needActivation: "Client is not activated yet.",
+    mustActivateFirst: "Activate the phone first to enable agent actions.",
     viewClients: "View My Clients",
     addAnother: "Add Another",
   },
@@ -50,6 +61,17 @@ const texts = {
     creating: "جاري الإنشاء…",
     successTitle: "تمت إضافة العميل!",
     successMsg: "تمت إضافة العميل إلى قائمتك.",
+    activateTitle: "تفعيل رقم العميل",
+    activateMsg: "أرسل كود التفعيل إلى هذا الرقم ثم أكّد الكود قبل استخدام أي إجراء على العميل.",
+    sendCode: "إرسال كود التفعيل",
+    sendingCode: "جاري الإرسال...",
+    code: "كود التفعيل",
+    verifyCode: "تأكيد الكود",
+    verifyingCode: "جاري التأكيد...",
+    activationSent: "تم إرسال كود التفعيل.",
+    activationDone: "تم تفعيل الرقم بنجاح.",
+    needActivation: "العميل غير مفعّل بعد.",
+    mustActivateFirst: "يجب تفعيل الرقم أولًا لتفعيل عمليات الوكيل.",
     viewClients: "عرض عملائي",
     addAnother: "إضافة آخر",
   },
@@ -94,6 +116,12 @@ export function AddClientForm({ locale }: { locale: Locale }) {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [creating, setCreating] = useState(false);
+  const [createdClientPhone, setCreatedClientPhone] = useState("");
+  const [activationCode, setActivationCode] = useState("");
+  const [sendingCode, setSendingCode] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
+  const [activationSent, setActivationSent] = useState(false);
+  const [phoneActivated, setPhoneActivated] = useState(false);
 
   const [error, setError] = useState("");
 
@@ -111,7 +139,7 @@ export function AddClientForm({ locale }: { locale: Locale }) {
       const res = await fetch("/api/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "search-user", query: searchQuery.trim() }),
+        body: JSON.stringify({ action: "search-user", q: searchQuery.trim() }),
       });
       const data = (await res.json()) as AgentApiResponse;
       if (!data.ok) throw new Error(data.error);
@@ -164,10 +192,59 @@ export function AddClientForm({ locale }: { locale: Locale }) {
       });
       const data = (await res.json()) as AgentApiResponse;
       if (!data.ok) throw new Error(data.error);
+      setCreatedClientPhone(newPhone.trim());
       setSuccess(true);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
       setCreating(false);
+    }
+  }
+
+  async function handleSendActivationCode() {
+    if (!createdClientPhone) return;
+    setSendingCode(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: createdClientPhone,
+          purpose: "phone_verification",
+          locale,
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "OTP_SEND_FAILED");
+      setActivationSent(true);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSendingCode(false);
+    }
+  }
+
+  async function handleVerifyActivationCode() {
+    if (!createdClientPhone || !activationCode.trim()) return;
+    setVerifyingCode(true);
+    setError("");
+    try {
+      const res = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: createdClientPhone,
+          code: activationCode.trim(),
+          purpose: "phone_verification",
+        }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "OTP_VERIFY_FAILED");
+      setPhoneActivated(true);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setVerifyingCode(false);
     }
   }
 
@@ -180,6 +257,40 @@ export function AddClientForm({ locale }: { locale: Locale }) {
           </div>
           <h2 className="text-xl font-semibold">{t.successTitle}</h2>
           <p className="mt-2 text-sm text-(--muted-foreground)">{t.successMsg}</p>
+          <div className="mx-auto mt-5 w-full max-w-lg rounded-2xl border border-(--surface-border) p-4 text-start">
+            <h3 className="text-sm font-semibold">{t.activateTitle}</h3>
+            <p className="mt-1 text-xs text-(--muted-foreground)">{t.activateMsg}</p>
+            <p className="mt-2 text-xs font-medium">{createdClientPhone}</p>
+
+            {!phoneActivated ? (
+              <div className="mt-3 space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="secondary" size="sm" onClick={handleSendActivationCode} disabled={sendingCode}>
+                    {sendingCode ? t.sendingCode : t.sendCode}
+                  </Button>
+                  {activationSent ? (
+                    <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-[11px] font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                      {t.activationSent}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="min-w-[180px] flex-1">
+                    <label className="mb-1 block text-xs font-medium">{t.code}</label>
+                    <Input value={activationCode} onChange={(e) => setActivationCode(e.target.value)} placeholder="123456" />
+                  </div>
+                  <Button type="button" size="sm" onClick={handleVerifyActivationCode} disabled={verifyingCode || !activationCode.trim()}>
+                    {verifyingCode ? t.verifyingCode : t.verifyCode}
+                  </Button>
+                </div>
+                <p className="text-xs text-amber-600 dark:text-amber-400">{t.mustActivateFirst}</p>
+              </div>
+            ) : (
+              <div className="mt-3 inline-flex items-center rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                {t.activationDone}
+              </div>
+            )}
+          </div>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Button
               variant="primary"
@@ -201,6 +312,10 @@ export function AddClientForm({ locale }: { locale: Locale }) {
                 setError("");
                 setAdding(false);
                 setCreating(false);
+                setCreatedClientPhone("");
+                setActivationCode("");
+                setActivationSent(false);
+                setPhoneActivated(false);
                 startTransition(() => router.refresh());
               }}
             >
