@@ -28,6 +28,26 @@ export interface WalletTransaction {
   createdAt: Date;
 }
 
+export interface WalletTransactionParty {
+  userId: string | null;
+  displayName: string | null;
+  phone: string | null;
+  accountNumber: string | null;
+}
+
+export interface WalletTransactionDetail {
+  id: string;
+  type: WalletTransactionType;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  description: string | null;
+  createdAt: Date;
+  walletOwner: WalletTransactionParty;
+  sender: WalletTransactionParty | null;
+  receiver: WalletTransactionParty | null;
+}
+
 /**
  * Get user wallet (creates one if it doesn't exist)
  */
@@ -639,6 +659,118 @@ export async function getWalletTransactions(
     description: row.description,
     createdAt: row.created_at,
   }));
+}
+
+/**
+ * Get full details for a single wallet transaction owned by a user.
+ */
+export async function getWalletTransactionDetail(
+  userId: string,
+  transactionId: string
+): Promise<WalletTransactionDetail | null> {
+  const result = await query<{
+    id: string;
+    wallet_user_id: string;
+    type: string;
+    amount: string;
+    balance_before: string;
+    balance_after: string;
+    related_user_id: string | null;
+    related_phone: string | null;
+    description: string | null;
+    created_at: Date;
+    owner_display_name: string | null;
+    owner_full_name: string | null;
+    owner_email: string | null;
+    owner_phone: string | null;
+    owner_account_number: string | null;
+    related_display_name: string | null;
+    related_full_name: string | null;
+    related_email: string | null;
+    related_phone_from_user: string | null;
+    related_account_number: string | null;
+  }>(
+    `SELECT
+        wt.id,
+        wt.wallet_user_id,
+        wt.type,
+        wt.amount,
+        wt.balance_before,
+        wt.balance_after,
+        wt.related_user_id,
+        wt.related_phone,
+        wt.description,
+        wt.created_at,
+        ou.display_name AS owner_display_name,
+        ou.full_name AS owner_full_name,
+        ou.email AS owner_email,
+        ou.phone AS owner_phone,
+        ow.account_number AS owner_account_number,
+        ru.display_name AS related_display_name,
+        ru.full_name AS related_full_name,
+        ru.email AS related_email,
+        ru.phone AS related_phone_from_user,
+        rw.account_number AS related_account_number
+     FROM wallet_transactions wt
+     LEFT JOIN users ou ON ou.id = wt.wallet_user_id
+     LEFT JOIN wallets ow ON ow.user_id = wt.wallet_user_id
+     LEFT JOIN users ru ON ru.id = wt.related_user_id
+     LEFT JOIN wallets rw ON rw.user_id = wt.related_user_id
+     WHERE wt.id = $1 AND wt.wallet_user_id = $2
+     LIMIT 1`,
+    [transactionId, userId]
+  );
+
+  if (result.rows.length === 0) return null;
+
+  const row = result.rows[0];
+
+  const ownerParty: WalletTransactionParty = {
+    userId: row.wallet_user_id,
+    displayName: row.owner_display_name || row.owner_full_name || row.owner_email,
+    phone: row.owner_phone,
+    accountNumber: row.owner_account_number,
+  };
+
+  const relatedParty: WalletTransactionParty | null = row.related_user_id || row.related_phone
+    ? {
+        userId: row.related_user_id,
+        displayName: row.related_display_name || row.related_full_name || row.related_email || null,
+        phone: row.related_phone_from_user || row.related_phone,
+        accountNumber: row.related_account_number || row.related_phone,
+      }
+    : null;
+
+  let sender: WalletTransactionParty | null = null;
+  let receiver: WalletTransactionParty | null = null;
+  const txType = row.type as WalletTransactionType;
+
+  if (txType === "transfer_out") {
+    sender = ownerParty;
+    receiver = relatedParty;
+  } else if (txType === "transfer_in") {
+    sender = relatedParty;
+    receiver = ownerParty;
+  } else if (txType === "deposit") {
+    sender = null;
+    receiver = ownerParty;
+  } else if (txType === "withdraw") {
+    sender = ownerParty;
+    receiver = null;
+  }
+
+  return {
+    id: row.id,
+    type: txType,
+    amount: parseFloat(row.amount),
+    balanceBefore: parseFloat(row.balance_before),
+    balanceAfter: parseFloat(row.balance_after),
+    description: row.description,
+    createdAt: row.created_at,
+    walletOwner: ownerParty,
+    sender,
+    receiver,
+  };
 }
 
 /**

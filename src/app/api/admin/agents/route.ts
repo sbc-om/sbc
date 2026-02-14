@@ -99,6 +99,12 @@ export async function PATCH(request: NextRequest) {
         amount?: number | string;
         description?: string;
       };
+      const adminDisplayName =
+        user.displayName?.trim() || user.email || "Admin";
+      const customDescription = description?.trim();
+      const transferDescription = customDescription
+        ? `${customDescription} — by ${adminDisplayName}`
+        : `Transfer by ${adminDisplayName}`;
       const parsedAmount = typeof amount === "number" ? amount : parseFloat(String(amount ?? ""));
       if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
         return NextResponse.json({ ok: false, error: "INVALID_AMOUNT" }, { status: 400 });
@@ -126,7 +132,7 @@ export async function PATCH(request: NextRequest) {
         user.id,
         recipientPhone,
         parsedAmount,
-        description?.trim() || `Admin transfer to agent ${userId}`
+        transferDescription
       );
 
       broadcastWalletEvent(user.id, {
@@ -134,7 +140,7 @@ export async function PATCH(request: NextRequest) {
         amount: parsedAmount,
         balance: transfer.fromWallet.balance,
         toUser: transfer.toWallet.accountNumber,
-        description: description?.trim() || `Admin transfer to agent ${userId}`,
+        description: transferDescription,
       });
 
       broadcastWalletEvent(userId, {
@@ -142,7 +148,9 @@ export async function PATCH(request: NextRequest) {
         amount: parsedAmount,
         balance: transfer.toWallet.balance,
         fromUser: transfer.fromWallet.accountNumber,
-        description: description?.trim() || "Received from admin",
+        description: customDescription
+          ? `${customDescription} — from ${adminDisplayName}`
+          : `Received from ${adminDisplayName}`,
       });
 
       return NextResponse.json({

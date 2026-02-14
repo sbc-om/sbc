@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
-import type { WalletTransaction, WithdrawalRequest } from "@/lib/db/wallet";
+import type { WalletTransaction, WithdrawalRequest, WalletTransactionDetail } from "@/lib/db/wallet";
 import {
   HiOutlineArrowUp,
   HiOutlineArrowDown,
@@ -97,6 +97,9 @@ export function WalletClient({
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<"transactions" | "requests">("transactions");
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<WalletTransactionDetail | null>(null);
+  const [txDetailsLoading, setTxDetailsLoading] = useState(false);
+  const [txDetailsError, setTxDetailsError] = useState<string | null>(null);
   const [hideBalance, setHideBalance] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("wallet_hide_balance") === "true";
@@ -120,7 +123,7 @@ export function WalletClient({
 
   const walletDict = useMemo(() => {
     const root = dict as unknown as { wallet?: Record<string, string> };
-    return root.wallet ?? {
+    const defaults: Record<string, string> = {
       title: isRTL ? "المحفظة" : "Wallet",
       balance: isRTL ? "الرصيد" : "Balance",
       accountNumber: isRTL ? "رقم الحساب" : "Account Number",
@@ -153,6 +156,26 @@ export function WalletClient({
       pendingAmount: isRTL ? "قيد الانتظار" : "Pending",
       max: isRTL ? "الحد الأقصى" : "Max",
       cancelRequest: isRTL ? "إلغاء" : "Cancel",
+      viewDetails: isRTL ? "عرض التفاصيل" : "View details",
+      txDetailsTitle: isRTL ? "تفاصيل المعاملة" : "Transaction Details",
+      transactionId: isRTL ? "معرّف المعاملة" : "Transaction ID",
+      transactionType: isRTL ? "نوع العملية" : "Transaction Type",
+      createdAt: isRTL ? "تاريخ العملية" : "Created At",
+      sender: isRTL ? "المرسل" : "Sender",
+      receiver: isRTL ? "المستلم" : "Receiver",
+      walletOwner: isRTL ? "صاحب هذه المحفظة" : "Wallet Owner",
+      accountNo: isRTL ? "رقم الحساب" : "Account Number",
+      userName: isRTL ? "الاسم" : "Name",
+      phone: isRTL ? "الهاتف" : "Phone",
+      balanceBefore: isRTL ? "الرصيد قبل العملية" : "Balance Before",
+      balanceAfter: isRTL ? "الرصيد بعد العملية" : "Balance After",
+      close: isRTL ? "إغلاق" : "Close",
+      txNotAvailable: isRTL ? "تفاصيل هذه المعاملة غير متوفرة" : "Transaction details are not available",
+      unknownParty: isRTL ? "غير محدد" : "Unknown",
+    };
+    return {
+      ...defaults,
+      ...(root.wallet ?? {}),
     };
   }, [dict, isRTL]);
 
@@ -236,6 +259,30 @@ export function WalletClient({
       showToast(walletDict.error, "error");
     }
   }, [showToast, walletDict, refreshWallet]);
+
+  const openTransactionDetails = useCallback(async (transactionId: string) => {
+    setTxDetailsLoading(true);
+    setTxDetailsError(null);
+    setSelectedTransaction(null);
+    try {
+      const res = await fetch(`/api/wallet/transactions/${encodeURIComponent(transactionId)}`);
+      const data = await res.json();
+      if (!res.ok || !data?.ok || !data?.transaction) {
+        throw new Error(data?.error || walletDict.txNotAvailable);
+      }
+      setSelectedTransaction(data.transaction as WalletTransactionDetail);
+    } catch (error) {
+      setTxDetailsError(error instanceof Error ? error.message : walletDict.txNotAvailable);
+    } finally {
+      setTxDetailsLoading(false);
+    }
+  }, [walletDict.txNotAvailable]);
+
+  const closeTransactionDetails = useCallback(() => {
+    setSelectedTransaction(null);
+    setTxDetailsError(null);
+    setTxDetailsLoading(false);
+  }, []);
 
   // Connect to SSE for real-time updates with polling fallback
   useEffect(() => {
@@ -585,9 +632,12 @@ export function WalletClient({
             ) : (
               <div className="space-y-3">
                 {transactions.map((tx) => (
-                <div
+                <button
                   key={tx.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/[0.10] transition-colors"
+                  type="button"
+                  onClick={() => openTransactionDetails(tx.id)}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/[0.10] transition-colors text-start"
+                  title={walletDict.viewDetails}
                 >
                   <div className="p-2 rounded-full bg-background">
                     {getTransactionIcon(tx.type)}
@@ -598,10 +648,13 @@ export function WalletClient({
                       {formatDate(tx.createdAt)}
                     </div>
                   </div>
+                  <div className="text-xs text-(--muted-foreground) hidden sm:block">
+                    {walletDict.viewDetails}
+                  </div>
                   <div className={`font-semibold ${getTransactionColor(tx.type)}`}>
                     {getTransactionSign(tx.type)}{formatAmount(tx.amount)} {walletDict.currency}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
             )}
@@ -707,6 +760,111 @@ export function WalletClient({
         </div>,
         document.body
       )}
+
+      {(txDetailsLoading || txDetailsError || selectedTransaction) && typeof document !== "undefined" && createPortal(
+        <TransactionDetailsModal
+          locale={locale}
+          walletDict={walletDict}
+          loading={txDetailsLoading}
+          error={txDetailsError}
+          transaction={selectedTransaction}
+          onClose={closeTransactionDetails}
+        />,
+        document.body
+      )}
+    </div>
+  );
+}
+
+function TransactionDetailsModal({
+  locale,
+  walletDict,
+  loading,
+  error,
+  transaction,
+  onClose,
+}: {
+  locale: Locale;
+  walletDict: Record<string, string>;
+  loading: boolean;
+  error: string | null;
+  transaction: WalletTransactionDetail | null;
+  onClose: () => void;
+}) {
+  const isRTL = locale === "ar";
+
+  const formatDateTime = (value: Date | string) => {
+    const date = typeof value === "string" ? new Date(value) : value;
+    return new Intl.DateTimeFormat(isRTL ? "ar-OM" : "en-OM", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    }).format(date);
+  };
+
+  const renderParty = (
+    title: string,
+    party: WalletTransactionDetail["sender"] | WalletTransactionDetail["receiver"] | WalletTransactionDetail["walletOwner"]
+  ) => (
+    <div className="rounded-xl border p-3" style={{ borderColor: "var(--surface-border)" }}>
+      <p className="text-xs font-semibold text-(--muted-foreground)">{title}</p>
+      <div className="mt-2 space-y-1 text-sm">
+        <p><span className="text-(--muted-foreground)">{walletDict.userName}: </span>{party?.displayName || walletDict.unknownParty}</p>
+        <p><span className="text-(--muted-foreground)">{walletDict.phone}: </span>{party?.phone || "-"}</p>
+        <p className="font-mono text-xs"><span className="text-(--muted-foreground) font-sans">{walletDict.accountNo}: </span>{party?.accountNumber || "-"}</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+      <div
+        className="w-full max-w-2xl rounded-2xl border bg-background p-6 shadow-xl"
+        style={{ borderColor: "var(--surface-border)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-xl font-semibold">{walletDict.txDetailsTitle}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border px-3 py-1.5 text-sm"
+            style={{ borderColor: "var(--surface-border)" }}
+          >
+            {walletDict.close}
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="py-12 text-center text-sm text-(--muted-foreground)">{isRTL ? "جارٍ تحميل التفاصيل..." : "Loading details..."}</div>
+        ) : error ? (
+          <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-600">{error}</div>
+        ) : transaction ? (
+          <div className="space-y-4">
+            <div className="grid gap-2 rounded-xl border p-3 text-sm" style={{ borderColor: "var(--surface-border)" }}>
+              <p><span className="text-(--muted-foreground)">{walletDict.transactionId}: </span><span className="font-mono text-xs">{transaction.id}</span></p>
+              <p><span className="text-(--muted-foreground)">{walletDict.transactionType}: </span>{transaction.type}</p>
+              <p><span className="text-(--muted-foreground)">{walletDict.amount}: </span>{transaction.amount.toFixed(3)} {walletDict.currency}</p>
+              <p><span className="text-(--muted-foreground)">{walletDict.balanceBefore}: </span>{transaction.balanceBefore.toFixed(3)} {walletDict.currency}</p>
+              <p><span className="text-(--muted-foreground)">{walletDict.balanceAfter}: </span>{transaction.balanceAfter.toFixed(3)} {walletDict.currency}</p>
+              <p><span className="text-(--muted-foreground)">{walletDict.createdAt}: </span>{formatDateTime(transaction.createdAt)}</p>
+              <p><span className="text-(--muted-foreground)">{walletDict.description}: </span>{transaction.description || "-"}</p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {renderParty(walletDict.sender, transaction.sender)}
+              {renderParty(walletDict.receiver, transaction.receiver)}
+            </div>
+
+            {renderParty(walletDict.walletOwner, transaction.walletOwner)}
+          </div>
+        ) : (
+          <div className="py-10 text-center text-sm text-(--muted-foreground)">{walletDict.txNotAvailable}</div>
+        )}
+      </div>
     </div>
   );
 }
