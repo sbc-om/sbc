@@ -343,7 +343,7 @@ export type UserPushSubscription = {
   updatedAt: string;
 };
 
-export type UserNotificationType = "business_like" | "business_comment";
+export type UserNotificationType = "business_like" | "business_comment" | "system";
 
 export type UserNotification = {
   id: string;

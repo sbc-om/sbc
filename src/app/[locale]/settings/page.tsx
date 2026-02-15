@@ -4,6 +4,7 @@ import { AppPage } from "@/components/AppPage";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
+import { getUserNotificationSettings } from "@/lib/db/notificationSettings";
 import { SettingsClient } from "./SettingsClient";
 
 export const runtime = "nodejs";
@@ -16,8 +17,9 @@ export default async function SettingsPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  await requireUser(locale as Locale);
+  const user = await requireUser(locale as Locale);
   const dict = await getDictionary(locale as Locale);
+  const initialNotificationSettings = await getUserNotificationSettings(user.id);
 
   return (
     <AppPage>
@@ -30,7 +32,11 @@ export default async function SettingsPage({
             (locale === "ar" ? "خصّص تجربتك." : "Personalize your experience.")}
         </p>
 
-        <SettingsClient locale={locale as Locale} dict={dict} />
+        <SettingsClient
+          locale={locale as Locale}
+          dict={dict}
+          initialNotificationSettings={initialNotificationSettings}
+        />
       </div>
     </AppPage>
   );

@@ -531,6 +531,15 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    -- User notification settings (cross-device preferences)
+    CREATE TABLE IF NOT EXISTS user_notification_settings (
+      user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      notifications_enabled BOOLEAN NOT NULL DEFAULT true,
+      marketing_updates BOOLEAN NOT NULL DEFAULT true,
+      sounds_enabled BOOLEAN NOT NULL DEFAULT false,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
     -- Contact messages
     CREATE TABLE IF NOT EXISTS contact_messages (
       id TEXT PRIMARY KEY,

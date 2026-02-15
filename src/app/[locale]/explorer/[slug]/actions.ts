@@ -20,6 +20,7 @@ import {
   createUserNotification,
   getUnreadNotificationCount,
 } from "@/lib/db/notifications";
+import { getUserNotificationSettings } from "@/lib/db/notificationSettings";
 import { broadcastNotificationEvent } from "@/app/api/notifications/stream/route";
 
 function canModerate(user: { id: string; role: string }, business: Awaited<ReturnType<typeof getBusinessById>>) {
@@ -87,24 +88,27 @@ export async function createBusinessCommentAction(locale: Locale, businessId: st
         ? `${actorName} علّق على نشاطك: ${snippet}`
         : `${actorName} commented on your business: ${snippet}`;
 
-    await createUserNotification({
-      userId: business.ownerId,
-      type: "business_comment",
-      title,
-      body,
-      href: `/${locale}/explorer/${businessSlug}`,
-      actorUserId: user.id,
-      businessId,
-    });
+    const ownerSettings = await getUserNotificationSettings(business.ownerId);
+    if (ownerSettings.notificationsEnabled) {
+      await createUserNotification({
+        userId: business.ownerId,
+        type: "business_comment",
+        title,
+        body,
+        href: `/${locale}/explorer/${businessSlug}`,
+        actorUserId: user.id,
+        businessId,
+      });
 
-    const unreadCount = await getUnreadNotificationCount(business.ownerId);
-    broadcastNotificationEvent(business.ownerId, {
-      type: "new",
-      unreadCount,
-      title,
-      body,
-      href: `/${locale}/explorer/${businessSlug}`,
-    });
+      const unreadCount = await getUnreadNotificationCount(business.ownerId);
+      broadcastNotificationEvent(business.ownerId, {
+        type: "new",
+        unreadCount,
+        title,
+        body,
+        href: `/${locale}/explorer/${businessSlug}`,
+      });
+    }
   }
 
   revalidatePath(`/${locale}/explorer/${businessSlug}`);

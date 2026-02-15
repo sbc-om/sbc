@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 
 import { query } from "./postgres";
+import { getUserNotificationSettings } from "./notificationSettings";
 import type { UserNotification, UserNotificationType } from "./types";
 
 type NotificationRow = {
@@ -92,6 +93,9 @@ export async function createBusinessLikeNotificationOnce(input: {
   actorUserId: string;
   businessId: string;
 }): Promise<UserNotification | null> {
+  const recipientSettings = await getUserNotificationSettings(input.userId);
+  if (!recipientSettings.notificationsEnabled) return null;
+
   const id = nanoid();
   const now = new Date();
 

@@ -35,6 +35,14 @@ import {
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline, IoWallet, IoWalletOutline } from "react-icons/io5";
 import { HiPlus, HiOutlinePlus, HiBriefcase, HiOutlineBriefcase, HiUserGroup, HiOutlineUserGroup } from "react-icons/hi";
+import {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  normalizeNotificationPreferences,
+  NOTIFICATION_PREFERENCES_EVENT,
+  NOTIFICATION_PREFERENCES_STORAGE_KEY,
+  parseNotificationPreferences,
+  type NotificationPreferences,
+} from "@/lib/notifications/preferences";
 
 interface SidebarProps {
   locale: Locale;
@@ -83,6 +91,9 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   const [profileMenuOpenedAtPath, setProfileMenuOpenedAtPath] = useState<string | null>(null);
   const [notificationUnread, setNotificationUnread] = useState(0);
   const [notificationPulse, setNotificationPulse] = useState(false);
+  const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>(
+    DEFAULT_NOTIFICATION_PREFERENCES,
+  );
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
   const iconOnly = collapsed && !isMobile;
@@ -131,6 +142,64 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   }, [isProfileMenuVisible]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const apply = (prefs: NotificationPreferences) => {
+      setNotificationPreferences(normalizeNotificationPreferences(prefs));
+    };
+
+    const local = parseNotificationPreferences(
+      window.localStorage.getItem(NOTIFICATION_PREFERENCES_STORAGE_KEY),
+    );
+    if (local) apply(local);
+
+    const syncFromServer = async () => {
+      try {
+        const res = await fetch("/api/settings/notifications", { cache: "no-store" });
+        const data = (await res.json().catch(() => null)) as
+          | { ok: true; settings: NotificationPreferences }
+          | { ok: false; error?: string }
+          | null;
+        if (!res.ok || !data || !data.ok) return;
+        const normalized = normalizeNotificationPreferences(data.settings);
+        apply(normalized);
+        window.localStorage.setItem(
+          NOTIFICATION_PREFERENCES_STORAGE_KEY,
+          JSON.stringify(normalized),
+        );
+      } catch {
+        // keep previous prefs
+      }
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== NOTIFICATION_PREFERENCES_STORAGE_KEY) return;
+      const parsed = parseNotificationPreferences(event.newValue);
+      if (parsed) apply(parsed);
+    };
+
+    const onCustom = (event: Event) => {
+      const customEvent = event as CustomEvent<NotificationPreferences>;
+      if (customEvent.detail) apply(customEvent.detail);
+    };
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(NOTIFICATION_PREFERENCES_EVENT, onCustom as EventListener);
+    void syncFromServer();
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(NOTIFICATION_PREFERENCES_EVENT, onCustom as EventListener);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!notificationPreferences.notificationsEnabled) {
+      setNotificationPulse(false);
+      setNotificationUnread(0);
+      return;
+    }
+
     let eventSource: EventSource | null = null;
     let pulseTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -149,7 +218,9 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           }
 
           if (data.type === "new") {
-            playNotificationSound();
+            if (notificationPreferences.soundsEnabled) {
+              playNotificationSound();
+            }
             setNotificationPulse(true);
             if (pulseTimeout) clearTimeout(pulseTimeout);
             pulseTimeout = setTimeout(() => setNotificationPulse(false), 850);
@@ -173,7 +244,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       if (pulseTimeout) clearTimeout(pulseTimeout);
       if (eventSource) eventSource.close();
     };
-  }, []);
+  }, [notificationPreferences.notificationsEnabled, notificationPreferences.soundsEnabled]);
 
   const baseNavItems: NavItem[] = [
     {
@@ -283,7 +354,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
             title={locale === "ar" ? "الإشعارات" : "Notifications"}
           >
             {isActive("/notifications") ? <HiBell className="h-5 w-5" /> : <HiOutlineBell className="h-5 w-5" />}
-            {notificationUnread > 0 && (
+            {notificationPreferences.notificationsEnabled && notificationUnread > 0 && (
               <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-5 text-center shadow">
                 {notificationUnread > 99 ? "99+" : notificationUnread}
               </span>

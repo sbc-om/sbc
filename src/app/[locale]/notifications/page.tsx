@@ -68,8 +68,18 @@ export default async function NotificationsPage({
       ) : (
         <div className="mt-6 grid gap-3">
           {notifications.map((item) => {
-            const Icon = item.type === "business_like" ? HiHeart : HiChatBubbleLeftRight;
-            const iconClass = item.type === "business_like" ? "text-red-500" : "text-blue-500";
+            const Icon =
+              item.type === "business_like"
+                ? HiHeart
+                : item.type === "business_comment"
+                ? HiChatBubbleLeftRight
+                : HiBellAlert;
+            const iconClass =
+              item.type === "business_like"
+                ? "text-red-500"
+                : item.type === "business_comment"
+                ? "text-blue-500"
+                : "text-amber-500";
 
             return (
               <Link

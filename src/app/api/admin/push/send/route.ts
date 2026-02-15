@@ -5,6 +5,7 @@ import {
   listAllUserPushSubscriptions,
   removeUserPushSubscription,
 } from "@/lib/db/users";
+import { listUserNotificationSettingsByUserIds } from "@/lib/db/notificationSettings";
 import { isWebPushConfigured, sendWebPushNotification } from "@/lib/push/webPush";
 
 export const runtime = "nodejs";
@@ -34,9 +35,18 @@ export async function POST(req: Request) {
 
     const allSubs = await listAllUserPushSubscriptions();
     const targetIds = data.userIds?.length ? new Set(data.userIds) : null;
-    const subs = targetIds
+    const scopedSubs = targetIds
       ? allSubs.filter((s) => targetIds.has(s.userId))
       : allSubs;
+
+    const settingsMap = await listUserNotificationSettingsByUserIds(
+      Array.from(new Set(scopedSubs.map((s) => s.userId))),
+    );
+
+    const subs = scopedSubs.filter((subscription) => {
+      const settings = settingsMap[subscription.userId];
+      return settings.notificationsEnabled && settings.marketingUpdates;
+    });
 
     const results = await Promise.all(
       subs.map(async (s) => {
