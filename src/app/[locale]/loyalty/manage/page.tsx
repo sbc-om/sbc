@@ -14,11 +14,13 @@ import {
   getLoyaltySettingsByUserId,
   listLoyaltyCustomersByUser,
 } from "@/lib/db/loyalty";
+import { listLoyaltyStaffByUser } from "@/lib/db/loyaltyStaff";
 import { isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 
 import { LoyaltyProfileClient } from "./LoyaltyProfileClient";
 import { LoyaltySettingsClient } from "./LoyaltySettingsClient";
 import { LoyaltyMessagesClient } from "./LoyaltyMessagesClient";
+import { LoyaltyStaffManager } from "./LoyaltyStaffManager";
 
 export const runtime = "nodejs";
 
@@ -52,6 +54,7 @@ export default async function LoyaltyManagePage({
   const settings = user && isActive
     ? ((await getLoyaltySettingsByUserId(user.id)) ?? defaultLoyaltySettings(user.id))
     : null;
+  const staff = user && isActive ? await listLoyaltyStaffByUser(user.id) : [];
 
   const Wrapper = user ? AppPage : PublicPage;
 
@@ -139,6 +142,14 @@ export default async function LoyaltyManagePage({
           ) : null}
 
           <LoyaltyMessagesClient locale={locale as Locale} />
+
+          {profile?.joinCode ? (
+            <LoyaltyStaffManager
+              locale={locale as Locale}
+              joinCode={profile.joinCode}
+              initialStaff={staff}
+            />
+          ) : null}
 
           <div className="mt-8 sbc-card rounded-2xl p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

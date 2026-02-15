@@ -32,23 +32,24 @@ export default async function LoyaltyPage({
   const ar = locale === "ar";
 
   const copy = {
-    title: ar ? "بطاقة الولاء" : "Loyalty Platform",
+    title: ar ? "برنامج الولاء" : "Loyalty Program",
     subtitle: ar
-      ? "حوّل عملاءك إلى زبائن دائمين عبر بطاقة ولاء رقمية ونظام نقاط بسيط—كل شيء داخل SBC."
-      : "Drive customer retention with digital loyalty cards and intelligent points management.",
+      ? "كافئ عملاءك بنظام نقاط سهل وواضح. كل شيء في مكان واحد داخل SBC."
+      : "Reward your customers with a simple points system. Everything in one place.",
     ctaManage: ar ? "إدارة الولاء" : "Get Started",
+    ctaSeller: ar ? "دخول البائعين" : "Seller Login",
     ctaStore: ar ? "فتح المتجر" : "View Plans",
     backHome: ar ? "العودة للرئيسية" : "Home",
-    sectionFeatures: ar ? "ماذا ستحصل؟" : "Core Features",
-    sectionShowcase: ar ? "مميزات بشكل بصري" : "Why Choose Us",
-    sectionHow: ar ? "كيف تعمل؟" : "Quick Setup",
-    sectionNotes: ar ? "ملاحظات" : "Important Notes",
+    sectionFeatures: ar ? "المزايا" : "Features",
+    sectionShowcase: ar ? "لماذا هذا النظام؟" : "Why This Program",
+    sectionHow: ar ? "طريقة الاستخدام" : "How It Works",
+    sectionNotes: ar ? "ملاحظات مهمة" : "Important Notes",
     note1: ar
-      ? "شراء الاشتراك وتفعيله يتم من خلال المتجر (Store)."
-      : "Activate via Store subscription.",
+      ? "تفعيل البرنامج يتم عبر الاشتراك من صفحة المتجر."
+      : "Activate the program from the Store subscription page.",
     note2: ar
-      ? "إضافة البطاقة إلى Apple Wallet/Google Wallet ستأتي في مرحلة لاحقة."
-      : "Wallet integration coming soon.",
+      ? "يمكنك البدء مباشرة بعد التفعيل وإضافة العملاء بسهولة."
+      : "You can start right away after activation and add customers easily.",
   };
 
   const features = [
@@ -56,41 +57,41 @@ export default async function LoyaltyPage({
       icon: HiOutlineDeviceMobile,
       title: ar ? "بطاقة رقمية" : "Digital Cards",
       desc: ar
-        ? "بطاقة لكل عميل يمكن عرضها عبر رابط عام (ومستقبلاً إضافتها للمحفظة)."
-        : "Unique digital card per customer with shareable link.",
+        ? "كل عميل يحصل على بطاقة رقمية برابط سهل المشاركة."
+        : "Each customer gets a digital card with a shareable link.",
     },
     {
       icon: HiOutlineQrcode,
       title: ar ? "QR / Code" : "QR Integration",
       desc: ar
-        ? "عرض النقاط بسرعة، وتحديثها من لوحة التحكم."
-        : "Real-time points display and updates via dashboard.",
+        ? "مسح سريع وعرض مباشر للنقاط."
+        : "Quick scan with instant points view.",
     },
     {
       icon: HiOutlineUsers,
       title: ar ? "إدارة العملاء" : "CRM Built-in",
       desc: ar
-        ? "سجل بسيط للعملاء: الاسم، الهاتف، البريد، الملاحظات."
-        : "Lightweight customer database with essential fields.",
+        ? "إدارة بسيطة للعملاء: اسم، رقم، وباقي البيانات الأساسية."
+        : "Simple customer management with essential info.",
     },
     {
       icon: HiOutlineChartBar,
       title: ar ? "نظام نقاط" : "Points Engine",
       desc: ar
-        ? "أضف/خصم نقاط للعميل بحسب مشترياته (المرحلة الأولى)."
-        : "Flexible point allocation based on transactions.",
+        ? "إضافة أو خصم النقاط بسرعة حسب كل عملية."
+        : "Add or deduct points quickly for each transaction.",
     },
     {
       icon: HiOutlineShieldCheck,
       title: ar ? "مشاركة آمنة" : "Secure Sharing",
       desc: ar
-        ? "صفحة البطاقة العامة تعرض النقاط فقط—دون لوحة الإدارة."
-        : "Public view displays points only—admin access protected.",
+        ? "صفحة العميل تعرض النقاط فقط، ولوحة الإدارة تبقى خاصة."
+        : "Customer page shows points only while admin access stays protected.",
     },
     {
       icon: HiOutlineSparkles,
       title: ar ? "واجهة أنيقة" : "Modern Interface",
-      desc: ar ? "تصميم نظيف وسريع ومناسب للموبايل." : "Fast, responsive design optimized for mobile.",
+      desc: ar ? "واجهة واضحة وسريعة على الهاتف والكمبيوتر." : "Clean and fast interface on mobile and desktop.",
     },
   ];
 
@@ -99,51 +100,51 @@ export default async function LoyaltyPage({
       icon: HiOutlineLightningBolt,
       title: ar ? "تفعيل سريع" : "Instant Setup",
       desc: ar
-        ? "ابدأ خلال دقائق: فعّل من المتجر ثم أضف عملاءك مباشرة."
-        : "Activate and start adding customers in minutes.",
+        ? "فعّل الاشتراك وابدأ خلال دقائق."
+        : "Activate and start in minutes.",
     },
     {
       icon: HiOutlineGift,
       title: ar ? "مكافآت واضحة" : "Clear Rewards",
       desc: ar
-        ? "نقاط بسيطة وواضحة—بدون تعقيد وبلا خطوات كثيرة."
-        : "Transparent point system with zero complexity.",
+        ? "نقاط واضحة وسهلة الفهم للعميل والبائع."
+        : "Simple and clear points for both staff and customers.",
     },
     {
       icon: HiOutlineQrcode,
       title: ar ? "مشاركة برابط" : "Easy Sharing",
       desc: ar
-        ? "ارسل رابط البطاقة لعرض النقاط—بواجهة موبايل جميلة."
-        : "Share card links with optimized mobile experience.",
+        ? "أرسل الرابط للعميل ليشاهد نقاطه مباشرة."
+        : "Share the link so customers can check points instantly.",
     },
   ];
 
   const steps = [
     {
       n: "01",
-      title: ar ? "اشترِ من المتجر" : "Subscribe",
+      title: ar ? "فعّل الاشتراك" : "Activate",
       desc: ar
-        ? "اختر خطة الولاء من المتجر وأكمل الدفع (بوابة افتراضية حالياً)."
-        : "Select a plan and activate your loyalty program.",
+        ? "اختر الخطة المناسبة من المتجر وفعّل البرنامج."
+        : "Choose your plan from the Store and activate.",
     },
     {
       n: "02",
       title: ar ? "أضف عملاءك" : "Add Customers",
       desc: ar
-        ? "أدخل بيانات العميل—وسيتم إصدار بطاقة لكل عميل تلقائياً."
-        : "Import customers—cards generated automatically.",
+        ? "أدخل بيانات العميل وسيتم إنشاء بطاقته تلقائياً."
+        : "Add customer details and the card is created automatically.",
     },
     {
       n: "03",
       title: ar ? "حدّث النقاط" : "Manage Points",
-      desc: ar ? "قم بتعديل النقاط (+/-) بحسب التعاملات." : "Award or deduct points per transaction.",
+      desc: ar ? "أضف أو خصم النقاط بسرعة حسب التعاملات." : "Add or deduct points for each transaction.",
     },
     {
       n: "04",
       title: ar ? "شارك رابط البطاقة" : "Share Cards",
       desc: ar
-        ? "أرسل رابط البطاقة للعميل ليشاهد نقاطه الحالية."
-        : "Distribute card links to customers for instant access.",
+        ? "أرسل رابط البطاقة ليطّلع العميل على نقاطه."
+        : "Share the card link so customers can view their points.",
     },
   ];
 
@@ -172,8 +173,14 @@ export default async function LoyaltyPage({
               <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "rotate-180" : "")} />
             </Link>
             <Link
-              href={`/${locale}/store`}
+              href={`/${locale}/loyalty/staff`}
               className={buttonVariants({ variant: "secondary", size: "md" })}
+            >
+              {copy.ctaSeller}
+            </Link>
+            <Link
+              href={`/${locale}/store`}
+              className={buttonVariants({ variant: "ghost", size: "md" })}
             >
               {copy.ctaStore}
             </Link>

@@ -274,6 +274,19 @@ export type LoyaltyCustomer = {
   updatedAt: string;
 };
 
+export type LoyaltyStaff = {
+  id: string;
+  userId: string;
+  fullName: string;
+  avatarUrl?: string;
+  phone: string;
+  isActive: boolean;
+  isVerified: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type LoyaltyCard = {
   id: string;
   userId: string;

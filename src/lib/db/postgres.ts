@@ -520,6 +520,21 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    -- Loyalty staff (non-user sellers/operators)
+    CREATE TABLE IF NOT EXISTS loyalty_staff (
+      id TEXT PRIMARY KEY,
+      user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+      full_name TEXT NOT NULL,
+      avatar_url TEXT,
+      phone TEXT NOT NULL,
+      is_active BOOLEAN NOT NULL DEFAULT true,
+      is_verified BOOLEAN NOT NULL DEFAULT false,
+      last_login_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(user_id, phone)
+    );
+
     -- User push subscriptions
     CREATE TABLE IF NOT EXISTS user_push_subscriptions (
       id TEXT PRIMARY KEY,
@@ -596,6 +611,7 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_loyalty_customers_user_id ON loyalty_customers(user_id);
     CREATE INDEX IF NOT EXISTS idx_loyalty_cards_user_id ON loyalty_cards(user_id);
     CREATE INDEX IF NOT EXISTS idx_loyalty_cards_customer_id ON loyalty_cards(customer_id);
+    CREATE INDEX IF NOT EXISTS idx_loyalty_staff_user_id ON loyalty_staff(user_id);
     CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation_id ON chat_messages(conversation_id);
     CREATE INDEX IF NOT EXISTS idx_user_business_likes_business_id ON user_business_likes(business_id);
     CREATE INDEX IF NOT EXISTS idx_user_business_saves_business_id ON user_business_saves(business_id);
@@ -617,6 +633,14 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     BEGIN 
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'show_similar_businesses') THEN
         ALTER TABLE businesses ADD COLUMN show_similar_businesses BOOLEAN DEFAULT true;
+      END IF;
+    END $$;
+
+    -- Migrations: Add avatar_url to loyalty_staff if missing
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'loyalty_staff' AND column_name = 'avatar_url') THEN
+        ALTER TABLE loyalty_staff ADD COLUMN avatar_url TEXT;
       END IF;
     END $$;
 
