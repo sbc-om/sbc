@@ -18,7 +18,8 @@ function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "light";
   const saved = window.localStorage.getItem("theme");
   if (saved === "dark" || saved === "light") return saved;
-  return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  // Default to light when no explicit saved preference exists.
+  return "light";
 }
 
 export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {

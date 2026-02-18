@@ -55,12 +55,13 @@ export default async function LocaleLayout({
   const pathname = headersList.get("x-pathname") || "";
   const isChatPage = pathname.includes("/chat");
   const isLocaleHomePage = pathname === `/${locale}` || pathname === `/${locale}/`;
+  const isMapPage = pathname === `/${locale}/map`;
 
   return (
     <DictionaryProvider locale={locale as Locale} dict={dict}>
       <AISearchProvider>
         <DirectionSync locale={locale as Locale} />
-      {user ? (
+      {user && !isMapPage ? (
         <CartProvider userKey={user.id}>
           <CartFloating locale={locale as Locale} products={products} />
 
