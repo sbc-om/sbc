@@ -20,6 +20,7 @@ export default function MapPageClient({ locale }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [isListOpen, setIsListOpen] = useState(false);
 
   const mappableBusinesses = useMemo(
     () =>
@@ -117,6 +118,21 @@ export default function MapPageClient({ locale }: Props) {
     };
   }, [mapReady]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+
+    const syncWithViewport = () => {
+      setIsListOpen(mediaQuery.matches);
+    };
+
+    syncWithViewport();
+    mediaQuery.addEventListener("change", syncWithViewport);
+
+    return () => {
+      mediaQuery.removeEventListener("change", syncWithViewport);
+    };
+  }, []);
+
   // update markers when businesses change
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -178,7 +194,27 @@ export default function MapPageClient({ locale }: Props) {
       <div className="pointer-events-none fixed inset-0 z-[1] bg-black/10" />
 
       <div className="pointer-events-none relative z-10 px-4 pb-8 pt-24 sm:px-6 sm:pt-28">
-        <aside className="pointer-events-auto flex h-[calc(100dvh-9rem)] min-h-[30rem] w-full max-w-[22rem] flex-col overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface)/95 shadow-(--shadow) backdrop-blur-md">
+        <div className="pointer-events-auto mb-3 md:hidden">
+          <button
+            type="button"
+            onClick={() => setIsListOpen((value) => !value)}
+            className="rounded-xl border border-(--surface-border) bg-(--surface)/95 px-4 py-2 text-sm font-medium shadow-(--shadow) backdrop-blur-md"
+          >
+            {isListOpen
+              ? locale === "ar"
+                ? "إخفاء القائمة"
+                : "Hide list"
+              : locale === "ar"
+                ? "عرض القائمة"
+                : "Show list"}
+          </button>
+        </div>
+
+        <aside
+          className={`pointer-events-auto h-[calc(100dvh-9rem)] min-h-[30rem] w-full max-w-[18rem] flex-col overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface)/95 shadow-(--shadow) backdrop-blur-md ${
+            isListOpen ? "flex" : "hidden md:flex"
+          }`}
+        >
           <div className="border-b border-(--surface-border) px-4 py-3">
             <h2 className="text-lg font-semibold">{locale === "ar" ? "بیزینس‌ها" : "Businesses"}</h2>
             <p className="text-xs text-(--muted-foreground)">
@@ -210,8 +246,32 @@ export default function MapPageClient({ locale }: Props) {
                     }`}
                     onClick={() => setActiveId(business.id)}
                   >
-                    <div className="font-medium truncate">{locale === "ar" ? business.name.ar : business.name.en}</div>
-                    <div className="text-xs text-(--muted-foreground)">{business.city || (locale === "ar" ? "بدون شهر" : "No city")}</div>
+                      <div className="flex items-center gap-3">
+                        {(() => {
+                          const thumbnail = business.media?.logo || business.media?.cover || business.media?.banner;
+                          if (thumbnail) {
+                            return (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={thumbnail}
+                                alt={locale === "ar" ? business.name.ar : business.name.en}
+                                className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                              />
+                            );
+                          }
+
+                          return (
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-(--chip-bg) text-sm font-semibold text-(--muted-foreground)">
+                              {(locale === "ar" ? business.name.ar : business.name.en).charAt(0).toUpperCase()}
+                            </div>
+                          );
+                        })()}
+
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">{locale === "ar" ? business.name.ar : business.name.en}</div>
+                          <div className="text-xs text-(--muted-foreground)">{business.city || (locale === "ar" ? "بدون شهر" : "No city")}</div>
+                        </div>
+                      </div>
                     <div className="mt-2 flex gap-2">
                       <Link
                         href={
