@@ -28,6 +28,8 @@ import {
   HiOutlineCash,
   HiBriefcase,
   HiOutlineBriefcase,
+  HiLocationMarker,
+  HiOutlineLocationMarker,
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
 
@@ -129,6 +131,13 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
       path: "/store",
       Icon: HiShoppingBag,
       IconOutline: HiOutlineShoppingBag,
+    },
+    {
+      key: "map",
+      label: locale === "ar" ? "الخريطة" : "Map",
+      path: "/map",
+      Icon: HiLocationMarker,
+      IconOutline: HiOutlineLocationMarker,
     },
   ];
 

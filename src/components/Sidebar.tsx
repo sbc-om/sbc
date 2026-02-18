@@ -32,6 +32,8 @@ import {
   HiX,
   HiBell,
   HiOutlineBell,
+  HiLocationMarker,
+  HiOutlineLocationMarker,
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline, IoWallet, IoWalletOutline } from "react-icons/io5";
 import { HiPlus, HiOutlinePlus, HiBriefcase, HiOutlineBriefcase, HiUserGroup, HiOutlineUserGroup } from "react-icons/hi";
@@ -81,6 +83,7 @@ type NavItem = {
   path: string;
   Icon: ComponentType<{ className?: string }>;
   IconOutline: ComponentType<{ className?: string }>;
+  hardNavigate?: boolean;
 };
 
 export function Sidebar({ locale, dict, user }: SidebarProps) {
@@ -276,6 +279,14 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       IconOutline: HiOutlineShoppingBag,
     },
     {
+      key: "map",
+      label: locale === "ar" ? "الخريطة" : "Map",
+      path: "/map",
+      Icon: HiLocationMarker,
+      IconOutline: HiOutlineLocationMarker,
+      hardNavigate: true,
+    },
+    {
       key: "wallet",
       label: (dict.nav as Record<string, string | undefined>).wallet ?? (locale === "ar" ? "المحفظة" : "Wallet"),
       path: "/wallet",
@@ -368,16 +379,34 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
         {navItems.map((item) => {
           const active = isActive(item.path);
           const IconComponent = active ? item.Icon : item.IconOutline;
+          const href = `/${locale}${item.path}`;
+          const className = `sbc-sidebar-navlink flex items-center rounded-xl py-3 text-base transition-all ${
+            active
+              ? "bg-linear-to-r from-accent/10 to-accent-2/10 font-bold text-accent"
+              : "hover:bg-(--surface) font-normal"
+          } ${iconOnly ? "justify-center px-2" : "justify-start gap-4 px-3"}`;
+
+          if (item.hardNavigate) {
+            return (
+              <a
+                key={item.key}
+                href={href}
+                onClick={() => isMobile && setMobileOpen(false)}
+                className={className}
+                title={collapsed && !isMobile ? item.label : undefined}
+              >
+                <IconComponent className="h-7 w-7 shrink-0" />
+                {(!collapsed || isMobile) && <span className="sbc-sidebar-label">{item.label}</span>}
+              </a>
+            );
+          }
+
           return (
             <Link
               key={item.key}
-              href={`/${locale}${item.path}`}
+              href={href}
               onClick={() => isMobile && setMobileOpen(false)}
-              className={`sbc-sidebar-navlink flex items-center rounded-xl py-3 text-base transition-all ${
-                active
-                  ? "bg-linear-to-r from-accent/10 to-accent-2/10 font-bold text-accent"
-                  : "hover:bg-(--surface) font-normal"
-              } ${iconOnly ? "justify-center px-2" : "justify-start gap-4 px-3"}`}
+              className={className}
               title={collapsed && !isMobile ? item.label : undefined}
             >
               <IconComponent className="h-7 w-7 shrink-0" />
@@ -422,21 +451,19 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               return next;
             });
           }}
-          className={`w-full flex items-center rounded-xl py-2 hover:bg-(--surface) transition-colors text-left ${
-            iconOnly ? "justify-center px-2" : "justify-start gap-3 px-3"
-          }`}
-          title={collapsed && !isMobile ? user.displayName : undefined}
+          className={`w-full flex items-center gap-3 rounded-xl p-3 hover:bg-(--surface) transition-colors ${
+            isProfileMenuVisible ? "bg-(--surface)" : ""
+          } ${iconOnly ? "justify-center" : "justify-start"}`}
           aria-haspopup="menu"
           aria-expanded={isProfileMenuVisible}
         >
-          <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-linear-to-br from-accent to-accent-2 shrink-0 ring-2 ring-accent/20">
+          <div className="h-10 w-10 rounded-full overflow-hidden shrink-0 bg-gradient-to-r from-accent to-accent-2 flex items-center justify-center">
             {user.avatarUrl ? (
-              <Image
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
                 src={user.avatarUrl}
-                alt={user.displayName || user.email}
-                fill
-                className="object-cover"
-                sizes="40px"
+                alt={user.displayName}
+                className="h-full w-full object-cover"
               />
             ) : (
               <span className="text-sm font-bold text-white">{avatarInitial}</span>

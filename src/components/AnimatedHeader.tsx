@@ -158,15 +158,27 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
 
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center gap-2">
-                <Link
-                  href={`/${locale}/businesses`}
-                  className={buttonVariants({
-                    variant: "secondary",
-                    size: "sm",
-                  })}
-                >
-                  {dict.nav.businesses}
-                </Link>
+                {user ? (
+                  <a
+                    href={`/${locale}/explorer`}
+                    className={buttonVariants({
+                      variant: "secondary",
+                      size: "sm",
+                    })}
+                  >
+                    {dict.nav.businesses}
+                  </a>
+                ) : (
+                  <Link
+                    href={`/${locale}/businesses`}
+                    className={buttonVariants({
+                      variant: "secondary",
+                      size: "sm",
+                    })}
+                  >
+                    {dict.nav.businesses}
+                  </Link>
+                )}
 
                 <Link
                   href={`/${locale}/map`}
@@ -176,7 +188,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                 </Link>
 
                 {user ? (
-                  <Link
+                  <a
                     href={`/${locale}/dashboard`}
                     className={buttonVariants({
                       variant: "ghost",
@@ -184,7 +196,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     })}
                   >
                     {dict.nav.dashboard}
-                  </Link>
+                  </a>
                 ) : (
                   <Link
                     href={`/${locale}/login`}
@@ -198,7 +210,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                 )}
 
                 {user?.role === "admin" ? (
-                  <Link
+                  <a
                     href={`/${locale}/admin`}
                     className={buttonVariants({
                       variant: "ghost",
@@ -206,7 +218,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     })}
                   >
                     {dict.nav.admin}
-                  </Link>
+                  </a>
                 ) : null}
 
                 {user ? (
@@ -269,17 +281,31 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
             >
               <div className="p-2">
                 <div className="grid gap-1">
-                  <Link
-                    href={`/${locale}/businesses`}
-                    onClick={() => setMobileOpen(false)}
-                    className={buttonVariants({
-                      variant: "ghost",
-                      size: "md",
-                      className: "w-full justify-start rounded-xl",
-                    })}
-                  >
-                    {dict.nav.businesses}
-                  </Link>
+                  {user ? (
+                    <a
+                      href={`/${locale}/explorer`}
+                      onClick={() => setMobileOpen(false)}
+                      className={buttonVariants({
+                        variant: "ghost",
+                        size: "md",
+                        className: "w-full justify-start rounded-xl",
+                      })}
+                    >
+                      {dict.nav.businesses}
+                    </a>
+                  ) : (
+                    <Link
+                      href={`/${locale}/businesses`}
+                      onClick={() => setMobileOpen(false)}
+                      className={buttonVariants({
+                        variant: "ghost",
+                        size: "md",
+                        className: "w-full justify-start rounded-xl",
+                      })}
+                    >
+                      {dict.nav.businesses}
+                    </Link>
+                  )}
 
                   <Link
                     href={`/${locale}/map`}
@@ -290,7 +316,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   </Link>
 
                   {user ? (
-                    <Link
+                    <a
                       href={`/${locale}/dashboard`}
                       onClick={() => setMobileOpen(false)}
                       className={buttonVariants({
@@ -300,7 +326,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                       })}
                     >
                       {dict.nav.dashboard}
-                    </Link>
+                    </a>
                   ) : (
                     <Link
                       href={`/${locale}/login`}
@@ -316,7 +342,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   )}
 
                   {user?.role === "admin" ? (
-                    <Link
+                    <a
                       href={`/${locale}/admin`}
                       onClick={() => setMobileOpen(false)}
                       className={buttonVariants({
@@ -326,7 +352,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                       })}
                     >
                       {dict.nav.admin}
-                    </Link>
+                    </a>
                   ) : null}
 
                   {user ? (
