@@ -4,18 +4,65 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Business } from "@/lib/db/types";
 import Link from "next/link";
-import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
+import type { Icon as LeafletIcon, Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 
 type Props = { locale: Locale };
 
 const DEFAULT_CENTER = { lat: 23.588, lng: 58.3829 };
 
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function localizedCategory(category: string | undefined, locale: Locale) {
+  if (!category) return "";
+
+  const separators = ["|", " / ", " - ", " • "];
+  for (const separator of separators) {
+    if (!category.includes(separator)) continue;
+    const parts = category
+      .split(separator)
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length >= 2) {
+      return locale === "ar" ? parts[1] : parts[0];
+    }
+  }
+
+  const hasArabic = /[\u0600-\u06FF]/.test(category);
+  const hasLatin = /[A-Za-z]/.test(category);
+  if (hasArabic && hasLatin) {
+    const arabicPart = (category.match(/[\u0600-\u06FF\s]+/g) || [])
+      .join(" ")
+      .trim();
+    const latinPart = (category.match(/[A-Za-z0-9&\-\s]+/g) || [])
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (locale === "ar" && arabicPart) return arabicPart;
+    if (locale === "en" && latinPart) return latinPart;
+  }
+
+  return category;
+}
+
 export default function MapPageClient({ locale }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<LeafletMap | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
+  const markerIconRef = useRef<LeafletIcon | null>(null);
   const markersRef = useRef<Map<string, LeafletMarker>>(new Map());
   const listItemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+  const lastActiveIdRef = useRef<string | null>(null);
+  const pendingTransitionRef = useRef<number | null>(null);
+  const transitionVersionRef = useRef(0);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -60,10 +107,11 @@ export default function MapPageClient({ locale }: Props) {
       const leaflet = await import("leaflet");
       const L = leaflet;
 
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl: "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/images/marker-shadow.png",
+      markerIconRef.current = L.icon({
+        iconUrl: "/images/sbc.svg",
+        iconSize: [34, 34],
+        iconAnchor: [17, 30],
+        popupAnchor: [0, -26],
       });
 
       if (!mounted || !mapRef.current) return;
@@ -133,6 +181,14 @@ export default function MapPageClient({ locale }: Props) {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (pendingTransitionRef.current !== null) {
+        window.clearTimeout(pendingTransitionRef.current);
+      }
+    };
+  }, []);
+
   // update markers when businesses change
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -150,13 +206,36 @@ export default function MapPageClient({ locale }: Props) {
       const { latitude, longitude } = business;
       if (typeof latitude !== "number" || typeof longitude !== "number") continue;
 
-      const marker = L.marker([latitude, longitude]).addTo(map);
+      const marker = L.marker(
+        [latitude, longitude],
+        markerIconRef.current ? { icon: markerIconRef.current } : undefined,
+      ).addTo(map);
       const name = locale === "ar" ? business.name.ar : business.name.en;
       const href = business.username
         ? `/${locale}/@${business.username}`
         : `/${locale}/businesses/${business.slug}`;
 
-      marker.bindPopup(`<div style="min-width:140px"><strong>${name}</strong><br/><a href='${href}'>${locale === "ar" ? "نمایش" : "View"}</a></div>`);
+      const logo = business.media?.logo || business.media?.cover || business.media?.banner;
+      const categoryLabel = localizedCategory(business.category, locale);
+      const details = [
+        business.city ? `${locale === "ar" ? "المدينة" : "City"}: ${business.city}` : null,
+        categoryLabel ? `${locale === "ar" ? "التصنيف" : "Category"}: ${categoryLabel}` : null,
+        business.address ? `${locale === "ar" ? "العنوان" : "Address"}: ${business.address}` : null,
+        business.phone ? `${locale === "ar" ? "الهاتف" : "Phone"}: ${business.phone}` : null,
+      ].filter(Boolean) as string[];
+
+      const popupHtml = `
+        <div style="min-width:220px;max-width:260px;display:flex;gap:10px;align-items:flex-start;">
+          ${logo ? `<img src="${escapeHtml(logo)}" alt="${escapeHtml(name)}" style="width:42px;height:42px;border-radius:10px;object-fit:cover;flex-shrink:0;" />` : ""}
+          <div style="min-width:0;">
+            <div style="font-weight:700;line-height:1.3;">${escapeHtml(name)}</div>
+            ${details.slice(0, 3).map((line) => `<div style="font-size:12px;opacity:.85;line-height:1.35;margin-top:2px;">${escapeHtml(line)}</div>`).join("")}
+            <a href="${escapeHtml(href)}" style="display:inline-block;margin-top:8px;font-size:12px;text-decoration:underline;">${locale === "ar" ? "عرض التفاصيل" : "View details"}</a>
+          </div>
+        </div>
+      `;
+
+      marker.bindPopup(popupHtml, { maxWidth: 280 });
       marker.on("click", () => setActiveId(business.id));
 
       markersRef.current.set(business.id, marker);
@@ -175,14 +254,56 @@ export default function MapPageClient({ locale }: Props) {
 
     const business = mappableBusinesses.find((item) => item.id === activeId);
     if (!business || typeof business.latitude !== "number" || typeof business.longitude !== "number") return;
+    const latitude = business.latitude;
+    const longitude = business.longitude;
 
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    map.setView([business.latitude, business.longitude], 16, { animate: true });
+    const previousActiveId = lastActiveIdRef.current;
+    const isSwitchingBusiness = !!previousActiveId && previousActiveId !== activeId;
+    const transitionVersion = transitionVersionRef.current + 1;
+    transitionVersionRef.current = transitionVersion;
 
-    const marker = markersRef.current.get(activeId);
-    if (marker) marker.openPopup();
+    if (pendingTransitionRef.current !== null) {
+      window.clearTimeout(pendingTransitionRef.current);
+      pendingTransitionRef.current = null;
+    }
+
+    const openTargetMarker = () => {
+      if (transitionVersionRef.current !== transitionVersion) return;
+      const marker = markersRef.current.get(activeId);
+      if (marker) marker.openPopup();
+      lastActiveIdRef.current = activeId;
+    };
+
+    if (isSwitchingBusiness) {
+      map.flyTo(map.getCenter(), 11, {
+        animate: true,
+        duration: 0.7,
+        easeLinearity: 0.25,
+      });
+
+      pendingTransitionRef.current = window.setTimeout(() => {
+        if (transitionVersionRef.current !== transitionVersion) return;
+
+        map.flyTo([latitude, longitude], 16, {
+          animate: true,
+          duration: 1,
+          easeLinearity: 0.25,
+        });
+
+        openTargetMarker();
+      }, 720);
+    } else {
+      map.flyTo([latitude, longitude], 16, {
+        animate: true,
+        duration: 1,
+        easeLinearity: 0.25,
+      });
+
+      openTargetMarker();
+    }
 
     const listItem = listItemRefs.current.get(activeId);
     listItem?.scrollIntoView({ behavior: "smooth", block: "nearest" });
