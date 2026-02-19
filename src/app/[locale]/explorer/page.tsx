@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
-import { getCurrentUser } from "@/lib/auth/currentUser";
+import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinesses, listBusinessesByOwner } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
 import { listBusinessesWithActiveStories } from "@/lib/db/stories";
@@ -14,7 +14,6 @@ import {
 } from "@/lib/db/businessEngagement";
 import { BusinessesExplorer } from "@/components/BusinessesExplorer";
 import { AppPage } from "@/components/AppPage";
-import { PublicPage } from "@/components/PublicPage";
 import { StoriesContainer } from "@/components/stories";
 import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "./actions";
 
@@ -26,7 +25,7 @@ export default async function ExplorerPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const user = await getCurrentUser();
+  const user = await requireUser(locale as Locale);
 
   const dict = await getDictionary(locale as Locale);
   const [businesses, categories, businessesWithStories, ownedBusinesses] = await Promise.all([
@@ -73,11 +72,10 @@ export default async function ExplorerPage({
     return acc;
   }, {});
 
-  const Wrapper = user ? AppPage : PublicPage;
-  const detailsBasePath = user ? "/explorer" : "/businesses";
+  const detailsBasePath = "/explorer";
 
   return (
-    <Wrapper>
+    <AppPage>
       {/* Stories Section */}
       {businessesWithStories.length > 0 && (
         <div className="mb-6 -mx-4 sm:-mx-6">
@@ -117,6 +115,6 @@ export default async function ExplorerPage({
           onToggleSave={user ? toggleBusinessSaveAction.bind(null, locale as Locale) : undefined}
         />
       </div>
-    </Wrapper>
+    </AppPage>
   );
 }

@@ -334,16 +334,31 @@ export async function proxy(req: NextRequest) {
   // Note: Proxy runs before routing; keep it fast and avoid doing heavy DB work here.
   const section = restSegments[0];
 
-  const isDashboard = section === "dashboard";
-  const isAdmin = section === "admin";
-  const isAgent = section === "agent";
-  const isAi = section === "ai";
-  const isProfile = section === "profile";
-  const isSettings = section === "settings";
-  const isVerifyPhone = section === "verify-phone";
+  // All sections that require an authenticated user (dashboard shell).
+  const PROTECTED_SECTIONS = new Set([
+    "dashboard",
+    "admin",
+    "agent",
+    "ai",
+    "profile",
+    "settings",
+    "verify-phone",
+    "home",
+    "explorer",
+    "explore",
+    "categories",
+    "saved",
+    "wallet",
+    "notifications",
+    "business-request",
+    "directory",
+    "chat",
+  ]);
+
+  const isProtected = section ? PROTECTED_SECTIONS.has(section) : false;
 
   // Protected areas that require authentication
-  if (isDashboard || isAdmin || isAgent || isAi || isProfile || isSettings || isVerifyPhone) {
+  if (isProtected) {
     const cookieName = process.env.AUTH_COOKIE_NAME || "sbc_auth";
     const token = req.cookies.get(cookieName)?.value;
     const secret = process.env.AUTH_JWT_SECRET;
@@ -366,13 +381,13 @@ export async function proxy(req: NextRequest) {
       );
       const role = payload.role;
 
-      if (isAdmin && role !== "admin") {
+      if (section === "admin" && role !== "admin") {
         const url = req.nextUrl.clone();
         url.pathname = `/${locale}/dashboard`;
         return NextResponse.redirect(url);
       }
 
-      if (isAgent && role !== "agent" && role !== "admin") {
+      if (section === "agent" && role !== "agent" && role !== "admin") {
         const url = req.nextUrl.clone();
         url.pathname = `/${locale}/dashboard`;
         return NextResponse.redirect(url);

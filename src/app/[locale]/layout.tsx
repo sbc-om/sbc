@@ -16,10 +16,18 @@ import { getCurrentUser } from "@/lib/auth/currentUser";
 import { requireUser } from "@/lib/auth/requireUser";
 import { CartProvider } from "@/components/store/CartProvider";
 import { CartFloating } from "@/components/store/CartFloating";
-import { RealtimeEngagementHealthIndicator } from "@/components/RealtimeEngagementHealthIndicator";
 import { listStoreProducts } from "@/lib/store/products";
 import { AISearchProvider } from "@/lib/ai/AISearchProvider";
 import { getBusinessByOwnerId } from "@/lib/db/businesses";
+import { DynamicShell } from "@/components/DynamicShell";
+
+/** Strip query-string, hash, and trailing slash so route matching is stable. */
+function normalizePathname(raw: string): string {
+  if (!raw) return "";
+  const clean = raw.split("?")[0]?.split("#")[0] ?? "";
+  if (!clean) return "";
+  return clean !== "/" && clean.endsWith("/") ? clean.slice(0, -1) : clean;
+}
 
 export async function generateMetadata({
   params,
@@ -35,6 +43,51 @@ export async function generateMetadata({
   };
 }
 
+// ── Route classification ──────────────────────────────────────────────
+// First URL segment after /{locale}/... that determines the shell.
+
+/** Routes that ALWAYS render in the **public** shell (header + footer)
+ *  even when the user is authenticated. */
+const ALWAYS_PUBLIC_SECTIONS = new Set([
+  "map",
+  "about",
+  "contact",
+  "faq",
+  "terms",
+  "rules",
+  "login",
+  "register",
+  "businesses",
+  "business-card",
+  "marketing-platform",
+  "loyalty",
+  "email",
+  "domain",
+  "u",
+]);
+
+/** Routes that ALWAYS require authentication – the user is redirected to
+ *  the login page when not logged in.  These always get the dashboard shell. */
+const REQUIRE_AUTH_SECTIONS = new Set([
+  "home",
+  "explorer",
+  "explore",
+  "categories",
+  "saved",
+  "wallet",
+  "dashboard",
+  "admin",
+  "agent",
+  "ai",
+  "profile",
+  "settings",
+  "notifications",
+  "business-request",
+  "directory",
+  "chat",
+  "verify-phone",
+]);
+
 export default async function LocaleLayout({
   children,
   params,
@@ -47,25 +100,24 @@ export default async function LocaleLayout({
 
   const dict = await getDictionary(locale as Locale);
 
-  // Check active route flags first
+  // ── Determine the current route section ────────────────────────────
   const headersList = await headers();
-  const rawPathname = headersList.get("x-pathname") || headersList.get("next-url") || "";
-  const pathname = (() => {
-    if (!rawPathname) return "";
-    const withoutQuery = rawPathname.split("?")[0]?.split("#")[0] ?? "";
-    if (!withoutQuery) return "";
-    if (withoutQuery !== "/" && withoutQuery.endsWith("/")) {
-      return withoutQuery.slice(0, -1);
-    }
-    return withoutQuery;
-  })();
-  const isChatPage = pathname.includes("/chat");
-  const isLocaleHomePage = pathname === `/${locale}`;
-  const isMapPage = pathname === `/${locale}/map` || pathname.startsWith(`/${locale}/map/`);
-  const isHomeRoute = pathname === `/${locale}/home`;
+  const rawPathname =
+    headersList.get("x-pathname") ||
+    headersList.get("x-invoke-path") ||
+    headersList.get("next-url") ||
+    "";
+  const pathname = normalizePathname(rawPathname);
 
-  // Home must always use authenticated dashboard shell
-  const user = isHomeRoute
+  // First segment after the locale: e.g. "map", "home", "explorer"
+  const segments = pathname.split("/").filter(Boolean);
+  const routeSection = segments.length > 1 ? segments[1] : "";
+
+  const requiresAuth = REQUIRE_AUTH_SECTIONS.has(routeSection);
+  const isLocaleHomePage = segments.length <= 1; // bare /{locale}
+
+  // ── Authentication ─────────────────────────────────────────────────
+  const user = requiresAuth
     ? await requireUser(locale as Locale)
     : await getCurrentUser();
 
@@ -73,56 +125,66 @@ export default async function LocaleLayout({
   // Check if user already has a business (to hide business request menu)
   const userBusiness = user ? await getBusinessByOwnerId(user.id) : null;
 
+  // ── Shell rendering ────────────────────────────────────────────────
+  // When the user is logged in we render BOTH shell chromes and let the
+  // client-side <DynamicShell> component instantly swap between them
+  // based on `usePathname()`.  No full-page reload required.
+
+  if (user) {
+    // Pre-render all chrome on the server, pass as React-node props.
+    const sidebarNode = (
+      <Sidebar
+        locale={locale as Locale}
+        dict={dict}
+        user={{
+          displayName: user.displayName ?? user.email.split("@")[0],
+          role: user.role,
+          email: user.email,
+          avatarUrl: user.avatarUrl ?? null,
+          hasBusiness: !!userBusiness,
+        }}
+      />
+    );
+    const mobileNavNode = (
+      <MobileNav locale={locale as Locale} dict={dict} user={{ role: user.role }} />
+    );
+    const headerNode = <Header locale={locale as Locale} dict={dict} />;
+    const footerNode = (
+      <Footer locale={locale as Locale} dict={dict} homepageOnlyInstagram={isLocaleHomePage} />
+    );
+
+    return (
+      <DictionaryProvider locale={locale as Locale} dict={dict}>
+        <AISearchProvider>
+          <DirectionSync locale={locale as Locale} />
+          <CartProvider userKey={user.id}>
+            <CartFloating locale={locale as Locale} products={products} />
+            <SidebarLayout>
+              <DynamicShell
+                sidebar={sidebarNode}
+                header={headerNode}
+                footer={footerNode}
+                mobileNav={mobileNavNode}
+              >
+                {children}
+              </DynamicShell>
+            </SidebarLayout>
+          </CartProvider>
+        </AISearchProvider>
+      </DictionaryProvider>
+    );
+  }
+
+  // Not logged in – always public shell, no switching needed.
   return (
     <DictionaryProvider locale={locale as Locale} dict={dict}>
       <AISearchProvider>
         <DirectionSync locale={locale as Locale} />
-      {user && !isMapPage ? (
-        <CartProvider userKey={user.id}>
-          <CartFloating locale={locale as Locale} products={products} />
-
-          {/* Logged in: Show sidebar layout */}
-          <SidebarLayout>
-            <div
-              className="min-h-dvh bg-transparent text-foreground"
-              style={{
-                "--page-bottom-offset": isChatPage
-                  ? "0px"
-                  : "calc(var(--mobile-nav-height, 72px) + env(safe-area-inset-bottom) + 22px)",
-              } as Record<string, string>}
-            >
-              <Sidebar
-                locale={locale as Locale}
-                dict={dict}
-                user={{
-                  displayName: user.displayName ?? user.email.split("@")[0],
-                  role: user.role,
-                  email: user.email,
-                  avatarUrl: user.avatarUrl ?? null,
-                  hasBusiness: !!userBusiness,
-                }}
-              />
-              <RealtimeEngagementHealthIndicator />
-              <div
-                className="min-h-dvh transition-[margin] duration-300 ease-in-out"
-                style={{
-                  marginInlineStart: "var(--sidebar-width, 0)",
-                }}
-              >
-                <main className="w-full">{children}</main>
-              </div>
-              <MobileNav locale={locale as Locale} dict={dict} user={{ role: user.role }} />
-            </div>
-          </SidebarLayout>
-        </CartProvider>
-      ) : (
-        // Not logged in: Show header + footer
         <div className="min-h-dvh bg-transparent text-foreground flex flex-col">
           <Header locale={locale as Locale} dict={dict} />
           <main className="flex-1">{children}</main>
           <Footer locale={locale as Locale} dict={dict} homepageOnlyInstagram={isLocaleHomePage} />
         </div>
-      )}
       </AISearchProvider>
     </DictionaryProvider>
   );
