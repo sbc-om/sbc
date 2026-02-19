@@ -92,15 +92,14 @@ export default async function HomeFollowedPage({
   const businessIdsWithStories = new Set(allBusinessesWithStories.map(b => b.businessId));
 
   // Filter businesses:
-  // 1. Include if user directly follows the business
-  // 2. Include if business's category is followed AND business is not unfollowed
-  // 3. Exclude if business is in the unfollowed list
+  // 1. Include if user directly follows the business (highest priority)
+  // 2. Otherwise include if business's category is followed AND business is not unfollowed
   const businesses = allBusinesses.filter((b) => {
-    // Always exclude unfollowed businesses
-    if (unfollowedBusinessIds.has(b.id)) return false;
-    
     // Include if directly following this business
     if (followedBusinessIds.has(b.id)) return true;
+
+    // Exclude unfollowed businesses when not directly followed
+    if (unfollowedBusinessIds.has(b.id)) return false;
     
     // Include if following the category
     if (b.categoryId && followedCategoryIds.has(b.categoryId)) return true;

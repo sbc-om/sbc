@@ -258,10 +258,13 @@ export async function listFollowedBusinessesWithActiveStoriesWithCategory(
     ORDER BY s.created_at DESC
   `, [userId]);
   
-  // Filter: include if (followed OR category_followed) AND NOT unfollowed
+  // Filter priority:
+  // 1) Direct business follow always shows stories
+  // 2) Otherwise, show only when category is followed and business is not explicitly unfollowed
   const filteredRows = result.rows.filter((row) => {
+    if (row.is_followed) return true;
     if (row.is_unfollowed) return false;
-    return row.is_followed || row.category_followed;
+    return row.category_followed;
   });
   
   // Group by business
