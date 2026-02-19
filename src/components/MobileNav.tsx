@@ -138,6 +138,7 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
       path: "/map",
       Icon: HiLocationMarker,
       IconOutline: HiOutlineLocationMarker,
+      hardNavigate: true,
     },
   ];
 
@@ -155,10 +156,27 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
         {navItems.map((item) => {
           const active = isActive(item.path);
           const IconComponent = active ? item.Icon : item.IconOutline;
+          const href = `/${locale}${item.path}`;
+
+          if (item.hardNavigate) {
+            return (
+              <a
+                key={item.key}
+                href={href}
+                className="flex flex-col items-center gap-1 px-4 py-2 min-w-0 flex-1"
+              >
+                <IconComponent className={`h-6 w-6 ${active ? "text-foreground" : "text-(--muted-foreground)"}`} />
+                <span className={`text-xs truncate ${active ? "font-semibold" : "font-normal text-(--muted-foreground)"}`}>
+                  {item.label}
+                </span>
+              </a>
+            );
+          }
+
           return (
             <Link
               key={item.key}
-              href={`/${locale}${item.path}`}
+              href={href}
               className="flex flex-col items-center gap-1 px-4 py-2 min-w-0 flex-1"
             >
               <IconComponent className={`h-6 w-6 ${active ? "text-foreground" : "text-(--muted-foreground)"}`} />

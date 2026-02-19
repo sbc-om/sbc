@@ -19,14 +19,14 @@ export function useSidebar() {
 }
 
 export function SidebarLayout({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("sidebarCollapsed") === "true";
-  });
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.innerWidth < 1024;
-  });
+  const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Keep first client render aligned with SSR, then hydrate responsive/user preference state.
+  useEffect(() => {
+    setIsMobile(window.innerWidth < 1024);
+    setCollapsed(localStorage.getItem("sidebarCollapsed") === "true");
+  }, []);
 
   // Check if mobile on mount and window resize
   useEffect(() => {

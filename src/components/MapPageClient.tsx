@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Business } from "@/lib/db/types";
-import Link from "next/link";
 import type { Icon as LeafletIcon, Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 
 type Props = { locale: Locale };
@@ -68,6 +67,7 @@ export default function MapPageClient({ locale }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const mappableBusinesses = useMemo(
     () =>
@@ -80,6 +80,24 @@ export default function MapPageClient({ locale }: Props) {
       ),
     [businesses],
   );
+
+  const filteredBusinesses = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return mappableBusinesses;
+
+    return mappableBusinesses.filter((business) => {
+      const nameAr = business.name.ar?.toLowerCase() ?? "";
+      const nameEn = business.name.en?.toLowerCase() ?? "";
+      const city = business.city?.toLowerCase() ?? "";
+      const category = localizedCategory(business.category, locale).toLowerCase();
+      return (
+        nameAr.includes(query) ||
+        nameEn.includes(query) ||
+        city.includes(query) ||
+        category.includes(query)
+      );
+    });
+  }, [mappableBusinesses, searchQuery, locale]);
 
   useEffect(() => {
     let mounted = true;
@@ -339,10 +357,33 @@ export default function MapPageClient({ locale }: Props) {
           <div className="border-b border-(--surface-border) px-4 py-3">
             <h2 className="text-lg font-semibold">{locale === "ar" ? "الأنشطة التجارية" : "Businesses"}</h2>
             <p className="text-xs text-(--muted-foreground)">
-              {locale === "ar"
-                ? `${mappableBusinesses.length} موقع على الخريطة`
-                : `${mappableBusinesses.length} locations on map`}
+              {searchQuery.trim().length > 0
+                ? locale === "ar"
+                  ? `${filteredBusinesses.length} من ${mappableBusinesses.length} موقع`
+                  : `${filteredBusinesses.length} of ${mappableBusinesses.length} locations`
+                : locale === "ar"
+                  ? `${mappableBusinesses.length} موقع على الخريطة`
+                  : `${mappableBusinesses.length} locations on map`}
             </p>
+            <div className="mt-3 relative">
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder={locale === "ar" ? "ابحث عن نشاط أو مدينة..." : "Search business or city..."}
+                className="w-full rounded-xl border border-(--surface-border) bg-background/90 px-10 py-2.5 text-sm outline-none transition focus:border-(--accent) focus:ring-2 focus:ring-(--accent)/20"
+                aria-label={locale === "ar" ? "بحث في الأنشطة" : "Search businesses"}
+              />
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 flex items-center text-(--muted-foreground)"
+                style={locale === "ar" ? { right: "0.75rem" } : { left: "0.75rem" }}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.5 3a5.5 5.5 0 014.376 8.83l3.647 3.647a.75.75 0 11-1.06 1.06l-3.647-3.646A5.5 5.5 0 118.5 3zm-4 5.5a4 4 0 118 0 4 4 0 01-8 0z" clipRule="evenodd" />
+                </svg>
+              </span>
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
@@ -350,9 +391,13 @@ export default function MapPageClient({ locale }: Props) {
               <div className="mt-4 px-1">{locale === "ar" ? "جارٍ التحميل..." : "Loading..."}</div>
             ) : mappableBusinesses.length === 0 ? (
               <div className="mt-6 text-sm text-(--muted-foreground)">{locale === "ar" ? "لم يتم العثور على أنشطة تجارية" : "No businesses found"}</div>
+            ) : filteredBusinesses.length === 0 ? (
+              <div className="mt-6 text-sm text-(--muted-foreground)">
+                {locale === "ar" ? "لا توجد نتائج مطابقة للبحث" : "No matching results"}
+              </div>
             ) : (
               <ul className="space-y-3">
-                {mappableBusinesses.map((business) => (
+                {filteredBusinesses.map((business) => (
                   <li
                     key={business.id}
                     ref={(element) => {
@@ -365,7 +410,12 @@ export default function MapPageClient({ locale }: Props) {
                     className={`cursor-pointer rounded-lg border border-(--surface-border) bg-(--surface)/90 p-3 transition-colors hover:bg-(--chip-bg) ${
                       activeId === business.id ? "ring-2 ring-(--accent)" : ""
                     }`}
-                    onClick={() => setActiveId(business.id)}
+                    onClick={() => {
+                      setActiveId(business.id);
+                      if (window.innerWidth < 768) {
+                        setIsListOpen(false);
+                      }
+                    }}
                   >
                       <div className="flex items-center gap-3">
                         {(() => {
@@ -393,18 +443,6 @@ export default function MapPageClient({ locale }: Props) {
                           <div className="text-xs text-(--muted-foreground)">{business.city || (locale === "ar" ? "بدون شهر" : "No city")}</div>
                         </div>
                       </div>
-                    <div className="mt-2 flex gap-2">
-                      <Link
-                        href={
-                          business.username
-                            ? `/${locale}/@${business.username}`
-                            : `/${locale}/businesses/${business.slug}`
-                        }
-                        className="text-sm text-primary underline"
-                      >
-                        {locale === "ar" ? "عرض" : "View"}
-                      </Link>
-                    </div>
                   </li>
                 ))}
               </ul>

@@ -49,10 +49,19 @@ export default async function LocaleLayout({
 
   // Check active route flags first
   const headersList = await headers();
-  const pathname = headersList.get("x-pathname") || "";
+  const rawPathname = headersList.get("x-pathname") || headersList.get("next-url") || "";
+  const pathname = (() => {
+    if (!rawPathname) return "";
+    const withoutQuery = rawPathname.split("?")[0]?.split("#")[0] ?? "";
+    if (!withoutQuery) return "";
+    if (withoutQuery !== "/" && withoutQuery.endsWith("/")) {
+      return withoutQuery.slice(0, -1);
+    }
+    return withoutQuery;
+  })();
   const isChatPage = pathname.includes("/chat");
-  const isLocaleHomePage = pathname === `/${locale}` || pathname === `/${locale}/`;
-  const isMapPage = pathname === `/${locale}/map`;
+  const isLocaleHomePage = pathname === `/${locale}`;
+  const isMapPage = pathname === `/${locale}/map` || pathname.startsWith(`/${locale}/map/`);
   const isHomeRoute = pathname === `/${locale}/home`;
 
   // Home must always use authenticated dashboard shell
