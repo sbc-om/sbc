@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/Input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { UserSelect } from "@/components/ui/UserSelect";
-import { MarkdownEditorField } from "@/components/ui/MarkdownEditor";
+import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
 import { useToast } from "@/components/ui/Toast";
 
 const OsmLocationPicker = dynamic(
@@ -49,6 +49,14 @@ function slugifyEnglish(input: string) {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function normalizeDomainInput(input: string) {
+  let value = input.trim().toLowerCase();
+  value = value.replace(/^https?:\/\//, "");
+  value = value.split("/")[0] || "";
+  value = value.replace(/\.$/, "");
+  return value;
 }
 
 function Field({
@@ -177,8 +185,12 @@ export function EditBusinessForm({
   const [homepageTop, setHomepageTop] = useState(!!business.homepageTop);
   const [usernameValue, setUsernameValue] = useState(business.username ?? "");
   const [nameEnValue, setNameEnValue] = useState(business.name.en ?? "");
+  const [descEnValue, setDescEnValue] = useState(business.description?.en ?? "");
+  const [descArValue, setDescArValue] = useState(business.description?.ar ?? "");
   const [slugValue, setSlugValue] = useState(business.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [animDir, setAnimDir] = useState<"next" | "prev">("next");
   const [usernameStatus, setUsernameStatus] = useState<
     "idle" | "checking" | "available" | "taken" | "invalid"
   >("idle");
@@ -191,6 +203,7 @@ export function EditBusinessForm({
   const [domainStatus, setDomainStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid" | "saving" | "saved">("idle");
   const [domainMessage, setDomainMessage] = useState("");
   const domainCheckRef = useRef(0);
+  const domainPreview = domainValue ? `https://${domainValue}` : "";
   
   // File input refs to store actual files for upload
   const coverFileRef = useRef<File | null>(null);
@@ -200,8 +213,8 @@ export function EditBusinessForm({
   
   // Location state
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-    business.latitude && business.longitude
-      ? { lat: business.latitude, lng: business.longitude }
+    Number.isFinite(business.latitude) && Number.isFinite(business.longitude)
+      ? { lat: business.latitude as number, lng: business.longitude as number }
       : null
   );
   
@@ -477,17 +490,119 @@ export function EditBusinessForm({
     await updateBusinessAction(locale, business.id, formData);
   };
 
+  const steps = [
+    { id: "info", label: ar ? "المعلومات" : "Info" },
+    { id: "contact", label: ar ? "التواصل" : "Contact" },
+    { id: "location", label: ar ? "الموقع" : "Location" },
+    { id: "media", label: ar ? "الصور" : "Media" },
+    { id: "settings", label: ar ? "الإعدادات" : "Settings" },
+    { id: "review", label: ar ? "المراجعة" : "Review" },
+  ] as const;
+
+  const validateStep = (step: number) => {
+    switch (steps[step].id) {
+      case "info":
+        if (!nameEnValue.trim()) return ar ? "الاسم الإنجليزي مطلوب" : "English name is required";
+        if (!slugValue.trim()) return ar ? "المسار مطلوب" : "Slug is required";
+        if (!selectedCategory) return ar ? "اختر التصنيف" : "Please select a category";
+        return null;
+      case "contact":
+        if (!selectedOwner && !business.ownerId) return null;
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  const goNext = () => {
+    const err = validateStep(currentStep);
+    if (err) {
+      toast({ message: err, variant: "error" });
+      return;
+    }
+    setAnimDir("next");
+    setCurrentStep((s) => Math.min(steps.length - 1, s + 1));
+  };
+
+  const goPrev = () => {
+    setAnimDir("prev");
+    setCurrentStep((s) => Math.max(0, s - 1));
+  };
+
+  const stepPanelClass = (idx: number) =>
+    currentStep === idx
+      ? `animate-in fade-in duration-300 ${animDir === "next" ? "slide-in-from-end-4" : "slide-in-from-start-4"}`
+      : "hidden";
+
   return (
     <div className="mt-8">
+      <nav className="mb-8">
+        <ol className="hidden sm:flex items-center justify-between gap-2">
+          {steps.map((step, idx) => {
+            const isActive = idx === currentStep;
+            const isDone = idx < currentStep;
+            return (
+              <li key={step.id} className="flex-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (idx > currentStep) return;
+                    setAnimDir(idx > currentStep ? "next" : "prev");
+                    setCurrentStep(idx);
+                  }}
+                  disabled={idx > currentStep}
+                  className={`w-full rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                    isActive
+                      ? "bg-accent text-(--accent-foreground)"
+                      : isDone
+                        ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
+                        : "bg-(--chip-bg) text-(--muted-foreground)"
+                  } ${idx > currentStep ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                >
+                  {step.label}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+
+        <div className="sm:hidden">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-semibold">
+              {ar ? `الخطوة ${currentStep + 1} من ${steps.length}` : `Step ${currentStep + 1} of ${steps.length}`}
+            </span>
+            <span className="text-sm font-medium text-accent">{steps[currentStep].label}</span>
+          </div>
+          <div className="flex gap-1.5">
+            {steps.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                disabled={idx > currentStep}
+                onClick={() => {
+                  if (idx > currentStep) return;
+                  setAnimDir(idx > currentStep ? "next" : "prev");
+                  setCurrentStep(idx);
+                }}
+                className={`h-1.5 flex-1 rounded-full ${
+                  idx === currentStep ? "bg-accent" : idx < currentStep ? "bg-emerald-500" : "bg-(--border)"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </nav>
+
       <form onSubmit={handleSubmit} className="grid gap-8">
         {/* Hidden inputs for state-controlled values */}
         <input type="hidden" name="categoryId" value={selectedCategory} />
         <input type="hidden" name="ownerId" value={selectedOwner} />
         <input type="hidden" name="avatarMode" value={avatarMode} />
         <input type="hidden" name="showSimilarBusinesses" value={showSimilarBusinesses ? "true" : "false"} />
-        
-        {/* Basic Info */}
-        <div className="sbc-card relative z-20 overflow-visible p-6">
+
+        <div
+          className={`sbc-card relative z-20 overflow-visible p-6 ${stepPanelClass(0)}`}
+        >
           <h2 className="text-lg font-semibold text-foreground mb-1">
             {ar ? "المعلومات الأساسية" : "Basic Information"}
           </h2>
@@ -569,8 +684,7 @@ export function EditBusinessForm({
           </div>
         </div>
 
-        {/* Description */}
-        <div className="sbc-card p-6">
+        <div className={`sbc-card p-6 ${stepPanelClass(0)}`}>
           <h2 className="text-lg font-semibold text-foreground mb-1">
             {ar ? "الوصف" : "Description"}
           </h2>
@@ -579,25 +693,34 @@ export function EditBusinessForm({
           </p>
           
           <div className="space-y-6">
-            <MarkdownEditorField
-              label={ar ? "الوصف (EN)" : "Description (EN)"}
-              name="desc_en"
-              defaultValue={business.description?.en}
-              dir="ltr"
-              height={200}
-            />
-            <MarkdownEditorField
-              label={ar ? "الوصف (AR)" : "Description (AR)"}
-              name="desc_ar"
-              defaultValue={business.description?.ar}
-              dir="rtl"
-              height={200}
-            />
+            <div className="grid gap-2">
+              <span className="text-sm font-semibold text-foreground">
+                {ar ? "الوصف (EN)" : "Description (EN)"}
+              </span>
+              <MarkdownEditor
+                value={descEnValue}
+                onChange={setDescEnValue}
+                name="desc_en"
+                dir="ltr"
+                height={200}
+              />
+            </div>
+            <div className="grid gap-2">
+              <span className="text-sm font-semibold text-foreground">
+                {ar ? "الوصف (AR)" : "Description (AR)"}
+              </span>
+              <MarkdownEditor
+                value={descArValue}
+                onChange={setDescArValue}
+                name="desc_ar"
+                dir="rtl"
+                height={200}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Contact */}
-        <div className="sbc-card p-6">
+        <div className={`sbc-card p-6 ${stepPanelClass(1)}`}>
           <h2 className="text-lg font-semibold text-foreground mb-1">
             {ar ? "معلومات الاتصال والموقع" : "Contact & Location"}
           </h2>
@@ -641,8 +764,7 @@ export function EditBusinessForm({
           </div>
         </div>
 
-        {/* Location Section */}
-        <div className="sbc-card p-6">
+        <div className={`sbc-card p-6 ${stepPanelClass(2)}`}>
           <h2 className="text-lg font-semibold text-foreground mb-1">
             {ar ? "الموقع الجغرافي" : "Geographic Location"}
           </h2>
@@ -660,7 +782,7 @@ export function EditBusinessForm({
                   ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك التجاري"
                   : "Click on the map to mark your exact business location"}
               </p>
-              <div className="rounded-lg overflow-hidden ">
+              <div className="rounded-lg overflow-hidden border border-(--surface-border)">
                 <OsmLocationPicker
                   value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
                   onChange={(next) => {
@@ -683,8 +805,7 @@ export function EditBusinessForm({
           </div>
         </div>
 
-        {/* Custom Domain Section */}
-        <div className="sbc-card p-6">
+        <div className={`sbc-card p-6 ${stepPanelClass(4)}`}>
           <h2 className="text-lg font-semibold text-foreground mb-1">
             {ar ? "الدومين المخصص" : "Custom Domain"}
           </h2>
@@ -703,7 +824,8 @@ export function EditBusinessForm({
                 <Input
                   placeholder="example.com"
                   value={domainValue}
-                  onChange={(e) => setDomainValue(e.target.value.toLowerCase().trim())}
+                  onChange={(e) => setDomainValue(normalizeDomainInput(e.target.value))}
+                  onBlur={(e) => setDomainValue(normalizeDomainInput(e.target.value))}
                   className="flex-1"
                 />
                 <Button
@@ -726,6 +848,11 @@ export function EditBusinessForm({
               }`}>
                 {domainMessage || " "}
               </span>
+              {domainPreview ? (
+                <p className="text-xs text-(--muted-foreground)">
+                  {ar ? "الرابط المتوقع:" : "Expected URL:"} <span dir="ltr">{domainPreview}</span>
+                </p>
+              ) : null}
             </div>
 
             <div className="rounded-lg bg-(--chip-bg) p-4 text-sm">
@@ -758,8 +885,7 @@ export function EditBusinessForm({
           </div>
         </div>
 
-        {/* Tags */}
-        <div className="sbc-card p-6">
+        <div className={`sbc-card p-6 ${stepPanelClass(1)}`}>
           <h2 className="text-lg font-semibold text-foreground mb-1">
             {ar ? "معلومات إضافية" : "Additional Details"}
           </h2>
@@ -775,8 +901,7 @@ export function EditBusinessForm({
           />
         </div>
 
-        {/* Approval, Verification & Homepage */}
-        <div className="sbc-card p-6">
+        <div className={`sbc-card p-6 ${stepPanelClass(4)}`}>
           <h2 className="text-lg font-semibold text-foreground mb-1">
             {ar ? "الاعتماد والتوثيق والظهور في الرئيسية" : "Approval, Verification & Homepage"}
           </h2>
@@ -889,8 +1014,7 @@ export function EditBusinessForm({
           </div>
         </div>
 
-        {/* Media */}
-        <div className="sbc-card p-6">
+        <div className={`sbc-card p-6 ${stepPanelClass(3)}`}>
           <h2 className="text-lg font-semibold text-foreground mb-1">
             {ar ? "الصور والوسائط" : "Images & Media"}
           </h2>
@@ -997,49 +1121,55 @@ export function EditBusinessForm({
           </div>
         </div>
 
+          <div className={`sbc-card p-6 ${stepPanelClass(5)}`}>
+            <h2 className="text-lg font-semibold text-foreground mb-1">
+              {ar ? "مراجعة وحفظ" : "Review & Save"}
+            </h2>
+            <p className="text-sm text-(--muted-foreground) mb-4">
+              {ar ? "راجع البيانات ثم احفظ التعديلات" : "Review data and save changes"}
+            </p>
+            <div className="grid gap-2 text-sm">
+              <div className="flex items-center justify-between"><span className="text-(--muted-foreground)">{ar ? "الاسم" : "Name"}</span><span>{nameEnValue || business.name.en}</span></div>
+              <div className="flex items-center justify-between"><span className="text-(--muted-foreground)">{ar ? "التصنيف" : "Category"}</span><span>{selectedCategory || "—"}</span></div>
+              <div className="flex items-center justify-between"><span className="text-(--muted-foreground)">{ar ? "المدينة" : "City"}</span><span>{String((business.city ?? "")).trim() || "—"}</span></div>
+              <div className="flex items-center justify-between"><span className="text-(--muted-foreground)">{ar ? "الصور" : "Media"}</span><span>{coverPreview.length + logoPreview.length + bannerPreview.length + galleryPreview.length > 0 ? (ar ? "مضاف" : "Added") : "—"}</span></div>
+            </div>
+          </div>
+
         {/* Submit Button */}
         <div className="flex items-center justify-between border-t border-(--surface-border) pt-6">
-          <ConfirmDialog
-            title={ar ? "تأكيد الحذف" : "Confirm Delete"}
-            message={ar ? "هل تريد حذف هذا النشاط؟ لا يمكن التراجع عن هذا الإجراء." : "Delete this business? This action cannot be undone."}
-            confirmText={ar ? "حذف" : "Delete"}
-            cancelText={ar ? "إلغاء" : "Cancel"}
-            onConfirm={handleDelete}
-            variant="destructive"
-            trigger={
-              <Button variant="destructive" size="sm" disabled={deleting} type="button">
-                {deleting ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    {ar ? "جارٍ الحذف..." : "Deleting..."}
-                  </>
-                ) : (
-                  <>
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    {ar ? "حذف النشاط" : "Delete Business"}
-                  </>
-                )}
-              </Button>
-            }
-          />
+          <div className="flex items-center gap-3">
+            <Button type="button" variant="ghost" onClick={currentStep === 0 ? () => router.push(`/${locale}/admin`) : goPrev}>
+              {currentStep === 0 ? (ar ? "إلغاء" : "Cancel") : (ar ? "السابق" : "Previous")}
+            </Button>
+            <ConfirmDialog
+              title={ar ? "تأكيد الحذف" : "Confirm Delete"}
+              message={ar ? "هل تريد حذف هذا النشاط؟ لا يمكن التراجع عن هذا الإجراء." : "Delete this business? This action cannot be undone."}
+              confirmText={ar ? "حذف" : "Delete"}
+              cancelText={ar ? "إلغاء" : "Cancel"}
+              onConfirm={handleDelete}
+              variant="destructive"
+              trigger={
+                <Button variant="destructive" size="sm" disabled={deleting} type="button">
+                  {deleting ? (ar ? "جارٍ الحذف..." : "Deleting...") : (ar ? "حذف النشاط" : "Delete Business")}
+                </Button>
+              }
+            />
+          </div>
 
           <div className="flex items-center gap-3">
             <Link href={`/${locale}/admin`} className={buttonVariants({ variant: "ghost" })}>
               {ar ? "إلغاء" : "Cancel"}
             </Link>
-            <Button type="submit" className="min-w-45">
-              <>
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+            {currentStep < steps.length - 1 ? (
+              <Button type="button" onClick={goNext} className="min-w-32">
+                {ar ? "التالي" : "Next"}
+              </Button>
+            ) : (
+              <Button type="submit" className="min-w-45">
                 {ar ? "حفظ ونشر" : "Save & Publish"}
-              </>
-            </Button>
+              </Button>
+            )}
           </div>
         </div>
       </form>

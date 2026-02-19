@@ -22,6 +22,17 @@ export type OsmLocationValue = {
   label?: string;
 };
 
+function isValidLatLng(lat: unknown, lng: unknown): boolean {
+  const nLat = Number(lat);
+  const nLng = Number(lng);
+  return Number.isFinite(nLat) && Number.isFinite(nLng) && Math.abs(nLat) <= 90 && Math.abs(nLng) <= 180;
+}
+
+function toSafeLatLng(lat: unknown, lng: unknown): { lat: number; lng: number } | null {
+  if (!isValidLatLng(lat, lng)) return null;
+  return { lat: Number(lat), lng: Number(lng) };
+}
+
 function useIsDarkMode(): boolean {
   const [isDark, setIsDark] = useState(false);
 
@@ -41,7 +52,23 @@ function useIsDarkMode(): boolean {
 function FlyTo({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
   useEffect(() => {
-    map.flyTo([lat, lng], Math.max(map.getZoom(), 16), { duration: 0.6 });
+    try {
+      const safe = toSafeLatLng(lat, lng);
+      if (!safe) return;
+
+      const maybeLoaded = (map as unknown as { _loaded?: boolean })._loaded;
+      if (!maybeLoaded) return;
+
+      const currentZoom = map.getZoom();
+      const nextZoom = Number.isFinite(currentZoom) ? Math.max(currentZoom, 16) : 16;
+
+      const currentCenter = map.getCenter();
+      if (!isValidLatLng(currentCenter.lat, currentCenter.lng)) return;
+
+      map.setView([safe.lat, safe.lng], nextZoom, { animate: true });
+    } catch {
+      // Ignore transient invalid-state errors from Leaflet during hydration/theme remounts.
+    }
   }, [lat, lng, map]);
   return null;
 }
@@ -124,11 +151,24 @@ export function OsmLocationPicker({
     setLocalRadius(String(value?.radiusMeters ?? 250));
   }, [value?.radiusMeters]);
 
+  const safeValue = useMemo(() => {
+    if (!value) return null;
+    const safeCoords = toSafeLatLng(value.lat, value.lng);
+    if (!safeCoords) return null;
+    const safeRadius = Number.isFinite(value.radiusMeters) ? Math.min(20000, Math.max(25, Math.trunc(value.radiusMeters))) : 250;
+    return {
+      ...value,
+      lat: safeCoords.lat,
+      lng: safeCoords.lng,
+      radiusMeters: safeRadius,
+    };
+  }, [value]);
+
   const center = useMemo(() => {
-    if (value) return { lat: value.lat, lng: value.lng };
+    if (safeValue) return { lat: safeValue.lat, lng: safeValue.lng };
     // Default: Muscat-ish (since repo says sbc-om)
     return { lat: 23.588, lng: 58.3829 };
-  }, [value]);
+  }, [safeValue]);
 
   const radiusMeters = useMemo(() => {
     const n = Math.trunc(Number(localRadius));
@@ -175,7 +215,7 @@ export function OsmLocationPicker({
     onChange({
       lat,
       lng,
-      radiusMeters: value?.radiusMeters ?? 250,
+      radiusMeters: safeValue?.radiusMeters ?? 250,
       label,
     });
   }
@@ -203,8 +243,8 @@ export function OsmLocationPicker({
   }
 
   function applyRadius() {
-    if (!value) return;
-    onChange({ ...value, radiusMeters });
+    if (!safeValue) return;
+    onChange({ ...safeValue, radiusMeters });
   }
 
   const tiles = useMemo(() => {
@@ -253,7 +293,7 @@ export function OsmLocationPicker({
                 type="button"
                 variant="ghost"
                 size="sm"
-                disabled={!!disabled || !value}
+                disabled={!!disabled || !safeValue}
                 onClick={() => onChange(null)}
               >
                 {ar ? "مسح" : "Clear"}
@@ -319,17 +359,17 @@ export function OsmLocationPicker({
           <ClickHandler onPick={pick} />
           <FlyTo lat={center.lat} lng={center.lng} />
 
-          {value ? (
+          {safeValue ? (
             <>
               <CircleMarker
-                center={[value.lat, value.lng]}
+                center={[safeValue.lat, safeValue.lng]}
                 radius={8}
                 pathOptions={{ color: "#4f46e5", fillColor: "#4f46e5", fillOpacity: 0.85 }}
               />
               {!hideRadius && (
                 <Circle
-                  center={[value.lat, value.lng]}
-                  radius={value.radiusMeters}
+                  center={[safeValue.lat, safeValue.lng]}
+                  radius={safeValue.radiusMeters}
                   pathOptions={{ color: "#06b6d4", fillColor: "#06b6d4", fillOpacity: 0.12 }}
                 />
               )}
@@ -355,13 +395,13 @@ export function OsmLocationPicker({
                       max={20000}
                       value={localRadius}
                       onChange={(e) => setLocalRadius(e.target.value)}
-                      disabled={disabled || !value}
+                      disabled={disabled || !safeValue}
                       className={cn("w-20 sm:w-20 flex-1 sm:flex-initial h-full", rtl ? "rounded-l-none border-l-0" : "rounded-r-none border-r-0")}
                     />
                     <Button 
                       type="button" 
                       variant="secondary" 
-                      disabled={disabled || !value} 
+                      disabled={disabled || !safeValue} 
                       onClick={applyRadius}
                       className={cn("h-full px-3 shrink-0", rtl ? "rounded-r-none" : "rounded-l-none")}
                     >
@@ -376,7 +416,7 @@ export function OsmLocationPicker({
                   </label>
                   <div className="flex-1 flex items-center h-10 rounded-lg border border-(--surface-border) bg-(--surface) px-3">
                     <div className="text-xs font-mono" dir="ltr">
-                      {value ? `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}` : "—"}
+                      {safeValue ? `${safeValue.lat.toFixed(6)}, ${safeValue.lng.toFixed(6)}` : "—"}
                     </div>
                   </div>
                 </div>

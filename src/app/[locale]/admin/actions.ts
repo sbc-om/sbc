@@ -9,7 +9,8 @@ import {
   deleteBusiness, 
   updateBusiness, 
   getBusinessById,
-  setBusinessMedia
+  setBusinessMedia,
+  setBusinessCustomDomain,
 } from "@/lib/db/businesses";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getCategoryById } from "@/lib/db/categories";
@@ -156,11 +157,15 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
 
   const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
   const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
+  const showSimilarBusinessesRaw = String(formData.get("showSimilarBusinesses") || "").trim();
+  const showSimilarBusinesses = showSimilarBusinessesRaw === "true";
 
   const usernameRaw = String(formData.get("username") || "").trim();
   const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
+  const customDomainRaw = String(formData.get("customDomain") || "").trim().toLowerCase();
+  const customDomain = customDomainRaw || null;
 
-  const business = await createBusiness({
+  let business = await createBusiness({
     slug: String(formData.get("slug") || ""),
     username,
     ownerId,
@@ -184,7 +189,46 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
     longitude,
     tags,
     avatarMode,
+    showSimilarBusinesses,
   });
+
+  const coverFile = formData.get("coverImage") as File | null;
+  if (coverFile && coverFile.size > 0) {
+    const result = await storeUpload({ businessId: business.id, kind: "cover", file: coverFile });
+    business = await setBusinessMedia(business.id, "cover", result.url);
+  }
+
+  const logoFile = formData.get("logoImage") as File | null;
+  if (logoFile && logoFile.size > 0) {
+    const result = await storeUpload({ businessId: business.id, kind: "logo", file: logoFile });
+    business = await setBusinessMedia(business.id, "logo", result.url);
+  }
+
+  const bannerFile = formData.get("bannerImage") as File | null;
+  if (bannerFile && bannerFile.size > 0) {
+    const result = await storeUpload({ businessId: business.id, kind: "banner", file: bannerFile });
+    business = await setBusinessMedia(business.id, "banner", result.url);
+  }
+
+  const galleryFiles = formData.getAll("galleryImages") as File[];
+  if (galleryFiles.length > 0) {
+    const galleryUrls = await Promise.all(
+      galleryFiles
+        .filter((file) => file.size > 0)
+        .map((file) => storeUpload({ businessId: business.id, kind: "gallery", file }))
+    );
+    if (galleryUrls.length > 0) {
+      business = await setBusinessMedia(
+        business.id,
+        "gallery",
+        galleryUrls.map((r) => r.url)
+      );
+    }
+  }
+
+  if (customDomain) {
+    business = await setBusinessCustomDomain(business.id, customDomain);
+  }
 
   revalidatePath(`/${locale}/businesses`);
   revalidatePath(`/${locale}/businesses/${business.slug}`);
@@ -195,48 +239,86 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
 export async function updateBusinessAction(locale: Locale, id: string, formData: FormData) {
   await requireAdmin(locale);
 
+  const current = await getBusinessById(id);
+  if (!current) throw new Error("NOT_FOUND");
+
   const descEn = String(formData.get("desc_en") || "").trim();
   const descAr = String(formData.get("desc_ar") || "").trim();
-  const description = descEn && descAr ? { en: descEn, ar: descAr } : undefined;
+  const description = descEn && descAr
+    ? { en: descEn, ar: descAr }
+    : current.description;
 
   const tagsRaw = String(formData.get("tags") || "").trim();
-  const tags = tagsRaw ? tagsRaw.split(",").map((s) => s.trim()).filter(Boolean) : undefined;
+  const tags = tagsRaw
+    ? tagsRaw.split(",").map((s) => s.trim()).filter(Boolean)
+    : current.tags;
 
   const categoryIdRaw = String(formData.get("categoryId") || "").trim();
-  const categoryId = categoryIdRaw || null;
+  const categoryId = categoryIdRaw || current.categoryId || null;
   const categoryPatch = await deriveLegacyCategoryText(categoryId);
 
   const { ownerId } = await resolveOwnerFromFormData(formData);
-  const homepageTop = readBoolean(formData, "homepageTop");
-  const homepageFeatured = homepageTop || readBoolean(formData, "homepageFeatured");
-  const isApproved = readBoolean(formData, "isApproved");
-  const isVerified = readBoolean(formData, "isVerified");
-  const isSpecial = readBoolean(formData, "isSpecial");
+  const homepageTop = formData.has("homepageTop")
+    ? readBoolean(formData, "homepageTop")
+    : !!current.homepageTop;
+  const homepageFeatured = homepageTop || (
+    formData.has("homepageFeatured")
+      ? readBoolean(formData, "homepageFeatured")
+      : !!current.homepageFeatured
+  );
+  const isApproved = formData.has("isApproved")
+    ? readBoolean(formData, "isApproved")
+    : !!current.isApproved;
+  const isVerified = formData.has("isVerified")
+    ? readBoolean(formData, "isVerified")
+    : !!current.isVerified;
+  const isSpecial = formData.has("isSpecial")
+    ? readBoolean(formData, "isSpecial")
+    : !!current.isSpecial;
 
   // Parse location coordinates
   const latitudeRaw = String(formData.get("latitude") || "").trim();
   const longitudeRaw = String(formData.get("longitude") || "").trim();
-  const latitude = latitudeRaw ? parseFloat(latitudeRaw) : undefined;
-  const longitude = longitudeRaw ? parseFloat(longitudeRaw) : undefined;
+  const latitude = latitudeRaw ? parseFloat(latitudeRaw) : current.latitude;
+  const longitude = longitudeRaw ? parseFloat(longitudeRaw) : current.longitude;
 
   const avatarModeRaw = String(formData.get("avatarMode") || "").trim();
-  const avatarMode = avatarModeRaw === "logo" ? "logo" : "icon";
+  const avatarMode = avatarModeRaw
+    ? avatarModeRaw === "logo" ? "logo" : "icon"
+    : (current.avatarMode ?? "icon");
 
   const showSimilarBusinessesRaw = String(formData.get("showSimilarBusinesses") || "").trim();
-  const showSimilarBusinesses = showSimilarBusinessesRaw === "true";
+  const showSimilarBusinesses = showSimilarBusinessesRaw
+    ? showSimilarBusinessesRaw === "true"
+    : current.showSimilarBusinesses !== false;
 
   const usernameRaw = String(formData.get("username") || "").trim();
-  const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
+  const username = usernameRaw
+    ? usernameRaw.toLowerCase()
+    : current.username;
+
+  const slugRaw = String(formData.get("slug") || "").trim();
+  const slug = slugRaw || current.slug;
+
+  const nameEnRaw = String(formData.get("name_en") || "").trim();
+  const nameArRaw = String(formData.get("name_ar") || "").trim();
+  const name = {
+    en: nameEnRaw || current.name.en,
+    ar: nameArRaw || current.name.ar,
+  };
+
+  const cityRaw = String(formData.get("city") || "").trim();
+  const addressRaw = String(formData.get("address") || "").trim();
+  const phoneRaw = String(formData.get("phone") || "").trim();
+  const websiteRaw = String(formData.get("website") || "").trim();
+  const emailRaw = String(formData.get("email") || "").trim();
 
   // First update the business basic info
   let next = await updateBusiness(id, {
-    slug: String(formData.get("slug") || "") || undefined,
+    slug,
     username,
-    ownerId,
-    name: {
-      en: String(formData.get("name_en") || ""),
-      ar: String(formData.get("name_ar") || ""),
-    },
+    ownerId: ownerId ?? current.ownerId,
+    name,
     description,
     isApproved,
     isVerified,
@@ -244,11 +326,11 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
     homepageFeatured,
     homepageTop,
     ...categoryPatch,
-    city: String(formData.get("city") || "") || undefined,
-    address: String(formData.get("address") || "") || undefined,
-    phone: String(formData.get("phone") || "") || undefined,
-    website: String(formData.get("website") || "") || undefined,
-    email: String(formData.get("email") || "") || undefined,
+    city: cityRaw || current.city,
+    address: addressRaw || current.address,
+    phone: phoneRaw || current.phone,
+    website: websiteRaw || current.website,
+    email: emailRaw || current.email,
     latitude,
     longitude,
     tags,

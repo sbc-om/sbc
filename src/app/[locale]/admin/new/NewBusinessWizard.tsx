@@ -1,43 +1,58 @@
 "use client";
 
-import Link from "next/link";
-import { useActionState, useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type MutableRefObject,
+  type ReactNode,
+  type SetStateAction,
+} from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 
-import type { Locale } from "@/lib/i18n/locales";
-import type { Category } from "@/lib/db/types";
-import { createBusinessDraftAction, type CreateBusinessDraftResult } from "@/app/[locale]/admin/actions";
-import { Button, buttonVariants } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
-import { Textarea } from "@/components/ui/Textarea";
-import { PhoneInput } from "@/components/ui/PhoneInput";
+import { createBusinessAction } from "@/app/[locale]/admin/actions";
 import { CategorySelectField } from "@/components/CategorySelectField";
-import { UserSelect } from "@/components/ui/UserSelect";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
+import { PhoneInput } from "@/components/ui/PhoneInput";
+import { UserSelect } from "@/components/ui/UserSelect";
+import { useToast } from "@/components/ui/Toast";
+import type { Category } from "@/lib/db/types";
+import type { Locale } from "@/lib/i18n/locales";
 
 const OsmLocationPicker = dynamic(
-  () => import("@/components/maps/OsmLocationPicker").then((mod) => mod.OsmLocationPicker),
-  { ssr: false }
+  () => import("@/components/maps/OsmLocationPicker").then((m) => m.OsmLocationPicker),
+  { ssr: false },
 );
 
-const USERNAME_MIN = 2;
-const USERNAME_MAX = 30;
-const USERNAME_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+type StepId = "info" | "contact" | "location" | "media" | "settings" | "review";
 
-function getUsernameFormatError(value: string, ar: boolean) {
-  const normalized = value.trim().toLowerCase();
-  if (normalized.length < USERNAME_MIN || normalized.length > USERNAME_MAX) {
-    return ar
-      ? "الطول يجب أن يكون بين 2 و30 حرفاً."
-      : "Length must be 2–30 characters.";
-  }
-  if (!USERNAME_REGEX.test(normalized)) {
-    return ar
-      ? "مسموح فقط أحرف إنجليزية وأرقام والشرطة (-) ولا يمكن أن تبدأ أو تنتهي بشرطة."
-      : "Use only English letters, digits, and hyphens. Hyphen can't be first or last.";
-  }
-  return null;
+interface FormDataState {
+  name_en: string;
+  name_ar: string;
+  desc_en: string;
+  desc_ar: string;
+  slug: string;
+  username: string;
+  categoryId: string;
+  ownerId: string;
+  city: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  tags: string;
+}
+
+interface LocationData {
+  lat: number;
+  lng: number;
 }
 
 function slugifyEnglish(input: string) {
@@ -48,6 +63,81 @@ function slugifyEnglish(input: string) {
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function normalizeDomainInput(input: string) {
+  let value = input.trim().toLowerCase();
+  value = value.replace(/^https?:\/\//, "");
+  value = value.split("/")[0] || "";
+  value = value.replace(/\.$/, "");
+  return value;
+}
+
+const IconInfo = (
+  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+  </svg>
+);
+const IconPhone = (
+  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" />
+  </svg>
+);
+const IconMap = (
+  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0115 0z" />
+  </svg>
+);
+const IconCamera = (
+  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+  </svg>
+);
+const IconSettings = (
+  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9m-9 6h9m-9 6h9M4.5 6h.008v.008H4.5V6zm0 6h.008v.008H4.5V12zm0 6h.008v.008H4.5V18z" />
+  </svg>
+);
+const IconCheck = (
+  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+const IconChevronRight = (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+  </svg>
+);
+const IconChevronLeft = (
+  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+  </svg>
+);
+
+function StepHeader({ icon, title, desc }: { icon: ReactNode; title: string; desc: string }) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+        {icon}
+      </div>
+      <div>
+        <h2 className="text-lg font-bold">{title}</h2>
+        <p className="text-sm text-(--muted-foreground)">{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold mb-1">{label}</label>
+      {hint ? <p className="text-xs text-(--muted-foreground) mb-2">{hint}</p> : null}
+      {children}
+    </div>
+  );
 }
 
 export function NewBusinessWizard({
@@ -61,829 +151,825 @@ export function NewBusinessWizard({
   categories: Category[];
   users: Array<{ id: string; email: string; fullName?: string; phone?: string; role: "admin" | "agent" | "user" }>;
 }) {
+  const router = useRouter();
+  const { toast } = useToast();
   const ar = locale === "ar";
-  
-  // Form data state
-  const [formData, setFormData] = useState({
-    username: "",
-    name_en: "",
-    name_ar: "",
-    desc_en: "",
-    desc_ar: "",
-    categoryId: "",
-    ownerId: "",
-    city: "",
-    phone: "",
-    address: "",
-    website: "",
-    email: "",
-    tags: "",
-  });
-  
-  // Username validation
-  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
-  const [usernameMessage, setUsernameMessage] = useState("");
-  const usernameCheckRef = useRef(0);
-  
-  // Slug
-  const [slugValue, setSlugValue] = useState("");
+
+  const steps = useMemo(
+    () => [
+      { id: "info" as StepId, label: ar ? "المعلومات" : "Info", icon: IconInfo },
+      { id: "contact" as StepId, label: ar ? "التواصل" : "Contact", icon: IconPhone },
+      { id: "location" as StepId, label: ar ? "الموقع" : "Location", icon: IconMap },
+      { id: "media" as StepId, label: ar ? "الصور" : "Media", icon: IconCamera },
+      { id: "settings" as StepId, label: ar ? "الإعدادات" : "Settings", icon: IconSettings },
+      { id: "review" as StepId, label: ar ? "المراجعة" : "Review", icon: IconCheck },
+    ],
+    [ar],
+  );
+
+  const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [animDir, setAnimDir] = useState<"next" | "prev">("next");
+  const [location, setLocation] = useState<LocationData | null>(null);
   const [slugTouched, setSlugTouched] = useState(false);
-  
-  // Checkboxes
-  const [isApproved, setIsApproved] = useState(false);
+
+  const [isApproved, setIsApproved] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
   const [isSpecial, setIsSpecial] = useState(false);
   const [homepageFeatured, setHomepageFeatured] = useState(false);
   const [homepageTop, setHomepageTop] = useState(false);
   const [avatarMode, setAvatarMode] = useState<"icon" | "logo">("icon");
-  
-  // Media states
+  const [showSimilarBusinesses, setShowSimilarBusinesses] = useState(true);
+  const [domainValue, setDomainValue] = useState("");
+  const [domainStatus, setDomainStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [domainMessage, setDomainMessage] = useState("");
+  const domainCheckRef = useRef(0);
+
   const [coverPreview, setCoverPreview] = useState<string[]>([]);
   const [logoPreview, setLogoPreview] = useState<string[]>([]);
   const [bannerPreview, setBannerPreview] = useState<string[]>([]);
   const [galleryPreview, setGalleryPreview] = useState<string[]>([]);
-  
-  // Location state
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  const usernameStatusClass =
-    usernameStatus === "available"
-      ? "text-emerald-600"
-      : usernameStatus === "checking" || usernameStatus === "idle"
-        ? "text-(--muted-foreground)"
-        : "text-red-600";
+  const coverFileRef = useRef<File | null>(null);
+  const logoFileRef = useRef<File | null>(null);
+  const bannerFileRef = useRef<File | null>(null);
+  const galleryFilesRef = useRef<File[]>([]);
 
-  // Username validation effect
+  const [formData, setFormData] = useState<FormDataState>({
+    name_en: "",
+    name_ar: "",
+    desc_en: "",
+    desc_ar: "",
+    slug: "",
+    username: "",
+    categoryId: "",
+    ownerId: "",
+    city: "",
+    address: "",
+    phone: "",
+    email: "",
+    website: "",
+    tags: "",
+  });
+
+  const set = useCallback(
+    <K extends keyof FormDataState>(key: K, value: FormDataState[K]) =>
+      setFormData((prev) => ({ ...prev, [key]: value })),
+    [],
+  );
+
+  const selectedCategory = useMemo(
+    () => categories.find((c) => c.id === formData.categoryId),
+    [categories, formData.categoryId],
+  );
+
+  const selectedOwner = useMemo(
+    () => users.find((u) => u.id === formData.ownerId),
+    [users, formData.ownerId],
+  );
+  const domainPreview = domainValue ? `https://${domainValue}` : "";
+
   useEffect(() => {
-    if (!formData.username) {
-      const resetTimer = setTimeout(() => {
-        setUsernameStatus("idle");
-        setUsernameMessage("");
-      }, 0);
-      return () => clearTimeout(resetTimer);
+    const normalized = domainValue.trim().toLowerCase();
+    if (!normalized) {
+      setDomainStatus("idle");
+      setDomainMessage("");
+      return;
     }
 
-    const normalized = formData.username.trim().toLowerCase();
-    const formatError = getUsernameFormatError(normalized, ar);
-    if (formatError) {
-      const invalidTimer = setTimeout(() => {
-        setUsernameStatus("invalid");
-        setUsernameMessage(formatError);
-      }, 0);
-      return () => clearTimeout(invalidTimer);
+    if (!/^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}$/.test(normalized)) {
+      setDomainStatus("invalid");
+      setDomainMessage(ar ? "صيغة الدومين غير صحيحة" : "Invalid domain format");
+      return;
     }
 
-    const checkingTimer = setTimeout(() => {
-      setUsernameStatus("checking");
-      setUsernameMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
-    }, 0);
+    setDomainStatus("checking");
+    setDomainMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    const requestId = ++domainCheckRef.current;
 
-    const requestId = ++usernameCheckRef.current;
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/businesses/username/${encodeURIComponent(normalized)}`);
+        const res = await fetch(`/api/businesses/domain?domain=${encodeURIComponent(normalized)}`);
         const data = await res.json();
-        if (requestId !== usernameCheckRef.current) return;
+        if (requestId !== domainCheckRef.current) return;
 
-        if (!data.ok) {
-          setUsernameStatus("invalid");
-          setUsernameMessage(ar ? "صيغة غير صحيحة" : "Invalid format");
+        if (data.ok && data.available) {
+          setDomainStatus("available");
+          setDomainMessage(ar ? "متاح" : "Available");
           return;
         }
 
-        if (data.available) {
-          setUsernameStatus("available");
-          setUsernameMessage(ar ? "متاح" : "Available");
-        } else {
-          setUsernameStatus("taken");
-          setUsernameMessage(ar ? "غير متاح" : "Not available");
-        }
+        setDomainStatus(data.reason === "TAKEN" ? "taken" : "invalid");
+        setDomainMessage(
+          data.reason === "TAKEN"
+            ? ar
+              ? "الدومين مستخدم"
+              : "Domain already in use"
+            : ar
+              ? "صيغة الدومين غير صحيحة"
+              : "Invalid domain format"
+        );
       } catch {
-        if (requestId !== usernameCheckRef.current) return;
-        setUsernameStatus("invalid");
-        setUsernameMessage(ar ? "تعذر التحقق الآن" : "Could not check right now");
+        if (requestId !== domainCheckRef.current) return;
+        setDomainStatus("invalid");
+        setDomainMessage(ar ? "تعذر التحقق الآن" : "Could not check right now");
       }
-    }, 350);
+    }, 400);
 
-    return () => {
-      clearTimeout(checkingTimer);
-      clearTimeout(timer);
-    };
-  }, [formData.username, ar]);
-
-  // Auto slug generation
-  useEffect(() => {
-    if (slugTouched) return;
-    const next = slugifyEnglish(formData.name_en);
-    const slugTimer = setTimeout(() => {
-      setSlugValue(next);
-    }, 0);
-    return () => clearTimeout(slugTimer);
-  }, [formData.name_en, slugTouched]);
+    return () => clearTimeout(timer);
+  }, [domainValue, ar]);
 
   const handleFileSelect = (
     files: FileList | null,
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
-    multiple: boolean = false
+    setter: Dispatch<SetStateAction<string[]>>,
+    fileRef: MutableRefObject<File | null> | MutableRefObject<File[]>,
+    multiple = false,
   ) => {
-    if (!files) return;
-    const urls = Array.from(files).map(file => URL.createObjectURL(file));
+    if (!files || files.length === 0) return;
+    const filesArray = Array.from(files);
+    const urls = filesArray.map((file) => URL.createObjectURL(file));
+
     if (multiple) {
-      setter(prev => [...prev, ...urls]);
-    } else {
-      setter([urls[0]]);
+      const current = Array.isArray(fileRef.current) ? fileRef.current : [];
+      (fileRef as MutableRefObject<File[]>).current = [...current, ...filesArray];
+      setter((prev) => [...prev, ...urls]);
+      return;
     }
+
+    (fileRef as MutableRefObject<File | null>).current = filesArray[0] ?? null;
+    setter(urls);
   };
 
   const handleRemovePreview = (
     url: string,
-    setter: React.Dispatch<React.SetStateAction<string[]>>
+    setter: Dispatch<SetStateAction<string[]>>,
+    fileRef: MutableRefObject<File | null> | MutableRefObject<File[]>,
   ) => {
-    URL.revokeObjectURL(url);
-    setter(prev => prev.filter(u => u !== url));
+    if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+
+    setter((prev) => {
+      const idx = prev.indexOf(url);
+      const next = prev.filter((u) => u !== url);
+
+      if (Array.isArray(fileRef.current)) {
+        (fileRef as MutableRefObject<File[]>).current = fileRef.current.filter((_, i) => i !== idx);
+      } else if (idx === 0) {
+        (fileRef as MutableRefObject<File | null>).current = null;
+      }
+
+      return next;
+    });
   };
 
-  const [state, formAction, pending] = useActionState<CreateBusinessDraftResult | null, FormData>(
-    createBusinessDraftAction.bind(null, locale),
-    null,
+  const validateStep = useCallback(
+    (step: number): string | null => {
+      switch (steps[step].id) {
+        case "info":
+          if (!formData.name_en.trim()) return ar ? "الاسم الإنجليزي مطلوب" : "English name is required";
+          if (!formData.name_ar.trim()) return ar ? "الاسم العربي مطلوب" : "Arabic name is required";
+          if (!formData.slug.trim()) return ar ? "المسار مطلوب" : "Slug is required";
+          if (!formData.categoryId) return ar ? "يرجى اختيار التصنيف" : "Please select a category";
+          return null;
+        case "contact":
+          if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            return ar ? "البريد الإلكتروني غير صالح" : "Invalid email format";
+          }
+          return null;
+        case "settings":
+          if (domainValue.trim() && (domainStatus === "invalid" || domainStatus === "taken" || domainStatus === "checking")) {
+            return ar ? "يرجى تصحيح الدومين قبل المتابعة" : "Please fix the custom domain before continuing";
+          }
+          return null;
+        default:
+          return null;
+      }
+    },
+    [ar, formData, steps, domainValue, domainStatus],
   );
 
-  // Success state
-  if (state?.ok) {
-    return (
-      <div className="mt-8">
-        <div className="sbc-card relative z-20 overflow-visible p-6">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-500/10">
-              <svg className="h-6 w-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-semibold text-foreground">
-                {ar ? "تم إنشاء النشاط التجاري بنجاح!" : "Business Created Successfully!"}
-              </h3>
-              <p className="mt-2 text-sm text-(--muted-foreground)">
-                {ar
-                  ? "تم حفظ جميع البيانات والوسائط بنجاح. يمكنك الآن عرض النشاط أو إجراء تعديلات إضافية." 
-                  : "All data and media have been saved successfully. You can now view the business or make additional edits."}
-              </p>
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <Link
-                  className={buttonVariants({ variant: "primary", size: "sm" })}
-                  href={`/${locale}/businesses/${state.id}`}
-                >
-                  {ar ? "عرض النشاط" : "View Business"}
-                </Link>
-                <Link
-                  className={buttonVariants({ variant: "secondary", size: "sm" })}
-                  href={`/${locale}/admin/${state.id}/edit`}
-                >
-                  {ar ? "تعديل النشاط" : "Edit Business"}
-                </Link>
-                <Link
-                  className={buttonVariants({ variant: "ghost", size: "sm" })}
-                  href={`/${locale}/admin/new`}
-                >
-                  {ar ? "إضافة نشاط جديد" : "Add New Business"}
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const isStepComplete = useCallback(
+    (idx: number) => {
+      switch (steps[idx].id) {
+        case "info":
+          return !!(formData.name_en.trim() && formData.name_ar.trim() && formData.slug.trim() && formData.categoryId);
+        case "contact":
+          return !!(formData.city || formData.phone || formData.email);
+        case "location":
+          return !!location;
+        case "media":
+          return logoPreview.length > 0 || coverPreview.length > 0 || bannerPreview.length > 0 || galleryPreview.length > 0;
+        case "settings":
+          return isApproved || isVerified || isSpecial || homepageFeatured || homepageTop || avatarMode === "logo";
+        default:
+          return false;
+      }
+    },
+    [steps, formData, location, logoPreview.length, coverPreview.length, bannerPreview.length, galleryPreview.length, isApproved, isVerified, isSpecial, homepageFeatured, homepageTop, avatarMode],
+  );
+
+  const goNext = useCallback(() => {
+    const err = validateStep(currentStep);
+    if (err) {
+      toast({ message: err, variant: "error" });
+      return;
+    }
+    setAnimDir("next");
+    setCurrentStep((s) => Math.min(s + 1, steps.length - 1));
+  }, [currentStep, steps.length, toast, validateStep]);
+
+  const goPrev = useCallback(() => {
+    setAnimDir("prev");
+    setCurrentStep((s) => Math.max(0, s - 1));
+  }, []);
+
+  const goTo = useCallback(
+    (idx: number) => {
+      if (idx > currentStep) return;
+      setAnimDir(idx > currentStep ? "next" : "prev");
+      setCurrentStep(idx);
+    },
+    [currentStep],
+  );
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const payload = new FormData();
+      payload.append("name_en", formData.name_en);
+      payload.append("name_ar", formData.name_ar);
+      payload.append("desc_en", formData.desc_en);
+      payload.append("desc_ar", formData.desc_ar);
+      payload.append("slug", formData.slug);
+      payload.append("username", formData.username);
+      payload.append("categoryId", formData.categoryId);
+      payload.append("ownerId", formData.ownerId);
+      payload.append("city", formData.city);
+      payload.append("address", formData.address);
+      payload.append("phone", formData.phone);
+      payload.append("email", formData.email);
+      payload.append("website", formData.website);
+      payload.append("tags", formData.tags);
+      payload.append("isApproved", isApproved ? "true" : "false");
+      payload.append("isVerified", isVerified ? "true" : "false");
+      payload.append("isSpecial", isSpecial ? "true" : "false");
+      payload.append("homepageFeatured", homepageFeatured ? "true" : "false");
+      payload.append("homepageTop", homepageTop ? "true" : "false");
+      payload.append("avatarMode", avatarMode);
+      payload.append("showSimilarBusinesses", showSimilarBusinesses ? "true" : "false");
+      payload.append("customDomain", domainValue.trim().toLowerCase());
+
+      if (location) {
+        payload.append("latitude", String(location.lat));
+        payload.append("longitude", String(location.lng));
+      }
+
+      if (coverFileRef.current) payload.append("coverImage", coverFileRef.current);
+      if (logoFileRef.current) payload.append("logoImage", logoFileRef.current);
+      if (bannerFileRef.current) payload.append("bannerImage", bannerFileRef.current);
+      if (galleryFilesRef.current.length > 0) {
+        galleryFilesRef.current.forEach((file) => payload.append("galleryImages", file));
+      }
+
+      await createBusinessAction(locale, payload);
+    } catch (error: unknown) {
+      toast({
+        message: ar
+          ? `فشل إنشاء النشاط: ${error instanceof Error ? error.message : "خطأ غير معروف"}`
+          : `Failed to create business: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <form action={formAction} className="mt-6 space-y-6">
-      {/* Hidden inputs */}
-      <input type="hidden" name="categoryId" value={formData.categoryId} />
-      <input type="hidden" name="ownerId" value={formData.ownerId} />
-      <input type="hidden" name="avatarMode" value={avatarMode} />
-      <input type="hidden" name="username" value={formData.username} />
-      <input type="hidden" name="slug" value={slugValue} />
-      <input type="hidden" name="name_en" value={formData.name_en} />
-      <input type="hidden" name="name_ar" value={formData.name_ar} />
-      <input type="hidden" name="desc_en" value={formData.desc_en} />
-      <input type="hidden" name="desc_ar" value={formData.desc_ar} />
-      <input type="hidden" name="city" value={formData.city} />
-      <input type="hidden" name="phone" value={formData.phone} />
-      <input type="hidden" name="address" value={formData.address} />
-      <input type="hidden" name="website" value={formData.website} />
-      <input type="hidden" name="email" value={formData.email} />
-      <input type="hidden" name="tags" value={formData.tags} />
-      {location && (
-        <>
-          <input type="hidden" name="latitude" value={String(location.lat)} />
-          <input type="hidden" name="longitude" value={String(location.lng)} />
-        </>
-      )}
+    <div className="mt-6">
+      <nav className="mb-8">
+        <ol className="hidden sm:flex items-center justify-between gap-2">
+          {steps.map((step, idx) => {
+            const isActive = idx === currentStep;
+            const isDone = idx < currentStep || isStepComplete(idx);
+            return (
+              <li key={step.id} className="flex-1 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => goTo(idx)}
+                  disabled={idx > currentStep}
+                  className={`
+                    flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium w-full
+                    transition-all duration-200
+                    ${
+                      isActive
+                        ? "bg-accent text-(--accent-foreground) shadow-sm"
+                        : isDone
+                          ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
+                          : "bg-(--chip-bg) text-(--muted-foreground)"
+                    }
+                    ${idx > currentStep ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-90"}
+                  `}
+                >
+                  <span className={`shrink-0 ${isDone && !isActive ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
+                    {isDone && !isActive ? (
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                    ) : (
+                      step.icon
+                    )}
+                  </span>
+                  <span className="truncate">{step.label}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
 
-      {/* Error display */}
-      {state && !state.ok && (
-        <div className="sbc-card border-red-500/20 bg-red-500/5 p-4">
-          <div className="flex items-start gap-3">
-            <svg className="h-5 w-5 shrink-0 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="text-sm text-red-700 dark:text-red-300">
-              <span className="font-semibold">{ar ? "خطأ:" : "Error:"}</span> {state.error}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Basic Information */}
-      <div className="sbc-card p-6 space-y-4">
-        <h3 className="text-lg font-semibold">
-          {ar ? "المعلومات الأساسية" : "Basic Information"}
-        </h3>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {ar ? "اسم المستخدم" : "Username"}
-            </label>
-            <Input
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
-              placeholder="username"
-            />
-            <span className={`block mt-1 min-h-4 text-xs ${usernameStatusClass}`}>
-              {usernameMessage || " "}
+        <div className="sm:hidden">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-semibold">
+              {ar ? `الخطوة ${currentStep + 1} من ${steps.length}` : `Step ${currentStep + 1} of ${steps.length}`}
             </span>
+            <span className="text-sm font-medium text-accent">{steps[currentStep].label}</span>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {ar ? "التصنيف *" : "Category *"}
-            </label>
-            <CategorySelectField
-              categories={categories}
-              locale={locale}
-              value={formData.categoryId}
-              onChange={(value: string) => setFormData({ ...formData, categoryId: value })}
-              placeholder={ar ? "اختر تصنيفاً" : "Choose a category"}
-              searchPlaceholder={ar ? "ابحث عن تصنيف..." : "Search categories..."}
-              required
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {ar ? "الاسم (EN) *" : "Name (EN) *"}
-            </label>
-            <Input
-              value={formData.name_en}
-              onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
-              placeholder="Coffee Paradise"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {ar ? "الاسم (AR) *" : "Name (AR) *"}
-            </label>
-            <Input
-              value={formData.name_ar}
-              onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-              placeholder="جنة القهوة"
-              required
-            />
+          <div className="flex gap-1.5">
+            {steps.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => goTo(idx)}
+                disabled={idx > currentStep}
+                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                  idx === currentStep ? "bg-accent" : idx < currentStep ? "bg-emerald-400 dark:bg-emerald-500" : "bg-(--border)"
+                }`}
+              />
+            ))}
           </div>
         </div>
+      </nav>
 
-        {(slugValue || formData.name_en) && (
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {ar ? "المسار (Slug) *" : "Slug *"}
-            </label>
-            <Input
-              value={slugValue}
-              onChange={(e) => {
-                setSlugTouched(true);
-                setSlugValue(slugifyEnglish(e.target.value));
-              }}
-              placeholder="my-coffee-shop"
-              required
+      <div
+        key={currentStep}
+        className={`animate-in fade-in duration-300 ${animDir === "next" ? "slide-in-from-end-4" : "slide-in-from-start-4"}`}
+      >
+        {steps[currentStep].id === "info" && (
+          <div className="space-y-6">
+            <StepHeader
+              icon={IconInfo}
+              title={ar ? "المعلومات الأساسية" : "Basic Information"}
+              desc={ar ? "بيانات النشاط الأساسية" : "Core business information"}
             />
+            <div className="sbc-card p-6 space-y-5">
+              <div className="grid gap-5 md:grid-cols-2">
+                <Field label={ar ? "اسم النشاط (EN) *" : "Business Name (EN) *"}>
+                  <Input
+                    value={formData.name_en}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      set("name_en", value);
+                      if (!slugTouched) set("slug", slugifyEnglish(value));
+                    }}
+                    placeholder="Coffee Paradise"
+                    required
+                  />
+                </Field>
+                <Field label={ar ? "اسم النشاط (AR) *" : "Business Name (AR) *"}>
+                  <Input value={formData.name_ar} onChange={(e) => set("name_ar", e.target.value)} dir="rtl" required />
+                </Field>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <Field label={ar ? "الرابط (Slug) *" : "Slug *"}>
+                  <Input
+                    value={formData.slug}
+                    onChange={(e) => {
+                      setSlugTouched(true);
+                      set("slug", e.target.value.toLowerCase());
+                    }}
+                    placeholder="coffee-paradise"
+                    required
+                    dir="ltr"
+                  />
+                </Field>
+                <Field label={ar ? "اسم المستخدم" : "Username"}>
+                  <Input value={formData.username} onChange={(e) => set("username", e.target.value.toLowerCase())} dir="ltr" />
+                </Field>
+              </div>
+
+              <Field label={ar ? "التصنيف *" : "Category *"}>
+                <CategorySelectField
+                  categories={categories}
+                  locale={locale}
+                  value={formData.categoryId}
+                  onChange={(v) => set("categoryId", v)}
+                  placeholder={ar ? "اختر تصنيفاً" : "Choose a category"}
+                  searchPlaceholder={ar ? "ابحث عن تصنيف..." : "Search categories..."}
+                  required
+                />
+              </Field>
+
+              <Field label={ar ? "صاحب النشاط" : "Business Owner"}>
+                <UserSelect
+                  users={users}
+                  value={formData.ownerId}
+                  onChange={(v) => set("ownerId", v)}
+                  placeholder={ar ? "اختر صاحب النشاط" : "Select business owner"}
+                  locale={locale}
+                  allowEmpty
+                  emptyLabel={ar ? "بدون صاحب" : "No owner"}
+                />
+              </Field>
+
+              <Field label={ar ? "الوصف (EN)" : "Description (EN)"}>
+                <MarkdownEditor
+                  value={formData.desc_en}
+                  onChange={(v) => set("desc_en", v)}
+                  placeholder="Describe the business"
+                  dir="ltr"
+                  height={150}
+                />
+              </Field>
+
+              <Field label={ar ? "الوصف (AR)" : "Description (AR)"}>
+                <MarkdownEditor
+                  value={formData.desc_ar}
+                  onChange={(v) => set("desc_ar", v)}
+                  placeholder="اوصف النشاط التجاري"
+                  dir="rtl"
+                  height={150}
+                />
+              </Field>
+            </div>
           </div>
         )}
 
-        <div className="space-y-4">
-          <MarkdownEditor
-            label={ar ? "الوصف (EN)" : "Description (EN)"}
-            value={formData.desc_en}
-            onChange={(value) => setFormData({ ...formData, desc_en: value })}
-            placeholder={ar ? "Describe your business..." : "Describe your business..."}
-            dir="ltr"
-            height={200}
-          />
-
-          <MarkdownEditor
-            label={ar ? "الوصف (AR)" : "Description (AR)"}
-            value={formData.desc_ar}
-            onChange={(value) => setFormData({ ...formData, desc_ar: value })}
-            placeholder={ar ? "اوصف نشاطك التجاري..." : "اوصف نشاطك التجاري..."}
-            dir="rtl"
-            height={200}
-          />
-        </div>
-      </div>
-
-      {/* Contact Information */}
-      <div className="sbc-card p-6 space-y-4">
-        <h3 className="text-lg font-semibold">
-          {ar ? "معلومات الاتصال" : "Contact Information"}
-        </h3>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {ar ? "المدينة" : "City"}
-            </label>
-            <Input
-              value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-              placeholder="Muscat"
+        {steps[currentStep].id === "contact" && (
+          <div className="space-y-6">
+            <StepHeader
+              icon={IconPhone}
+              title={ar ? "معلومات التواصل" : "Contact Information"}
+              desc={ar ? "طرق الوصول والتواصل" : "How customers can reach you"}
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {ar ? "الهاتف" : "Phone"}
-            </label>
-            <PhoneInput
-              value={formData.phone}
-              onChange={(val) => setFormData({ ...formData, phone: val })}
-              placeholder="91234567"
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {emailLabel}
-            </label>
-            <Input
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              placeholder="info@example.com"
-              type="email"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {ar ? "الموقع الإلكتروني" : "Website"}
-            </label>
-            <Input
-              value={formData.website}
-              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-              placeholder="https://example.com"
-              type="url"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {ar ? "صاحب النشاط التجاري" : "Business Owner"}
-          </label>
-          <UserSelect
-            users={users}
-            value={formData.ownerId}
-            onChange={(val) => setFormData({ ...formData, ownerId: val })}
-            placeholder={ar ? "اختر صاحب النشاط" : "Select business owner"}
-            searchPlaceholder={ar ? "ابحث بالبريد الإلكتروني..." : "Search by email..."}
-            locale={locale}
-            allowEmpty
-            emptyLabel={ar ? "بدون صاحب (اختياري)" : "No owner (optional)"}
-          />
-          <p className="mt-1 text-xs text-(--muted-foreground)">
-            {ar
-              ? "اختياري: اربط هذا النشاط بمستخدم موجود."
-              : "Optional: link this business to an existing user."}
-          </p>
-        </div>
-      </div>
-
-      {/* Geographic Location */}
-      <div className="sbc-card p-6 space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold">
-            {ar ? "الموقع الجغرافي" : "Geographic Location"}
-          </h3>
-          <p className="text-sm text-(--muted-foreground) mt-1">
-            {ar ? "حدد الموقع الدقيق للنشاط على الخريطة" : "Mark the exact business location on the map"}
-          </p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {ar ? "العنوان" : "Address"}
-          </label>
-          <Textarea
-            value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            placeholder={ar ? "العنوان التفصيلي" : "Detailed address"}
-            rows={2}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {ar ? "حدد موقعك على الخريطة" : "Select your location on the map"}
-          </label>
-          <p className="text-sm text-(--muted-foreground) mb-3">
-            {ar 
-              ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك"
-              : "Click on the map to mark your exact business location"}
-          </p>
-          <div className="rounded-lg overflow-hidden">
-            <OsmLocationPicker
-              value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
-              onChange={(next) => {
-                setLocation(next ? { lat: next.lat, lng: next.lng } : null);
-              }}
-              locale={locale}
-              hideRadius
-            />
-          </div>
-          {location && (
-            <p className="mt-2 text-xs text-(--muted-foreground)">
-              {ar ? "الموقع المحدد:" : "Selected location:"} {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Additional Details */}
-      <div className="sbc-card p-6 space-y-4">
-        <h3 className="text-lg font-semibold">
-          {ar ? "معلومات إضافية" : "Additional Details"}
-        </h3>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {ar ? "الوسوم (مفصولة بفواصل)" : "Tags (comma-separated)"}
-          </label>
-          <Input
-            value={formData.tags}
-            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-            placeholder={ar ? "قهوة، واي فاي، إفطار" : "coffee, wifi, breakfast"}
-          />
-        </div>
-      </div>
-
-      {/* Approval, Verification & Homepage */}
-      <div className="sbc-card p-6 space-y-4">
-        <div>
-          <h3 className="text-lg font-semibold">
-            {ar ? "الاعتماد والتوثيق والظهور" : "Approval, Verification & Homepage"}
-          </h3>
-          <p className="text-sm text-(--muted-foreground) mt-1">
-            {ar
-              ? "حدد اعتماد الظهور في القوائم، الشارة الزرقاء، والحالة الخاصة."
-              : "Control listing approval, the blue check, and special status."}
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
-            <input
-              type="checkbox"
-              name="isApproved"
-              checked={isApproved}
-              onChange={(e) => setIsApproved(e.target.checked)}
-              className="mt-1 h-4 w-4 accent-emerald-600"
-            />
-            <div>
-              <div className="text-sm font-semibold text-foreground">
-                {ar ? "اعتماد الظهور في القوائم" : "Approved for listings"}
+            <div className="sbc-card p-6 space-y-5">
+              <div className="grid gap-5 md:grid-cols-2">
+                <Field label={ar ? "المدينة" : "City"}>
+                  <Input value={formData.city} onChange={(e) => set("city", e.target.value)} placeholder={ar ? "مسقط" : "Muscat"} />
+                </Field>
+                <Field label={ar ? "الهاتف" : "Phone"}>
+                  <PhoneInput value={formData.phone} onChange={(v) => set("phone", v)} placeholder="91234567" />
+                </Field>
               </div>
-              <div className="mt-1 text-xs text-(--muted-foreground)">
-                {ar
-                  ? "السماح بظهور النشاط في قوائم الأنشطة."
-                  : "Allow this business to appear in public listings."}
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <Field label={emailLabel}>
+                  <Input value={formData.email} onChange={(e) => set("email", e.target.value)} type="email" dir="ltr" />
+                </Field>
+                <Field label={ar ? "الموقع الإلكتروني" : "Website"}>
+                  <Input value={formData.website} onChange={(e) => set("website", e.target.value)} type="url" dir="ltr" />
+                </Field>
               </div>
+
+              <Field label={ar ? "العنوان" : "Address"}>
+                <Input
+                  value={formData.address}
+                  onChange={(e) => set("address", e.target.value)}
+                  placeholder={ar ? "الشارع، المبنى، المنطقة" : "Street, building, area"}
+                />
+              </Field>
+
+              <Field label={ar ? "الوسوم" : "Tags"} hint={ar ? "مفصولة بفواصل" : "Comma-separated"}>
+                <Input value={formData.tags} onChange={(e) => set("tags", e.target.value)} placeholder={ar ? "قهوة، إفطار" : "coffee, breakfast"} />
+              </Field>
             </div>
-          </label>
-
-          <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
-            <input
-              type="checkbox"
-              name="isVerified"
-              checked={isVerified}
-              onChange={(e) => setIsVerified(e.target.checked)}
-              className="mt-1 h-4 w-4 accent-blue-600"
-            />
-            <div>
-              <div className="text-sm font-semibold text-foreground">
-                {ar ? "تفعيل التوثيق (تِك أزرق)" : "Verified (blue check)"}
-              </div>
-              <div className="mt-1 text-xs text-(--muted-foreground)">
-                {ar ? "يظهر بجانب اسم النشاط." : "Shown next to the business name."}
-              </div>
-            </div>
-          </label>
-
-          <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
-            <input
-              type="checkbox"
-              name="isSpecial"
-              checked={isSpecial}
-              onChange={(e) => setIsSpecial(e.target.checked)}
-              className="mt-1 h-4 w-4 accent-amber-500"
-            />
-            <div>
-              <div className="text-sm font-semibold text-foreground">
-                {ar ? "حساب خاص / مميّز" : "Special / VIP"}
-              </div>
-              <div className="mt-1 text-xs text-(--muted-foreground)">
-                {ar ? "تمييز إضافي لعرضه كبزنس خاص." : "Highlights the business as special."}
-              </div>
-            </div>
-          </label>
-
-          <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
-            <input
-              type="checkbox"
-              name="homepageFeatured"
-              checked={homepageFeatured}
-              onChange={(e) => setHomepageFeatured(e.target.checked)}
-              className="mt-1 h-4 w-4 accent-emerald-500"
-            />
-            <div>
-              <div className="text-sm font-semibold text-foreground">
-                {ar ? "عرض في قائمة الـ 12 الرئيسية" : "Show in homepage 12"}
-              </div>
-              <div className="mt-1 text-xs text-(--muted-foreground)">
-                {ar
-                  ? "إضافة هذا النشاط إلى قائمة الـ 12 في الصفحة الرئيسية."
-                  : "Pins this business in the homepage 12 list."}
-              </div>
-            </div>
-          </label>
-
-          <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
-            <input
-              type="checkbox"
-              name="homepageTop"
-              checked={homepageTop}
-              onChange={(e) => {
-                const next = e.target.checked;
-                setHomepageTop(next);
-                if (next) setHomepageFeatured(true);
-              }}
-              className="mt-1 h-4 w-4 accent-emerald-500"
-            />
-            <div>
-              <div className="text-sm font-semibold text-foreground">
-                {ar ? "ضمن أفضل 3 في الرئيسية" : "Top 3 on homepage"}
-              </div>
-              <div className="mt-1 text-xs text-(--muted-foreground)">
-                {ar
-                  ? "يظهر ضمن أول 3 أنشطة في الصفحة الرئيسية."
-                  : "Show in the top 3 slot on the homepage."}
-              </div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* Images & Media */}
-      <div className="sbc-card p-6 space-y-6">
-        <h3 className="text-lg font-semibold">
-          {ar ? "الصور والوسائط" : "Images & Media"}
-        </h3>
-
-        {/* Avatar Mode */}
-        <div className="rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4">
-          <div className="text-sm font-semibold text-foreground">
-            {ar ? "صورة الملف / الأيقونة" : "Profile image / icon"}
           </div>
-          <p className="mt-1 text-xs text-(--muted-foreground)">
-            {ar
-              ? "الافتراضي: أيقونة التصنيف. يمكنك اختيار استخدام الشعار إن قمت برفعه."
-              : "Default: category icon. You can choose to use the logo if you upload one."}
-          </p>
-          <div className="mt-3 flex flex-wrap gap-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="__avatarMode"
-                checked={avatarMode === "icon"}
-                onChange={() => setAvatarMode("icon")}
+        )}
+
+        {steps[currentStep].id === "location" && (
+          <div className="space-y-6">
+            <StepHeader
+              icon={IconMap}
+              title={ar ? "الموقع الجغرافي" : "Geographic Location"}
+              desc={ar ? "حدد موقع النشاط على الخريطة" : "Pin your business location on the map"}
+            />
+            <div className="sbc-card p-6">
+              <div className="rounded-xl overflow-hidden border border-(--surface-border)">
+                <OsmLocationPicker
+                  value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
+                  onChange={(next) => setLocation(next ? { lat: next.lat, lng: next.lng } : null)}
+                  locale={locale}
+                  hideRadius
+                />
+              </div>
+              {location ? (
+                <p className="mt-3 text-xs text-(--muted-foreground)">{location.lat.toFixed(6)}, {location.lng.toFixed(6)}</p>
+              ) : null}
+            </div>
+          </div>
+        )}
+
+        {steps[currentStep].id === "media" && (
+          <div className="space-y-6">
+            <StepHeader
+              icon={IconCamera}
+              title={ar ? "الصور والوسائط" : "Images & Media"}
+              desc={ar ? "أضف الشعار وصور النشاط" : "Add logo and business images"}
+            />
+            <div className="sbc-card p-6 space-y-8">
+              <MediaUploadField
+                ar={ar}
+                label={ar ? "الشعار" : "Logo"}
+                hint={ar ? "شعار مربع للعلامة التجارية (400×400)" : "Square brand logo (400×400)"}
+                previews={logoPreview}
+                setter={setLogoPreview}
+                fileRef={logoFileRef}
+                handleFileSelect={handleFileSelect}
+                handleRemovePreview={handleRemovePreview}
+                aspect="square"
               />
-              {ar ? "استخدم أيقونة التصنيف" : "Use category icon"}
-            </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="radio"
-                name="__avatarMode"
-                checked={avatarMode === "logo"}
-                onChange={() => setAvatarMode("logo")}
-                disabled={logoPreview.length === 0}
+
+              <MediaUploadField
+                ar={ar}
+                label={ar ? "صورة الغلاف" : "Cover Image"}
+                hint={ar ? "صورة عريضة أعلى الصفحة (1200×400)" : "Wide image at the top of your page (1200×400)"}
+                previews={coverPreview}
+                setter={setCoverPreview}
+                fileRef={coverFileRef}
+                handleFileSelect={handleFileSelect}
+                handleRemovePreview={handleRemovePreview}
+                aspect="wide"
               />
-              {ar ? "استخدم الشعار (صورة)" : "Use logo (image)"}
-            </label>
-          </div>
-        </div>
 
-        {/* Cover Image */}
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {ar ? "صورة الغلاف" : "Cover Image"}
-          </label>
-          <p className="text-sm text-(--muted-foreground) mb-3">
-            {ar ? "صورة عريضة للخلفية (مقترح: 1200×400)" : "Wide background image (suggested: 1200×400)"}
-          </p>
-          <div className="space-y-3">
-            {coverPreview.length > 0 && (
-              <div className="relative rounded-lg overflow-hidden">
-                <Image
-                  src={coverPreview[0]}
-                  alt="Cover preview"
-                  width={1200}
-                  height={400}
-                  className="w-full h-48 object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemovePreview(coverPreview[0], setCoverPreview)}
-                  className="absolute top-2 end-2 p-2 rounded-full bg-red-500 text-white hover:bg-red-600"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-            {coverPreview.length === 0 && (
-              <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
-                <span className="text-sm text-(--muted-foreground)">
-                  {ar ? "اختر صورة الغلاف" : "Choose cover image"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFileSelect(e.target.files, setCoverPreview, false)}
-                />
-              </label>
-            )}
-          </div>
-        </div>
+              <MediaUploadField
+                ar={ar}
+                label={ar ? "صورة البانر" : "Banner Image"}
+                hint={ar ? "صورة ترويجية (1200×600)" : "Promotional banner (1200×600)"}
+                previews={bannerPreview}
+                setter={setBannerPreview}
+                fileRef={bannerFileRef}
+                handleFileSelect={handleFileSelect}
+                handleRemovePreview={handleRemovePreview}
+                aspect="banner"
+              />
 
-        {/* Logo */}
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {ar ? "الشعار" : "Logo"}
-          </label>
-          <p className="text-sm text-(--muted-foreground) mb-3">
-            {ar ? "شعار مربع للعلامة التجارية (مقترح: 400×400)" : "Square brand logo (suggested: 400×400)"}
-          </p>
-          <div className="space-y-3">
-            {logoPreview.length > 0 && (
-              <div className="relative inline-block">
-                <Image
-                  src={logoPreview[0]}
-                  alt="Logo preview"
-                  width={200}
-                  height={200}
-                  className="w-32 h-32 object-cover rounded-lg"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemovePreview(logoPreview[0], setLogoPreview)}
-                  className="absolute -top-2 -end-2 p-1.5 rounded-full bg-red-500 text-white hover:bg-red-600"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-            {logoPreview.length === 0 && (
-              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
-                <span className="text-xs text-(--muted-foreground) text-center px-2">
-                  {ar ? "اختر شعار" : "Choose logo"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFileSelect(e.target.files, setLogoPreview, false)}
-                />
-              </label>
-            )}
-          </div>
-        </div>
+              <div>
+                <label className="block text-sm font-semibold mb-1">{ar ? "معرض الصور" : "Image Gallery"}</label>
+                <p className="text-xs text-(--muted-foreground) mb-3">
+                  {ar ? "صور إضافية لنشاطك (يمكن اختيار عدة صور)" : "Additional photos (multiple allowed)"}
+                </p>
 
-        {/* Banner */}
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {ar ? "صورة البانر" : "Banner Image"}
-          </label>
-          <p className="text-sm text-(--muted-foreground) mb-3">
-            {ar ? "صورة ترويجية (مقترح: 1200×600)" : "Promotional image (suggested: 1200×600)"}
-          </p>
-          <div className="space-y-3">
-            {bannerPreview.length > 0 && (
-              <div className="relative rounded-lg overflow-hidden">
-                <Image
-                  src={bannerPreview[0]}
-                  alt="Banner preview"
-                  width={1200}
-                  height={600}
-                  className="w-full h-64 object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemovePreview(bannerPreview[0], setBannerPreview)}
-                  className="absolute top-2 end-2 p-2 rounded-full bg-red-500 text-white hover:bg-red-600"
-                >
-                  ×
-                </button>
-              </div>
-            )}
-            {bannerPreview.length === 0 && (
-              <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
-                <span className="text-sm text-(--muted-foreground)">
-                  {ar ? "اختر صورة البانر" : "Choose banner image"}
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleFileSelect(e.target.files, setBannerPreview, false)}
-                />
-              </label>
-            )}
-          </div>
-        </div>
-
-        {/* Gallery */}
-        <div>
-          <label className="block text-sm font-medium mb-2">
-            {ar ? "معرض الصور" : "Image Gallery"}
-          </label>
-          <p className="text-sm text-(--muted-foreground) mb-3">
-            {ar ? "صور إضافية للنشاط (يمكن اختيار عدة صور)" : "Additional business images (multiple selection allowed)"}
-          </p>
-          <div className="space-y-3">
-            {galleryPreview.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {galleryPreview.map((url, index) => (
-                  <div key={index} className="relative rounded-lg overflow-hidden">
-                    <Image
-                      src={url}
-                      alt={`Gallery ${index + 1}`}
-                      width={300}
-                      height={300}
-                      className="w-full h-32 object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemovePreview(url, setGalleryPreview)}
-                      className="absolute top-1 end-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 text-sm"
-                    >
-                      ×
-                    </button>
+                {galleryPreview.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                    {galleryPreview.map((url, i) => (
+                      <div key={url + i} className="relative group rounded-xl overflow-hidden">
+                        <Image src={url} alt={`Gallery ${i + 1}`} width={320} height={220} className="w-full h-28 object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePreview(url, setGalleryPreview, galleryFilesRef)}
+                          className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <span className="text-white text-sm font-medium">{ar ? "حذف" : "Remove"}</span>
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+
+                <label className="flex h-28 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-(--border) hover:border-accent hover:bg-accent/5 transition-colors">
+                  <svg className="h-6 w-6 text-(--muted-foreground) mb-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                  <span className="text-xs text-(--muted-foreground)">{ar ? "أضف صور المعرض" : "Add gallery images"}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => handleFileSelect(e.target.files, setGalleryPreview, galleryFilesRef, true)}
+                  />
+                </label>
               </div>
-            )}
-            <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
-              <span className="text-sm text-(--muted-foreground)">
-                {ar ? "اختر صور المعرض" : "Choose gallery images"}
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={(e) => handleFileSelect(e.target.files, setGalleryPreview, true)}
-              />
-            </label>
+            </div>
           </div>
-        </div>
+        )}
+
+        {steps[currentStep].id === "settings" && (
+          <div className="space-y-6">
+            <StepHeader
+              icon={IconSettings}
+              title={ar ? "الإعدادات" : "Settings"}
+              desc={ar ? "إعدادات الاعتماد والظهور" : "Approval and visibility settings"}
+            />
+            <div className="sbc-card p-6 space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isApproved} onChange={(e) => setIsApproved(e.target.checked)} className="h-4 w-4" />{ar ? "معتمد" : "Approved"}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isVerified} onChange={(e) => setIsVerified(e.target.checked)} className="h-4 w-4" />{ar ? "موثّق" : "Verified"}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isSpecial} onChange={(e) => setIsSpecial(e.target.checked)} className="h-4 w-4" />{ar ? "مميز" : "Special"}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={homepageFeatured} onChange={(e) => setHomepageFeatured(e.target.checked)} className="h-4 w-4" />{ar ? "ضمن Featured" : "Homepage featured"}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={homepageTop} onChange={(e) => { const next = e.target.checked; setHomepageTop(next); if (next) setHomepageFeatured(true); }} className="h-4 w-4" />{ar ? "ضمن Top 3" : "Homepage top"}</label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showSimilarBusinesses} onChange={(e) => setShowSimilarBusinesses(e.target.checked)} className="h-4 w-4" />{ar ? "إظهار الأنشطة المشابهة" : "Show similar businesses"}</label>
+              </div>
+
+              <div className="pt-2">
+                <p className="text-sm font-semibold mb-2">{ar ? "وضع الصورة الشخصية" : "Avatar mode"}</p>
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2 text-sm"><input type="radio" checked={avatarMode === "icon"} onChange={() => setAvatarMode("icon")} />{ar ? "أيقونة التصنيف" : "Category icon"}</label>
+                  <label className="flex items-center gap-2 text-sm"><input type="radio" checked={avatarMode === "logo"} onChange={() => setAvatarMode("logo")} disabled={logoPreview.length === 0} />{ar ? "الشعار" : "Logo"}</label>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4">
+                <p className="text-sm font-semibold mb-1">{ar ? "الدومين المخصص" : "Custom Domain"}</p>
+                <p className="text-xs text-(--muted-foreground) mb-3">
+                  {ar
+                    ? "سيتم ربط الدومين بهذا النشاط مباشرة بعد الإنشاء. أدخل الدومين بدون http/https وبصيغة مثل example.com أو www.example.com."
+                    : "This domain will be linked to the business at creation. Enter only the hostname (no http/https), e.g. example.com or www.example.com."}
+                </p>
+                <Input
+                  value={domainValue}
+                  onChange={(e) => setDomainValue(normalizeDomainInput(e.target.value))}
+                  onBlur={(e) => setDomainValue(normalizeDomainInput(e.target.value))}
+                  placeholder="example.com"
+                  dir="ltr"
+                />
+                <div className="mt-2 rounded-lg border border-(--surface-border) bg-(--surface) p-3 text-xs text-(--muted-foreground)">
+                  <p className="font-medium text-foreground mb-1">{ar ? "متطلبات الدومين" : "Domain requirements"}</p>
+                  <ul className="space-y-1">
+                    <li>{ar ? "- يُسمح بالأحرف الإنجليزية والأرقام والشرطة والنقطة فقط." : "- Use letters, numbers, hyphens, and dots only."}</li>
+                    <li>{ar ? "- يجب أن يحتوي على امتداد صالح مثل .com أو .net." : "- Must include a valid TLD such as .com or .net."}</li>
+                    <li>{ar ? "- لا تضع بروتوكول أو مسار (مثل https:// أو /about)." : "- Do not include protocol or paths (e.g., https:// or /about)."}</li>
+                  </ul>
+                </div>
+                <span
+                  className={`mt-2 block min-h-4 text-xs ${
+                    domainStatus === "available"
+                      ? "text-emerald-600"
+                      : domainStatus === "checking" || domainStatus === "idle"
+                        ? "text-(--muted-foreground)"
+                        : "text-red-600"
+                  }`}
+                >
+                  {domainMessage || " "}
+                </span>
+                {domainPreview ? (
+                  <p className="mt-1 text-xs text-(--muted-foreground)">
+                    {ar ? "الرابط المتوقع:" : "Expected URL:"} <span dir="ltr" className="font-medium">{domainPreview}</span>
+                  </p>
+                ) : null}
+                <div className="mt-3 rounded-lg border border-(--surface-border) bg-(--surface) p-3 text-xs">
+                  <p className="font-medium text-foreground mb-2">{ar ? "إعدادات DNS المقترحة" : "Recommended DNS setup"}</p>
+                  <div className="space-y-1.5 font-mono text-(--muted-foreground)">
+                    <div>Type: CNAME</div>
+                    <div>Name: www</div>
+                    <div>Value: sbc.om</div>
+                  </div>
+                  <p className="mt-2 text-(--muted-foreground)">
+                    {ar
+                      ? "إن كان مزوّد DNS لا يدعم CNAME على الجذر (@)، استخدم ALIAS/ANAME إن كان متاحاً."
+                      : "If your DNS provider does not support apex (@) CNAME, use ALIAS/ANAME if available."}
+                  </p>
+                  <p className="mt-2 text-(--muted-foreground)">
+                    {ar
+                      ? "ملاحظة: انتشار DNS قد يستغرق من 5 دقائق حتى 24 ساعة حسب مزود الدومين."
+                      : "Note: DNS propagation can take from a few minutes up to 24 hours depending on your DNS provider."}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {steps[currentStep].id === "review" && (
+          <div className="space-y-6">
+            <StepHeader
+              icon={IconCheck}
+              title={ar ? "مراجعة وإنشاء" : "Review & Create"}
+              desc={ar ? "راجع البيانات قبل الإنشاء" : "Review your data before creating"}
+            />
+            <div className="sbc-card p-6 space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "الاسم" : "Name"}</span><span>{formData.name_en || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "التصنيف" : "Category"}</span><span>{selectedCategory ? (ar ? selectedCategory.name.ar : selectedCategory.name.en) : "—"}</span></div>
+              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "المالك" : "Owner"}</span><span>{selectedOwner?.fullName || selectedOwner?.email || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "المدينة" : "City"}</span><span>{formData.city || "—"}</span></div>
+              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "الدومين" : "Domain"}</span><span>{domainValue || "—"}</span></div>
+              {domainPreview ? (
+                <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "الرابط" : "URL"}</span><span dir="ltr">{domainPreview}</span></div>
+              ) : null}
+              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "الصور" : "Media"}</span><span>{logoPreview.length + coverPreview.length + bannerPreview.length + galleryPreview.length > 0 ? (ar ? "مضاف" : "Added") : "—"}</span></div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Submit */}
-      <div className="flex justify-end gap-3">
-        <Link
-          href={`/${locale}/admin`}
-          className={buttonVariants({ variant: "ghost" })}
+      <div className="mt-8 flex items-center justify-between">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={currentStep === 0 ? () => router.push(`/${locale}/admin/businesses`) : goPrev}
+          disabled={loading}
         >
-          {ar ? "إلغاء" : "Cancel"}
-        </Link>
-        <Button type="submit" disabled={pending} variant="primary">
-          {pending ? (ar ? "جاري الحفظ..." : "Saving...") : (ar ? "حفظ ونشر" : "Save & Publish")}
+          <span className="flex items-center gap-1.5">
+            {ar ? IconChevronRight : IconChevronLeft}
+            {currentStep === 0 ? (ar ? "إلغاء" : "Cancel") : ar ? "السابق" : "Previous"}
+          </span>
         </Button>
+
+        {currentStep < steps.length - 1 ? (
+          <Button type="button" variant="primary" onClick={goNext}>
+            <span className="flex items-center gap-1.5">
+              {ar ? "التالي" : "Next"}
+              {ar ? IconChevronLeft : IconChevronRight}
+            </span>
+          </Button>
+        ) : (
+          <Button type="button" variant="primary" onClick={handleSubmit} disabled={loading}>
+            {loading ? (ar ? "جاري الإنشاء..." : "Creating...") : ar ? "إنشاء النشاط" : "Create business"}
+          </Button>
+        )}
       </div>
-    </form>
+    </div>
+  );
+}
+
+function MediaUploadField({
+  ar,
+  label,
+  hint,
+  previews,
+  setter,
+  fileRef,
+  handleFileSelect,
+  handleRemovePreview,
+  aspect,
+}: {
+  ar: boolean;
+  label: string;
+  hint: string;
+  previews: string[];
+  setter: Dispatch<SetStateAction<string[]>>;
+  fileRef: MutableRefObject<File | null>;
+  handleFileSelect: (
+    files: FileList | null,
+    setter: Dispatch<SetStateAction<string[]>>,
+    fileRef: MutableRefObject<File | null> | MutableRefObject<File[]>,
+    multiple?: boolean,
+  ) => void;
+  handleRemovePreview: (
+    url: string,
+    setter: Dispatch<SetStateAction<string[]>>,
+    fileRef: MutableRefObject<File | null> | MutableRefObject<File[]>,
+  ) => void;
+  aspect: "square" | "wide" | "banner";
+}) {
+  const sizeClass =
+    aspect === "square"
+      ? "w-32 h-32"
+      : aspect === "wide"
+        ? "w-full h-40"
+        : "w-full h-52";
+
+  const previewClass =
+    aspect === "square"
+      ? "w-32 h-32 rounded-xl"
+      : aspect === "wide"
+        ? "w-full h-40 rounded-xl"
+        : "w-full h-52 rounded-xl";
+
+  return (
+    <div>
+      <label className="block text-sm font-semibold mb-1">{label}</label>
+      <p className="text-xs text-(--muted-foreground) mb-3">{hint}</p>
+
+      {previews.length > 0 ? (
+        <div className={`relative group ${aspect === "square" ? "inline-block" : ""}`}>
+          <Image
+            src={previews[0]}
+            alt={label}
+            width={aspect === "square" ? 220 : 1200}
+            height={aspect === "square" ? 220 : aspect === "wide" ? 420 : 620}
+            className={`${previewClass} object-cover`}
+          />
+          <button
+            type="button"
+            onClick={() => handleRemovePreview(previews[0], setter, fileRef)}
+            className="absolute inset-0 rounded-xl bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <span className="text-white text-sm font-medium">{ar ? "حذف" : "Remove"}</span>
+          </button>
+        </div>
+      ) : (
+        <label className={`${sizeClass} flex flex-col items-center justify-center border-2 border-dashed border-(--border) rounded-xl cursor-pointer hover:border-accent hover:bg-accent/5 transition-colors`}>
+          <svg className="h-6 w-6 text-(--muted-foreground) mb-1" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+          </svg>
+          <span className="text-xs text-(--muted-foreground)">{ar ? "اختر صورة" : "Choose image"}</span>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileSelect(e.target.files, setter, fileRef, false)}
+          />
+        </label>
+      )}
+    </div>
   );
 }

@@ -627,3 +627,128 @@ export async function listLoyaltyProfiles(): Promise<LoyaltyProfile[]> {
   const result = await query<LoyaltyProfileRow>(`SELECT * FROM loyalty_profiles ORDER BY created_at DESC`);
   return result.rows.map(rowToProfile);
 }
+
+// ==================== Admin aggregate helpers ====================
+
+export interface LoyaltyBusinessStats {
+  userId: string;
+  customerCount: number;
+  totalPoints: number;
+  staffCount: number;
+  messageCount: number;
+  pushSubscriptionCount: number;
+  cardCount: number;
+  activeCardCount: number;
+}
+
+/**
+ * Fetch per-business aggregate stats for every loyalty profile in one
+ * round-trip.  Used by the admin loyalty dashboard.
+ */
+export async function getAdminLoyaltyStats(): Promise<Map<string, LoyaltyBusinessStats>> {
+  const result = await query<{
+    user_id: string;
+    customer_count: string;
+    total_points: string;
+    staff_count: string;
+    message_count: string;
+    push_count: string;
+    card_count: string;
+    active_card_count: string;
+  }>(`
+    SELECT
+      p.user_id,
+      COALESCE(cust.cnt,  0) AS customer_count,
+      COALESCE(cust.pts,  0) AS total_points,
+      COALESCE(staff.cnt, 0) AS staff_count,
+      COALESCE(msg.cnt,   0) AS message_count,
+      COALESCE(push.cnt,  0) AS push_count,
+      COALESCE(card.cnt,  0) AS card_count,
+      COALESCE(card.active_cnt, 0) AS active_card_count
+    FROM loyalty_profiles p
+    LEFT JOIN (
+      SELECT user_id, COUNT(*) AS cnt, COALESCE(SUM(points), 0) AS pts
+      FROM loyalty_customers GROUP BY user_id
+    ) cust ON cust.user_id = p.user_id
+    LEFT JOIN (
+      SELECT user_id, COUNT(*) AS cnt
+      FROM loyalty_staff GROUP BY user_id
+    ) staff ON staff.user_id = p.user_id
+    LEFT JOIN (
+      SELECT user_id, COUNT(*) AS cnt
+      FROM loyalty_messages GROUP BY user_id
+    ) msg ON msg.user_id = p.user_id
+    LEFT JOIN (
+      SELECT user_id, COUNT(*) AS cnt
+      FROM loyalty_push_subscriptions GROUP BY user_id
+    ) push ON push.user_id = p.user_id
+    LEFT JOIN (
+      SELECT user_id,
+             COUNT(*) AS cnt,
+             COUNT(*) FILTER (WHERE status = 'active') AS active_cnt
+      FROM loyalty_cards GROUP BY user_id
+    ) card ON card.user_id = p.user_id
+  `);
+
+  const map = new Map<string, LoyaltyBusinessStats>();
+  for (const row of result.rows) {
+    map.set(row.user_id, {
+      userId: row.user_id,
+      customerCount: Number(row.customer_count),
+      totalPoints: Number(row.total_points),
+      staffCount: Number(row.staff_count),
+      messageCount: Number(row.message_count),
+      pushSubscriptionCount: Number(row.push_count),
+      cardCount: Number(row.card_count),
+      activeCardCount: Number(row.active_card_count),
+    });
+  }
+  return map;
+}
+
+export interface AdminLoyaltyTotals {
+  totalProfiles: number;
+  totalCustomers: number;
+  totalPoints: number;
+  totalStaff: number;
+  totalMessages: number;
+  totalPushSubs: number;
+  totalCards: number;
+  totalActiveCards: number;
+}
+
+/** Global aggregate totals across ALL loyalty businesses. */
+export async function getAdminLoyaltyTotals(): Promise<AdminLoyaltyTotals> {
+  const result = await query<{
+    total_profiles: string;
+    total_customers: string;
+    total_points: string;
+    total_staff: string;
+    total_messages: string;
+    total_push_subs: string;
+    total_cards: string;
+    total_active_cards: string;
+  }>(`
+    SELECT
+      (SELECT COUNT(*) FROM loyalty_profiles)                                   AS total_profiles,
+      (SELECT COUNT(*) FROM loyalty_customers)                                  AS total_customers,
+      (SELECT COALESCE(SUM(points), 0) FROM loyalty_customers)                  AS total_points,
+      (SELECT COUNT(*) FROM loyalty_staff)                                      AS total_staff,
+      (SELECT COUNT(*) FROM loyalty_messages)                                   AS total_messages,
+      (SELECT COUNT(*) FROM loyalty_push_subscriptions)                         AS total_push_subs,
+      (SELECT COUNT(*) FROM loyalty_cards)                                      AS total_cards,
+      (SELECT COUNT(*) FROM loyalty_cards WHERE status = 'active')              AS total_active_cards
+  `);
+
+  const row = result.rows[0];
+  return {
+    totalProfiles: Number(row.total_profiles),
+    totalCustomers: Number(row.total_customers),
+    totalPoints: Number(row.total_points),
+    totalStaff: Number(row.total_staff),
+    totalMessages: Number(row.total_messages),
+    totalPushSubs: Number(row.total_push_subs),
+    totalCards: Number(row.total_cards),
+    totalActiveCards: Number(row.total_active_cards),
+  };
+}
