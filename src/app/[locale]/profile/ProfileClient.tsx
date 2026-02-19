@@ -260,9 +260,9 @@ export function ProfileClient({
       removePhoto: ar ? "حذف الصورة" : "Remove photo",
       uploading: ar ? "جارٍ الرفع…" : "Uploading…",
       updated: ar ? "تم التحديث" : "Updated",
-      businesses: ar ? "بیزینس‌ها" : "Businesses",
-      followers: ar ? "فالوورها" : "Followers",
-      following: ar ? "فالووینگ" : "Following",
+      businesses: ar ? "الأنشطة التجارية" : "Businesses",
+      followers: ar ? "المتابعون" : "Followers",
+      following: ar ? "المتابَعة" : "Following",
       passkeysTitle: ar ? "مفاتيح المرور" : "Passkeys",
       passkeysSubtitle: ar
         ? "أضف Passkey لتسجيل الدخول بسرعة وأمان عبر جميع الأجهزة."

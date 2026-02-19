@@ -208,7 +208,7 @@ export function UserSearchSelect({
       {/* Small validation hint: if user typed something but didn't pick a result */}
       {query.trim() && !selected ? (
         <p className="text-xs text-amber-700 dark:text-amber-400">
-          {ar ? "لطفاً یک کاربر را از لیست انتخاب کنید." : "Please select a user from the list."}
+          {ar ? "يرجى اختيار مستخدم من القائمة." : "Please select a user from the list."}
         </p>
       ) : null}
     </div>

@@ -565,7 +565,7 @@ export function WalletClient({
         <button
           onClick={isAgent ? undefined : () => setModalType("withdraw")}
           disabled={isAgent}
-          title={isAgent ? (isRTL ? "رصید شما فقط برای شارژ مشتریان قابل استفاده است" : "Your balance can only be used for client operations") : undefined}
+          title={isAgent ? (isRTL ? "رصيدك متاح فقط لعمليات العملاء" : "Your balance can only be used for client operations") : undefined}
           className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-colors ${
             isAgent
               ? "bg-gray-500/10 text-gray-400 cursor-not-allowed opacity-60"
@@ -578,7 +578,7 @@ export function WalletClient({
         <button
           onClick={isAgent ? undefined : () => setModalType("transfer")}
           disabled={isAgent}
-          title={isAgent ? (isRTL ? "رصید شما فقط برای شارژ مشتریان قابل استفاده است" : "Your balance can only be used for client operations") : undefined}
+          title={isAgent ? (isRTL ? "رصيدك متاح فقط لعمليات العملاء" : "Your balance can only be used for client operations") : undefined}
           className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-colors ${
             isAgent
               ? "bg-gray-500/10 text-gray-400 cursor-not-allowed opacity-60"

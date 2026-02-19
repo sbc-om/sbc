@@ -8,7 +8,7 @@ import { listCategories } from "@/lib/db/categories";
 import { getUserFollowedCategoryIds } from "@/lib/db/follows";
 import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
-import { followCategoryAction, unfollowCategoryAction } from "./actions";
+import { CategoryFollowButton } from "@/components/categories/CategoryFollowButton";
 import { getCategoryIconComponent } from "@/lib/icons/categoryIcons";
 
 const ICON_PALETTE = [
@@ -204,19 +204,12 @@ export default async function CategoriesPage({
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
-                    {parentFollowed ? (
-                      <form action={unfollowCategoryAction.bind(null, locale as Locale, parent.id)}>
-                        <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
-                          {locale === "ar" ? "متابعة ✓" : "Following ✓"}
-                        </button>
-                      </form>
-                    ) : (
-                      <form action={followCategoryAction.bind(null, locale as Locale, parent.id)}>
-                        <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>
-                          {locale === "ar" ? "متابعة" : "Follow"}
-                        </button>
-                      </form>
-                    )}
+                    <CategoryFollowButton
+                      locale={locale as Locale}
+                      categoryId={parent.id}
+                      initialFollowing={parentFollowed}
+                      size="sm"
+                    />
                   </div>
                 </div>
 
@@ -256,19 +249,12 @@ export default async function CategoriesPage({
                           </div>
 
                           <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
-                            {isFollowed ? (
-                              <form action={unfollowCategoryAction.bind(null, locale as Locale, c.id)}>
-                                <button type="submit" className={buttonVariants({ variant: "secondary", size: "sm" })}>
-                                  {locale === "ar" ? "متابعة ✓" : "Following ✓"}
-                                </button>
-                              </form>
-                            ) : (
-                              <form action={followCategoryAction.bind(null, locale as Locale, c.id)}>
-                                <button type="submit" className={buttonVariants({ variant: "primary", size: "sm" })}>
-                                  {locale === "ar" ? "متابعة" : "Follow"}
-                                </button>
-                              </form>
-                            )}
+                            <CategoryFollowButton
+                              locale={locale as Locale}
+                              categoryId={c.id}
+                              initialFollowing={isFollowed}
+                              size="sm"
+                            />
                           </div>
                         </div>
                       );

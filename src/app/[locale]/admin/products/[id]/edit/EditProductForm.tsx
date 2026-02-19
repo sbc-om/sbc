@@ -94,7 +94,7 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
         {/* Slug */}
         <div>
           <label className="block text-sm font-medium mb-2">
-            {ar ? "اسلاگ (Slug)" : "Slug"}
+            {ar ? "المعرّف (Slug)" : "Slug"}
           </label>
           <Input
             type="text"
@@ -104,7 +104,7 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
             required
           />
           <p className="mt-1 text-xs text-(--muted-foreground)">
-            {ar ? "فقط حروف انگلیسی کوچک، اعداد و خط تیره" : "Only lowercase letters, numbers, and hyphens"}
+            {ar ? "أحرف إنجليزية صغيرة وأرقام وشرطة فقط" : "Only lowercase letters, numbers, and hyphens"}
           </p>
         </div>
 

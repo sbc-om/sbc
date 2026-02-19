@@ -174,7 +174,7 @@ const texts = {
     chooseGallery: "اختر صور المعرض",
     // Plan selection step
     step1Title: "الخطوة ١: اختيار العميل والطرح",
-    step1Subtitle: "اختر العميل وطرح الاشتراک قبل تسجيل العمل",
+    step1Subtitle: "اختر العميل وطرح الاشتراك قبل تسجيل العمل",
     step2Title: "الخطوة ٢: تفاصيل العمل",
     step2Subtitle: "أدخل معلومات العمل",
     clientSection: "اختيار العميل",
@@ -182,7 +182,7 @@ const texts = {
     clientHint: "اختر العميل الذي ينتمي إليه هذا العمل",
     noClient: "-- اختر عميلاً --",
     clientSelected: "سيتم تسجيل العمل لـ:",
-    selectPlan: "اختر طرح الاشتراک",
+    selectPlan: "اختر طرح الاشتراك",
     selectPlanHint: "سيتم خصم مبلغ الطرح من محفظة العميل",
     planActive: "فعّال",
     planSelect: "اختيار",

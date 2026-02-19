@@ -82,7 +82,7 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
           >
             <div className="text-xl font-bold">{user.stats?.businesses ?? 0}</div>
             <div className="text-xs text-(--muted-foreground)">
-              {locale === "ar" ? "بیزینس‌ها" : "Businesses"}
+              {locale === "ar" ? "الأنشطة التجارية" : "Businesses"}
             </div>
           </Link>
           <Link
@@ -91,7 +91,7 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
           >
             <div className="text-xl font-bold">{user.stats?.followers ?? 0}</div>
             <div className="text-xs text-(--muted-foreground)">
-              {locale === "ar" ? "فالوورها" : "Followers"}
+              {locale === "ar" ? "المتابعون" : "Followers"}
             </div>
           </Link>
           <Link
@@ -100,7 +100,7 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
           >
             <div className="text-xl font-bold">{user.stats?.followedCategories ?? 0}</div>
             <div className="text-xs text-(--muted-foreground)">
-              {locale === "ar" ? "فالووینگ" : "Following"}
+              {locale === "ar" ? "المتابَعة" : "Following"}
             </div>
           </Link>
         </div>

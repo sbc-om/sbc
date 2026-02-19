@@ -8,14 +8,14 @@ import { followCategory, unfollowCategory } from "@/lib/db/follows";
 
 export async function followCategoryAction(locale: Locale, categoryId: string) {
   const user = await requireUser(locale);
-  followCategory(user.id, categoryId);
+  await followCategory(user.id, categoryId);
   revalidatePath(`/${locale}/categories`);
   revalidatePath(`/${locale}/home`);
 }
 
 export async function unfollowCategoryAction(locale: Locale, categoryId: string) {
   const user = await requireUser(locale);
-  unfollowCategory(user.id, categoryId);
+  await unfollowCategory(user.id, categoryId);
   revalidatePath(`/${locale}/categories`);
   revalidatePath(`/${locale}/home`);
 }

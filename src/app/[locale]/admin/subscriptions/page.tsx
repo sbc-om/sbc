@@ -179,7 +179,7 @@ export default async function AdminSubscriptionsPage({
   const t = {
     title: ar ? "إدارة الاشتراكات" : "Subscriptions",
     subtitle: ar
-      ? "عرض وإدارة جميع اشتراکات وباقات المستخدمین"
+      ? "عرض وإدارة جميع اشتراكات وباقات المستخدمين"
       : "Manage all user subscriptions & packages",
     back: ar ? "لوحة التحكم" : "Dashboard",
     total: ar ? "إجمالي" : "Total",
@@ -196,7 +196,7 @@ export default async function AdminSubscriptionsPage({
     remaining: ar ? "المتبقي" : "Remaining",
     status: ar ? "الحالة" : "Status",
     days: ar ? "يوم" : "d",
-    noResults: ar ? "لا توجد اشتراکات مطابقة" : "No matching subscriptions",
+    noResults: ar ? "لا توجد اشتراكات مطابقة" : "No matching subscriptions",
     noResultsSub: ar
       ? "جرب تغيير عوامل التصفية أو البحث"
       : "Try adjusting your filters or search query",

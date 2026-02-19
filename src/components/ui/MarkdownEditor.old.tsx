@@ -253,12 +253,12 @@ export function MarkdownEditor({
     
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      toast({ message: "فرمت عکس مجاز نیست. فقط JPEG, PNG, GIF و WebP مجاز است.", variant: "error" });
+      toast({ message: "تنسيق الصورة غير مسموح. يُسمح فقط بـ JPEG وPNG وGIF وWebP.", variant: "error" });
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      toast({ message: "حجم فایل نباید بیشتر از 10MB باشد.", variant: "error" });
+      toast({ message: "يجب ألا يتجاوز حجم الملف 10MB.", variant: "error" });
       return;
     }
 
@@ -280,10 +280,10 @@ export function MarkdownEditor({
         const imageMarkdown = `![${file.name}](${data.url})`;
         insertText(textareaRef.current, value, onChange, imageMarkdown, "", "");
       } else {
-        toast({ message: data.error || "خطا در آپلود عکس", variant: "error" });
+        toast({ message: data.error || "خطأ في رفع الصورة", variant: "error" });
       }
     } catch {
-      toast({ message: "خطا در آپلود عکس", variant: "error" });
+      toast({ message: "خطأ في رفع الصورة", variant: "error" });
     } finally {
       setUploading(false);
     }
@@ -432,7 +432,7 @@ export function MarkdownEditor({
               <MarkdownRenderer content={value} />
             ) : (
               <span className="text-(--muted-foreground)">
-                {dir === "rtl" ? "پیش‌نمایش خالی است" : "Preview is empty"}
+                {dir === "rtl" ? "المعاينة فارغة" : "Preview is empty"}
               </span>
             )}
           </div>

@@ -77,7 +77,7 @@ export function ChatHeader({ business, locale, participantType = "business" }: C
             )}
             {participantType === "user" && (
               <div className="truncate text-xs text-(--muted-foreground)">
-                {locale === "ar" ? "کاربر" : "User"}
+                {locale === "ar" ? "مستخدم" : "User"}
               </div>
             )}
           </div>

@@ -104,12 +104,12 @@ export default async function LocaleHome({
               <div className="mb-10">
                 <h2 className="text-3xl font-bold text-foreground mb-3">
                   {locale === "ar"
-                    ? "برترین کسب‌وکارها"
+                    ? "أفضل الأنشطة التجارية"
                     : "Top Businesses"}
                 </h2>
                 <p className="text-base text-foreground opacity-70">
                   {locale === "ar"
-                    ? "کسب‌وکارهای محبوب و مورد اعتماد مردم."
+                    ? "أنشطة تجارية موثوقة ومحبوبة لدى الناس."
                     : "Popular and trusted businesses."}
                 </p>
               </div>
@@ -135,11 +135,11 @@ export default async function LocaleHome({
             <FadeInSection duration={600} delay={0}>
               <div className="mb-10">
               <h2 className="text-3xl font-bold text-foreground mb-3">
-                {locale === "ar" ? "پیشنهادی‌ها" : "Recommended"}
+                {locale === "ar" ? "المقترحة" : "Recommended"}
               </h2>
               <p className="text-base text-foreground opacity-70">
                 {locale === "ar"
-                  ? "کسب‌وکارهایی که بیشتر پیشنهاد شده‌اند."
+                  ? "الأنشطة التجارية الأكثر توصية."
                   : "Businesses people recommend most."}
               </p>
             </div>
@@ -165,11 +165,11 @@ export default async function LocaleHome({
             <FadeInSection duration={600} delay={0}>
               <div className="mb-10">
               <h2 className="text-3xl font-bold text-foreground mb-3">
-                {locale === "ar" ? "جدیدترین‌ها" : "New Businesses"}
+                {locale === "ar" ? "الأحدث" : "New Businesses"}
               </h2>
               <p className="text-base text-foreground opacity-70">
                 {locale === "ar"
-                  ? "کسب‌وکارهایی که به تازگی اضافه شده‌اند."
+                  ? "الأنشطة التجارية المضافة حديثًا."
                   : "Recently added businesses."}
               </p>
             </div>

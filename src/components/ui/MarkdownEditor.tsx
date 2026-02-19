@@ -174,12 +174,12 @@ export function MarkdownEditor({
     
     const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      toast({ message: "فرمت عکس مجاز نیست. فقط JPEG, PNG, GIF و WebP مجاز است.", variant: "error" });
+      toast({ message: "تنسيق الصورة غير مسموح. يُسمح فقط بـ JPEG وPNG وGIF وWebP.", variant: "error" });
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      toast({ message: "حجم فایل نباید بیشتر از 10MB باشد.", variant: "error" });
+      toast({ message: "يجب ألا يتجاوز حجم الملف 10MB.", variant: "error" });
       return;
     }
 
@@ -201,10 +201,10 @@ export function MarkdownEditor({
         const imageMarkdown = `![${file.name}](${data.url})`;
         insertText(textareaRef.current, value, handleChange, imageMarkdown, "", "");
       } else {
-        toast({ message: data.error || "خطا در آپلود عکس", variant: "error" });
+        toast({ message: data.error || "خطأ في رفع الصورة", variant: "error" });
       }
     } catch {
-      toast({ message: "خطا در آپلود عکس", variant: "error" });
+      toast({ message: "خطأ في رفع الصورة", variant: "error" });
     } finally {
       setUploading(false);
     }
@@ -518,7 +518,7 @@ export function MarkdownEditor({
                 <MarkdownRenderer content={value} />
               ) : (
                 <span className="text-(--muted-foreground)">
-                  {dir === "rtl" ? "چیزی برای پیش‌نمایش نیست" : "Nothing to preview"}
+                  {dir === "rtl" ? "لا يوجد شيء للمعاينة" : "Nothing to preview"}
                 </span>
               )}
             </div>
@@ -529,7 +529,7 @@ export function MarkdownEditor({
               onChange={(e) => handleChange(e.target.value)}
               onPaste={handlePaste}
               onKeyDown={handleKeyDown}
-              placeholder={placeholder || (dir === "rtl" ? "توضیحات خود را اینجا بنویسید..." : "Type your description here...")}
+              placeholder={placeholder || (dir === "rtl" ? "اكتب وصفك هنا..." : "Type your description here...")}
               dir={dir}
               className="w-full h-full resize-none p-4 bg-(--background) text-(--foreground) placeholder:text-(--muted-foreground) outline-none text-sm leading-relaxed font-mono"
             />

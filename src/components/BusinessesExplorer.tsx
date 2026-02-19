@@ -399,7 +399,7 @@ export function BusinessesExplorer({
                 className={activeMode === "chat" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : ""}
               >
                 <FiMessageCircle className="h-3.5 w-3.5" />
-                {locale === "ar" ? "محادثة ذکية" : "AI Chat"}
+                {locale === "ar" ? "محادثة ذكية" : "AI Chat"}
               </Button>
 
               {(searchQuery || uploadedImage || aiResults || city || tags || categoryId || activeMode !== "none") && (

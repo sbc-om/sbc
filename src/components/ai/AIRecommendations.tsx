@@ -60,7 +60,7 @@ export function AIRecommendations({ currentBusiness, allBusinesses, locale }: AI
             <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
           <h3 className="text-lg font-semibold">
-            {locale === "ar" ? "پیشنهادات هوشمند" : "Smart Recommendations"}
+            {locale === "ar" ? "توصيات ذكية" : "Smart Recommendations"}
           </h3>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -84,11 +84,11 @@ export function AIRecommendations({ currentBusiness, allBusinesses, locale }: AI
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
           </svg>
           <span className="text-sm font-semibold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            {locale === "ar" ? "پیشنهادات مشابه با AI" : "Similar by AI"}
+            {locale === "ar" ? "توصيات مشابهة بالذكاء الاصطناعي" : "Similar by AI"}
           </span>
         </div>
         <h3 className="text-lg font-semibold flex-1">
-          {locale === "ar" ? "ممکن است دوست داشته باشید" : "You might also like"}
+          {locale === "ar" ? "قد يعجبك أيضًا" : "You might also like"}
         </h3>
       </div>
 

@@ -18,8 +18,8 @@ import {
 import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "../../home/actions";
 import { AppPage } from "@/components/AppPage";
 import { BusinessFeedCard } from "@/components/BusinessFeedCard";
+import { CategoryFollowButton } from "@/components/categories/CategoryFollowButton";
 import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
-import { followCategoryAction, unfollowCategoryAction } from "../actions";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -71,10 +71,8 @@ export default async function CategoryDetailPage({
 
   const t = {
     back: locale === "ar" ? "رجوع" : "Back",
-    businesses: locale === "ar" ? "بیزینس" : "businesses",
-    follow: locale === "ar" ? "فالو کردن" : "Follow",
-    following: locale === "ar" ? "فالو شده" : "Following",
-    noBusinesses: locale === "ar" ? "هیچ بیزینسی در این دسته‌بندی وجود ندارد" : "No businesses in this category",
+    businesses: locale === "ar" ? "أنشطة تجارية" : "businesses",
+    noBusinesses: locale === "ar" ? "لا توجد أنشطة تجارية في هذا التصنيف" : "No businesses in this category",
   };
 
   return (
@@ -103,18 +101,12 @@ export default async function CategoryDetailPage({
               {businesses.length} {t.businesses}
             </p>
           </div>
-          <form action={isFollowing ? unfollowCategoryAction.bind(null, locale as Locale, category.id) : followCategoryAction.bind(null, locale as Locale, category.id)}>
-            <button
-              type="submit"
-              className={`px-6 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                isFollowing
-                  ? "bg-(--muted-foreground)/10 hover:bg-(--muted-foreground)/20"
-                  : "bg-accent text-white hover:bg-accent/90"
-              }`}
-            >
-              {isFollowing ? t.following : t.follow}
-            </button>
-          </form>
+          <CategoryFollowButton
+            locale={locale as Locale}
+            categoryId={category.id}
+            initialFollowing={isFollowing}
+            size="md"
+          />
         </div>
       </div>
 

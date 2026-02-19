@@ -337,19 +337,19 @@ export default function MapPageClient({ locale }: Props) {
           }`}
         >
           <div className="border-b border-(--surface-border) px-4 py-3">
-            <h2 className="text-lg font-semibold">{locale === "ar" ? "بیزینس‌ها" : "Businesses"}</h2>
+            <h2 className="text-lg font-semibold">{locale === "ar" ? "الأنشطة التجارية" : "Businesses"}</h2>
             <p className="text-xs text-(--muted-foreground)">
               {locale === "ar"
-                ? `${mappableBusinesses.length} موقعیت روی نقشه`
+                ? `${mappableBusinesses.length} موقع على الخريطة`
                 : `${mappableBusinesses.length} locations on map`}
             </p>
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
             {loading ? (
-              <div className="mt-4 px-1">{locale === "ar" ? "در حال بارگذاری..." : "Loading..."}</div>
+              <div className="mt-4 px-1">{locale === "ar" ? "جارٍ التحميل..." : "Loading..."}</div>
             ) : mappableBusinesses.length === 0 ? (
-              <div className="mt-6 text-sm text-(--muted-foreground)">{locale === "ar" ? "هیچ کسب‌وکاری یافت نشد" : "No businesses found"}</div>
+              <div className="mt-6 text-sm text-(--muted-foreground)">{locale === "ar" ? "لم يتم العثور على أنشطة تجارية" : "No businesses found"}</div>
             ) : (
               <ul className="space-y-3">
                 {mappableBusinesses.map((business) => (
@@ -402,7 +402,7 @@ export default function MapPageClient({ locale }: Props) {
                         }
                         className="text-sm text-primary underline"
                       >
-                        {locale === "ar" ? "نمایش" : "View"}
+                        {locale === "ar" ? "عرض" : "View"}
                       </Link>
                     </div>
                   </li>
