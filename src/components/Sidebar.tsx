@@ -332,7 +332,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     <>
       {/* Logo */}
       <div className={`px-3 pt-4 transition-all duration-300 ${collapsed ? "mb-4" : "mb-8"}`}>
-        <div className="flex items-center justify-between gap-2">
+        <div className={iconOnly ? "flex flex-col items-center gap-2" : "flex items-center justify-between gap-2"}>
           <Link
             href={`/${locale}`}
             className={`flex items-center gap-3 group min-w-0 ${iconOnly ? "justify-center" : "justify-start"}`}

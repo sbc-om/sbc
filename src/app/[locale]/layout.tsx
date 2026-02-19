@@ -13,6 +13,7 @@ import { DirectionSync } from "@/components/DirectionSync";
 import { Sidebar } from "@/components/Sidebar";
 import { MobileNav } from "@/components/MobileNav";
 import { getCurrentUser } from "@/lib/auth/currentUser";
+import { requireUser } from "@/lib/auth/requireUser";
 import { CartProvider } from "@/components/store/CartProvider";
 import { CartFloating } from "@/components/store/CartFloating";
 import { RealtimeEngagementHealthIndicator } from "@/components/RealtimeEngagementHealthIndicator";
@@ -45,17 +46,23 @@ export default async function LocaleLayout({
   if (!isLocale(locale)) notFound();
 
   const dict = await getDictionary(locale as Locale);
-  const user = await getCurrentUser();
-  const products = await listStoreProducts();
-  // Check if user already has a business (to hide business request menu)
-  const userBusiness = user ? await getBusinessByOwnerId(user.id) : null;
-  
-  // Check if we're on chat page
+
+  // Check active route flags first
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") || "";
   const isChatPage = pathname.includes("/chat");
   const isLocaleHomePage = pathname === `/${locale}` || pathname === `/${locale}/`;
   const isMapPage = pathname === `/${locale}/map`;
+  const isHomeRoute = pathname === `/${locale}/home`;
+
+  // Home must always use authenticated dashboard shell
+  const user = isHomeRoute
+    ? await requireUser(locale as Locale)
+    : await getCurrentUser();
+
+  const products = await listStoreProducts();
+  // Check if user already has a business (to hide business request menu)
+  const userBusiness = user ? await getBusinessByOwnerId(user.id) : null;
 
   return (
     <DictionaryProvider locale={locale as Locale} dict={dict}>
