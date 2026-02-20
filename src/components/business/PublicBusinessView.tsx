@@ -8,9 +8,11 @@ import { buttonVariants } from "@/components/ui/Button";
 import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
 import { ShareActionButton } from "@/components/ShareActionButton";
 import { FollowBusinessButton } from "@/components/business/FollowBusinessButton";
+import { BusinessStoriesStrip } from "@/components/stories/BusinessStoriesStrip";
 import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
 import { MarkdownRenderer } from "@/components/ui/MarkdownEditor";
 import type { Business, Category } from "@/lib/db/types";
+import type { Story } from "@/lib/db/stories";
 import type { Locale } from "@/lib/i18n/locales";
 
 type ContentLanguage = "en" | "ar";
@@ -23,6 +25,10 @@ interface PublicBusinessViewProps {
   categoryIconId?: string;
   handlePath: string;
   mapsHref: string | null;
+  stories?: Story[];
+  currentUserId?: string;
+  isOwner?: boolean;
+  isAdmin?: boolean;
 }
 
 export function PublicBusinessView({
@@ -33,6 +39,10 @@ export function PublicBusinessView({
   categoryIconId,
   handlePath,
   mapsHref,
+  stories = [],
+  currentUserId,
+  isOwner = false,
+  isAdmin = false,
 }: PublicBusinessViewProps) {
   const [contentLang, setContentLang] = useState<ContentLanguage>(siteLocale);
   const heroImage = business.media?.cover || business.media?.banner || business.media?.logo;
@@ -208,6 +218,18 @@ export function PublicBusinessView({
           </div>
         </div>
       </div>
+
+      <BusinessStoriesStrip
+        businessId={business.id}
+        businessName={business.name}
+        businessAvatar={business.media?.logo || null}
+        businessUsername={business.username || null}
+        stories={stories}
+        locale={locale}
+        currentUserId={currentUserId}
+        isBusinessOwner={isOwner}
+        isAdmin={isAdmin}
+      />
 
       {/* Body */}
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">

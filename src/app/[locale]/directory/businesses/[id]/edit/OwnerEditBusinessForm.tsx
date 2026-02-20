@@ -639,6 +639,7 @@ export function OwnerEditBusinessForm({
                   }}
                   locale={locale}
                   hideRadius
+                  markerImageUrl={business.media?.logo}
                 />
               </div>
               {location && (

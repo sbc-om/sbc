@@ -16,6 +16,7 @@ import { getTimeAgo } from "./StoriesCarousel";
 interface StoryViewerProps {
   businesses: BusinessWithStories[];
   initialBusinessId: string;
+  initialStoryIndex?: number;
   locale: Locale;
   onClose: () => void;
   currentUserId?: string;
@@ -185,6 +186,7 @@ function StoryMedia({
 export function StoryViewer({
   businesses,
   initialBusinessId,
+  initialStoryIndex = 0,
   locale,
   onClose,
   isBusinessOwner = false,
@@ -203,7 +205,11 @@ export function StoryViewer({
   });
 
   const [currentBusinessIndex, setCurrentBusinessIndex] = useState(initialIndex);
-  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
+  const initialStorySafeIndex = Math.max(
+    0,
+    Math.min(initialStoryIndex, (businesses[initialIndex]?.stories.length ?? 1) - 1),
+  );
+  const [currentStoryIndex, setCurrentStoryIndex] = useState(initialStorySafeIndex);
 
   /* ── Progress ── */
   const [progress, setProgress] = useState(0);

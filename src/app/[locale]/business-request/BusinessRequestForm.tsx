@@ -402,6 +402,7 @@ export function BusinessRequestForm({
             locale={locale}
             location={location}
             setLocation={setLocation}
+            logoPreview={logoPreview}
           />
         )}
         {steps[currentStep].id === "media" && (
@@ -647,6 +648,7 @@ function StepLocation({
   locale,
   location,
   setLocation,
+  logoPreview,
 }: {
   ar: boolean;
   formData: FormData;
@@ -654,6 +656,7 @@ function StepLocation({
   locale: Locale;
   location: LocationData | null;
   setLocation: (l: LocationData | null) => void;
+  logoPreview: string[];
 }) {
   return (
     <div className="space-y-6">
@@ -695,6 +698,7 @@ function StepLocation({
               }
               locale={locale}
               hideRadius
+              markerImageUrl={logoPreview[0]}
             />
           </div>
           {location && (

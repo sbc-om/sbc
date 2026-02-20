@@ -7,8 +7,9 @@ import {
   TileLayer,
   useMap,
   useMapEvents,
-  CircleMarker,
+  Marker,
 } from "react-leaflet";
+import { divIcon } from "leaflet";
 import type { LeafletMouseEvent } from "leaflet";
 
 import { cn } from "@/lib/cn";
@@ -126,6 +127,7 @@ export function OsmLocationPicker({
   locale,
   hideRadius,
   viewOnly,
+  markerImageUrl,
 }: {
   value: OsmLocationValue | null;
   onChange: (next: OsmLocationValue | null) => void;
@@ -134,6 +136,7 @@ export function OsmLocationPicker({
   locale?: "en" | "ar";
   hideRadius?: boolean;
   viewOnly?: boolean;
+  markerImageUrl?: string;
 }) {
   const ar = locale === "ar";
   const rtl = ar;
@@ -269,6 +272,17 @@ export function OsmLocationPicker({
     ? cn("w-full h-full", className)
     : cn("rounded-2xl border border-(--surface-border) bg-(--surface) p-4", className);
 
+  const markerIcon = useMemo(() => {
+    const imageSrc = markerImageUrl?.trim() || "/images/sbc.svg";
+    const safeSrc = imageSrc.replace(/"/g, "&quot;");
+    return divIcon({
+      className: "sbc-map-logo-marker",
+      iconSize: [44, 44],
+      iconAnchor: [22, 44],
+      html: `<img src="${safeSrc}" alt="marker" style="width:44px;height:44px;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='/images/sbc.svg'" />`,
+    });
+  }, [markerImageUrl]);
+
   return (
     <div className={containerClassName}>
       {!viewOnly && (
@@ -361,10 +375,9 @@ export function OsmLocationPicker({
 
           {safeValue ? (
             <>
-              <CircleMarker
-                center={[safeValue.lat, safeValue.lng]}
-                radius={8}
-                pathOptions={{ color: "#4f46e5", fillColor: "#4f46e5", fillOpacity: 0.85 }}
+              <Marker
+                position={[safeValue.lat, safeValue.lng]}
+                icon={markerIcon}
               />
               {!hideRadius && (
                 <Circle

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import useEmblaCarousel from "embla-carousel-react";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -59,6 +60,12 @@ export function BusinessPublishingPanel({
   hideEmptySections = false,
 }: PublishPanelProps) {
   const ar = locale === "ar";
+  const [instagramEmblaRef] = useEmblaCarousel({
+    align: "start",
+    containScroll: "trimSnaps",
+    dragFree: true,
+    direction: ar ? "rtl" : "ltr",
+  });
 
   const [newsItems, setNewsItems] = useState<BusinessNews[]>(initialNews);
   const [productItems, setProductItems] = useState<BusinessProduct[]>(initialProducts);
@@ -728,36 +735,39 @@ export function BusinessPublishingPanel({
       ) : null}
 
       {showContentSections && (hasNews || !hideEmptySections) ? (
-      <section className="sbc-card rounded-2xl p-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">{ar ? "أخبار النشاط" : "Business News"}</h2>
-          <span className="text-xs text-(--muted-foreground)">{newsItems.length}</span>
-        </div>
+      <section className="sbc-card rounded-2xl p-4 sm:p-6">
 
         {!hasNews ? (
           <p className="mt-3 text-sm text-(--muted-foreground)">
             {ar ? "لا توجد أخبار منشورة حالياً." : "No news published yet."}
           </p>
         ) : (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3 sm:gap-4">
             {newsItems.map((item) => {
               const title = ar ? item.title.ar : item.title.en;
               const content = ar ? item.content.ar : item.content.en;
                 const isApproved = item.moderationStatus === "approved";
 
               return (
-                <article key={item.id} className="rounded-2xl border border-(--surface-border) bg-(--chip-bg) overflow-hidden">
+                <article
+                  key={item.id}
+                  className="group overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) transition-shadow duration-200 hover:shadow-lg"
+                >
                   {item.imageUrl ? (
-                    <div className="relative h-40 w-full">
+                    <div className="relative h-40 w-full overflow-hidden border-b border-(--surface-border) sm:h-44">
                       <Image src={item.imageUrl} alt={title} fill className="object-cover" />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+                      <div className="absolute bottom-3 left-3 rounded-full bg-black/50 px-2.5 py-1 text-[11px] text-white backdrop-blur-sm">
+                        {formatDate(item.createdAt, locale)}
+                      </div>
                     </div>
                   ) : null}
 
-                  <div className="p-4">
+                  <div className="p-4 sm:p-5">
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-sm font-semibold leading-6">{title}</h3>
+                      <h3 className="text-sm font-semibold leading-6 tracking-tight sm:text-base sm:leading-7">{title}</h3>
                       {isOwner ? (
-                        <div className="flex items-center gap-3 text-xs">
+                        <div className="flex flex-wrap items-center justify-end gap-2 text-[11px] sm:text-xs">
                           <button type="button" className="hover:underline" onClick={() => startEditNews(item)}>
                             {ar ? "تعديل" : "Edit"}
                           </button>
@@ -778,24 +788,35 @@ export function BusinessPublishingPanel({
                         </div>
                       ) : null}
                     </div>
-                    <p className="mt-1 text-xs text-(--muted-foreground)">{formatDate(item.createdAt, locale)}</p>
-                    <p className="mt-1 text-xs text-(--muted-foreground)">{moderationLabel(item.moderationStatus, ar)}</p>
-                    {!item.isPublished ? (
-                      <p className="mt-1 text-xs text-amber-600">{ar ? "مخفي حالياً" : "Currently hidden"}</p>
+                    {!item.imageUrl ? (
+                      <p className="mt-1 text-xs text-(--muted-foreground)">{formatDate(item.createdAt, locale)}</p>
                     ) : null}
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-full border border-(--surface-border) bg-(--background) px-2.5 py-1 text-(--muted-foreground)">
+                        {moderationLabel(item.moderationStatus, ar)}
+                      </span>
+                      {!item.isPublished ? (
+                        <span className="rounded-full border border-(--surface-border) bg-(--background) px-2.5 py-1 text-amber-600">
+                          {ar ? "مخفي حالياً" : "Currently hidden"}
+                        </span>
+                      ) : null}
+                    </div>
+                    {!item.isPublished ? (
+                      <p className="sr-only">{ar ? "مخفي حالياً" : "Currently hidden"}</p>
+                    ) : null}
+                    <div className="mt-3 text-sm leading-7 text-foreground line-clamp-5">
+                      <MarkdownRenderer content={content} />
+                    </div>
                     {item.linkUrl ? (
                       <a
                         href={item.linkUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-2 inline-flex text-xs text-accent hover:underline"
+                        className="mt-4 inline-flex w-full items-center justify-center rounded-full border border-(--surface-border) bg-(--background) px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-(--chip-bg) sm:w-auto"
                       >
                         {ar ? "فتح الرابط" : "Open link"}
                       </a>
                     ) : null}
-                    <div className="mt-3 text-sm leading-7 text-foreground">
-                      <MarkdownRenderer content={content} />
-                    </div>
                   </div>
                 </article>
               );
@@ -884,36 +905,36 @@ export function BusinessPublishingPanel({
       ) : null}
 
       {showContentSections && (hasProducts || !hideEmptySections) ? (
-      <section className="sbc-card rounded-2xl p-6">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold tracking-tight">{ar ? "منتجات النشاط" : "Business Products"}</h2>
-          <span className="text-xs text-(--muted-foreground)">{productItems.length}</span>
-        </div>
+      <section className="sbc-card rounded-2xl p-4 sm:p-6">
 
         {!hasProducts ? (
           <p className="mt-3 text-sm text-(--muted-foreground)">
             {ar ? "لا توجد منتجات منشورة حالياً." : "No products published yet."}
           </p>
         ) : (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3 sm:gap-4">
             {productItems.map((item) => {
               const name = ar ? item.name.ar : item.name.en;
               const description = item.description ? (ar ? item.description.ar : item.description.en) : "";
                 const isApproved = item.moderationStatus === "approved";
 
               return (
-                <article key={item.id} className="rounded-2xl border border-(--surface-border) bg-(--chip-bg) overflow-hidden">
+                <article
+                  key={item.id}
+                  className="group overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) transition-shadow duration-200 hover:shadow-lg"
+                >
                   {item.imageUrl ? (
-                    <div className="relative h-40 w-full">
+                    <div className="relative h-40 w-full overflow-hidden border-b border-(--surface-border) sm:h-44">
                       <Image src={item.imageUrl} alt={name} fill className="object-cover" />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
                     </div>
                   ) : null}
 
-                  <div className="p-4">
+                  <div className="p-4 sm:p-5">
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-sm font-semibold leading-6">{name}</h3>
+                      <h3 className="text-sm font-semibold leading-6 tracking-tight sm:text-base sm:leading-7">{name}</h3>
                       {isOwner ? (
-                        <div className="flex items-center gap-3 text-xs">
+                        <div className="flex flex-wrap items-center justify-end gap-2 text-[11px] sm:text-xs">
                           <button type="button" className="hover:underline" onClick={() => startEditProduct(item)}>
                             {ar ? "تعديل" : "Edit"}
                           </button>
@@ -934,29 +955,34 @@ export function BusinessPublishingPanel({
                         </div>
                       ) : null}
                     </div>
-                    {!item.isAvailable ? (
-                      <p className="mt-1 text-xs text-amber-600">{ar ? "غير متاح حالياً" : "Currently unavailable"}</p>
-                    ) : null}
-                    <p className="mt-1 text-xs text-(--muted-foreground)">{moderationLabel(item.moderationStatus, ar)}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="rounded-full border border-(--surface-border) bg-(--background) px-2.5 py-1 text-(--muted-foreground)">
+                        {moderationLabel(item.moderationStatus, ar)}
+                      </span>
+                      {!item.isAvailable ? (
+                        <span className="rounded-full border border-(--surface-border) bg-(--background) px-2.5 py-1 text-amber-600">
+                          {ar ? "غير متاح حالياً" : "Currently unavailable"}
+                        </span>
+                      ) : null}
+                    </div>
 
                     {description ? (
-                      <p className="mt-2 text-sm text-(--muted-foreground) line-clamp-3">{description}</p>
+                      <p className="mt-3 text-sm text-(--muted-foreground) line-clamp-3">{description}</p>
                     ) : null}
 
+                    <p className="mt-4 text-sm font-semibold text-accent">
+                      {formatPrice(item.price, item.currency, locale)}
+                    </p>
                     {item.linkUrl ? (
                       <a
                         href={item.linkUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="mt-2 inline-flex text-xs text-accent hover:underline"
+                        className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-(--surface-border) bg-(--background) px-3 py-1.5 text-xs font-medium text-accent transition-colors hover:bg-(--chip-bg) sm:w-auto"
                       >
                         {ar ? "فتح الرابط" : "Open link"}
                       </a>
                     ) : null}
-
-                    <p className="mt-3 text-sm font-semibold text-accent">
-                      {formatPrice(item.price, item.currency, locale)}
-                    </p>
                   </div>
                 </article>
               );
@@ -1056,7 +1082,7 @@ export function BusinessPublishingPanel({
       ) : null}
 
       {showContentSections && instagramUsername.trim() && (isOwner || instagramModerationStatus === "approved") ? (
-      <section className="sbc-card rounded-2xl p-6">
+      <section className="sbc-card rounded-2xl p-4 sm:p-6">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-lg font-semibold tracking-tight">Instagram</h2>
           <a
@@ -1076,33 +1102,51 @@ export function BusinessPublishingPanel({
             {ar ? "لا توجد منشورات متاحة حالياً لهذا الحساب." : "No Instagram posts available for this profile yet."}
           </p>
         ) : (
-          <div className="mt-4 grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
-            {instagramPosts.map((post) => (
-              <a
-                key={post.id}
-                href={post.permalink}
-                target="_blank"
-                rel="noreferrer"
-                className="group overflow-hidden rounded-xl border border-(--surface-border) bg-(--chip-bg)"
-              >
-                <div className="relative aspect-square w-full overflow-hidden">
-                  {post.thumbnailUrl ? (
-                    <Image
-                      src={`/api/instagram/image?url=${encodeURIComponent(post.thumbnailUrl)}&label=${encodeURIComponent(post.caption || "Instagram post")}`}
-                      alt={post.caption || "Instagram post"}
-                      fill
-                      unoptimized
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs text-(--muted-foreground)">
-                      Instagram
+          <>
+            <div className="mt-4 overflow-hidden" ref={instagramEmblaRef}>
+              <div className="flex touch-pan-y gap-3 pb-2" dir={ar ? "rtl" : "ltr"}>
+                {instagramPosts.map((post) => (
+                  <a
+                    key={post.id}
+                    href={post.permalink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group block min-w-0 shrink-0 basis-[72%] sm:basis-[46%] lg:basis-[calc((100%-2.25rem)/4)]"
+                  >
+                    <div className="rounded-2xl bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 p-[2.5px]">
+                      <div className="rounded-[14px] bg-background p-[2px]">
+                        <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-(--chip-bg)">
+                          {post.thumbnailUrl ? (
+                            <Image
+                              src={`/api/instagram/image?url=${encodeURIComponent(post.thumbnailUrl)}&label=${encodeURIComponent(post.caption || "Instagram post")}`}
+                              alt={post.caption || "Instagram post"}
+                              fill
+                              unoptimized
+                              className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-xs text-(--muted-foreground)">
+                              Instagram
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </a>
-            ))}
-          </div>
+                    <div className="mt-1.5 px-0.5">
+                      <p className="truncate text-[11px] text-(--muted-foreground)">
+                        {post.takenAt ? formatDate(post.takenAt, locale) : "Instagram"}
+                      </p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+            {instagramPosts.length > 4 ? (
+              <p className="mt-2 text-xs text-(--muted-foreground)">
+                {ar ? "اسحب لعرض باقي المنشورات" : "Scroll to view more posts"}
+              </p>
+            ) : null}
+          </>
         )}
       </section>
       ) : null}

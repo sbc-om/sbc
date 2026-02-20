@@ -13,6 +13,7 @@ import { BusinessPublishingPanel } from "@/components/business/BusinessPublishin
 import { AIRecommendations } from "@/components/ai/AIRecommendations";
 import { listBusinessNews, listBusinessProducts } from "@/lib/db/businessContent";
 import { getInstagramPostsPreview } from "@/lib/social/instagram";
+import { getActiveStoriesByBusiness, getStoriesByBusinessForOwner } from "@/lib/db/stories";
 
 export default async function BusinessDetailPage({
   params,
@@ -48,7 +49,7 @@ export default async function BusinessDetailPage({
   const publicCards = await listPublicBusinessCardsByBusiness(business.id);
   const canShowInstagramPosts = !!business.instagramUsername && (isOwner || business.instagramModerationStatus === "approved");
 
-  const [newsItems, productItems, instagramPosts] = await Promise.all([
+  const [newsItems, productItems, instagramPosts, stories] = await Promise.all([
     listBusinessNews(business.id, {
       publishedOnly: !isOwner,
       approvedOnly: !isOwner,
@@ -60,6 +61,7 @@ export default async function BusinessDetailPage({
       limit: 50,
     }),
     canShowInstagramPosts ? getInstagramPostsPreview(String(business.instagramUsername), 6) : Promise.resolve([]),
+    isOwner ? getStoriesByBusinessForOwner(business.id) : getActiveStoriesByBusiness(business.id),
   ]);
 
   return (
@@ -84,6 +86,10 @@ export default async function BusinessDetailPage({
         categoryIconId={category?.iconId}
         handlePath={handlePath}
         mapsHref={mapsHref}
+        stories={stories}
+        currentUserId={user?.id}
+        isOwner={!!isOwner}
+        isAdmin={isAdmin}
       />
 
       <BusinessPublishingPanel

@@ -763,6 +763,7 @@ export function NewBusinessWizard({
                   onChange={(next) => setLocation(next ? { lat: next.lat, lng: next.lng } : null)}
                   locale={locale}
                   hideRadius
+                  markerImageUrl={logoPreview[0]}
                 />
               </div>
               {location ? (

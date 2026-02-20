@@ -9,6 +9,7 @@ import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
 import { BusinessEngagement } from "@/components/business/BusinessEngagement";
 import { ShareActionButton } from "@/components/ShareActionButton";
 import { FollowBusinessButton } from "@/components/business/FollowBusinessButton";
+import { BusinessStoriesStrip } from "@/components/stories/BusinessStoriesStrip";
 import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
 import { StoryUpload } from "@/components/stories/StoryUpload";
 import { MarkdownRenderer } from "@/components/ui/MarkdownEditor";
@@ -229,6 +230,18 @@ export function ExplorerBusinessView({
           </div>
         </div>
       </div>
+
+      <BusinessStoriesStrip
+        businessId={business.id}
+        businessName={business.name}
+        businessAvatar={business.media?.logo || null}
+        businessUsername={business.username || null}
+        stories={stories}
+        locale={locale}
+        currentUserId={user.id}
+        isBusinessOwner={isOwner}
+        isAdmin={user.role === "admin"}
+      />
 
       {/* Body */}
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">

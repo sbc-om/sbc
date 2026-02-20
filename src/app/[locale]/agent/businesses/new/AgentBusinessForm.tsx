@@ -971,6 +971,7 @@ export function AgentBusinessForm({
                 }}
                 locale={locale}
                 hideRadius
+                markerImageUrl={logoPreview[0]}
               />
             </div>
             {location && (
