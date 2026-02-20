@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
-import { listBusinesses } from "@/lib/db/businesses";
+import { listBusinesses, listPendingBusinessInstagramPages } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
 import { listBusinessRequests } from "@/lib/db/businessRequests";
 import { listAllBusinessCards } from "@/lib/db/businessCards";
@@ -13,6 +13,8 @@ import { getAllWithdrawalRequests } from "@/lib/db/wallet";
 import { getOrderSummary } from "@/lib/db/orders";
 import { listAllProgramSubscriptions } from "@/lib/db/subscriptions";
 import { countAgentWithdrawalRequests, listAgents } from "@/lib/db/agents";
+import { listPendingBusinessNews, listPendingBusinessProducts } from "@/lib/db/businessContent";
+import { listPendingStoriesWithBusiness } from "@/lib/db/stories";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
 export const runtime = "nodejs";
@@ -101,6 +103,12 @@ export default async function AdminPage({
   const allSubscriptions = await listAllProgramSubscriptions();
   const allAgentsList = await listAgents();
   const pendingAgentWithdrawals = await countAgentWithdrawalRequests("pending");
+  const [pendingNews, pendingProducts, pendingStories, pendingInstagramPages] = await Promise.all([
+    listPendingBusinessNews(300),
+    listPendingBusinessProducts(300),
+    listPendingStoriesWithBusiness(300),
+    listPendingBusinessInstagramPages(300),
+  ]);
   const activeSubscriptions = allSubscriptions.filter(
     (s) => s.isActive && new Date(s.endDate) > new Date()
   );
@@ -131,6 +139,58 @@ export default async function AdminPage({
       label: ar ? "التصنيفات" : "Categories",
       color: "green",
       badge: categories.length,
+    },
+    {
+      href: `/${locale}/admin/moderation/news`,
+      icon: (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-8.25a2.25 2.25 0 00-2.25-2.25H6.75A2.25 2.25 0 004.5 6v12a2.25 2.25 0 002.25 2.25H12" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 7.5h7.5M8.25 11.25h7.5M8.25 15h4.5" />
+        </svg>
+      ),
+      label: ar ? "مراجعة الأخبار" : "Moderate News",
+      color: "yellow",
+      badge: pendingNews.length > 0 ? pendingNews.length : undefined,
+      badgeType: pendingNews.length > 0 ? "warning" : undefined,
+    },
+    {
+      href: `/${locale}/admin/moderation/products`,
+      icon: (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-8.954 4.477a.75.75 0 01-.592 0L1.75 7.5m18.5 0L11.296 3.023a.75.75 0 00-.592 0L1.75 7.5m18.5 0v9.75a.75.75 0 01-.411.668l-8.25 4.125a.75.75 0 01-.678 0l-8.25-4.125a.75.75 0 01-.411-.668V7.5" />
+        </svg>
+      ),
+      label: ar ? "مراجعة المنتجات" : "Moderate Products",
+      color: "yellow",
+      badge: pendingProducts.length > 0 ? pendingProducts.length : undefined,
+      badgeType: pendingProducts.length > 0 ? "warning" : undefined,
+    },
+    {
+      href: `/${locale}/admin/moderation/stories`,
+      icon: (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12c0 5.385 4.365 9.75 9.75 9.75s9.75-4.365 9.75-9.75S17.385 2.25 12 2.25 2.25 6.615 2.25 12Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75v5.25l3.75 2.25" />
+        </svg>
+      ),
+      label: ar ? "مراجعة الستوري" : "Moderate Stories",
+      color: "yellow",
+      badge: pendingStories.length > 0 ? pendingStories.length : undefined,
+      badgeType: pendingStories.length > 0 ? "warning" : undefined,
+    },
+    {
+      href: `/${locale}/admin/moderation/instagram`,
+      icon: (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 8.25A4.5 4.5 0 018.25 3.75h7.5a4.5 4.5 0 014.5 4.5v7.5a4.5 4.5 0 01-4.5 4.5h-7.5a4.5 4.5 0 01-4.5-4.5v-7.5Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 11.25a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75h.008v.008h-.008V6.75Z" />
+        </svg>
+      ),
+      label: ar ? "مراجعة إنستاغرام" : "Moderate Instagram",
+      color: "yellow",
+      badge: pendingInstagramPages.length > 0 ? pendingInstagramPages.length : undefined,
+      badgeType: pendingInstagramPages.length > 0 ? "warning" : undefined,
     },
     {
       href: `/${locale}/admin/requests`,

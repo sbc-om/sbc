@@ -11,6 +11,7 @@ import {
   getBusinessById,
   setBusinessMedia,
   setBusinessCustomDomain,
+  checkBusinessUsernameAvailability,
 } from "@/lib/db/businesses";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getCategoryById } from "@/lib/db/categories";
@@ -162,6 +163,16 @@ export async function createBusinessAction(locale: Locale, formData: FormData) {
 
   const usernameRaw = String(formData.get("username") || "").trim();
   const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
+  if (!username) {
+    throw new Error("USERNAME_REQUIRED");
+  }
+  if (username.length <= 5) {
+    throw new Error("USERNAME_TOO_SHORT");
+  }
+  const usernameAvailability = await checkBusinessUsernameAvailability(username);
+  if (!usernameAvailability.available) {
+    throw new Error(usernameAvailability.reason === "INVALID" ? "USERNAME_INVALID" : "USERNAME_TAKEN");
+  }
   const customDomainRaw = String(formData.get("customDomain") || "").trim().toLowerCase();
   const customDomain = customDomainRaw || null;
 

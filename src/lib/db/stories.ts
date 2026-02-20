@@ -1,6 +1,22 @@
 import { nanoid } from "nanoid";
 import { query } from "./postgres";
 
+let storiesSchemaPromise: Promise<void> | null = null;
+
+async function ensureStoriesSchema() {
+  if (!storiesSchemaPromise) {
+    storiesSchemaPromise = (async () => {
+      await query(`ALTER TABLE stories ADD COLUMN IF NOT EXISTS moderation_status TEXT NOT NULL DEFAULT 'approved';`);
+      await query(`ALTER TABLE stories ADD COLUMN IF NOT EXISTS reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL;`);
+      await query(`ALTER TABLE stories ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_stories_moderation_status ON stories(moderation_status);`);
+      await query(`UPDATE stories SET moderation_status = 'approved' WHERE moderation_status IS NULL;`);
+    })();
+  }
+
+  await storiesSchemaPromise;
+}
+
 export type StoryOverlays = {
   textOverlays?: { text: string; x: number; y: number; fontSize: number; fontFamily: string; color: string; backgroundColor: string; rotation: number; scale: number }[];
   stickerOverlays?: { emoji: string; x: number; y: number; scale: number; rotation: number }[];
@@ -19,6 +35,9 @@ export type Story = {
   mediaType: "image" | "video";
   caption?: string;
   overlays?: StoryOverlays;
+  moderationStatus: "pending" | "approved" | "rejected";
+  reviewedByUserId?: string;
+  reviewedAt?: string;
   createdAt: string;
   expiresAt: string;
   viewCount: number;
@@ -46,6 +65,9 @@ type StoryRow = {
   media_type: "image" | "video";
   caption: string | null;
   overlays: StoryOverlays | null;
+  moderation_status: "pending" | "approved" | "rejected" | null;
+  reviewed_by_user_id: string | null;
+  reviewed_at: Date | null;
   created_at: Date | null;
   expires_at: Date | null;
   view_count: number | null;
@@ -104,6 +126,9 @@ function rowToStory(row: StoryRow): Story {
     mediaType: row.media_type,
     caption: row.caption ?? undefined,
     overlays: row.overlays || undefined,
+    moderationStatus: row.moderation_status ?? "approved",
+    reviewedByUserId: row.reviewed_by_user_id ?? undefined,
+    reviewedAt: row.reviewed_at?.toISOString(),
     createdAt: row.created_at?.toISOString() || new Date().toISOString(),
     expiresAt: row.expires_at?.toISOString() || new Date().toISOString(),
     viewCount: row.view_count || 0,
@@ -131,13 +156,18 @@ export async function createStory(input: {
   caption?: string;
   overlays?: StoryOverlays;
 }): Promise<Story> {
+  await ensureStoriesSchema();
   const id = nanoid();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
 
   const result = await query<StoryRow>(`
-    INSERT INTO stories (id, business_id, media_url, media_type, caption, overlays, created_at, expires_at, view_count)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0)
+    INSERT INTO stories (
+      id, business_id, media_url, media_type, caption, overlays,
+      moderation_status, reviewed_by_user_id, reviewed_at,
+      created_at, expires_at, view_count
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, 'pending', NULL, NULL, $7, $8, 0)
     RETURNING *
   `, [id, input.businessId, input.mediaUrl, input.mediaType, input.caption || null, input.overlays ? JSON.stringify(input.overlays) : null, now, expiresAt]);
 
@@ -148,6 +178,7 @@ export async function createStory(input: {
  * Get a story by ID
  */
 export async function getStoryById(id: string): Promise<Story | null> {
+  await ensureStoriesSchema();
   const result = await query<StoryRow>(`SELECT * FROM stories WHERE id = $1`, [id]);
   return result.rows.length > 0 ? rowToStory(result.rows[0]) : null;
 }
@@ -156,8 +187,19 @@ export async function getStoryById(id: string): Promise<Story | null> {
  * Get all active stories for a business (not expired)
  */
 export async function getActiveStoriesByBusiness(businessId: string): Promise<Story[]> {
+  await ensureStoriesSchema();
   const result = await query<StoryRow>(`
     SELECT * FROM stories 
+    WHERE business_id = $1 AND expires_at > NOW() AND moderation_status = 'approved'
+    ORDER BY created_at DESC
+  `, [businessId]);
+  return result.rows.map(rowToStory);
+}
+
+export async function getStoriesByBusinessForOwner(businessId: string): Promise<Story[]> {
+  await ensureStoriesSchema();
+  const result = await query<StoryRow>(`
+    SELECT * FROM stories
     WHERE business_id = $1 AND expires_at > NOW()
     ORDER BY created_at DESC
   `, [businessId]);
@@ -168,11 +210,12 @@ export async function getActiveStoriesByBusiness(businessId: string): Promise<St
  * Get all active stories with business info
  */
 export async function listActiveStoriesWithBusiness(): Promise<StoryWithBusiness[]> {
+  await ensureStoriesSchema();
   const result = await query<StoryWithBusinessRow>(`
     SELECT s.*, b.name_en, b.name_ar, b.media, b.username
     FROM stories s
     JOIN businesses b ON s.business_id = b.id
-    WHERE s.expires_at > NOW() AND b.is_approved = true
+    WHERE s.expires_at > NOW() AND s.moderation_status = 'approved' AND b.is_approved = true
     ORDER BY s.created_at DESC
   `);
   return result.rows.map(rowToStoryWithBusiness);
@@ -204,6 +247,9 @@ export async function listBusinessesWithActiveStories(): Promise<BusinessWithSto
       mediaType: story.mediaType,
       caption: story.caption,
       overlays: story.overlays,
+      moderationStatus: story.moderationStatus,
+      reviewedByUserId: story.reviewedByUserId,
+      reviewedAt: story.reviewedAt,
       createdAt: story.createdAt,
       expiresAt: story.expiresAt,
       viewCount: story.viewCount,
@@ -246,6 +292,7 @@ export async function listFollowedBusinessesWithActiveStories(
 export async function listFollowedBusinessesWithActiveStoriesWithCategory(
   userId: string
 ): Promise<BusinessWithStories[]> {
+  await ensureStoriesSchema();
   // Get stories with business category info
   const result = await query<FollowedStoryRow>(`
     SELECT s.*, b.name_en, b.name_ar, b.media, b.username, b.category_id,
@@ -254,7 +301,7 @@ export async function listFollowedBusinessesWithActiveStoriesWithCategory(
            EXISTS(SELECT 1 FROM user_category_follows WHERE user_id = $1 AND category_id = b.category_id) as category_followed
     FROM stories s
     JOIN businesses b ON s.business_id = b.id
-    WHERE s.expires_at > NOW() AND b.is_approved = true
+        WHERE s.expires_at > NOW() AND s.moderation_status = 'approved' AND b.is_approved = true
     ORDER BY s.created_at DESC
   `, [userId]);
   
@@ -290,6 +337,9 @@ export async function listFollowedBusinessesWithActiveStoriesWithCategory(
       mediaType: story.mediaType,
       caption: story.caption,
       overlays: story.overlays,
+      moderationStatus: story.moderationStatus,
+      reviewedByUserId: story.reviewedByUserId,
+      reviewedAt: story.reviewedAt,
       createdAt: story.createdAt,
       expiresAt: story.expiresAt,
       viewCount: story.viewCount,
@@ -334,11 +384,68 @@ export async function deleteExpiredStories(): Promise<number> {
  * Get story count for a business (active stories only)
  */
 export async function getActiveStoryCountByBusiness(businessId: string): Promise<number> {
+  await ensureStoriesSchema();
   const result = await query(`
     SELECT COUNT(*) as count FROM stories 
-    WHERE business_id = $1 AND expires_at > NOW()
+    WHERE business_id = $1 AND expires_at > NOW() AND moderation_status = 'approved'
   `, [businessId]);
   return parseInt(result.rows[0]?.count || "0", 10);
+}
+
+export type ModerationQueueStoryItem = StoryWithBusiness;
+
+export async function listPendingStoriesWithBusiness(limit = 100): Promise<ModerationQueueStoryItem[]> {
+  await ensureStoriesSchema();
+  const result = await query<StoryWithBusinessRow>(`
+    SELECT s.*, b.name_en, b.name_ar, b.media, b.username
+    FROM stories s
+    JOIN businesses b ON s.business_id = b.id
+    WHERE s.moderation_status = 'pending'
+    ORDER BY s.created_at ASC
+    LIMIT $1
+  `, [Math.max(1, Math.min(limit, 500))]);
+
+  return result.rows.map(rowToStoryWithBusiness);
+}
+
+export async function listStoriesModerationQueue(limit = 200): Promise<ModerationQueueStoryItem[]> {
+  await ensureStoriesSchema();
+  const result = await query<StoryWithBusinessRow>(`
+    SELECT s.*, b.name_en, b.name_ar, b.media, b.username
+    FROM stories s
+    JOIN businesses b ON s.business_id = b.id
+    ORDER BY
+      CASE s.moderation_status
+        WHEN 'pending' THEN 0
+        WHEN 'rejected' THEN 1
+        WHEN 'approved' THEN 2
+        ELSE 3
+      END,
+      s.reviewed_at DESC NULLS LAST,
+      s.created_at DESC
+    LIMIT $1
+  `, [Math.max(1, Math.min(limit, 1000))]);
+
+  return result.rows.map(rowToStoryWithBusiness);
+}
+
+export async function moderateStory(
+  storyId: string,
+  status: "approved" | "rejected",
+  reviewerUserId: string,
+): Promise<Story | null> {
+  await ensureStoriesSchema();
+  const result = await query<StoryRow>(`
+    UPDATE stories
+    SET
+      moderation_status = $1,
+      reviewed_by_user_id = $2,
+      reviewed_at = $3
+    WHERE id = $4
+    RETURNING *
+  `, [status, reviewerUserId, new Date(), storyId]);
+
+  return result.rows.length > 0 ? rowToStory(result.rows[0]) : null;
 }
 
 // ============================================

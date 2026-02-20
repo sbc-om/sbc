@@ -46,6 +46,10 @@ export type Business = {
   address?: string;
   phone?: string;
   website?: string;
+  instagramUsername?: string;
+  instagramModerationStatus?: "pending" | "approved" | "rejected";
+  instagramReviewedByUserId?: string;
+  instagramReviewedAt?: string;
   email?: string;
   tags?: string[];
   /** Custom domain for the business page (e.g., mybusiness.com) */
@@ -64,6 +68,40 @@ export type Business = {
   avatarMode?: "icon" | "logo";
   /** Whether to show AI-powered similar business recommendations on this business page. Defaults to true. */
   showSimilarBusinesses?: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BusinessNews = {
+  id: string;
+  businessId: string;
+  title: LocalizedString;
+  content: LocalizedString;
+  imageUrl?: string;
+  linkUrl?: string;
+  isPublished: boolean;
+  moderationStatus: "pending" | "approved" | "rejected";
+  reviewedByUserId?: string;
+  reviewedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type BusinessProduct = {
+  id: string;
+  businessId: string;
+  slug: string;
+  name: LocalizedString;
+  description?: LocalizedString;
+  imageUrl?: string;
+  linkUrl?: string;
+  price: number;
+  currency: string;
+  isAvailable: boolean;
+  moderationStatus: "pending" | "approved" | "rejected";
+  reviewedByUserId?: string;
+  reviewedAt?: string;
+  sortOrder: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -356,7 +394,7 @@ export type UserPushSubscription = {
   updatedAt: string;
 };
 
-export type UserNotificationType = "business_like" | "business_comment" | "system";
+export type UserNotificationType = "business_like" | "business_comment" | "moderation_submission" | "system";
 
 export type UserNotification = {
   id: string;

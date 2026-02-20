@@ -120,6 +120,7 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
   /* ── Upload ── */
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
 
   /* ── Refs ── */
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -137,12 +138,30 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
   const filterCSS = buildFilterCSS(filter, brightness, contrast, saturation);
 
   /* ═══════ File handling ═══════ */
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
+  const applySelectedFile = useCallback((f: File) => {
+    const allowedImageTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const allowedVideoTypes = ["video/mp4", "video/webm", "video/quicktime"];
+    const isVideo = f.type.startsWith("video/");
+    const allowedTypes = isVideo ? allowedVideoTypes : allowedImageTypes;
+
+    if (!allowedTypes.includes(f.type)) {
+      setPublishError(ar ? "نوع الملف غير مدعوم" : "Unsupported file type");
+      return;
+    }
+
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (f.size > maxSize) {
+      setPublishError(
+        ar
+          ? `حجم الملف كبير جداً (الحد ${isVideo ? "50MB" : "10MB"})`
+          : `File is too large (max ${isVideo ? "50MB" : "10MB"})`
+      );
+      return;
+    }
+
+    setPublishError(null);
     if (fileUrl) URL.revokeObjectURL(fileUrl);
     const url = URL.createObjectURL(f);
-    const isVideo = f.type.startsWith("video/");
     setFile(f);
     setFileUrl(url);
     setMediaType(isVideo ? "video" : "image");
@@ -158,7 +177,27 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
     setStickerOverlays([]);
     setCaption("");
     setActiveTab("adjust");
-  }, [fileUrl]);
+  }, [ar, fileUrl]);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    applySelectedFile(f);
+  }, [applySelectedFile]);
+
+  const handleDropFile = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const dropped = e.dataTransfer.files?.[0];
+    if (!dropped) return;
+
+    const dt = new DataTransfer();
+    dt.items.add(dropped);
+    if (fileInputRef.current) fileInputRef.current.files = dt.files;
+    applySelectedFile(dropped);
+  }, [applySelectedFile]);
 
   useEffect(() => {
     return () => { if (fileUrl) URL.revokeObjectURL(fileUrl); };
@@ -627,10 +666,26 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
       <div className="flex-1 flex items-center justify-center p-2 md:p-6 min-h-0 overflow-hidden">
         <div
           ref={previewRef}
-          className="relative bg-black rounded-2xl overflow-hidden shadow-2xl"
+          className={`relative bg-black rounded-2xl overflow-hidden shadow-2xl transition-all ${dragActive ? "ring-2 ring-white/60" : ""}`}
           style={{ aspectRatio: "9/16", maxHeight: "100%", maxWidth: "100%", width: "auto", height: "100%" }}
           onPointerDown={handleImagePointerDown}
           onWheel={handleWheel}
+          onDragEnter={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragActive(true);
+          }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragActive(true);
+          }}
+          onDragLeave={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setDragActive(false);
+          }}
+          onDrop={handleDropFile}
           onClick={(e) => {
             if (!(e.target as HTMLElement).closest("[data-overlay]")) {
               setActiveOverlayId(null);
@@ -641,9 +696,20 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
           {!fileUrl ? (
             /* ── Upload placeholder ── */
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="flex flex-col items-center gap-3 p-8 rounded-2xl bg-white/5 hover:bg-white/10 border border-dashed border-white/20 hover:border-white/40 transition-all group">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={`flex flex-col items-center gap-3 p-8 rounded-2xl bg-white/5 hover:bg-white/10 border-2 border-dashed transition-all group ${
+                  dragActive ? "border-white/70 bg-white/15 scale-[1.02]" : "border-white/20 hover:border-white/40"
+                }`}
+              >
                 <LuUpload className="w-12 h-12 text-white/40 group-hover:text-white/70 transition-colors" />
-                <span className="text-white/50 group-hover:text-white/80 text-sm font-medium transition-colors">{ar ? "اختر صورة أو فيديو" : "Choose photo or video"}</span>
+                <span className="text-white/50 group-hover:text-white/80 text-sm font-medium transition-colors">
+                  {ar ? "اختر صورة أو فيديو" : "Choose photo or video"}
+                </span>
+                <span className="text-white/35 text-xs">
+                  {ar ? "أو اسحب الملف وأفلته هنا" : "or drag and drop file here"}
+                </span>
               </button>
               <p className="text-white/25 text-xs">{ar ? "JPG, PNG, WebP, MP4 — 10MB صور / 50MB فيديو" : "JPG, PNG, WebP, MP4 — 10MB images / 50MB videos"}</p>
             </div>

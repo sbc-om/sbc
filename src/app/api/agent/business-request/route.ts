@@ -7,6 +7,7 @@ import { getAvailableBalance, withdrawFromWallet, depositToWallet, ensureWallet 
 import { purchaseProgramSubscription } from "@/lib/db/subscriptions";
 import { getStoreProductBySlug } from "@/lib/store/products";
 import { query } from "@/lib/db/postgres";
+import { checkBusinessUsernameAvailability } from "@/lib/db/businesses";
 
 export const runtime = "nodejs";
 
@@ -39,6 +40,24 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { clientUserId, productSlug } = body;
+    const username = String(body?.username || "").trim().toLowerCase();
+
+    if (username) {
+      if (username.length <= 5) {
+        return NextResponse.json(
+          { ok: false, error: "USERNAME_TOO_SHORT" },
+          { status: 400 }
+        );
+      }
+
+      const availability = await checkBusinessUsernameAvailability(username);
+      if (!availability.available) {
+        return NextResponse.json(
+          { ok: false, error: availability.reason === "INVALID" ? "USERNAME_INVALID" : "USERNAME_TAKEN" },
+          { status: 400 }
+        );
+      }
+    }
 
     if (clientUserId) {
       const verifiedRes = await query<{ is_phone_verified: boolean | null }>(

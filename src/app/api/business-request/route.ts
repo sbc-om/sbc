@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/requireUser";
 import { ensureActiveProgramSubscription } from "@/lib/db/subscriptions";
 import { createBusinessRequest } from "@/lib/db/businessRequests";
+import { checkBusinessUsernameAvailability } from "@/lib/db/businesses";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,20 @@ export async function POST(req: Request) {
     await ensureActiveProgramSubscription(user.id, "directory");
 
     const body = await req.json();
+
+    const username = String(body?.username || "").trim().toLowerCase();
+    if (username) {
+      if (username.length <= 5) {
+        return NextResponse.json({ error: "USERNAME_TOO_SHORT" }, { status: 400 });
+      }
+      const availability = await checkBusinessUsernameAvailability(username);
+      if (!availability.available) {
+        return NextResponse.json(
+          { error: availability.reason === "INVALID" ? "USERNAME_INVALID" : "USERNAME_TAKEN" },
+          { status: 400 }
+        );
+      }
+    }
 
     const request = await createBusinessRequest({
       userId: user.id,

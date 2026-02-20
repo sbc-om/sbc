@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { getBusinessBySlug, getBusinessByUsername, listBusinesses } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { getUserById } from "@/lib/db/users";
-import { getActiveStoriesByBusiness } from "@/lib/db/stories";
+import { getActiveStoriesByBusiness, getStoriesByBusinessForOwner } from "@/lib/db/stories";
 import {
   getBusinessLikeCount,
   hasUserLikedBusiness,
@@ -17,6 +17,9 @@ import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { ExplorerBusinessView } from "@/components/business/ExplorerBusinessView";
 import { AIRecommendations } from "@/components/ai/AIRecommendations";
+import { BusinessPublishingPanel } from "@/components/business/BusinessPublishingPanel";
+import { listBusinessNews, listBusinessProducts } from "@/lib/db/businessContent";
+import { getInstagramPostsPreview } from "@/lib/social/instagram";
 
 export default async function ExplorerBusinessDetailPage({
   params,
@@ -65,10 +68,27 @@ export default async function ExplorerBusinessDetailPage({
   }
 
   const allBusinesses = await listBusinesses();
+  const isOwner = !!business.ownerId && business.ownerId === user.id;
+  const canShowInstagramPosts = !!business.instagramUsername && (isOwner || business.instagramModerationStatus === "approved");
+
+  const [newsItems, productItems, instagramPosts] = await Promise.all([
+    listBusinessNews(business.id, {
+      publishedOnly: !isOwner,
+      approvedOnly: !isOwner,
+      limit: 20,
+    }),
+    listBusinessProducts(business.id, {
+      availableOnly: !isOwner,
+      approvedOnly: !isOwner,
+      limit: 50,
+    }),
+    canShowInstagramPosts ? getInstagramPostsPreview(String(business.instagramUsername), 6) : Promise.resolve([]),
+  ]);
 
   // Fetch stories for this business
-  const stories = await getActiveStoriesByBusiness(business.id);
-  const isOwner = !!business.ownerId && business.ownerId === user.id;
+  const stories = isOwner
+    ? await getStoriesByBusinessForOwner(business.id)
+    : await getActiveStoriesByBusiness(business.id);
 
   return (
     <AppPage>
@@ -100,7 +120,42 @@ export default async function ExplorerBusinessDetailPage({
         usersById={usersById}
         isOwner={isOwner}
         stories={stories}
+        beforeEngagement={(
+          <BusinessPublishingPanel
+            businessId={business.id}
+            locale={locale as Locale}
+            isOwner={isOwner}
+            initialNews={newsItems}
+            initialProducts={productItems}
+            initialInstagramUsername={business.instagramUsername}
+            initialInstagramPosts={instagramPosts}
+            initialInstagramModerationStatus={business.instagramModerationStatus}
+            showComposer={false}
+            showContentSections
+            hideEmptySections
+          />
+        )}
       />
+
+      {isOwner ? (
+        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_360px]">
+          <div className="min-w-0">
+            <BusinessPublishingPanel
+              businessId={business.id}
+              locale={locale as Locale}
+              isOwner
+              initialNews={newsItems}
+              initialProducts={productItems}
+              initialInstagramUsername={business.instagramUsername}
+              initialInstagramPosts={instagramPosts}
+              initialInstagramModerationStatus={business.instagramModerationStatus}
+              showComposer
+              showContentSections={false}
+            />
+          </div>
+          <div className="hidden lg:block" aria-hidden="true" />
+        </div>
+      ) : null}
 
       <div className="mt-8">
         <AIRecommendations

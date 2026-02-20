@@ -103,6 +103,13 @@ export function StoryUpload({ businessId, locale, existingStories, onStoryAdded 
                 <div className="absolute bottom-1 left-1 right-1 text-[10px] text-white bg-black/50 rounded px-1 py-0.5 text-center">
                   {getTimeRemaining(story.expiresAt, ar)}
                 </div>
+                <div className="absolute top-1 left-1 rounded bg-black/50 px-1.5 py-0.5 text-[10px] text-white">
+                  {story.moderationStatus === "pending"
+                    ? ar ? "بانتظار المراجعة" : "Pending"
+                    : story.moderationStatus === "rejected"
+                      ? ar ? "مرفوض" : "Rejected"
+                      : ar ? "مقبول" : "Approved"}
+                </div>
               </div>
             ))}
           </div>

@@ -73,6 +73,10 @@ function normalizeDomainInput(input: string) {
   return value;
 }
 
+function normalizeUsernameInput(input: string) {
+  return input.trim().replace(/^@/, "").toLowerCase();
+}
+
 const IconInfo = (
   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
@@ -184,6 +188,9 @@ export function NewBusinessWizard({
   const [domainStatus, setDomainStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const [domainMessage, setDomainMessage] = useState("");
   const domainCheckRef = useRef(0);
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [usernameMessage, setUsernameMessage] = useState("");
+  const usernameCheckRef = useRef(0);
 
   const [coverPreview, setCoverPreview] = useState<string[]>([]);
   const [logoPreview, setLogoPreview] = useState<string[]>([]);
@@ -279,6 +286,48 @@ export function NewBusinessWizard({
     return () => clearTimeout(timer);
   }, [domainValue, ar]);
 
+  useEffect(() => {
+    const normalized = normalizeUsernameInput(formData.username);
+    if (!normalized) {
+      setUsernameStatus("idle");
+      setUsernameMessage("");
+      return;
+    }
+
+    if (normalized.length <= 5) {
+      setUsernameStatus("invalid");
+      setUsernameMessage(ar ? "اسم المستخدم يجب أن يكون أكثر من 5 أحرف" : "Username must be longer than 5 characters");
+      return;
+    }
+
+    setUsernameStatus("checking");
+    setUsernameMessage(ar ? "جارٍ التحقق..." : "Checking availability...");
+    const requestId = ++usernameCheckRef.current;
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/businesses/username/${encodeURIComponent(normalized)}`);
+        const data = await res.json();
+        if (requestId !== usernameCheckRef.current) return;
+
+        if (data.ok && data.available) {
+          setUsernameStatus("available");
+          setUsernameMessage(ar ? "متاح" : "Available");
+          return;
+        }
+
+        setUsernameStatus("taken");
+        setUsernameMessage(ar ? "اسم المستخدم مستخدم" : "Username is already in use");
+      } catch {
+        if (requestId !== usernameCheckRef.current) return;
+        setUsernameStatus("invalid");
+        setUsernameMessage(ar ? "تعذر التحقق الآن" : "Could not check right now");
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [formData.username, ar]);
+
   const handleFileSelect = (
     files: FileList | null,
     setter: Dispatch<SetStateAction<string[]>>,
@@ -328,6 +377,15 @@ export function NewBusinessWizard({
           if (!formData.name_en.trim()) return ar ? "الاسم الإنجليزي مطلوب" : "English name is required";
           if (!formData.name_ar.trim()) return ar ? "الاسم العربي مطلوب" : "Arabic name is required";
           if (!formData.slug.trim()) return ar ? "المسار مطلوب" : "Slug is required";
+          if (!normalizeUsernameInput(formData.username)) {
+            return ar ? "اسم المستخدم مطلوب" : "Username is required";
+          }
+          if (normalizeUsernameInput(formData.username).length <= 5) {
+            return ar ? "اسم المستخدم يجب أن يكون أكثر من 5 أحرف" : "Username must be longer than 5 characters";
+          }
+          if (["checking", "taken", "invalid"].includes(usernameStatus)) {
+            return ar ? "يرجى تصحيح اسم المستخدم قبل المتابعة" : "Please fix the username before continuing";
+          }
           if (!formData.categoryId) return ar ? "يرجى اختيار التصنيف" : "Please select a category";
           return null;
         case "contact":
@@ -344,7 +402,7 @@ export function NewBusinessWizard({
           return null;
       }
     },
-    [ar, formData, steps, domainValue, domainStatus],
+    [ar, formData, steps, domainValue, domainStatus, usernameStatus],
   );
 
   const isStepComplete = useCallback(
@@ -392,6 +450,17 @@ export function NewBusinessWizard({
   );
 
   const handleSubmit = async () => {
+    const username = normalizeUsernameInput(formData.username);
+    if (!username || username.length <= 5 || usernameStatus !== "available") {
+      toast({
+        message: ar
+          ? "يرجى إدخال اسم مستخدم صالح (أكثر من 5 أحرف) ومتاح قبل الإنشاء"
+          : "Please enter an available username longer than 5 characters before creating",
+        variant: "error",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = new FormData();
@@ -400,7 +469,7 @@ export function NewBusinessWizard({
       payload.append("desc_en", formData.desc_en);
       payload.append("desc_ar", formData.desc_ar);
       payload.append("slug", formData.slug);
-      payload.append("username", formData.username);
+      payload.append("username", username);
       payload.append("categoryId", formData.categoryId);
       payload.append("ownerId", formData.ownerId);
       payload.append("city", formData.city);
@@ -432,10 +501,31 @@ export function NewBusinessWizard({
 
       await createBusinessAction(locale, payload);
     } catch (error: unknown) {
+      const errorCode = error instanceof Error ? error.message : "";
+      const usernameErrorMessage =
+        errorCode === "USERNAME_REQUIRED"
+          ? ar
+            ? "اسم المستخدم مطلوب"
+            : "Username is required"
+          : errorCode === "USERNAME_TOO_SHORT"
+            ? ar
+              ? "اسم المستخدم يجب أن يكون أكثر من 5 أحرف"
+              : "Username must be longer than 5 characters"
+            : errorCode === "USERNAME_TAKEN"
+              ? ar
+                ? "اسم المستخدم مستخدم بالفعل"
+                : "Username is already in use"
+              : errorCode === "USERNAME_INVALID"
+                ? ar
+                  ? "اسم المستخدم غير صالح"
+                  : "Invalid username"
+                : null;
       toast({
-        message: ar
-          ? `فشل إنشاء النشاط: ${error instanceof Error ? error.message : "خطأ غير معروف"}`
-          : `Failed to create business: ${error instanceof Error ? error.message : "Unknown error"}`,
+        message:
+          usernameErrorMessage ??
+          (ar
+            ? `فشل إنشاء النشاط: ${error instanceof Error ? error.message : "خطأ غير معروف"}`
+            : `Failed to create business: ${error instanceof Error ? error.message : "Unknown error"}`),
         variant: "error",
       });
     } finally {
@@ -552,7 +642,22 @@ export function NewBusinessWizard({
                   />
                 </Field>
                 <Field label={ar ? "اسم المستخدم" : "Username"}>
-                  <Input value={formData.username} onChange={(e) => set("username", e.target.value.toLowerCase())} dir="ltr" />
+                  <Input
+                    value={formData.username}
+                    onChange={(e) => set("username", normalizeUsernameInput(e.target.value))}
+                    dir="ltr"
+                  />
+                  <span
+                    className={`mt-2 block min-h-4 text-xs ${
+                      usernameStatus === "available"
+                        ? "text-emerald-600"
+                        : usernameStatus === "checking" || usernameStatus === "idle"
+                          ? "text-(--muted-foreground)"
+                          : "text-red-600"
+                    }`}
+                  >
+                    {usernameMessage || (ar ? "يجب أن يكون أكثر من 5 أحرف" : "Must be longer than 5 characters")}
+                  </span>
                 </Field>
               </div>
 

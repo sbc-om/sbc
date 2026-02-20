@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { FiPhone, FiMail, FiGlobe, FiMapPin, FiTag } from "react-icons/fi";
@@ -37,6 +37,7 @@ interface ExplorerBusinessViewProps {
   usersById: Record<string, { displayName?: string; email?: string } | undefined>;
   isOwner?: boolean;
   stories?: Story[];
+  beforeEngagement?: ReactNode;
 }
 
 export function ExplorerBusinessView({
@@ -57,6 +58,7 @@ export function ExplorerBusinessView({
   usersById,
   isOwner = false,
   stories = [],
+  beforeEngagement,
 }: ExplorerBusinessViewProps) {
   const [contentLang, setContentLang] = useState<ContentLanguage>(siteLocale);
   const heroImage = business.media?.cover || business.media?.banner || business.media?.logo;
@@ -258,6 +260,8 @@ export function ExplorerBusinessView({
               </div>
             </section>
           ) : null}
+
+          {beforeEngagement}
 
           <div className="mt-6">
             <BusinessEngagement

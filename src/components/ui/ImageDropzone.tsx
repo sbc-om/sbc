@@ -14,6 +14,7 @@ type Props = {
   valueUrl?: string;
   busy?: boolean;
   onFileSelected?: (file: File) => void | Promise<void>;
+  onFileCleared?: () => void;
   onRemoveExisting?: () => void | Promise<void>;
   strings?: Partial<{
     clickToSelect: string;
@@ -44,6 +45,7 @@ export function ImageDropzone({
   valueUrl,
   busy = false,
   onFileSelected,
+  onFileCleared,
   onRemoveExisting,
   strings,
   className,
@@ -240,6 +242,7 @@ export function ImageDropzone({
                         ev.stopPropagation();
                         if (mode === "selected") {
                           if (inputRef.current) inputRef.current.value = "";
+                          onFileCleared?.();
                           void setFile(null);
                         } else {
                           void onRemoveExisting?.();

@@ -153,6 +153,10 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       address TEXT,
       phone TEXT,
       website TEXT,
+      instagram_username TEXT,
+      instagram_moderation_status TEXT NOT NULL DEFAULT 'approved',
+      instagram_reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      instagram_reviewed_at TIMESTAMPTZ,
       email TEXT,
       tags TEXT[],
       latitude DOUBLE PRECISION,
@@ -163,6 +167,66 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    -- Business news posts
+    CREATE TABLE IF NOT EXISTS business_news (
+      id TEXT PRIMARY KEY,
+      business_id TEXT REFERENCES businesses(id) ON DELETE CASCADE,
+      title_en TEXT NOT NULL,
+      title_ar TEXT NOT NULL,
+      content_en TEXT NOT NULL,
+      content_ar TEXT NOT NULL,
+      image_url TEXT,
+      link_url TEXT,
+      is_published BOOLEAN NOT NULL DEFAULT true,
+      moderation_status TEXT NOT NULL DEFAULT 'pending',
+      reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      reviewed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    ALTER TABLE business_news ADD COLUMN IF NOT EXISTS moderation_status TEXT NOT NULL DEFAULT 'pending';
+    ALTER TABLE business_news ADD COLUMN IF NOT EXISTS reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+    ALTER TABLE business_news ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+    ALTER TABLE business_news ADD COLUMN IF NOT EXISTS link_url TEXT;
+
+    CREATE INDEX IF NOT EXISTS idx_business_news_business_id ON business_news(business_id);
+    CREATE INDEX IF NOT EXISTS idx_business_news_created_at ON business_news(created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_business_news_moderation_status ON business_news(moderation_status);
+
+    -- Business products published by owners
+    CREATE TABLE IF NOT EXISTS business_products (
+      id TEXT PRIMARY KEY,
+      business_id TEXT REFERENCES businesses(id) ON DELETE CASCADE,
+      slug TEXT NOT NULL,
+      name_en TEXT NOT NULL,
+      name_ar TEXT NOT NULL,
+      description_en TEXT,
+      description_ar TEXT,
+      image_url TEXT,
+      link_url TEXT,
+      price DECIMAL(12, 3) NOT NULL DEFAULT 0,
+      currency TEXT NOT NULL DEFAULT 'OMR',
+      is_available BOOLEAN NOT NULL DEFAULT true,
+      moderation_status TEXT NOT NULL DEFAULT 'pending',
+      reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      reviewed_at TIMESTAMPTZ,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(business_id, slug)
+    );
+
+    ALTER TABLE business_products ADD COLUMN IF NOT EXISTS moderation_status TEXT NOT NULL DEFAULT 'pending';
+    ALTER TABLE business_products ADD COLUMN IF NOT EXISTS reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+    ALTER TABLE business_products ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+    ALTER TABLE business_products ADD COLUMN IF NOT EXISTS link_url TEXT;
+
+    CREATE INDEX IF NOT EXISTS idx_business_products_business_id ON business_products(business_id);
+    CREATE INDEX IF NOT EXISTS idx_business_products_available ON business_products(is_available);
+    CREATE INDEX IF NOT EXISTS idx_business_products_sort_order ON business_products(sort_order);
+    CREATE INDEX IF NOT EXISTS idx_business_products_moderation_status ON business_products(moderation_status);
+
     -- Business stories (Instagram-like, 24-hour expiry)
     CREATE TABLE IF NOT EXISTS stories (
       id TEXT PRIMARY KEY,
@@ -171,13 +235,21 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       media_type TEXT NOT NULL DEFAULT 'image',
       caption TEXT,
       overlays JSONB,
+      moderation_status TEXT NOT NULL DEFAULT 'approved',
+      reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+      reviewed_at TIMESTAMPTZ,
       view_count INTEGER DEFAULT 0,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       expires_at TIMESTAMPTZ NOT NULL
     );
 
+    ALTER TABLE stories ADD COLUMN IF NOT EXISTS moderation_status TEXT NOT NULL DEFAULT 'approved';
+    ALTER TABLE stories ADD COLUMN IF NOT EXISTS reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+    ALTER TABLE stories ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ;
+
     CREATE INDEX IF NOT EXISTS idx_stories_business_id ON stories(business_id);
     CREATE INDEX IF NOT EXISTS idx_stories_expires_at ON stories(expires_at);
+    CREATE INDEX IF NOT EXISTS idx_stories_moderation_status ON stories(moderation_status);
 
     -- Story views (track who viewed each story)
     CREATE TABLE IF NOT EXISTS story_views (
@@ -635,6 +707,30 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
         ALTER TABLE businesses ADD COLUMN show_similar_businesses BOOLEAN DEFAULT true;
       END IF;
     END $$;
+
+    -- Migrations: Add instagram_username column to businesses table if not exists
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'instagram_username') THEN
+        ALTER TABLE businesses ADD COLUMN instagram_username TEXT;
+      END IF;
+    END $$;
+
+    -- Migrations: Add instagram moderation fields if missing
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'instagram_moderation_status') THEN
+        ALTER TABLE businesses ADD COLUMN instagram_moderation_status TEXT NOT NULL DEFAULT 'approved';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'instagram_reviewed_by_user_id') THEN
+        ALTER TABLE businesses ADD COLUMN instagram_reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'businesses' AND column_name = 'instagram_reviewed_at') THEN
+        ALTER TABLE businesses ADD COLUMN instagram_reviewed_at TIMESTAMPTZ;
+      END IF;
+    END $$;
+
+    CREATE INDEX IF NOT EXISTS idx_businesses_instagram_moderation_status ON businesses(instagram_moderation_status);
 
     -- Migrations: Add avatar_url to loyalty_staff if missing
     DO $$

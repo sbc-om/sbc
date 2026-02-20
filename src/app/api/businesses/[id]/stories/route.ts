@@ -3,7 +3,8 @@ import { z } from "zod";
 
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getBusinessById } from "@/lib/db/businesses";
-import { createStory, getActiveStoriesByBusiness, deleteStoryByBusiness } from "@/lib/db/stories";
+import { createStory, getActiveStoriesByBusiness, getStoriesByBusinessForOwner, deleteStoryByBusiness } from "@/lib/db/stories";
+import { notifyAdminsAboutSubmission } from "@/lib/notifications/moderation";
 import { saveUpload } from "@/lib/uploads/storage";
 
 export const runtime = "nodejs";
@@ -38,8 +39,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const stories = await getActiveStoriesByBusiness(id);
+    const { id: businessId } = await params;
+    const user = await getCurrentUser();
+    const business = await getBusinessById(businessId);
+    if (!business) {
+      return NextResponse.json({ ok: false, error: "Business not found" }, { status: 404 });
+    }
+
+    const isOwner = !!user && business.ownerId === user.id;
+    const stories = isOwner
+      ? await getStoriesByBusinessForOwner(businessId)
+      : await getActiveStoriesByBusiness(businessId);
     return NextResponse.json({ ok: true, data: stories });
   } catch (error: unknown) {
     console.error("[business-stories] Error:", error);
@@ -99,13 +109,13 @@ export async function POST(
       return NextResponse.json({ ok: false, error: "Business not found" }, { status: 404 });
     }
 
-    // Check ownership - business owner or admin
-    if (business.ownerId !== user.id && user.role !== "admin") {
+    // Check ownership
+    if (business.ownerId !== user.id) {
       return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
     }
 
     // Check if business is approved
-    if (!business.isApproved && user.role !== "admin") {
+    if (!business.isApproved) {
       return NextResponse.json({ ok: false, error: "Business not approved" }, { status: 403 });
     }
 
@@ -167,6 +177,13 @@ export async function POST(
       overlays,
     });
 
+    await notifyAdminsAboutSubmission({
+      kind: "story",
+      businessId,
+      businessName: business.name,
+      actorUserId: user.id,
+    });
+
     return NextResponse.json({ ok: true, data: story }, { status: 201 });
   } catch (error: unknown) {
     console.error("[business-stories] Error:", error);
@@ -219,7 +236,7 @@ export async function DELETE(
     }
 
     // Check ownership
-    if (business.ownerId !== user.id && user.role !== "admin") {
+    if (business.ownerId !== user.id) {
       return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
     }
 

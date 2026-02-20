@@ -4,6 +4,23 @@ import { z } from "zod";
 import { query, transaction } from "./postgres";
 import type { Business, Locale } from "./types";
 
+let businessInstagramSchemaPromise: Promise<void> | null = null;
+
+async function ensureBusinessInstagramSchema() {
+  if (!businessInstagramSchemaPromise) {
+    businessInstagramSchemaPromise = (async () => {
+      await query(`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS instagram_username TEXT;`);
+      await query(`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS instagram_moderation_status TEXT NOT NULL DEFAULT 'approved';`);
+      await query(`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS instagram_reviewed_by_user_id TEXT REFERENCES users(id) ON DELETE SET NULL;`);
+      await query(`ALTER TABLE businesses ADD COLUMN IF NOT EXISTS instagram_reviewed_at TIMESTAMPTZ;`);
+      await query(`CREATE INDEX IF NOT EXISTS idx_businesses_instagram_moderation_status ON businesses(instagram_moderation_status);`);
+      await query(`UPDATE businesses SET instagram_moderation_status = 'approved' WHERE instagram_moderation_status IS NULL;`);
+    })();
+  }
+
+  await businessInstagramSchemaPromise;
+}
+
 const slugSchema = z
   .string()
   .trim()
@@ -17,6 +34,13 @@ const usernameSchema = z
   .min(2)
   .max(30)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Invalid username");
+
+const instagramUsernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^@?([a-z0-9._]{1,30})$/, "Invalid Instagram username")
+  .transform((value) => value.replace(/^@/, ""));
 
 const localizedStringSchema = z.object({
   en: z.string().trim().min(1),
@@ -40,6 +64,7 @@ export const businessInputSchema = z.object({
   address: z.string().trim().min(1).optional(),
   phone: z.string().trim().min(1).optional(),
   website: z.string().trim().min(1).optional(),
+  instagramUsername: instagramUsernameSchema.optional(),
   email: z.string().trim().email().optional(),
   tags: z.array(z.string().trim().min(1)).optional(),
   customDomain: z.string().trim().toLowerCase().optional(),
@@ -73,6 +98,10 @@ type BusinessRow = {
   address: string | null;
   phone: string | null;
   website: string | null;
+  instagram_username: string | null;
+  instagram_moderation_status: "pending" | "approved" | "rejected" | null;
+  instagram_reviewed_by_user_id: string | null;
+  instagram_reviewed_at: Date | null;
   email: string | null;
   tags: string[] | null;
   custom_domain: string | null;
@@ -114,6 +143,10 @@ function rowToBusiness(row: BusinessRow): Business {
     address: row.address ?? undefined,
     phone: row.phone ?? undefined,
     website: row.website ?? undefined,
+    instagramUsername: row.instagram_username ?? undefined,
+    instagramModerationStatus: row.instagram_moderation_status ?? "approved",
+    instagramReviewedByUserId: row.instagram_reviewed_by_user_id ?? undefined,
+    instagramReviewedAt: row.instagram_reviewed_at?.toISOString(),
     email: row.email ?? undefined,
     tags: row.tags || [],
     customDomain: row.custom_domain ?? undefined,
@@ -364,6 +397,7 @@ export async function listApprovedBusinesses(): Promise<Business[]> {
 }
 
 export async function createBusiness(input: BusinessInput): Promise<Business> {
+  await ensureBusinessInstagramSchema();
   const data = businessInputSchema.parse(input);
   const id = nanoid();
   const now = new Date();
@@ -386,10 +420,10 @@ export async function createBusiness(input: BusinessInput): Promise<Business> {
     INSERT INTO businesses (
       id, slug, username, owner_id, name_en, name_ar, description_en, description_ar,
       is_approved, is_verified, is_special, homepage_featured, homepage_top,
-      category, category_id, city, address, phone, website, email, tags,
+      category, category_id, city, address, phone, website, instagram_username, email, tags,
       latitude, longitude, avatar_mode, show_similar_businesses, media, created_at, updated_at
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $27
+      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $28
     ) RETURNING *
   `, [
     id, data.slug, data.username, data.ownerId,
@@ -397,7 +431,7 @@ export async function createBusiness(input: BusinessInput): Promise<Business> {
     data.description?.en, data.description?.ar,
     data.isApproved ?? false, data.isVerified ?? false, data.isSpecial ?? false,
     data.homepageFeatured ?? false, data.homepageTop ?? false,
-    data.category, data.categoryId, data.city, data.address, data.phone, data.website, data.email,
+    data.category, data.categoryId, data.city, data.address, data.phone, data.website, data.instagramUsername, data.email,
     data.tags || [], data.latitude, data.longitude, data.avatarMode || 'icon',
     data.showSimilarBusinesses ?? true,
     JSON.stringify({}), now
@@ -407,6 +441,7 @@ export async function createBusiness(input: BusinessInput): Promise<Business> {
 }
 
 export async function updateBusiness(id: string, input: Partial<BusinessInput>): Promise<Business> {
+  await ensureBusinessInstagramSchema();
   return transaction(async (client) => {
     const currentRes = await client.query<BusinessRow>(`SELECT * FROM businesses WHERE id = $1 FOR UPDATE`, [id]);
     if (currentRes.rows.length === 0) throw new Error("NOT_FOUND");
@@ -450,14 +485,27 @@ export async function updateBusiness(id: string, input: Partial<BusinessInput>):
         address = $16,
         phone = $17,
         website = $18,
-        email = $19,
-        tags = COALESCE($20, tags),
-        latitude = $21,
-        longitude = $22,
-        avatar_mode = COALESCE($23, avatar_mode),
-        show_similar_businesses = COALESCE($24, show_similar_businesses),
-        updated_at = $25
-      WHERE id = $26
+        instagram_username = $19::text,
+        instagram_moderation_status = CASE
+          WHEN $19::text IS DISTINCT FROM instagram_username AND $19::text IS NOT NULL THEN 'pending'
+          ELSE instagram_moderation_status
+        END,
+        instagram_reviewed_by_user_id = CASE
+          WHEN $19::text IS DISTINCT FROM instagram_username AND $19::text IS NOT NULL THEN NULL
+          ELSE instagram_reviewed_by_user_id
+        END,
+        instagram_reviewed_at = CASE
+          WHEN $19::text IS DISTINCT FROM instagram_username AND $19::text IS NOT NULL THEN NULL
+          ELSE instagram_reviewed_at
+        END,
+        email = $20,
+        tags = COALESCE($21, tags),
+        latitude = $22,
+        longitude = $23,
+        avatar_mode = COALESCE($24, avatar_mode),
+        show_similar_businesses = COALESCE($25, show_similar_businesses),
+        updated_at = $26
+      WHERE id = $27
       RETURNING *
     `, [
       data.slug,
@@ -478,6 +526,7 @@ export async function updateBusiness(id: string, input: Partial<BusinessInput>):
       data.address !== undefined ? data.address : current.address,
       data.phone !== undefined ? data.phone : current.phone,
       data.website !== undefined ? data.website : current.website,
+      data.instagramUsername !== undefined ? data.instagramUsername : current.instagramUsername,
       data.email !== undefined ? data.email : current.email,
       data.tags,
       data.latitude !== undefined ? data.latitude : current.latitude,
@@ -559,6 +608,105 @@ export async function setBusinessCustomDomain(id: string, customDomain: string |
 
   if (result.rows.length === 0) throw new Error("NOT_FOUND");
   return rowToBusiness(result.rows[0]);
+}
+
+export async function setBusinessInstagramUsername(id: string, instagramUsername: string | null): Promise<Business> {
+  await ensureBusinessInstagramSchema();
+  const normalized = instagramUsername?.trim() ? instagramUsernameSchema.parse(instagramUsername) : null;
+
+  const result = await query<BusinessRow>(`
+    UPDATE businesses
+    SET
+      instagram_username = $1::text,
+      instagram_moderation_status = CASE WHEN $1::text IS NULL THEN 'approved' ELSE 'pending' END,
+      instagram_reviewed_by_user_id = NULL,
+      instagram_reviewed_at = NULL,
+      updated_at = $2
+    WHERE id = $3
+    RETURNING *
+  `, [normalized, new Date(), id]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToBusiness(result.rows[0]);
+}
+
+export type ModerationInstagramBusinessItem = Pick<Business,
+  "id" | "slug" | "username" | "name" | "instagramUsername" | "instagramModerationStatus" | "instagramReviewedAt"
+>;
+
+export async function listPendingBusinessInstagramPages(limit = 100): Promise<ModerationInstagramBusinessItem[]> {
+  await ensureBusinessInstagramSchema();
+  const result = await query<BusinessRow>(`
+    SELECT * FROM businesses
+    WHERE instagram_username IS NOT NULL
+      AND instagram_moderation_status = 'pending'
+    ORDER BY updated_at DESC
+    LIMIT $1
+  `, [Math.max(1, Math.min(limit, 500))]);
+
+  return result.rows.map((row) => {
+    const business = rowToBusiness(row);
+    return {
+      id: business.id,
+      slug: business.slug,
+      username: business.username,
+      name: business.name,
+      instagramUsername: business.instagramUsername,
+      instagramModerationStatus: business.instagramModerationStatus,
+      instagramReviewedAt: business.instagramReviewedAt,
+    };
+  });
+}
+
+export async function listBusinessInstagramModerationQueue(limit = 200): Promise<ModerationInstagramBusinessItem[]> {
+  await ensureBusinessInstagramSchema();
+  const result = await query<BusinessRow>(`
+    SELECT * FROM businesses
+    WHERE instagram_username IS NOT NULL
+    ORDER BY
+      CASE instagram_moderation_status
+        WHEN 'pending' THEN 0
+        WHEN 'rejected' THEN 1
+        WHEN 'approved' THEN 2
+        ELSE 3
+      END,
+      updated_at DESC
+    LIMIT $1
+  `, [Math.max(1, Math.min(limit, 1000))]);
+
+  return result.rows.map((row) => {
+    const business = rowToBusiness(row);
+    return {
+      id: business.id,
+      slug: business.slug,
+      username: business.username,
+      name: business.name,
+      instagramUsername: business.instagramUsername,
+      instagramModerationStatus: business.instagramModerationStatus,
+      instagramReviewedAt: business.instagramReviewedAt,
+    };
+  });
+}
+
+export async function moderateBusinessInstagramPage(
+  businessId: string,
+  status: "approved" | "rejected",
+  reviewerUserId: string
+): Promise<Business | null> {
+  await ensureBusinessInstagramSchema();
+  const result = await query<BusinessRow>(`
+    UPDATE businesses
+    SET
+      instagram_moderation_status = $1,
+      instagram_reviewed_by_user_id = $2,
+      instagram_reviewed_at = $3,
+      updated_at = $3
+    WHERE id = $4
+      AND instagram_username IS NOT NULL
+    RETURNING *
+  `, [status, reviewerUserId, new Date(), businessId]);
+
+  return result.rows[0] ? rowToBusiness(result.rows[0]) : null;
 }
 
 export async function setBusinessMedia(
