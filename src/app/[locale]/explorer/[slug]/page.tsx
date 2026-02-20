@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
-import { getBusinessBySlug, getBusinessByUsername, listBusinesses } from "@/lib/db/businesses";
+import { getBusinessBySlug, getBusinessByUsername } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
 import { getUserById } from "@/lib/db/users";
 import { getActiveStoriesByBusiness, getStoriesByBusinessForOwner } from "@/lib/db/stories";
@@ -16,7 +17,7 @@ import {
 import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { ExplorerBusinessView } from "@/components/business/ExplorerBusinessView";
-import { AIRecommendations } from "@/components/ai/AIRecommendations";
+import { DeferredAIRecommendations } from "@/components/business/DeferredAIRecommendations";
 import { BusinessPublishingPanel } from "@/components/business/BusinessPublishingPanel";
 import { listBusinessNews, listBusinessProducts } from "@/lib/db/businessContent";
 import { getInstagramPostsPreview } from "@/lib/social/instagram";
@@ -67,7 +68,6 @@ export default async function ExplorerBusinessDetailPage({
     usersById[id] = u ? { displayName: u.displayName, email: u.email } : undefined;
   }
 
-  const allBusinesses = await listBusinesses();
   const isOwner = !!business.ownerId && business.ownerId === user.id;
   const canShowInstagramPosts = !!business.instagramUsername && (isOwner || business.instagramModerationStatus === "approved");
 
@@ -158,11 +158,23 @@ export default async function ExplorerBusinessDetailPage({
       ) : null}
 
       <div className="mt-8">
-        <AIRecommendations
-          currentBusiness={business}
-          allBusinesses={allBusinesses}
-          locale={locale as Locale}
-        />
+        <Suspense
+          fallback={(
+            <div className="sbc-card rounded-2xl p-6">
+              <div className="h-6 w-44 animate-pulse rounded-lg bg-(--surface-border)" />
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="h-52 animate-pulse rounded-2xl bg-(--surface-border)" />
+                <div className="h-52 animate-pulse rounded-2xl bg-(--surface-border)" />
+                <div className="h-52 animate-pulse rounded-2xl bg-(--surface-border)" />
+              </div>
+            </div>
+          )}
+        >
+          <DeferredAIRecommendations
+            currentBusiness={business}
+            locale={locale as Locale}
+          />
+        </Suspense>
       </div>
     </AppPage>
   );

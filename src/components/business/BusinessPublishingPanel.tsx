@@ -60,6 +60,20 @@ export function BusinessPublishingPanel({
   hideEmptySections = false,
 }: PublishPanelProps) {
   const ar = locale === "ar";
+  const [newsEmblaRef, newsEmblaApi] = useEmblaCarousel({
+    align: "start",
+    containScroll: "trimSnaps",
+    dragFree: false,
+    loop: true,
+    direction: ar ? "rtl" : "ltr",
+  });
+  const [productsEmblaRef, productsEmblaApi] = useEmblaCarousel({
+    align: "start",
+    containScroll: "trimSnaps",
+    dragFree: false,
+    loop: true,
+    direction: ar ? "rtl" : "ltr",
+  });
   const [instagramEmblaRef] = useEmblaCarousel({
     align: "start",
     containScroll: "trimSnaps",
@@ -182,6 +196,26 @@ export function BusinessPublishingPanel({
       cancelled = true;
     };
   }, [instagramUsername, showContentSections, composerTab]);
+
+  useEffect(() => {
+    if (!showContentSections || newsItems.length <= 1 || !newsEmblaApi) return;
+
+    const timer = window.setInterval(() => {
+      newsEmblaApi.scrollNext();
+    }, 3800);
+
+    return () => window.clearInterval(timer);
+  }, [showContentSections, newsItems.length, newsEmblaApi]);
+
+  useEffect(() => {
+    if (!showContentSections || productItems.length <= 1 || !productsEmblaApi) return;
+
+    const timer = window.setInterval(() => {
+      productsEmblaApi.scrollNext();
+    }, 4200);
+
+    return () => window.clearInterval(timer);
+  }, [showContentSections, productItems.length, productsEmblaApi]);
 
   async function saveInstagramProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -742,7 +776,8 @@ export function BusinessPublishingPanel({
             {ar ? "لا توجد أخبار منشورة حالياً." : "No news published yet."}
           </p>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-3 sm:gap-4">
+          <div className="overflow-hidden" ref={newsEmblaRef}>
+            <div className="flex touch-pan-y gap-4 sm:gap-5" dir={ar ? "rtl" : "ltr"}>
             {newsItems.map((item) => {
               const title = ar ? item.title.ar : item.title.en;
               const content = ar ? item.content.ar : item.content.en;
@@ -751,7 +786,7 @@ export function BusinessPublishingPanel({
               return (
                 <article
                   key={item.id}
-                  className="group overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) transition-shadow duration-200 hover:shadow-lg"
+                  className="group min-w-0 shrink-0 basis-[96%] overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) shadow-sm transition-all duration-300 hover:shadow-xl sm:basis-[76%] lg:basis-[56%]"
                 >
                   {item.imageUrl ? (
                     <div className="relative h-40 w-full overflow-hidden border-b border-(--surface-border) sm:h-44">
@@ -821,6 +856,7 @@ export function BusinessPublishingPanel({
                 </article>
               );
             })}
+            </div>
           </div>
         )}
         {isOwner && editingNewsId ? (
@@ -912,7 +948,8 @@ export function BusinessPublishingPanel({
             {ar ? "لا توجد منتجات منشورة حالياً." : "No products published yet."}
           </p>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3 sm:gap-4">
+          <div className="overflow-hidden" ref={productsEmblaRef}>
+            <div className="flex touch-pan-y gap-4 sm:gap-5" dir={ar ? "rtl" : "ltr"}>
             {productItems.map((item) => {
               const name = ar ? item.name.ar : item.name.en;
               const description = item.description ? (ar ? item.description.ar : item.description.en) : "";
@@ -921,7 +958,7 @@ export function BusinessPublishingPanel({
               return (
                 <article
                   key={item.id}
-                  className="group overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) transition-shadow duration-200 hover:shadow-lg"
+                  className="group min-w-0 shrink-0 basis-[92%] overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) shadow-sm transition-all duration-300 hover:shadow-xl sm:basis-[68%] lg:basis-[44%]"
                 >
                   {item.imageUrl ? (
                     <div className="relative h-40 w-full overflow-hidden border-b border-(--surface-border) sm:h-44">
@@ -987,6 +1024,7 @@ export function BusinessPublishingPanel({
                 </article>
               );
             })}
+            </div>
           </div>
         )}
         {isOwner && editingProductId ? (

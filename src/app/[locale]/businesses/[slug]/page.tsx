@@ -1,16 +1,17 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { PublicPage } from "@/components/PublicPage";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
-import { getBusinessBySlug, getBusinessByUsername, listBusinesses } from "@/lib/db/businesses";
+import { getBusinessBySlug, getBusinessByUsername } from "@/lib/db/businesses";
 import { listPublicBusinessCardsByBusiness } from "@/lib/db/businessCards";
 import { getCategoryById } from "@/lib/db/categories";
 import { buttonVariants } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { PublicBusinessView } from "@/components/business/PublicBusinessView";
 import { BusinessPublishingPanel } from "@/components/business/BusinessPublishingPanel";
-import { AIRecommendations } from "@/components/ai/AIRecommendations";
+import { DeferredAIRecommendations } from "@/components/business/DeferredAIRecommendations";
 import { listBusinessNews, listBusinessProducts } from "@/lib/db/businessContent";
 import { getInstagramPostsPreview } from "@/lib/social/instagram";
 import { getActiveStoriesByBusiness, getStoriesByBusinessForOwner } from "@/lib/db/stories";
@@ -45,7 +46,6 @@ export default async function BusinessDetailPage({
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
     : null;
 
-  const allBusinesses = await listBusinesses();
   const publicCards = await listPublicBusinessCardsByBusiness(business.id);
   const canShowInstagramPosts = !!business.instagramUsername && (isOwner || business.instagramModerationStatus === "approved");
 
@@ -144,11 +144,23 @@ export default async function BusinessDetailPage({
       ) : null}
 
       <div className="mt-8">
-        <AIRecommendations
-          currentBusiness={business}
-          allBusinesses={allBusinesses}
-          locale={locale as Locale}
-        />
+        <Suspense
+          fallback={(
+            <div className="sbc-card rounded-2xl p-6">
+              <div className="h-6 w-44 animate-pulse rounded-lg bg-(--surface-border)" />
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="h-52 animate-pulse rounded-2xl bg-(--surface-border)" />
+                <div className="h-52 animate-pulse rounded-2xl bg-(--surface-border)" />
+                <div className="h-52 animate-pulse rounded-2xl bg-(--surface-border)" />
+              </div>
+            </div>
+          )}
+        >
+          <DeferredAIRecommendations
+            currentBusiness={business}
+            locale={locale as Locale}
+          />
+        </Suspense>
       </div>
     </PublicPage>
   );
