@@ -138,7 +138,7 @@ export function BusinessCard({
           </Button>
         ) : null}
         <Link
-          href={`/${locale}/businesses/${business.slug}`}
+          href={`/${locale}/explorer/${business.slug}`}
           className={buttonVariants({ variant: "ghost", size: "xs" })}
         >
           {ar ? "عرض" : "View"}
