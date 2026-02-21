@@ -1,3 +1,5 @@
+import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
@@ -19,7 +21,16 @@ import { CartFloating } from "@/components/store/CartFloating";
 import { listStoreProducts } from "@/lib/store/products";
 import { AISearchProvider } from "@/lib/ai/AISearchProvider";
 import { getBusinessByOwnerId } from "@/lib/db/businesses";
+import { getBusinessBySlug, getBusinessByUsername } from "@/lib/db/businesses";
+import { getBusinessByDomain } from "@/lib/db/businesses";
 import { DynamicShell } from "@/components/DynamicShell";
+import { buttonVariants } from "@/components/ui/Button";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+
+const BASE_DOMAINS = ["sbc.om", "localhost", "127.0.0.1"] as const;
+const MAIN_DOMAINS = ["sbc.om", "www.sbc.om", "localhost", "127.0.0.1"] as const;
+const DEV_DOMAIN_SUFFIXES = [".ngrok-free.app", ".ngrok.io"] as const;
 
 /** Strip query-string, hash, and trailing slash so route matching is stable. */
 function normalizePathname(raw: string): string {
@@ -120,6 +131,18 @@ function isLoyaltyManageRoute(segments: string[]): boolean {
   return segments.length > 2 && segments[1] === "loyalty" && segments[2] === "manage";
 }
 
+function extractSubdomain(hostname: string): string | null {
+  for (const baseDomain of BASE_DOMAINS) {
+    if (hostname.endsWith(`.${baseDomain}`)) {
+      const subdomain = hostname.slice(0, -(baseDomain.length + 1));
+      if (subdomain && subdomain !== "www") {
+        return subdomain;
+      }
+    }
+  }
+  return null;
+}
+
 export default async function LocaleLayout({
   children,
   params,
@@ -140,10 +163,61 @@ export default async function LocaleLayout({
     headersList.get("next-url") ||
     "";
   const pathname = normalizePathname(rawPathname);
+  const hostHeader = headersList.get("host") || "";
+  const hostname = hostHeader.split(":")[0] || "";
+  const headerSubdomain = headersList.get("x-subdomain") || "";
+  const headerCustomDomain = headersList.get("x-custom-domain") || "";
+  const forwardedProto = headersList.get("x-forwarded-proto") || "https";
+  const proto = forwardedProto.includes("http") ? forwardedProto.split(",")[0].trim() : "https";
 
   // First segment after the locale: e.g. "map", "home", "explorer"
   const segments = pathname.split("/").filter(Boolean);
   const routeSection = segments.length > 1 ? segments[1] : "";
+
+  const isDevDomain = DEV_DOMAIN_SUFFIXES.some((suffix) => hostname.endsWith(suffix));
+  const subdomain = extractSubdomain(hostname);
+  const isMainDomain = MAIN_DOMAINS.some((domain) => hostname === domain);
+  const isCustomDomain = !!hostname && !isDevDomain && !isMainDomain && !subdomain;
+  const isBusinessHost = !!subdomain || isCustomDomain;
+  const isBusinessPageRoute = routeSection === "u" || routeSection === "businesses";
+  const standaloneBusinessView = isBusinessHost && isBusinessPageRoute;
+
+  let standaloneBusinessName: string | null = null;
+  let standaloneBusinessLogo: string | null = null;
+  if (standaloneBusinessView) {
+    const businessKey = segments[2] ?? "";
+    let business = null;
+
+    if (headerSubdomain) {
+      business = await getBusinessByUsername(headerSubdomain);
+    }
+
+    if (!business && headerCustomDomain) {
+      business = await getBusinessByDomain(headerCustomDomain);
+    }
+
+    if (!business) {
+      business = routeSection === "u"
+        ? await getBusinessByUsername(businessKey)
+        : businessKey.startsWith("@")
+          ? await getBusinessByUsername(businessKey)
+          : await getBusinessBySlug(businessKey);
+    }
+
+    if (business) {
+      standaloneBusinessName = locale === "ar" ? business.name.ar : business.name.en;
+      standaloneBusinessLogo = business.media?.logo ?? null;
+    }
+  }
+
+  let backToSbcHref = process.env.NEXT_PUBLIC_SITE_URL ?? "https://sbc.om";
+  if (subdomain) {
+    const matchedBase = BASE_DOMAINS.find((baseDomain) => hostname.endsWith(`.${baseDomain}`));
+    if (matchedBase) {
+      const port = hostHeader.includes(":") ? `:${hostHeader.split(":")[1]}` : "";
+      backToSbcHref = `${proto}://${matchedBase}${port}`;
+    }
+  }
 
   const requiresAuth = REQUIRE_AUTH_SECTIONS.has(routeSection) || isLoyaltyManageRoute(segments);
   const isLocaleHomePage = segments.length <= 1; // bare /{locale}
@@ -156,6 +230,74 @@ export default async function LocaleLayout({
   const products = await listStoreProducts();
   // Check if user already has a business (to hide business request menu)
   const userBusiness = user ? await getBusinessByOwnerId(user.id) : null;
+
+  if (standaloneBusinessView) {
+    const title = standaloneBusinessName || (locale === "ar" ? "صفحة النشاط" : "Business Page");
+
+    return (
+      <DictionaryProvider locale={locale as Locale} dict={dict}>
+        <AISearchProvider>
+          <DirectionSync locale={locale as Locale} />
+          <div className="min-h-dvh bg-transparent text-foreground flex flex-col">
+            <div className="border-b border-(--surface-border) bg-(--surface)/95 backdrop-blur">
+              <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+                <div className="min-w-0 flex items-center gap-3">
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl border border-(--surface-border) bg-(--chip-bg)">
+                    {standaloneBusinessLogo ? (
+                      <Image
+                        src={standaloneBusinessLogo}
+                        alt={title}
+                        fill
+                        sizes="40px"
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-sm font-bold text-(--muted-foreground)">
+                        {title.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold text-foreground sm:text-base">{title}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <ThemeToggle locale={locale as Locale} />
+                  <LanguageSwitcher locale={locale as Locale} />
+                </div>
+              </div>
+            </div>
+            <main className="flex-1">{children}</main>
+
+            <footer className="border-t border-(--surface-border) bg-(--surface)/95 backdrop-blur">
+              <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+                <Link href={backToSbcHref} className="inline-flex items-center gap-3" aria-label="SBC">
+                  <div className="relative h-10 w-10 shrink-0">
+                    <Image
+                      src="/images/sbc.svg"
+                      alt="SBC"
+                      fill
+                      sizes="40px"
+                      className="object-contain"
+                    />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">Smart Business Center</span>
+                </Link>
+
+                <Link
+                  href={backToSbcHref}
+                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                >
+                  {locale === "ar" ? "العودة إلى SBC" : "Back to SBC"}
+                </Link>
+              </div>
+            </footer>
+          </div>
+        </AISearchProvider>
+      </DictionaryProvider>
+    );
+  }
 
   // ── Shell rendering ────────────────────────────────────────────────
   // When the user is logged in we render BOTH shell chromes and let the

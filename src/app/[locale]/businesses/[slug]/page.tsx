@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 
 import { PublicPage } from "@/components/PublicPage";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -125,6 +126,17 @@ export default async function BusinessDetailPage({
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
     : null;
 
+  const headersList = await headers();
+  const hostHeader = headersList.get("host") || "";
+  const hostname = hostHeader.split(":")[0] || "";
+  const isSubdomainHost =
+    hostname.endsWith(".sbc.om") ||
+    hostname.endsWith(".localhost") ||
+    hostname.endsWith(".127.0.0.1");
+  const isMainHost = hostname === "sbc.om" || hostname === "www.sbc.om" || hostname === "localhost" || hostname === "127.0.0.1";
+  const isDevTunnel = hostname.endsWith(".ngrok-free.app") || hostname.endsWith(".ngrok.io");
+  const standaloneBusinessView = isSubdomainHost || (!isMainHost && !isDevTunnel && !!hostname);
+
   const publicCards = await listPublicBusinessCardsByBusiness(business.id);
   const canShowInstagramPosts = !!business.instagramUsername && (isOwner || business.instagramModerationStatus === "approved");
 
@@ -144,18 +156,19 @@ export default async function BusinessDetailPage({
   ]);
 
   return (
-    <PublicPage compactTop={!!user}>
-      {/* Top bar */}
-      <div className="flex items-start justify-between gap-6">
-        <div className="min-w-0" />
+    <PublicPage compactTop={!!user || standaloneBusinessView}>
+      {!standaloneBusinessView ? (
+        <div className="flex items-start justify-between gap-6">
+          <div className="min-w-0" />
 
-        <Link
-          href={`/${locale}/businesses`}
-          className={buttonVariants({ variant: "ghost", size: "sm" })}
-        >
-          {locale === "ar" ? "كل الأعمال" : "All businesses"}
-        </Link>
-      </div>
+          <Link
+            href={`/${locale}/businesses`}
+            className={buttonVariants({ variant: "ghost", size: "sm" })}
+          >
+            {locale === "ar" ? "كل الأعمال" : "All businesses"}
+          </Link>
+        </div>
+      ) : null}
 
       <PublicBusinessView
         business={business}
