@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { Business } from "@/lib/db/types";
+import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
 
 type Props = {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +50,8 @@ export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
       if (!mounted || !mapRef.current) return;
 
       if (mapInstanceRef.current) {
+        resizeCleanupRef.current?.();
+        resizeCleanupRef.current = null;
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         markersRef.current = [];
@@ -64,6 +68,7 @@ export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
       L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(map);
 
       mapInstanceRef.current = map;
+      resizeCleanupRef.current = attachMapResizeStabilizer(map);
 
       // add markers when businesses are loaded
       const addMarkers = () => {
@@ -88,21 +93,28 @@ export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
       };
 
       addMarkers();
-
-      // watch for businesses change
-      return () => {
-        mounted = false;
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.remove();
-          mapInstanceRef.current = null;
-        }
-        markersRef.current = [];
-      };
     };
 
-    init();
-    // re-run when businesses change
+    void init();
+
+    return () => {
+      mounted = false;
+      resizeCleanupRef.current?.();
+      resizeCleanupRef.current = null;
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+      markersRef.current = [];
+    };
   }, [isOpen, businesses, locale]);
+
+  useEffect(() => {
+    return () => {
+      resizeCleanupRef.current?.();
+      resizeCleanupRef.current = null;
+    };
+  }, []);
 
   if (!isOpen) return null;
 

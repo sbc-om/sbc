@@ -178,7 +178,9 @@ export function OwnerEditBusinessForm({
   const galleryFilesRef = useRef<File[]>([]);
 
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
-    business.latitude && business.longitude ? { lat: business.latitude, lng: business.longitude } : null
+    Number.isFinite(business.latitude) && Number.isFinite(business.longitude)
+      ? { lat: business.latitude as number, lng: business.longitude as number }
+      : null
   );
 
   const [coverPreview, setCoverPreview] = useState<string[]>(business.media?.cover ? [business.media.cover] : []);

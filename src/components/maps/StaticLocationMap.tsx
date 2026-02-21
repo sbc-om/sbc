@@ -12,6 +12,7 @@ interface StaticLocationMapProps {
   longitude: number;
   locale: "en" | "ar";
   className?: string;
+  markerImageUrl?: string;
 }
 
 export function StaticLocationMap({
@@ -19,6 +20,7 @@ export function StaticLocationMap({
   longitude,
   locale,
   className,
+  markerImageUrl,
 }: StaticLocationMapProps) {
   return (
     <OsmLocationPicker
@@ -31,6 +33,7 @@ export function StaticLocationMap({
       hideRadius
       viewOnly
       className={className}
+      markerImageUrl={markerImageUrl}
     />
   );
 }

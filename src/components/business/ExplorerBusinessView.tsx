@@ -258,7 +258,7 @@ export function ExplorerBusinessView({
             </section>
           ) : null}
 
-          {business.latitude && business.longitude ? (
+          {Number.isFinite(business.latitude) && Number.isFinite(business.longitude) ? (
             <section className="sbc-card mt-6 rounded-2xl p-6">
               <h2 className="text-lg font-semibold tracking-tight">
                 {locale === "ar" ? "الموقع" : "Location"}
@@ -269,6 +269,7 @@ export function ExplorerBusinessView({
                   longitude={business.longitude}
                   locale={locale}
                   className="h-64"
+                  markerImageUrl={business.media?.logo}
                 />
               </div>
             </section>

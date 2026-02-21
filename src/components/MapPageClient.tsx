@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Business } from "@/lib/db/types";
 import type { Icon as LeafletIcon, Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
+import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
 
 type Props = { locale: Locale };
 
@@ -56,7 +57,7 @@ export default function MapPageClient({ locale }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<LeafletMap | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
-  const markerIconRef = useRef<LeafletIcon | null>(null);
+  const markerIconsRef = useRef<Map<string, LeafletIcon>>(new Map());
   const markersRef = useRef<Map<string, LeafletMarker>>(new Map());
   const listItemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const lastActiveIdRef = useRef<string | null>(null);
@@ -125,13 +126,6 @@ export default function MapPageClient({ locale }: Props) {
       const leaflet = await import("leaflet");
       const L = leaflet;
 
-      markerIconRef.current = L.icon({
-        iconUrl: "/images/sbc.svg",
-        iconSize: [34, 34],
-        iconAnchor: [17, 30],
-        popupAnchor: [0, -26],
-      });
-
       if (!mounted || !mapRef.current) return;
       leafletRef.current = leaflet;
 
@@ -139,6 +133,7 @@ export default function MapPageClient({ locale }: Props) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         markersRef.current.clear();
+        markerIconsRef.current.clear();
       }
 
       const map = L.map(mapRef.current, {
@@ -167,6 +162,7 @@ export default function MapPageClient({ locale }: Props) {
         mapInstanceRef.current = null;
       }
       markersRef.current.clear();
+      markerIconsRef.current.clear();
     };
   }, []);
 
@@ -174,14 +170,7 @@ export default function MapPageClient({ locale }: Props) {
     const map = mapInstanceRef.current;
     if (!mapReady || !map) return;
 
-    const refresh = () => map.invalidateSize();
-    const timer = window.setTimeout(refresh, 120);
-    window.addEventListener("resize", refresh);
-
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("resize", refresh);
-    };
+    return attachMapResizeStabilizer(map);
   }, [mapReady]);
 
   useEffect(() => {
@@ -224,16 +213,28 @@ export default function MapPageClient({ locale }: Props) {
       const { latitude, longitude } = business;
       if (typeof latitude !== "number" || typeof longitude !== "number") continue;
 
-      const marker = L.marker(
-        [latitude, longitude],
-        markerIconRef.current ? { icon: markerIconRef.current } : undefined,
-      ).addTo(map);
+      const markerSrc = (business.media?.logo || "").trim() || "/images/sbc.svg";
+      let markerIcon = markerIconsRef.current.get(markerSrc) ?? null;
+
+      if (!markerIcon) {
+        const safeSrc = escapeHtml(markerSrc).replaceAll('"', "&quot;");
+        markerIcon = L.divIcon({
+          className: "map-business-marker",
+          iconSize: [40, 40],
+          iconAnchor: [20, 40],
+          popupAnchor: [0, -30],
+          html: `<img src="${safeSrc}" alt="marker" style="width:40px;height:40px;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='/images/sbc.svg'" />`,
+        });
+        markerIconsRef.current.set(markerSrc, markerIcon);
+      }
+
+      const marker = L.marker([latitude, longitude], { icon: markerIcon }).addTo(map);
       const name = locale === "ar" ? business.name.ar : business.name.en;
       const href = business.username
         ? `/${locale}/@${business.username}`
         : `/${locale}/businesses/${business.slug}`;
 
-      const logo = business.media?.logo || business.media?.cover || business.media?.banner;
+      const logo = markerSrc;
       const categoryLabel = localizedCategory(business.category, locale);
       const details = [
         business.city ? `${locale === "ar" ? "المدينة" : "City"}: ${business.city}` : null,

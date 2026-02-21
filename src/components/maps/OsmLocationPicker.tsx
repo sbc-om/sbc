@@ -15,6 +15,7 @@ import type { LeafletMouseEvent } from "leaflet";
 import { cn } from "@/lib/cn";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
 
 export type OsmLocationValue = {
   lat: number;
@@ -71,6 +72,14 @@ function FlyTo({ lat, lng }: { lat: number; lng: number }) {
       // Ignore transient invalid-state errors from Leaflet during hydration/theme remounts.
     }
   }, [lat, lng, map]);
+  return null;
+}
+
+function InvalidateSizeOnVisible() {
+  const map = useMap();
+
+  useEffect(() => attachMapResizeStabilizer(map), [map]);
+
   return null;
 }
 
@@ -370,6 +379,7 @@ export function OsmLocationPicker({
             // Force layer remount on theme switch
             key={tiles.url}
           />
+          <InvalidateSizeOnVisible />
           <ClickHandler onPick={pick} />
           <FlyTo lat={center.lat} lng={center.lng} />
 

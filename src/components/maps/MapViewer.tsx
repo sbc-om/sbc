@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type L from "leaflet";
+import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
 
 type MapViewerProps = {
   lat: number;
@@ -33,6 +34,7 @@ export function MapViewer({ lat, lng, label, locale }: MapViewerProps) {
   const router = useRouter();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
   const [showCopied, setShowCopied] = useState(false);
@@ -54,6 +56,8 @@ export function MapViewer({ lat, lng, label, locale }: MapViewerProps) {
 
       // Cleanup existing map
       if (mapInstanceRef.current) {
+        resizeCleanupRef.current?.();
+        resizeCleanupRef.current = null;
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
@@ -93,15 +97,15 @@ export function MapViewer({ lat, lng, label, locale }: MapViewerProps) {
 
       mapInstanceRef.current = map;
       setIsLoading(false);
-
-      // Force resize
-      setTimeout(() => map.invalidateSize(), 100);
+      resizeCleanupRef.current = attachMapResizeStabilizer(map);
     };
 
-    initMap();
+    void initMap();
 
     return () => {
       mounted = false;
+      resizeCleanupRef.current?.();
+      resizeCleanupRef.current = null;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
