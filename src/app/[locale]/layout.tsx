@@ -37,9 +37,37 @@ export async function generateMetadata({
   const { locale } = await params;
   if (!isLocale(locale)) return {};
   const dict = await getDictionary(locale);
+  const ar = locale === "ar";
+  const description = ar
+    ? "منصة أعمال ثنائية اللغة لدليل الأنشطة التجارية، التسويق، وبطاقات الولاء."
+    : "A bilingual business platform for directory discovery, marketing services, and loyalty solutions.";
+  const canonical = `/${locale}`;
 
   return {
     title: dict.appName,
+    description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      type: "website",
+      locale: ar ? "ar_OM" : "en_US",
+      url: canonical,
+      title: dict.appName,
+      description,
+      images: [
+        {
+          url: "/images/sbc.svg",
+          alt: dict.appName,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: dict.appName,
+      description,
+      images: ["/images/sbc.svg"],
+    },
   };
 }
 

@@ -793,7 +793,11 @@ function StepMedia({
         <MediaUploadField
           ar={ar}
           label={ar ? "صورة البانر" : "Banner Image"}
-          hint={ar ? "صورة ترويجية (1200×600)" : "Promotional banner (1200×600)"}
+          hint={
+            ar
+              ? "هذه الصورة تظهر أولاً في رابط المعاينة. المقاس المثالي 1200×630 (نسبة 1.91:1) بصيغة JPG/WEBP واضحة."
+              : "This image appears first in link preview. Best size: 1200×630 (1.91:1) as a clear JPG/WEBP image."
+          }
           previews={bannerPreview}
           setter={setBannerPreview}
           onSelect={handleFileSelect}

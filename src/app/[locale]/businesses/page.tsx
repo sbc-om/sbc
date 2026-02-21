@@ -1,4 +1,5 @@
 import { PublicPage } from "@/components/PublicPage";
+import type { Metadata } from "next";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { notFound, redirect } from "next/navigation";
@@ -7,6 +8,47 @@ import { listCategories } from "@/lib/db/categories";
 import { listBusinessesWithActiveStories } from "@/lib/db/stories";
 import { BusinessesExplorer } from "@/components/BusinessesExplorer";
 import { getCurrentUser } from "@/lib/auth/currentUser";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+
+  const ar = locale === "ar";
+  const title = ar ? "دليل الأنشطة التجارية" : "Business Directory";
+  const description = ar
+    ? "استكشف الأنشطة التجارية الموثوقة مع بحث متقدم وفلاتر ذكية حسب التصنيف والموقع."
+    : "Explore trusted businesses with advanced search and smart filters by category and location.";
+  const canonical = `/${locale}/businesses`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: "website",
+      locale: ar ? "ar_OM" : "en_US",
+      url: canonical,
+      title,
+      description,
+      images: [
+        {
+          url: "/images/sbc.svg",
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/images/sbc.svg"],
+    },
+  };
+}
 
 export default async function BusinessesPage({
   params,

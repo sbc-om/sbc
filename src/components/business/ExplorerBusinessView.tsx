@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FiPhone, FiMail, FiGlobe, FiMapPin, FiTag } from "react-icons/fi";
+import useEmblaCarousel from "embla-carousel-react";
+import { FiPhone, FiMail, FiGlobe, FiMapPin, FiTag, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { buttonVariants } from "@/components/ui/Button";
 import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
 import { BusinessEngagement } from "@/components/business/BusinessEngagement";
@@ -62,7 +63,31 @@ export function ExplorerBusinessView({
   beforeEngagement,
 }: ExplorerBusinessViewProps) {
   const [contentLang, setContentLang] = useState<ContentLanguage>(siteLocale);
-  const heroImage = business.media?.cover || business.media?.banner || business.media?.logo;
+  const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
+  const [isGalleryModalVisible, setIsGalleryModalVisible] = useState(false);
+  const [canScrollGalleryPrev, setCanScrollGalleryPrev] = useState(false);
+  const [canScrollGalleryNext, setCanScrollGalleryNext] = useState(false);
+  const [canScrollModalThumbPrev, setCanScrollModalThumbPrev] = useState(false);
+  const [canScrollModalThumbNext, setCanScrollModalThumbNext] = useState(false);
+  const galleryCloseTimerRef = useRef<number | null>(null);
+  const modalTouchStartXRef = useRef<number | null>(null);
+  const modalTouchStartYRef = useRef<number | null>(null);
+  const modalTouchStartTimeRef = useRef<number | null>(null);
+  const heroImage = business.media?.banner || business.media?.cover || business.media?.logo;
+  const coverImage = business.media?.cover;
+  const galleryImages = business.media?.gallery || [];
+  const [galleryEmblaRef, galleryEmblaApi] = useEmblaCarousel({
+    align: "start",
+    containScroll: "trimSnaps",
+    dragFree: true,
+    direction: locale === "ar" ? "rtl" : "ltr",
+  });
+  const [modalThumbEmblaRef, modalThumbEmblaApi] = useEmblaCarousel({
+    align: "start",
+    containScroll: "trimSnaps",
+    dragFree: true,
+    direction: locale === "ar" ? "rtl" : "ltr",
+  });
   const logo = business.media?.logo;
   const avatarMode = business.avatarMode ?? "icon";
   const showLogo = avatarMode === "logo" && !!logo;
@@ -84,6 +109,113 @@ export function ExplorerBusinessView({
     typeof business.longitude === "number" && Number.isFinite(business.longitude)
       ? business.longitude
       : null;
+
+  const closeGalleryModal = () => {
+    setIsGalleryModalVisible(false);
+    if (galleryCloseTimerRef.current !== null) {
+      window.clearTimeout(galleryCloseTimerRef.current);
+    }
+    galleryCloseTimerRef.current = window.setTimeout(() => {
+      setActiveGalleryIndex(null);
+      galleryCloseTimerRef.current = null;
+    }, 180);
+  };
+
+  const showNextGalleryImage = () => {
+    setActiveGalleryIndex((current) => {
+      if (current === null) return 0;
+      return (current + 1) % galleryImages.length;
+    });
+  };
+
+  const showPrevGalleryImage = () => {
+    setActiveGalleryIndex((current) => {
+      if (current === null) return 0;
+      return (current - 1 + galleryImages.length) % galleryImages.length;
+    });
+  };
+
+  useEffect(() => {
+    return () => {
+      if (galleryCloseTimerRef.current !== null) {
+        window.clearTimeout(galleryCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (activeGalleryIndex === null) return;
+
+    const handleKeydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeGalleryModal();
+        return;
+      }
+      if (galleryImages.length === 0) return;
+      if (event.key === "ArrowRight") {
+        setActiveGalleryIndex((current) => {
+          if (current === null) return 0;
+          return (current + 1) % galleryImages.length;
+        });
+      }
+      if (event.key === "ArrowLeft") {
+        setActiveGalleryIndex((current) => {
+          if (current === null) return 0;
+          return (current - 1 + galleryImages.length) % galleryImages.length;
+        });
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeydown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeydown);
+    };
+  }, [activeGalleryIndex, galleryImages.length]);
+
+  useEffect(() => {
+    if (!galleryEmblaApi) return;
+
+    const syncGalleryNav = () => {
+      setCanScrollGalleryPrev(galleryEmblaApi.canScrollPrev());
+      setCanScrollGalleryNext(galleryEmblaApi.canScrollNext());
+    };
+
+    syncGalleryNav();
+    galleryEmblaApi.on("select", syncGalleryNav);
+    galleryEmblaApi.on("reInit", syncGalleryNav);
+
+    return () => {
+      galleryEmblaApi.off("select", syncGalleryNav);
+      galleryEmblaApi.off("reInit", syncGalleryNav);
+    };
+  }, [galleryEmblaApi]);
+
+  useEffect(() => {
+    if (!modalThumbEmblaApi) return;
+
+    const syncModalThumbNav = () => {
+      setCanScrollModalThumbPrev(modalThumbEmblaApi.canScrollPrev());
+      setCanScrollModalThumbNext(modalThumbEmblaApi.canScrollNext());
+    };
+
+    syncModalThumbNav();
+    modalThumbEmblaApi.on("select", syncModalThumbNav);
+    modalThumbEmblaApi.on("reInit", syncModalThumbNav);
+
+    return () => {
+      modalThumbEmblaApi.off("select", syncModalThumbNav);
+      modalThumbEmblaApi.off("reInit", syncModalThumbNav);
+    };
+  }, [modalThumbEmblaApi]);
+
+  useEffect(() => {
+    if (activeGalleryIndex === null || !isGalleryModalVisible || !modalThumbEmblaApi) return;
+    modalThumbEmblaApi.scrollTo(activeGalleryIndex);
+  }, [activeGalleryIndex, isGalleryModalVisible, modalThumbEmblaApi]);
 
   return (
     <>
@@ -315,6 +447,23 @@ export function ExplorerBusinessView({
 
         {/* Sidebar */}
         <aside className="min-w-0 space-y-6">
+          {coverImage ? (
+            <div className="sbc-card overflow-hidden rounded-2xl p-3">
+              <h3 className="px-1 pb-3 text-sm font-semibold tracking-tight">
+                {locale === "ar" ? "صورة الغلاف" : "Cover"}
+              </h3>
+              <div className="relative h-44 w-full overflow-hidden rounded-xl">
+                <Image
+                  src={coverImage}
+                  alt={locale === "ar" ? "صورة الغلاف" : "Cover image"}
+                  fill
+                  sizes="(min-width: 1024px) 360px, 100vw"
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          ) : null}
+
           <div className="sbc-card rounded-2xl p-4">
             <h3 className="text-sm font-semibold tracking-tight mb-3">
               {locale === "ar" ? "معلومات الاتصال" : "Contact"}
@@ -419,8 +568,212 @@ export function ExplorerBusinessView({
               ) : null}
             </div>
           </div>
+
+          {galleryImages.length > 0 ? (
+            <div className="sbc-card rounded-2xl p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold tracking-tight">
+                  {locale === "ar" ? "المعرض" : "Gallery"}
+                </h3>
+                {galleryImages.length > 1 ? (
+                  <div className="inline-flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => galleryEmblaApi?.scrollPrev()}
+                      disabled={!canScrollGalleryPrev}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-(--surface-border) text-(--muted-foreground) transition hover:bg-accent/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={locale === "ar" ? "السابق" : "Previous"}
+                    >
+                      {locale === "ar" ? "→" : "←"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => galleryEmblaApi?.scrollNext()}
+                      disabled={!canScrollGalleryNext}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-(--surface-border) text-(--muted-foreground) transition hover:bg-accent/5 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label={locale === "ar" ? "التالي" : "Next"}
+                    >
+                      {locale === "ar" ? "←" : "→"}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+              <div className="overflow-hidden" ref={galleryEmblaRef}>
+                <div className="flex gap-2.5 pb-1" dir={locale === "ar" ? "rtl" : "ltr"}>
+                  {galleryImages.map((imageUrl, index) => (
+                    <button
+                      key={`${imageUrl}-${index}`}
+                      type="button"
+                      onClick={() => {
+                        if (galleryCloseTimerRef.current !== null) {
+                          window.clearTimeout(galleryCloseTimerRef.current);
+                          galleryCloseTimerRef.current = null;
+                        }
+                        galleryEmblaApi?.scrollTo(index);
+                        setActiveGalleryIndex(index);
+                        setIsGalleryModalVisible(true);
+                      }}
+                      className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg border border-(--surface-border)"
+                      aria-label={locale === "ar" ? `فتح صورة ${index + 1}` : `Open image ${index + 1}`}
+                    >
+                      <Image
+                        src={imageUrl}
+                        alt={locale === "ar" ? `صورة ${index + 1}` : `Gallery image ${index + 1}`}
+                        fill
+                        sizes="96px"
+                        className="object-cover transition-transform duration-300 hover:scale-105"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
         </aside>
       </div>
+
+      {activeGalleryIndex !== null && galleryImages[activeGalleryIndex] ? (
+        <div
+          className={`fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm transition-opacity duration-200 ${
+            isGalleryModalVisible ? "opacity-100" : "opacity-0"
+          }`}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            className="absolute inset-0"
+            onClick={closeGalleryModal}
+            aria-label={locale === "ar" ? "إغلاق المعرض" : "Close gallery"}
+          />
+
+          <div
+            className={`relative z-10 mx-auto flex h-full w-full max-w-5xl items-center justify-center px-4 py-10 transition-all duration-200 ${
+              isGalleryModalVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={closeGalleryModal}
+              className="absolute top-5 right-5 rounded-full border border-white/30 bg-black/40 px-3 py-1 text-sm text-white"
+            >
+              {locale === "ar" ? "إغلاق" : "Close"}
+            </button>
+
+            <div className="absolute top-5 left-5 rounded-full border border-white/25 bg-black/45 px-3 py-1 text-xs font-medium text-white">
+              {activeGalleryIndex + 1} / {galleryImages.length}
+            </div>
+
+            <div className="flex max-h-[90vh] w-full max-w-[96vw] flex-col items-center gap-3">
+              <div className="flex min-w-0 flex-col items-center gap-3">
+                <div
+                  className="w-fit max-h-[78vh] max-w-[96vw] overflow-hidden rounded-2xl border border-white/20 bg-black/30 shadow-2xl [touch-action:pan-y]"
+              onTouchStart={(event) => {
+                const touch = event.touches[0];
+                modalTouchStartXRef.current = touch.clientX;
+                modalTouchStartYRef.current = touch.clientY;
+                modalTouchStartTimeRef.current = Date.now();
+              }}
+              onTouchEnd={(event) => {
+                if (galleryImages.length <= 1) return;
+                if (
+                  modalTouchStartXRef.current === null ||
+                  modalTouchStartYRef.current === null ||
+                  modalTouchStartTimeRef.current === null
+                ) {
+                  return;
+                }
+
+                const touch = event.changedTouches[0];
+                const deltaX = touch.clientX - modalTouchStartXRef.current;
+                const deltaY = touch.clientY - modalTouchStartYRef.current;
+                const elapsed = Math.max(1, Date.now() - modalTouchStartTimeRef.current);
+                const speed = Math.abs(deltaX) / elapsed;
+                const absX = Math.abs(deltaX);
+                const absY = Math.abs(deltaY);
+                const isHorizontalSwipe = absX > absY && (absX >= 56 || speed >= 0.35);
+
+                modalTouchStartXRef.current = null;
+                modalTouchStartYRef.current = null;
+                modalTouchStartTimeRef.current = null;
+
+                if (!isHorizontalSwipe) return;
+
+                if (deltaX < 0) {
+                  showNextGalleryImage();
+                } else {
+                  showPrevGalleryImage();
+                }
+              }}
+                >
+                  <img
+                    src={galleryImages[activeGalleryIndex]}
+                    alt={locale === "ar" ? `صورة ${activeGalleryIndex + 1}` : `Gallery image ${activeGalleryIndex + 1}`}
+                      className="block max-h-[78vh] w-auto max-w-[96vw] object-contain"
+                    draggable={false}
+                  />
+                </div>
+              </div>
+
+              {galleryImages.length > 1 ? (
+                <div className="flex w-full max-w-[min(96vw,760px)] items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => modalThumbEmblaApi?.scrollPrev()}
+                    disabled={!canScrollModalThumbPrev}
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/30 bg-black/45 text-white transition hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label={locale === "ar" ? "السابق" : "Previous"}
+                  >
+                    <FiChevronLeft className="h-5 w-5" />
+                  </button>
+
+                  <div className="min-w-0 flex-1 overflow-hidden" ref={modalThumbEmblaRef}>
+                    <div className="flex gap-2 py-1" dir={locale === "ar" ? "rtl" : "ltr"}>
+                      {galleryImages.map((imageUrl, index) => {
+                        const isActive = index === activeGalleryIndex;
+                        return (
+                          <button
+                            key={`modal-thumb-${imageUrl}-${index}`}
+                            type="button"
+                            onClick={() => {
+                              setActiveGalleryIndex(index);
+                              modalThumbEmblaApi?.scrollTo(index);
+                            }}
+                            className={`relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border transition ${
+                              isActive
+                                ? "border-white ring-2 ring-white/60"
+                                : "border-white/30 opacity-80 hover:opacity-100"
+                            }`}
+                            aria-label={locale === "ar" ? `الانتقال إلى صورة ${index + 1}` : `Go to image ${index + 1}`}
+                          >
+                            <Image
+                              src={imageUrl}
+                              alt={locale === "ar" ? `صورة مصغرة ${index + 1}` : `Thumbnail ${index + 1}`}
+                              fill
+                              sizes="56px"
+                              className="object-cover"
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => modalThumbEmblaApi?.scrollNext()}
+                    disabled={!canScrollModalThumbNext}
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/30 bg-black/45 text-white transition hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label={locale === "ar" ? "التالي" : "Next"}
+                  >
+                    <FiChevronRight className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

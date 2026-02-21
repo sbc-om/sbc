@@ -808,7 +808,11 @@ export function NewBusinessWizard({
               <MediaUploadField
                 ar={ar}
                 label={ar ? "صورة البانر" : "Banner Image"}
-                hint={ar ? "صورة ترويجية (1200×600)" : "Promotional banner (1200×600)"}
+                hint={
+                  ar
+                    ? "تظهر أولاً في رابط المعاينة. المقاس المثالي 1200×630 (نسبة 1.91:1) بصيغة JPG/WEBP واضحة."
+                    : "Shown first in link preview. Best size: 1200×630 (1.91:1), clear JPG/WEBP."
+                }
                 previews={bannerPreview}
                 setter={setBannerPreview}
                 fileRef={bannerFileRef}

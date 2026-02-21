@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
+import type { Metadata } from "next";
 
 import { PublicPage } from "@/components/PublicPage";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -15,6 +16,84 @@ import { DeferredAIRecommendations } from "@/components/business/DeferredAIRecom
 import { listBusinessNews, listBusinessProducts } from "@/lib/db/businessContent";
 import { getInstagramPostsPreview } from "@/lib/social/instagram";
 import { getActiveStoriesByBusiness, getStoriesByBusinessForOwner } from "@/lib/db/stories";
+
+function getAbsoluteUrl(pathOrUrl: string | undefined) {
+  if (!pathOrUrl) return undefined;
+  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) return pathOrUrl;
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  return `${base}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; slug: string }>;
+}): Promise<Metadata> {
+  const { locale, slug } = await params;
+  if (!isLocale(locale)) return {};
+
+  const business = slug.startsWith("@")
+    ? await getBusinessByUsername(slug)
+    : await getBusinessBySlug(slug);
+
+  if (!business) {
+    const fallbackTitle = locale === "ar" ? "الأنشطة التجارية" : "Business Profile";
+    const fallbackDescription = locale === "ar"
+      ? "اكتشف الأنشطة التجارية والخدمات المتاحة."
+      : "Discover business profiles and available services.";
+    return {
+      title: fallbackTitle,
+      description: fallbackDescription,
+    };
+  }
+
+  const ar = locale === "ar";
+  const businessName = ar ? business.name.ar : business.name.en;
+  const category = business.category ? `${ar ? " • " : " • "}${business.category}` : "";
+  const city = business.city ? `${ar ? " • " : " • "}${business.city}` : "";
+  const title = `${businessName}${category}${city}`;
+  const description = (ar ? business.description?.ar : business.description?.en)?.trim()
+    || (ar
+      ? `تعرف على ${businessName} وتفاصيل الخدمات وطرق التواصل.`
+      : `Explore ${businessName}, its services, and contact details.`);
+
+  const previewImage =
+    getAbsoluteUrl(business.media?.banner)
+    ?? getAbsoluteUrl(business.media?.cover)
+    ?? getAbsoluteUrl(business.media?.logo)
+    ?? getAbsoluteUrl("/images/sbc.svg");
+
+  const canonical = `/${locale}/businesses/${slug}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      locale: ar ? "ar_OM" : "en_US",
+      url: canonical,
+      title,
+      description,
+      images: previewImage
+        ? [
+            {
+              url: previewImage,
+              alt: businessName,
+              width: 1200,
+              height: 630,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: previewImage ? [previewImage] : undefined,
+    },
+  };
+}
 
 export default async function BusinessDetailPage({
   params,

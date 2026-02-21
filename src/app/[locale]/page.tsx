@@ -8,8 +8,50 @@ import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { listBusinesses } from "@/lib/db/businesses";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getProgramSubscriptionByUser, isProgramSubscriptionActive } from "@/lib/db/subscriptions";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { redirect } from "next/navigation";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+
+  const ar = locale === "ar";
+  const title = ar ? "مركز الأعمال الذكية" : "Smart Business Center";
+  const description = ar
+    ? "منصة أعمال ثنائية اللغة لاكتشاف الأنشطة التجارية، التسويق، وبطاقات الولاء."
+    : "A bilingual business platform to discover businesses, marketing services, and loyalty solutions.";
+  const canonical = `/${locale}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: "website",
+      locale: ar ? "ar_OM" : "en_US",
+      url: canonical,
+      title,
+      description,
+      images: [
+        {
+          url: "/images/sbc.svg",
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/images/sbc.svg"],
+    },
+  };
+}
 
 export default async function LocaleHome({
   params,

@@ -1022,6 +1022,16 @@ export function EditBusinessForm({
           <p className="text-sm text-(--muted-foreground) mb-6">
             {ar ? "ارفع صور نشاطك التجاري لجعله أكثر جاذبية" : "Upload images to make your business more appealing"}
           </p>
+          <div className="mb-6 rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4 text-sm">
+            <p className="font-semibold text-foreground">
+              {ar ? "تنبيه مهم لرابط المعاينة" : "Important for link preview"}
+            </p>
+            <p className="mt-1 text-(--muted-foreground)">
+              {ar
+                ? "صورة البانر هي الصورة الأولى في معاينة الرابط. استخدم مقاس 1200×630 بنسبة 1.91:1 وبجودة واضحة لتظهر بشكل احترافي في واتساب وتلغرام."
+                : "Banner image is shown first in link preview. Use 1200×630 with 1.91:1 ratio and clear quality for a professional WhatsApp/Telegram preview."}
+            </p>
+          </div>
 
           <div className="mb-6 rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4">
             <div className="text-sm font-semibold text-foreground">
@@ -1102,7 +1112,7 @@ export function EditBusinessForm({
 
               <MediaUploadBox
                 label={ar ? "البنر" : "Banner"}
-                description={ar ? "صورة البنر العريضة" : "Wide banner image"}
+                description={ar ? "صورة المعاينة الأساسية (1200×630 بنسبة 1.91:1)" : "Primary preview image (1200×630 at 1.91:1 ratio)"}
                 accept="image/*"
                 onChange={(files) => handleFileSelect(files, setBannerPreview, bannerFileRef, false)}
                 previewUrls={bannerPreview}
