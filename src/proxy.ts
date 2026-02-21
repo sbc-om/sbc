@@ -175,7 +175,7 @@ export async function proxy(req: NextRequest) {
 
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-locale", preferred);
-    requestHeaders.set("x-pathname", pathname);
+    requestHeaders.set("x-pathname", url.pathname);
     requestHeaders.set("x-subdomain", subdomain);
 
     const res = NextResponse.rewrite(url, {

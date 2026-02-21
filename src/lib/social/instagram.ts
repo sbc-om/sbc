@@ -7,6 +7,36 @@ export type InstagramPostPreview = {
   takenAt?: string;
 };
 
+function pickBestInstagramImageUrl(node: any): string | undefined {
+  const candidates: Array<{ url?: string; width?: number; height?: number }> = [];
+
+  if (Array.isArray(node?.display_resources)) {
+    candidates.push(...node.display_resources);
+  }
+
+  if (Array.isArray(node?.thumbnail_resources)) {
+    candidates.push(...node.thumbnail_resources);
+  }
+
+  if (Array.isArray(node?.image_versions2?.candidates)) {
+    candidates.push(...node.image_versions2.candidates);
+  }
+
+  const best = candidates
+    .filter((entry) => typeof entry?.url === "string" && entry.url.trim().length > 0)
+    .sort((left, right) => {
+      const leftScore = Number(left?.width || 0) * Number(left?.height || 0);
+      const rightScore = Number(right?.width || 0) * Number(right?.height || 0);
+      return rightScore - leftScore;
+    })[0];
+
+  return (
+    best?.url?.trim() ||
+    (typeof node?.display_url === "string" ? node.display_url : undefined) ||
+    (typeof node?.thumbnail_src === "string" ? node.thumbnail_src : undefined)
+  );
+}
+
 function normalizeInstagramUsername(input: string): string {
   return input.trim().replace(/^@/, "").toLowerCase();
 }
@@ -25,7 +55,7 @@ function mapEdgesToPosts(edges: Array<any>, limit: number): InstagramPostPreview
         id: String(node.id || shortcode),
         shortcode,
         permalink: `https://www.instagram.com/p/${shortcode}/`,
-        thumbnailUrl: node.display_url || node.thumbnail_src || undefined,
+        thumbnailUrl: pickBestInstagramImageUrl(node),
         caption: typeof captionEdge === "string" ? captionEdge : undefined,
         takenAt: node.taken_at_timestamp
           ? new Date(Number(node.taken_at_timestamp) * 1000).toISOString()
@@ -97,7 +127,7 @@ function mapGraphqlMediaToPosts(graphqlMedia: Array<any>, limit: number): Instag
         id: String(node.id || shortcode),
         shortcode,
         permalink: `https://www.instagram.com/p/${shortcode}/`,
-        thumbnailUrl: node.display_url || node.thumbnail_src || undefined,
+        thumbnailUrl: pickBestInstagramImageUrl(node),
         caption: typeof captionEdge === "string" ? captionEdge : undefined,
         takenAt: node.taken_at_timestamp
           ? new Date(Number(node.taken_at_timestamp) * 1000).toISOString()

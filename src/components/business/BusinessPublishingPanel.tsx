@@ -1149,7 +1149,7 @@ export function BusinessPublishingPanel({
                     href={post.permalink}
                     target="_blank"
                     rel="noreferrer"
-                    className="group block min-w-0 shrink-0 basis-[72%] sm:basis-[46%] lg:basis-[calc((100%-2.25rem)/4)]"
+                    className="group block min-w-0 shrink-0 basis-[42%] sm:basis-[28%] lg:basis-[18%]"
                   >
                     <div className="rounded-2xl bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 p-[2.5px]">
                       <div className="rounded-[14px] bg-background p-[2px]">
@@ -1160,7 +1160,8 @@ export function BusinessPublishingPanel({
                               alt={post.caption || "Instagram post"}
                               fill
                               unoptimized
-                              className="object-cover transition-transform duration-300 group-hover:scale-105"
+                              className="object-cover"
+                              sizes="(max-width: 640px) 72vw, (max-width: 1024px) 46vw, 25vw"
                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-xs text-(--muted-foreground)">
