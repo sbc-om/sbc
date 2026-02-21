@@ -171,6 +171,9 @@ export default function MapPageClient({ locale }: Props) {
 
     init();
 
+    const markers = markersRef.current;
+    const markerIcons = markerIconsRef.current;
+
     return () => {
       mounted = false;
       setMapReady(false);
@@ -178,9 +181,9 @@ export default function MapPageClient({ locale }: Props) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
-      markersRef.current.clear();
+      markers.clear();
       sharedLocationMarkerRef.current = null;
-      markerIconsRef.current.clear();
+      markerIcons.clear();
     };
   }, []);
 

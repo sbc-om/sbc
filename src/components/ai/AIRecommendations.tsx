@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAISearch } from "@/lib/ai/AISearchProvider";
 import { AIBusinessCard } from "./AIBusinessCard";
 import type { Business } from "@/lib/db/types";
@@ -15,6 +15,7 @@ export function AIRecommendations({ currentBusiness, allBusinesses, locale }: AI
   const { isReady, getRecommendations } = useAISearch();
   const [recommendations, setRecommendations] = useState<Business[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const topRecommendations = useMemo(() => recommendations.slice(0, 3), [recommendations]);
 
   // Respect business owner's choice to hide similar recommendations
   const showSimilar = currentBusiness.showSimilarBusinesses !== false;
@@ -72,7 +73,7 @@ export function AIRecommendations({ currentBusiness, allBusinesses, locale }: AI
     );
   }
 
-  if (recommendations.length === 0) {
+  if (topRecommendations.length === 0) {
     return null;
   }
 
@@ -93,7 +94,7 @@ export function AIRecommendations({ currentBusiness, allBusinesses, locale }: AI
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {recommendations.map((business) => (
+        {topRecommendations.map((business) => (
           <AIBusinessCard key={business.id} business={business} locale={locale} />
         ))}
       </div>

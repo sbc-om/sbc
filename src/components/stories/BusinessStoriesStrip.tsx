@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
@@ -43,6 +43,18 @@ export function BusinessStoriesStrip({
     direction: ar ? "rtl" : "ltr",
   });
 
+  useEffect(() => {
+    if (viewerOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [viewerOpen]);
+
   if (stories.length === 0) {
     return null;
   }
@@ -59,12 +71,10 @@ export function BusinessStoriesStrip({
   const openViewer = (storyIndex: number) => {
     setInitialStoryIndex(storyIndex);
     setViewerOpen(true);
-    document.body.style.overflow = "hidden";
   };
 
   const closeViewer = () => {
     setViewerOpen(false);
-    document.body.style.overflow = "";
   };
 
   return (

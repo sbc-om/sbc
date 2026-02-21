@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { Business } from "@/lib/db/types";
 import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
+import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 
 type Props = {
   isOpen: boolean;
@@ -16,8 +17,8 @@ const DEFAULT_ZOOM = 12;
 
 export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
+  const markersRef = useRef<LeafletMarker[]>([]);
   const resizeCleanupRef = useRef<(() => void) | null>(null);
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [loading, setLoading] = useState(false);

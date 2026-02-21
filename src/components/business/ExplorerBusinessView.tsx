@@ -244,7 +244,7 @@ export function ExplorerBusinessView({
       />
 
       {/* Body */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
+      <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]">
         {/* Main */}
         <div className="min-w-0">
           {description ? (
@@ -306,7 +306,7 @@ export function ExplorerBusinessView({
         </div>
 
         {/* Sidebar */}
-        <aside className="space-y-6">
+        <aside className="min-w-0 space-y-6">
           <div className="sbc-card rounded-2xl p-4">
             <h3 className="text-sm font-semibold tracking-tight mb-3">
               {locale === "ar" ? "معلومات الاتصال" : "Contact"}
