@@ -291,6 +291,36 @@ html[dir="rtl"] h6 {
   display: none !important;
 }
 
+.map-shared-location-marker {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.map-shared-location-marker__inner {
+  width: 48px;
+  height: 48px;
+  transform-origin: center bottom;
+  animation: sbcMapMarkerBounce 1s ease-in-out infinite;
+  will-change: transform;
+}
+
+.map-shared-location-marker__inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+@keyframes sbcMapMarkerBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
 /* Custom animations for scroll effects */
 @keyframes animate-in {
   from {

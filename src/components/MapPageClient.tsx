@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Business } from "@/lib/db/types";
 import type { Icon as LeafletIcon, Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
@@ -54,11 +55,13 @@ function localizedCategory(category: string | undefined, locale: Locale) {
 }
 
 export default function MapPageClient({ locale }: Props) {
+  const searchParams = useSearchParams();
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<LeafletMap | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const markerIconsRef = useRef<Map<string, LeafletIcon>>(new Map());
   const markersRef = useRef<Map<string, LeafletMarker>>(new Map());
+  const sharedLocationMarkerRef = useRef<LeafletMarker | null>(null);
   const listItemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const lastActiveIdRef = useRef<string | null>(null);
   const pendingTransitionRef = useRef<number | null>(null);
@@ -69,6 +72,19 @@ export default function MapPageClient({ locale }: Props) {
   const [mapReady, setMapReady] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const sharedLocation = useMemo(() => {
+    const latRaw = searchParams.get("lat");
+    const lngRaw = searchParams.get("lng");
+    if (!latRaw || !lngRaw) return null;
+
+    const lat = Number(latRaw);
+    const lng = Number(lngRaw);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+
+    return { lat, lng };
+  }, [searchParams]);
 
   const mappableBusinesses = useMemo(
     () =>
@@ -133,6 +149,7 @@ export default function MapPageClient({ locale }: Props) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         markersRef.current.clear();
+        sharedLocationMarkerRef.current = null;
         markerIconsRef.current.clear();
       }
 
@@ -162,6 +179,7 @@ export default function MapPageClient({ locale }: Props) {
         mapInstanceRef.current = null;
       }
       markersRef.current.clear();
+      sharedLocationMarkerRef.current = null;
       markerIconsRef.current.clear();
     };
   }, []);
@@ -261,11 +279,46 @@ export default function MapPageClient({ locale }: Props) {
       points.push([latitude, longitude]);
     }
 
-    if (points.length > 0) {
+    if (sharedLocation) {
+      map.setView([sharedLocation.lat, sharedLocation.lng], 17);
+    } else if (points.length > 0) {
       const bounds = L.latLngBounds(points.map((p) => L.latLng(p[0], p[1])));
       map.fitBounds(bounds.pad(0.15));
     }
-  }, [mappableBusinesses, locale, mapReady]);
+  }, [mappableBusinesses, locale, mapReady, sharedLocation]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const leaflet = leafletRef.current;
+    if (!map || !leaflet) return;
+
+    if (sharedLocationMarkerRef.current) {
+      sharedLocationMarkerRef.current.remove();
+      sharedLocationMarkerRef.current = null;
+    }
+
+    if (!sharedLocation) return;
+
+    const L = leaflet;
+    const markerIcon = L.divIcon({
+      className: "map-shared-location-marker",
+      iconSize: [48, 48],
+      iconAnchor: [24, 48],
+      popupAnchor: [0, -34],
+      html: '<div class="map-shared-location-marker__inner"><img src="/images/sbc.svg" alt="SBC marker" /></div>',
+    });
+
+    const marker = L.marker([sharedLocation.lat, sharedLocation.lng], { icon: markerIcon }).addTo(map);
+    marker.bindPopup(locale === "ar" ? "الموقع المُشارك" : "Shared location");
+    marker.openPopup();
+    sharedLocationMarkerRef.current = marker;
+
+    map.flyTo([sharedLocation.lat, sharedLocation.lng], 17, {
+      animate: true,
+      duration: 1,
+      easeLinearity: 0.25,
+    });
+  }, [mapReady, sharedLocation, locale, mappableBusinesses.length]);
 
   // focus on active business when selected from list
   useEffect(() => {
