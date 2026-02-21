@@ -136,6 +136,7 @@ export default async function BusinessDetailPage({
   const isMainHost = hostname === "sbc.om" || hostname === "www.sbc.om" || hostname === "localhost" || hostname === "127.0.0.1";
   const isDevTunnel = hostname.endsWith(".ngrok-free.app") || hostname.endsWith(".ngrok.io");
   const standaloneBusinessView = isSubdomainHost || (!isMainHost && !isDevTunnel && !!hostname);
+  const shareHandlePath = isSubdomainHost ? "/" : handlePath;
 
   const publicCards = await listPublicBusinessCardsByBusiness(business.id);
   const canShowInstagramPosts = !!business.instagramUsername && (isOwner || business.instagramModerationStatus === "approved");
@@ -176,12 +177,13 @@ export default async function BusinessDetailPage({
         siteLocale={locale as Locale}
         category={category}
         categoryIconId={category?.iconId}
-        handlePath={handlePath}
+        handlePath={shareHandlePath}
         mapsHref={mapsHref}
         stories={stories}
         currentUserId={user?.id}
         isOwner={!!isOwner}
         isAdmin={isAdmin}
+        isSubdomainHost={isSubdomainHost}
       />
 
       <BusinessPublishingPanel

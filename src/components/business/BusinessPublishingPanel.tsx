@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
 
@@ -64,14 +64,14 @@ export function BusinessPublishingPanel({
     align: "start",
     containScroll: "trimSnaps",
     dragFree: false,
-    loop: true,
+    loop: false,
     direction: ar ? "rtl" : "ltr",
   });
   const [productsEmblaRef, productsEmblaApi] = useEmblaCarousel({
     align: "start",
     containScroll: "trimSnaps",
     dragFree: false,
-    loop: true,
+    loop: false,
     direction: ar ? "rtl" : "ltr",
   });
   const [instagramEmblaRef] = useEmblaCarousel({
@@ -96,6 +96,10 @@ export function BusinessPublishingPanel({
   );
   const [instagramPosts, setInstagramPosts] = useState<InstagramPostPreview[]>(initialInstagramPosts);
   const [instagramLoading, setInstagramLoading] = useState(false);
+  const newsDirectionRef = useRef<1 | -1>(1);
+  const productsDirectionRef = useRef<1 | -1>(1);
+  const newsPauseUntilRef = useRef(0);
+  const productsPauseUntilRef = useRef(0);
 
   const [newsTitleEn, setNewsTitleEn] = useState("");
   const [newsTitleAr, setNewsTitleAr] = useState("");
@@ -200,21 +204,81 @@ export function BusinessPublishingPanel({
   useEffect(() => {
     if (!showContentSections || newsItems.length <= 1 || !newsEmblaApi) return;
 
-    const timer = window.setInterval(() => {
-      newsEmblaApi.scrollNext();
-    }, 3800);
+    const pauseAutoPlay = () => {
+      newsPauseUntilRef.current = Date.now() + 2600;
+    };
 
-    return () => window.clearInterval(timer);
+    newsEmblaApi.on("pointerDown", pauseAutoPlay);
+    newsEmblaApi.on("pointerUp", pauseAutoPlay);
+    newsEmblaApi.on("select", pauseAutoPlay);
+
+    const timer = window.setInterval(() => {
+      if (Date.now() < newsPauseUntilRef.current) {
+        return;
+      }
+
+      if (newsDirectionRef.current === 1) {
+        if (newsEmblaApi.canScrollNext()) {
+          newsEmblaApi.scrollNext();
+          return;
+        }
+        newsDirectionRef.current = -1;
+      }
+
+      if (newsEmblaApi.canScrollPrev()) {
+        newsEmblaApi.scrollPrev();
+        return;
+      }
+
+      newsDirectionRef.current = 1;
+    }, 5200);
+
+    return () => {
+      window.clearInterval(timer);
+      newsEmblaApi.off("pointerDown", pauseAutoPlay);
+      newsEmblaApi.off("pointerUp", pauseAutoPlay);
+      newsEmblaApi.off("select", pauseAutoPlay);
+    };
   }, [showContentSections, newsItems.length, newsEmblaApi]);
 
   useEffect(() => {
     if (!showContentSections || productItems.length <= 1 || !productsEmblaApi) return;
 
-    const timer = window.setInterval(() => {
-      productsEmblaApi.scrollNext();
-    }, 4200);
+    const pauseAutoPlay = () => {
+      productsPauseUntilRef.current = Date.now() + 2600;
+    };
 
-    return () => window.clearInterval(timer);
+    productsEmblaApi.on("pointerDown", pauseAutoPlay);
+    productsEmblaApi.on("pointerUp", pauseAutoPlay);
+    productsEmblaApi.on("select", pauseAutoPlay);
+
+    const timer = window.setInterval(() => {
+      if (Date.now() < productsPauseUntilRef.current) {
+        return;
+      }
+
+      if (productsDirectionRef.current === 1) {
+        if (productsEmblaApi.canScrollNext()) {
+          productsEmblaApi.scrollNext();
+          return;
+        }
+        productsDirectionRef.current = -1;
+      }
+
+      if (productsEmblaApi.canScrollPrev()) {
+        productsEmblaApi.scrollPrev();
+        return;
+      }
+
+      productsDirectionRef.current = 1;
+    }, 5200);
+
+    return () => {
+      window.clearInterval(timer);
+      productsEmblaApi.off("pointerDown", pauseAutoPlay);
+      productsEmblaApi.off("pointerUp", pauseAutoPlay);
+      productsEmblaApi.off("select", pauseAutoPlay);
+    };
   }, [showContentSections, productItems.length, productsEmblaApi]);
 
   async function saveInstagramProfile(e: React.FormEvent) {
@@ -770,14 +834,29 @@ export function BusinessPublishingPanel({
 
       {showContentSections && (hasNews || !hideEmptySections) ? (
       <section className="sbc-card rounded-2xl p-4 sm:p-6">
+        <div className="mb-5 flex items-start justify-between gap-3 border-b border-(--surface-border) pb-5">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
+              {ar ? "أخبار النشاط" : "Business News"}
+            </h2>
+            <p className="mt-1 max-w-[44ch] text-sm leading-6 text-(--muted-foreground)">
+              {ar ? "آخر التحديثات والإعلانات الخاصة بالنشاط." : "Latest updates and announcements from this business."}
+            </p>
+          </div>
+          <span className="rounded-xl border border-(--surface-border) bg-(--background) px-3 py-1.5 text-[11px] font-semibold text-(--muted-foreground) sm:text-xs">
+            {newsItems.length}
+          </span>
+        </div>
 
         {!hasNews ? (
-          <p className="mt-3 text-sm text-(--muted-foreground)">
-            {ar ? "لا توجد أخبار منشورة حالياً." : "No news published yet."}
-          </p>
+          <div className="mt-2 rounded-2xl border border-dashed border-(--surface-border) bg-(--chip-bg) px-4 py-6 text-center">
+            <p className="text-sm text-(--muted-foreground)">
+              {ar ? "لا توجد أخبار منشورة حالياً." : "No news published yet."}
+            </p>
+          </div>
         ) : (
           <div className="overflow-hidden" ref={newsEmblaRef}>
-            <div className="flex touch-pan-y gap-4 sm:gap-5" dir={ar ? "rtl" : "ltr"}>
+            <div className="flex touch-pan-y gap-4 py-2 sm:gap-5 sm:py-3" dir={ar ? "rtl" : "ltr"}>
             {newsItems.map((item) => {
               const title = ar ? item.title.ar : item.title.en;
               const content = ar ? item.content.ar : item.content.en;
@@ -786,7 +865,7 @@ export function BusinessPublishingPanel({
               return (
                 <article
                   key={item.id}
-                  className="group min-w-0 shrink-0 basis-[96%] overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) shadow-sm transition-all duration-300 hover:shadow-xl sm:basis-[76%] lg:basis-[56%]"
+                  className="group min-w-0 shrink-0 basis-[76%] overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) sm:basis-[52%] lg:basis-[34%]"
                 >
                   {item.imageUrl ? (
                     <div className="relative h-40 w-full overflow-hidden border-b border-(--surface-border) sm:h-44">
@@ -827,9 +906,11 @@ export function BusinessPublishingPanel({
                       <p className="mt-1 text-xs text-(--muted-foreground)">{formatDate(item.createdAt, locale)}</p>
                     ) : null}
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded-full border border-(--surface-border) bg-(--background) px-2.5 py-1 text-(--muted-foreground)">
-                        {moderationLabel(item.moderationStatus, ar)}
-                      </span>
+                      {item.moderationStatus !== "approved" ? (
+                        <span className="rounded-full border border-(--surface-border) bg-(--background) px-2.5 py-1 text-(--muted-foreground)">
+                          {moderationLabel(item.moderationStatus, ar)}
+                        </span>
+                      ) : null}
                       {!item.isPublished ? (
                         <span className="rounded-full border border-(--surface-border) bg-(--background) px-2.5 py-1 text-amber-600">
                           {ar ? "مخفي حالياً" : "Currently hidden"}
@@ -942,14 +1023,29 @@ export function BusinessPublishingPanel({
 
       {showContentSections && (hasProducts || !hideEmptySections) ? (
       <section className="sbc-card rounded-2xl p-4 sm:p-6">
+        <div className="mb-5 flex items-start justify-between gap-3 border-b border-(--surface-border) pb-5">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
+              {ar ? "المنتجات" : "Products"}
+            </h2>
+            <p className="mt-1 max-w-[44ch] text-sm leading-6 text-(--muted-foreground)">
+              {ar ? "منتجات النشاط المتاحة حالياً." : "Available products from this business."}
+            </p>
+          </div>
+          <span className="rounded-xl border border-(--surface-border) bg-(--background) px-3 py-1.5 text-[11px] font-semibold text-(--muted-foreground) sm:text-xs">
+            {productItems.length}
+          </span>
+        </div>
 
         {!hasProducts ? (
-          <p className="mt-3 text-sm text-(--muted-foreground)">
-            {ar ? "لا توجد منتجات منشورة حالياً." : "No products published yet."}
-          </p>
+          <div className="mt-2 rounded-2xl border border-dashed border-(--surface-border) bg-(--chip-bg) px-4 py-6 text-center">
+            <p className="text-sm text-(--muted-foreground)">
+              {ar ? "لا توجد منتجات منشورة حالياً." : "No products published yet."}
+            </p>
+          </div>
         ) : (
           <div className="overflow-hidden" ref={productsEmblaRef}>
-            <div className="flex touch-pan-y gap-4 sm:gap-5" dir={ar ? "rtl" : "ltr"}>
+            <div className="flex touch-pan-y gap-4 py-2 sm:gap-5 sm:py-3" dir={ar ? "rtl" : "ltr"}>
             {productItems.map((item) => {
               const name = ar ? item.name.ar : item.name.en;
               const description = item.description ? (ar ? item.description.ar : item.description.en) : "";
@@ -958,7 +1054,7 @@ export function BusinessPublishingPanel({
               return (
                 <article
                   key={item.id}
-                  className="group min-w-0 shrink-0 basis-[92%] overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) shadow-sm transition-all duration-300 hover:shadow-xl sm:basis-[68%] lg:basis-[44%]"
+                  className="group min-w-0 shrink-0 basis-[72%] overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) sm:basis-[48%] lg:basis-[30%]"
                 >
                   {item.imageUrl ? (
                     <div className="relative h-40 w-full overflow-hidden border-b border-(--surface-border) sm:h-44">
@@ -993,9 +1089,11 @@ export function BusinessPublishingPanel({
                       ) : null}
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                      <span className="rounded-full border border-(--surface-border) bg-(--background) px-2.5 py-1 text-(--muted-foreground)">
-                        {moderationLabel(item.moderationStatus, ar)}
-                      </span>
+                      {item.moderationStatus !== "approved" ? (
+                        <span className="rounded-full border border-(--surface-border) bg-(--background) px-2.5 py-1 text-(--muted-foreground)">
+                          {moderationLabel(item.moderationStatus, ar)}
+                        </span>
+                      ) : null}
                       {!item.isAvailable ? (
                         <span className="rounded-full border border-(--surface-border) bg-(--background) px-2.5 py-1 text-amber-600">
                           {ar ? "غير متاح حالياً" : "Currently unavailable"}

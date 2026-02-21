@@ -30,6 +30,7 @@ interface PublicBusinessViewProps {
   currentUserId?: string;
   isOwner?: boolean;
   isAdmin?: boolean;
+  isSubdomainHost?: boolean;
 }
 
 function isSafeImageSource(source: string): boolean {
@@ -48,6 +49,7 @@ export function PublicBusinessView({
   currentUserId,
   isOwner = false,
   isAdmin = false,
+  isSubdomainHost = false,
 }: PublicBusinessViewProps) {
   const [contentLang, setContentLang] = useState<ContentLanguage>(siteLocale);
   const [activeGalleryIndex, setActiveGalleryIndex] = useState<number | null>(null);
@@ -265,25 +267,29 @@ export function PublicBusinessView({
                 locale === "ar" ? "left-4" : "right-4"
               } flex items-center gap-2`}
             >
-              <FollowBusinessButton
-                businessId={business.id}
-                locale={locale}
-                compact
-              />
-              <Link
-                href={`/${locale}/login?redirect=${encodeURIComponent(business.username ? `/${locale}/chat/@${business.username}` : `/${locale}/chat/${business.slug}`)}`}
-                aria-label={locale === "ar" ? "دردشة" : "Chat"}
-                title={locale === "ar" ? "دردشة" : "Chat"}
-                className={buttonVariants({
-                  variant: "secondary",
-                  size: "sm",
-                  className: "h-10 w-10 p-0 rounded-full bg-black/40 text-white hover:bg-black/55 border border-white/20 backdrop-blur",
-                })}
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </Link>
+              {!isSubdomainHost ? (
+                <>
+                  <FollowBusinessButton
+                    businessId={business.id}
+                    locale={locale}
+                    compact
+                  />
+                  <Link
+                    href={`/${locale}/login?redirect=${encodeURIComponent(business.username ? `/${locale}/chat/@${business.username}` : `/${locale}/chat/${business.slug}`)}`}
+                    aria-label={locale === "ar" ? "دردشة" : "Chat"}
+                    title={locale === "ar" ? "دردشة" : "Chat"}
+                    className={buttonVariants({
+                      variant: "secondary",
+                      size: "sm",
+                      className: "h-10 w-10 p-0 rounded-full bg-black/40 text-white hover:bg-black/55 border border-white/20 backdrop-blur",
+                    })}
+                  >
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </Link>
+                </>
+              ) : null}
               <ShareActionButton
                 locale={locale}
                 path={handlePath}
