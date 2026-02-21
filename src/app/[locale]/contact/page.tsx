@@ -271,7 +271,7 @@ export default async function ContactPage({
               </h3>
               <div className="flex flex-wrap gap-3">
                 <a
-                  href={process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM || "#"}
+                  href="https://www.instagram.com/sbc._.om"
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) text-(--muted-foreground) shadow-(--shadow) hover:text-foreground hover:scale-110 transition-all"
@@ -298,29 +298,6 @@ export default async function ContactPage({
                       stroke="currentColor"
                       strokeWidth="3"
                       strokeLinecap="round"
-                    />
-                  </svg>
-                </a>
-
-                <a
-                  href={process.env.NEXT_PUBLIC_SOCIAL_GITHUB || "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) text-(--muted-foreground) shadow-(--shadow) hover:text-foreground hover:scale-110 transition-all"
-                  aria-label="GitHub"
-                >
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className="h-5 w-5"
-                  >
-                    <path
-                      d="M9 19c-4 1.5-4-2-5-2m10 4v-3.5c0-1 .1-1.5-.5-2 2-.2 4-.8 4-4.5 0-1-.3-2-1-2.8.1-.3.4-1.3-.1-2.7 0 0-.8-.2-2.8 1a9.6 9.6 0 0 0-5 0c-2-1.2-2.8-1-2.8-1-.5 1.4-.2 2.4-.1 2.7-.7.8-1 1.8-1 2.8 0 3.7 2 4.3 4 4.5-.4.3-.5.8-.5 1.5V21"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
                     />
                   </svg>
                 </a>

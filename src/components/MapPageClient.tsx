@@ -4,7 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Business } from "@/lib/db/types";
-import type { Icon as LeafletIcon, Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
+import type {
+  DivIcon as LeafletDivIcon,
+  Icon as LeafletIcon,
+  Map as LeafletMap,
+  Marker as LeafletMarker,
+} from "leaflet";
 import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
 
 type Props = { locale: Locale };
@@ -59,7 +64,7 @@ export default function MapPageClient({ locale }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<LeafletMap | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
-  const markerIconsRef = useRef<Map<string, LeafletIcon>>(new Map());
+  const markerIconsRef = useRef<Map<string, LeafletIcon | LeafletDivIcon>>(new Map());
   const markersRef = useRef<Map<string, LeafletMarker>>(new Map());
   const sharedLocationMarkerRef = useRef<LeafletMarker | null>(null);
   const listItemRefs = useRef<Map<string, HTMLLIElement>>(new Map());

@@ -59,6 +59,14 @@ export function PublicBusinessView({
     : "";
   const isVerified = business.isVerified ?? false;
   const isSpecial = business.isSpecial ?? false;
+  const latitude =
+    typeof business.latitude === "number" && Number.isFinite(business.latitude)
+      ? business.latitude
+      : null;
+  const longitude =
+    typeof business.longitude === "number" && Number.isFinite(business.longitude)
+      ? business.longitude
+      : null;
 
   return (
     <>
@@ -246,15 +254,15 @@ export function PublicBusinessView({
             </section>
           ) : null}
 
-          {Number.isFinite(business.latitude) && Number.isFinite(business.longitude) ? (
+          {latitude !== null && longitude !== null ? (
             <section className="sbc-card mt-6 rounded-2xl p-6 overflow-hidden">
               <h2 className="text-lg font-semibold tracking-tight">
                 {locale === "ar" ? "الموقع" : "Location"}
               </h2>
               <div className="mt-4 overflow-hidden rounded-xl">
                 <StaticLocationMap
-                  latitude={business.latitude}
-                  longitude={business.longitude}
+                  latitude={latitude}
+                  longitude={longitude}
                   locale={locale}
                   className="h-64"
                   markerImageUrl={business.media?.logo}

@@ -14,13 +14,14 @@ interface FooterProps {
 export function Footer({ locale, dict, homepageOnlyInstagram = true }: FooterProps) {
 
   const brand = locale === "ar" ? "مركز الأعمال الذكية" : "Smart Business Center";
+  const instagramUrl = "https://www.instagram.com/sbc._.om";
 
   const socials = homepageOnlyInstagram
     ? [
       {
         key: "instagram",
         label: "Instagram",
-        href: "https://www.instagram.com/sbc._.om/",
+        href: instagramUrl,
         icon: <FaInstagram className="h-4 w-4" />,
       },
     ]
@@ -28,7 +29,7 @@ export function Footer({ locale, dict, homepageOnlyInstagram = true }: FooterPro
     {
       key: "instagram",
       label: "Instagram",
-      href: process.env.NEXT_PUBLIC_SOCIAL_INSTAGRAM,
+      href: instagramUrl,
       icon: <FaInstagram className="h-4 w-4" />,
     },
     {
