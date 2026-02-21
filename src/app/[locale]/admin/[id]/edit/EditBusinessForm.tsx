@@ -190,6 +190,7 @@ export function EditBusinessForm({
   const [slugValue, setSlugValue] = useState(business.slug ?? "");
   const [slugTouched, setSlugTouched] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [submitArmed, setSubmitArmed] = useState(false);
   const [animDir, setAnimDir] = useState<"next" | "prev">("next");
   const [usernameStatus, setUsernameStatus] = useState<
     "idle" | "checking" | "available" | "taken" | "invalid"
@@ -467,6 +468,18 @@ export function EditBusinessForm({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (currentStep !== steps.length - 1 || !submitArmed) {
+      return;
+    }
+
+    setSubmitArmed(false);
+
+    const submitter = (e.nativeEvent as SubmitEvent).submitter;
+    if (!(submitter instanceof HTMLButtonElement) || submitter.dataset.submitIntent !== "final-save") {
+      return;
+    }
+
     const form = e.currentTarget;
     const formData = new FormData(form);
     
@@ -515,6 +528,7 @@ export function EditBusinessForm({
   };
 
   const goNext = () => {
+    setSubmitArmed(false);
     const err = validateStep(currentStep);
     if (err) {
       toast({ message: err, variant: "error" });
@@ -525,6 +539,7 @@ export function EditBusinessForm({
   };
 
   const goPrev = () => {
+    setSubmitArmed(false);
     setAnimDir("prev");
     setCurrentStep((s) => Math.max(0, s - 1));
   };
@@ -547,6 +562,7 @@ export function EditBusinessForm({
                   type="button"
                   onClick={() => {
                     if (idx > currentStep) return;
+                    setSubmitArmed(false);
                     setAnimDir(idx > currentStep ? "next" : "prev");
                     setCurrentStep(idx);
                   }}
@@ -581,6 +597,7 @@ export function EditBusinessForm({
                 disabled={idx > currentStep}
                 onClick={() => {
                   if (idx > currentStep) return;
+                  setSubmitArmed(false);
                   setAnimDir(idx > currentStep ? "next" : "prev");
                   setCurrentStep(idx);
                 }}
@@ -1177,7 +1194,12 @@ export function EditBusinessForm({
                 {ar ? "التالي" : "Next"}
               </Button>
             ) : (
-              <Button type="submit" className="min-w-45">
+              <Button
+                type="submit"
+                className="min-w-45"
+                data-submit-intent="final-save"
+                onClick={() => setSubmitArmed(true)}
+              >
                 {ar ? "حفظ ونشر" : "Save & Publish"}
               </Button>
             )}

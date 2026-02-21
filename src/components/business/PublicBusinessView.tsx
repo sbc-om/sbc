@@ -32,6 +32,10 @@ interface PublicBusinessViewProps {
   isAdmin?: boolean;
 }
 
+function isSafeImageSource(source: string): boolean {
+  return source.startsWith("/") || /^https?:\/\//i.test(source);
+}
+
 export function PublicBusinessView({
   business,
   locale,
@@ -58,7 +62,7 @@ export function PublicBusinessView({
   const modalTouchStartTimeRef = useRef<number | null>(null);
   const heroImage = business.media?.banner || business.media?.cover || business.media?.logo;
   const coverImage = business.media?.cover;
-  const galleryImages = business.media?.gallery || [];
+  const galleryImages = (business.media?.gallery || []).filter(isSafeImageSource);
   const [galleryEmblaRef, galleryEmblaApi] = useEmblaCarousel({
     align: "start",
     containScroll: "trimSnaps",
@@ -135,16 +139,40 @@ export function PublicBusinessView({
         return;
       }
       if (galleryImages.length === 0) return;
-      if (event.key === "ArrowRight") {
+      if (event.key === "Home") {
+        setActiveGalleryIndex(0);
+        return;
+      }
+      if (event.key === "End") {
+        setActiveGalleryIndex(galleryImages.length - 1);
+        return;
+      }
+      if (event.key === "PageDown") {
         setActiveGalleryIndex((current) => {
           if (current === null) return 0;
-          return (current + 1) % galleryImages.length;
+          return Math.min(galleryImages.length - 1, current + 3);
+        });
+        return;
+      }
+      if (event.key === "PageUp") {
+        setActiveGalleryIndex((current) => {
+          if (current === null) return 0;
+          return Math.max(0, current - 3);
+        });
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        const delta = locale === "ar" ? -1 : 1;
+        setActiveGalleryIndex((current) => {
+          if (current === null) return 0;
+          return (current + delta + galleryImages.length) % galleryImages.length;
         });
       }
       if (event.key === "ArrowLeft") {
+        const delta = locale === "ar" ? 1 : -1;
         setActiveGalleryIndex((current) => {
           if (current === null) return 0;
-          return (current - 1 + galleryImages.length) % galleryImages.length;
+          return (current + delta + galleryImages.length) % galleryImages.length;
         });
       }
     };
@@ -197,8 +225,21 @@ export function PublicBusinessView({
 
   useEffect(() => {
     if (activeGalleryIndex === null || !isGalleryModalVisible || !modalThumbEmblaApi) return;
-    modalThumbEmblaApi.scrollTo(activeGalleryIndex);
+    modalThumbEmblaApi.scrollTo(activeGalleryIndex, true);
   }, [activeGalleryIndex, isGalleryModalVisible, modalThumbEmblaApi]);
+
+  useEffect(() => {
+    if (activeGalleryIndex === null || galleryImages.length < 2) return;
+
+    const nextIndex = (activeGalleryIndex + 1) % galleryImages.length;
+    const prevIndex = (activeGalleryIndex - 1 + galleryImages.length) % galleryImages.length;
+    const preloadTargets = [galleryImages[nextIndex], galleryImages[prevIndex]];
+
+    preloadTargets.forEach((source) => {
+      const image = new window.Image();
+      image.src = source;
+    });
+  }, [activeGalleryIndex, galleryImages]);
 
   return (
     <>
@@ -593,7 +634,7 @@ export function PublicBusinessView({
 
       {activeGalleryIndex !== null && galleryImages[activeGalleryIndex] ? (
         <div
-          className={`fixed inset-0 z-[70] bg-black/80 backdrop-blur-sm transition-opacity duration-200 ${
+          className={`fixed inset-0 z-[70] bg-black/80 backdrop-blur-[2px] transition-opacity duration-200 ${
             isGalleryModalVisible ? "opacity-100" : "opacity-0"
           }`}
           role="dialog"
@@ -607,14 +648,14 @@ export function PublicBusinessView({
           />
 
           <div
-            className={`relative z-10 mx-auto flex h-full w-full max-w-5xl items-center justify-center px-4 py-10 transition-all duration-200 ${
+            className={`relative z-10 mx-auto flex h-full w-full max-w-5xl items-center justify-center px-4 py-10 transition-all duration-200 will-change-transform ${
               isGalleryModalVisible ? "scale-100 opacity-100" : "scale-95 opacity-0"
             }`}
           >
             <button
               type="button"
               onClick={closeGalleryModal}
-              className="absolute top-5 right-5 rounded-full border border-white/30 bg-black/40 px-3 py-1 text-sm text-white"
+              className="absolute top-5 right-5 inline-flex h-11 items-center justify-center rounded-full border border-white/30 bg-black/45 px-4 text-sm text-white transition hover:bg-black/60"
             >
               {locale === "ar" ? "إغلاق" : "Close"}
             </button>
@@ -658,7 +699,13 @@ export function PublicBusinessView({
 
                 if (!isHorizontalSwipe) return;
 
-                if (deltaX < 0) {
+                if (locale === "ar") {
+                  if (deltaX < 0) {
+                    showPrevGalleryImage();
+                  } else {
+                    showNextGalleryImage();
+                  }
+                } else if (deltaX < 0) {
                   showNextGalleryImage();
                 } else {
                   showPrevGalleryImage();
@@ -680,10 +727,14 @@ export function PublicBusinessView({
                     type="button"
                     onClick={() => modalThumbEmblaApi?.scrollPrev()}
                     disabled={!canScrollModalThumbPrev}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/30 bg-black/45 text-white transition hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/30 bg-black/45 text-white transition hover:bg-black/60 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label={locale === "ar" ? "السابق" : "Previous"}
                   >
-                    <FiChevronLeft className="h-5 w-5" />
+                    {locale === "ar" ? (
+                      <FiChevronRight className="h-5 w-5" />
+                    ) : (
+                      <FiChevronLeft className="h-5 w-5" />
+                    )}
                   </button>
 
                   <div className="min-w-0 flex-1 overflow-hidden" ref={modalThumbEmblaRef}>
@@ -722,10 +773,14 @@ export function PublicBusinessView({
                     type="button"
                     onClick={() => modalThumbEmblaApi?.scrollNext()}
                     disabled={!canScrollModalThumbNext}
-                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/30 bg-black/45 text-white transition hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/30 bg-black/45 text-white transition hover:bg-black/60 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
                     aria-label={locale === "ar" ? "التالي" : "Next"}
                   >
-                    <FiChevronRight className="h-5 w-5" />
+                    {locale === "ar" ? (
+                      <FiChevronLeft className="h-5 w-5" />
+                    ) : (
+                      <FiChevronRight className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
               ) : null}
