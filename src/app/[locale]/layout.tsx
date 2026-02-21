@@ -88,6 +88,10 @@ const REQUIRE_AUTH_SECTIONS = new Set([
   "verify-phone",
 ]);
 
+function isLoyaltyManageRoute(segments: string[]): boolean {
+  return segments.length > 2 && segments[1] === "loyalty" && segments[2] === "manage";
+}
+
 export default async function LocaleLayout({
   children,
   params,
@@ -113,7 +117,7 @@ export default async function LocaleLayout({
   const segments = pathname.split("/").filter(Boolean);
   const routeSection = segments.length > 1 ? segments[1] : "";
 
-  const requiresAuth = REQUIRE_AUTH_SECTIONS.has(routeSection);
+  const requiresAuth = REQUIRE_AUTH_SECTIONS.has(routeSection) || isLoyaltyManageRoute(segments);
   const isLocaleHomePage = segments.length <= 1; // bare /{locale}
 
   // ── Authentication ─────────────────────────────────────────────────

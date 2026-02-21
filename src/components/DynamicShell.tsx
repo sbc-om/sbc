@@ -31,6 +31,18 @@ function getRouteSection(pathname: string): string {
   return segments.length > 1 ? segments[1] : "";
 }
 
+function isAlwaysPublicPath(pathname: string): boolean {
+  const segments = pathname.split("/").filter(Boolean);
+  const section = segments.length > 1 ? segments[1] : "";
+  const subSection = segments.length > 2 ? segments[2] : "";
+
+  if (section === "loyalty" && subSection === "manage") {
+    return false;
+  }
+
+  return ALWAYS_PUBLIC_SECTIONS.has(section);
+}
+
 interface DynamicShellProps {
   /** Pre-rendered sidebar (server→client via props) */
   sidebar: ReactNode;
@@ -62,7 +74,7 @@ export function DynamicShell({
 }: DynamicShellProps) {
   const pathname = usePathname();
   const section = getRouteSection(pathname);
-  const isDashboard = !ALWAYS_PUBLIC_SECTIONS.has(section);
+  const isDashboard = !isAlwaysPublicPath(pathname);
   const isChatPage = section === "chat";
 
   if (isDashboard) {
