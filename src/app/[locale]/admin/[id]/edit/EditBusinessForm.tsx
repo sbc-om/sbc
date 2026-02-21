@@ -191,6 +191,8 @@ export function EditBusinessForm({
   const [slugTouched, setSlugTouched] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [submitArmed, setSubmitArmed] = useState(false);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const [reviewSnapshot, setReviewSnapshot] = useState<Record<string, string>>({});
   const [animDir, setAnimDir] = useState<"next" | "prev">("next");
   const [usernameStatus, setUsernameStatus] = useState<
     "idle" | "checking" | "available" | "taken" | "invalid"
@@ -527,6 +529,23 @@ export function EditBusinessForm({
     }
   };
 
+  const captureReviewSnapshot = () => {
+    if (!formRef.current) return;
+    const formData = new FormData(formRef.current);
+    const nextSnapshot: Record<string, string> = {};
+
+    formData.forEach((value, key) => {
+      if (typeof value !== "string") return;
+      if (nextSnapshot[key]) {
+        nextSnapshot[key] = `${nextSnapshot[key]}, ${value}`;
+      } else {
+        nextSnapshot[key] = value;
+      }
+    });
+
+    setReviewSnapshot(nextSnapshot);
+  };
+
   const goNext = () => {
     setSubmitArmed(false);
     const err = validateStep(currentStep);
@@ -534,8 +553,14 @@ export function EditBusinessForm({
       toast({ message: err, variant: "error" });
       return;
     }
+
+    const nextStep = Math.min(steps.length - 1, currentStep + 1);
+    if (nextStep === steps.length - 1) {
+      captureReviewSnapshot();
+    }
+
     setAnimDir("next");
-    setCurrentStep((s) => Math.min(steps.length - 1, s + 1));
+    setCurrentStep(nextStep);
   };
 
   const goPrev = () => {
@@ -548,6 +573,59 @@ export function EditBusinessForm({
     currentStep === idx
       ? `animate-in fade-in duration-300 ${animDir === "next" ? "slide-in-from-end-4" : "slide-in-from-start-4"}`
       : "hidden";
+
+  useEffect(() => {
+    if (currentStep !== steps.length - 1) return;
+    captureReviewSnapshot();
+  }, [
+    currentStep,
+    steps.length,
+    selectedCategory,
+    selectedOwner,
+    avatarMode,
+    showSimilarBusinesses,
+    isApproved,
+    isVerified,
+    isSpecial,
+    homepageFeatured,
+    homepageTop,
+    usernameValue,
+    nameEnValue,
+    descEnValue,
+    descArValue,
+    slugValue,
+    domainValue,
+    coverPreview.length,
+    logoPreview.length,
+    bannerPreview.length,
+    galleryPreview.length,
+    location?.lat,
+    location?.lng,
+  ]);
+
+  const reviewValue = (name: string, fallback = "—") => {
+    const value = reviewSnapshot[name]?.trim();
+    return value && value.length > 0 ? value : fallback;
+  };
+
+  const selectedCategoryName = categories.find((category) => category.id === selectedCategory)?.name;
+  const categoryLabel = selectedCategoryName
+    ? ar
+      ? selectedCategoryName.ar
+      : selectedCategoryName.en
+    : reviewValue("categoryId");
+
+  const selectedOwnerInfo = users.find((owner) => owner.id === selectedOwner);
+  const ownerLabel = selectedOwnerInfo
+    ? `${selectedOwnerInfo.fullName || selectedOwnerInfo.email} (${selectedOwnerInfo.email})`
+    : reviewValue("ownerId", ar ? "غير محدد" : "Not assigned");
+
+  const mediaSummary = [
+    `${ar ? "Cover" : "Cover"}: ${coverPreview.length > 0 ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}`,
+    `${ar ? "Logo" : "Logo"}: ${logoPreview.length > 0 ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}`,
+    `${ar ? "Banner" : "Banner"}: ${bannerPreview.length > 0 ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}`,
+    `${ar ? "Gallery" : "Gallery"}: ${galleryPreview.length}`,
+  ].join(" • ");
 
   return (
     <div className="mt-8">
@@ -610,7 +688,7 @@ export function EditBusinessForm({
         </div>
       </nav>
 
-      <form onSubmit={handleSubmit} className="grid gap-8">
+      <form ref={formRef} onSubmit={handleSubmit} className="grid gap-8">
         {/* Hidden inputs for state-controlled values */}
         <input type="hidden" name="categoryId" value={selectedCategory} />
         <input type="hidden" name="ownerId" value={selectedOwner} />
@@ -1156,11 +1234,42 @@ export function EditBusinessForm({
             <p className="text-sm text-(--muted-foreground) mb-4">
               {ar ? "راجع البيانات ثم احفظ التعديلات" : "Review data and save changes"}
             </p>
-            <div className="grid gap-2 text-sm">
-              <div className="flex items-center justify-between"><span className="text-(--muted-foreground)">{ar ? "الاسم" : "Name"}</span><span>{nameEnValue || business.name.en}</span></div>
-              <div className="flex items-center justify-between"><span className="text-(--muted-foreground)">{ar ? "التصنيف" : "Category"}</span><span>{selectedCategory || "—"}</span></div>
-              <div className="flex items-center justify-between"><span className="text-(--muted-foreground)">{ar ? "المدينة" : "City"}</span><span>{String((business.city ?? "")).trim() || "—"}</span></div>
-              <div className="flex items-center justify-between"><span className="text-(--muted-foreground)">{ar ? "الصور" : "Media"}</span><span>{coverPreview.length + logoPreview.length + bannerPreview.length + galleryPreview.length > 0 ? (ar ? "مضاف" : "Added") : "—"}</span></div>
+            <div className="grid gap-6 text-sm">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الاسم (EN)" : "Name (EN)"}</span><span className="text-end">{nameEnValue || reviewValue("name_en")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الاسم (AR)" : "Name (AR)"}</span><span className="text-end">{reviewValue("name_ar")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "اسم المستخدم" : "Username"}</span><span dir="ltr">{usernameValue || reviewValue("username")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "المسار" : "Slug"}</span><span dir="ltr">{slugValue || reviewValue("slug")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "التصنيف" : "Category"}</span><span className="text-end">{categoryLabel}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "المالك" : "Owner"}</span><span className="text-end">{ownerLabel}</span></div>
+              </div>
+
+              <div className="h-px bg-(--surface-border)" />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "المدينة" : "City"}</span><span>{reviewValue("city")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الهاتف" : "Phone"}</span><span dir="ltr">{reviewValue("phone")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "البريد" : "Email"}</span><span dir="ltr">{reviewValue("email")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الموقع الإلكتروني" : "Website"}</span><span dir="ltr">{reviewValue("website")}</span></div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "العنوان" : "Address"}</span><span className="text-end">{reviewValue("address")}</span></div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الوسوم" : "Tags"}</span><span className="text-end">{reviewValue("tags")}</span></div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الإحداثيات" : "Coordinates"}</span><span dir="ltr">{location ? `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}` : "—"}</span></div>
+              </div>
+
+              <div className="h-px bg-(--surface-border)" />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الدومين" : "Domain"}</span><span dir="ltr">{domainValue || (ar ? "غير محدد" : "Not set")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "وضع الصورة" : "Avatar Mode"}</span><span>{avatarMode === "logo" ? (ar ? "شعار" : "Logo") : (ar ? "أيقونة" : "Icon")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "اعتماد الظهور" : "Approved"}</span><span>{isApproved ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "توثيق" : "Verified"}</span><span>{isVerified ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "حساب مميز" : "Special"}</span><span>{isSpecial ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "مقترحات مشابهة" : "Show Similar"}</span><span>{showSimilarBusinesses ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "تمييز الرئيسية" : "Homepage Featured"}</span><span>{homepageFeatured ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "أفضل 3" : "Homepage Top 3"}</span><span>{homepageTop ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}</span></div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الوسائط" : "Media"}</span><span className="text-end">{mediaSummary}</span></div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "طول الوصف" : "Description Length"}</span><span>{`EN: ${descEnValue.trim().length} • AR: ${descArValue.trim().length}`}</span></div>
+              </div>
             </div>
           </div>
 
