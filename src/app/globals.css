@@ -311,6 +311,43 @@ html[dir="rtl"] h6 {
   display: block;
 }
 
+/* React Flow theme polish (AI Agent Builder) */
+.react-flow__controls {
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+  background: var(--surface) !important;
+  box-shadow: var(--shadow) !important;
+  backdrop-filter: blur(10px);
+}
+
+.react-flow__controls-button {
+  border: 0 !important;
+  border-bottom: 1px solid var(--surface-border) !important;
+  background: transparent !important;
+  color: var(--foreground) !important;
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: 0 !important;
+}
+
+.react-flow__controls-button:hover {
+  background: var(--chip-bg) !important;
+}
+
+.react-flow__controls-button svg {
+  fill: currentColor !important;
+}
+
+.react-flow__minimap {
+  border: 1px solid var(--surface-border) !important;
+  border-radius: 0.75rem !important;
+  background: var(--surface) !important;
+  box-shadow: var(--shadow) !important;
+  backdrop-filter: blur(10px);
+}
+
 @keyframes sbcMapMarkerBounce {
   0%,
   100% {
