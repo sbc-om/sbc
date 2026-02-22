@@ -4,9 +4,13 @@ import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
-import { listBusinesses, listBusinessesByOwner } from "@/lib/db/businesses";
+import { countExplorerBusinesses, listBusinessesByOwner, listExplorerBusinessesPaginated } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
-import { listBusinessesWithActiveStories } from "@/lib/db/stories";
+import {
+  countBusinessesWithActiveStories,
+  getBusinessIdsWithActiveStories,
+  listBusinessesWithActiveStoriesPaginated,
+} from "@/lib/db/stories";
 import {
   getBusinessEngagementCounts,
   getUserLikedBusinessIds,
@@ -16,6 +20,9 @@ import { BusinessesExplorer } from "@/components/BusinessesExplorer";
 import { AppPage } from "@/components/AppPage";
 import { StoriesContainer } from "@/components/stories";
 import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "./actions";
+
+const EXPLORER_STORIES_PER_PAGE = 16;
+const EXPLORER_FEED_PER_PAGE = 12;
 
 export default async function ExplorerPage({
   params,
@@ -28,12 +35,15 @@ export default async function ExplorerPage({
   const user = await requireUser(locale as Locale);
 
   const dict = await getDictionary(locale as Locale);
-  const [businesses, categories, businessesWithStories, ownedBusinesses] = await Promise.all([
-    listBusinesses(),
+  const [businesses, totalBusinesses, categories, businessesWithStories, storiesTotal, ownedBusinesses] = await Promise.all([
+    listExplorerBusinessesPaginated({ limit: EXPLORER_FEED_PER_PAGE, offset: 0, sortBy: "relevance" }),
+    countExplorerBusinesses(),
     listCategories(),
-    listBusinessesWithActiveStories(),
+    listBusinessesWithActiveStoriesPaginated(EXPLORER_STORIES_PER_PAGE, 0),
+    countBusinessesWithActiveStories(),
     user ? listBusinessesByOwner(user.id) : Promise.resolve([]),
   ]);
+  const businessIdsWithStories = await getBusinessIdsWithActiveStories(businesses.map((b) => b.id));
 
   const [engagementCounts, likedBusinessIds, savedBusinessIds] = await Promise.all([
     getBusinessEngagementCounts(businesses.map((b) => b.id)),
@@ -85,22 +95,11 @@ export default async function ExplorerPage({
             currentUserId={user?.id}
             ownedBusinessIds={ownedBusinesses.map(b => b.id)}
             isAdmin={user?.role === "admin"}
+            initialTotal={storiesTotal}
+            fetchScope="all"
           />
         </div>
       )}
-
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {dict.nav.explore ?? (locale === "ar" ? "استكشف" : "Explore")}
-          </h1>
-          <p className="mt-1 text-sm text-(--muted-foreground)">
-            {locale === "ar"
-              ? "بحث متقدم مع فلاتر قوية"
-              : "Advanced search with powerful filters"}
-          </p>
-        </div>
-      </div>
 
       <div className="mt-6">
         <BusinessesExplorer
@@ -109,8 +108,14 @@ export default async function ExplorerPage({
           businesses={businesses}
           categories={categories}
           detailsBasePath={detailsBasePath}
-          businessIdsWithStories={new Set(businessesWithStories.map(b => b.businessId))}
+          businessIdsWithStories={businessIdsWithStories}
           engagementByBusiness={engagementByBusiness}
+          serverPagination={{
+            page: 1,
+            perPage: EXPLORER_FEED_PER_PAGE,
+            total: totalBusinesses,
+            totalPages: Math.max(1, Math.ceil(totalBusinesses / EXPLORER_FEED_PER_PAGE)),
+          }}
           onToggleLike={user ? toggleBusinessLikeAction.bind(null, locale as Locale) : undefined}
           onToggleSave={user ? toggleBusinessSaveAction.bind(null, locale as Locale) : undefined}
         />

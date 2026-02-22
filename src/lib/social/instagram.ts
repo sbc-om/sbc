@@ -7,19 +7,34 @@ export type InstagramPostPreview = {
   takenAt?: string;
 };
 
-function pickBestInstagramImageUrl(node: any): string | undefined {
+type GenericObject = Record<string, unknown>;
+
+function asObject(value: unknown): GenericObject {
+  return typeof value === "object" && value !== null ? (value as GenericObject) : {};
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function pickBestInstagramImageUrl(nodeInput: unknown): string | undefined {
+  const node = asObject(nodeInput);
   const candidates: Array<{ url?: string; width?: number; height?: number }> = [];
 
-  if (Array.isArray(node?.display_resources)) {
-    candidates.push(...node.display_resources);
+  const displayResources = asArray(node.display_resources);
+  if (displayResources.length > 0) {
+    candidates.push(...displayResources.map((entry) => asObject(entry)));
   }
 
-  if (Array.isArray(node?.thumbnail_resources)) {
-    candidates.push(...node.thumbnail_resources);
+  const thumbnailResources = asArray(node.thumbnail_resources);
+  if (thumbnailResources.length > 0) {
+    candidates.push(...thumbnailResources.map((entry) => asObject(entry)));
   }
 
-  if (Array.isArray(node?.image_versions2?.candidates)) {
-    candidates.push(...node.image_versions2.candidates);
+  const imageVersions2 = asObject(node.image_versions2);
+  const versionCandidates = asArray(imageVersions2.candidates);
+  if (versionCandidates.length > 0) {
+    candidates.push(...versionCandidates.map((entry) => asObject(entry)));
   }
 
   const best = candidates
@@ -32,8 +47,8 @@ function pickBestInstagramImageUrl(node: any): string | undefined {
 
   return (
     best?.url?.trim() ||
-    (typeof node?.display_url === "string" ? node.display_url : undefined) ||
-    (typeof node?.thumbnail_src === "string" ? node.thumbnail_src : undefined)
+    (typeof node.display_url === "string" ? node.display_url : undefined) ||
+    (typeof node.thumbnail_src === "string" ? node.thumbnail_src : undefined)
   );
 }
 
@@ -41,15 +56,20 @@ function normalizeInstagramUsername(input: string): string {
   return input.trim().replace(/^@/, "").toLowerCase();
 }
 
-function mapEdgesToPosts(edges: Array<any>, limit: number): InstagramPostPreview[] {
+function mapEdgesToPosts(edgesInput: unknown[], limit: number): InstagramPostPreview[] {
+  const edges = edgesInput.map((edge) => asObject(edge));
   return edges
     .slice(0, limit)
-    .map((edge: any) => {
-      const node = edge?.node || {};
+    .map((edge) => {
+      const node = asObject(edge.node);
       const shortcode = String(node.shortcode || "").trim();
       if (!shortcode) return null;
 
-      const captionEdge = node?.edge_media_to_caption?.edges?.[0]?.node?.text;
+      const captionContainer = asObject(node.edge_media_to_caption);
+      const captionEdges = asArray(captionContainer.edges);
+      const firstCaptionEdge = asObject(captionEdges[0]);
+      const captionNode = asObject(firstCaptionEdge.node);
+      const captionEdge = captionNode.text;
 
       return {
         id: String(node.id || shortcode),
@@ -65,7 +85,7 @@ function mapEdgesToPosts(edges: Array<any>, limit: number): InstagramPostPreview
     .filter((item): item is InstagramPostPreview => !!item);
 }
 
-async function fetchProfileInfo(username: string): Promise<any | null> {
+async function fetchProfileInfo(username: string): Promise<unknown | null> {
   const urls = [
     `https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(username)}`,
     `https://i.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(username)}`,
@@ -95,7 +115,7 @@ async function fetchProfileInfo(username: string): Promise<any | null> {
   }
 }
 
-async function fetchLegacyProfile(username: string): Promise<any | null> {
+async function fetchLegacyProfile(username: string): Promise<unknown | null> {
   try {
     const url = `https://www.instagram.com/${encodeURIComponent(username)}/?__a=1&__d=dis`;
     const res = await fetch(url, {
@@ -113,15 +133,22 @@ async function fetchLegacyProfile(username: string): Promise<any | null> {
   }
 }
 
-function mapGraphqlMediaToPosts(graphqlMedia: Array<any>, limit: number): InstagramPostPreview[] {
+function mapGraphqlMediaToPosts(graphqlMediaInput: unknown[], limit: number): InstagramPostPreview[] {
+  const graphqlMedia = graphqlMediaInput.map((entry) => asObject(entry));
   return graphqlMedia
     .slice(0, limit)
-    .map((entry: any) => {
-      const node = entry?.shortcode_media || entry?.node || {};
+    .map((entry) => {
+      const shortcodeMedia = asObject(entry.shortcode_media);
+      const entryNode = asObject(entry.node);
+      const node = Object.keys(shortcodeMedia).length > 0 ? shortcodeMedia : entryNode;
       const shortcode = String(node.shortcode || "").trim();
       if (!shortcode) return null;
 
-      const captionEdge = node?.edge_media_to_caption?.edges?.[0]?.node?.text;
+      const captionContainer = asObject(node.edge_media_to_caption);
+      const captionEdges = asArray(captionContainer.edges);
+      const firstCaptionEdge = asObject(captionEdges[0]);
+      const captionNode = asObject(firstCaptionEdge.node);
+      const captionEdge = captionNode.text;
 
       return {
         id: String(node.id || shortcode),
@@ -195,7 +222,7 @@ async function fetchEmbedProfile(username: string): Promise<InstagramPostPreview
     if (escapedContext) {
       try {
         const unescaped = JSON.parse(`"${escapedContext}"`) as string;
-        const parsed = JSON.parse(unescaped) as { context?: { graphql_media?: Array<any> } };
+        const parsed = JSON.parse(unescaped) as { context?: { graphql_media?: unknown[] } };
         const graphqlMedia = parsed?.context?.graphql_media;
 
         if (Array.isArray(graphqlMedia) && graphqlMedia.length > 0) {
@@ -226,15 +253,26 @@ export async function getInstagramPostsPreview(
   const boundedLimit = Math.max(1, Math.min(limit, 12));
 
   const profileInfo = await fetchProfileInfo(username);
-  const edgesFromApi = profileInfo?.data?.user?.edge_owner_to_timeline_media?.edges;
+  const profileInfoObj = asObject(profileInfo);
+  const profileInfoData = asObject(profileInfoObj.data);
+  const profileInfoUser = asObject(profileInfoData.user);
+  const profileInfoTimeline = asObject(profileInfoUser.edge_owner_to_timeline_media);
+  const edgesFromApi = profileInfoTimeline.edges;
   if (Array.isArray(edgesFromApi) && edgesFromApi.length > 0) {
     return mapEdgesToPosts(edgesFromApi, boundedLimit);
   }
 
   const legacy = await fetchLegacyProfile(username);
+  const legacyObj = asObject(legacy);
+  const legacyGraphql = asObject(legacyObj.graphql);
+  const legacyGraphqlUser = asObject(legacyGraphql.user);
+  const legacyGraphqlTimeline = asObject(legacyGraphqlUser.edge_owner_to_timeline_media);
+  const legacyData = asObject(legacyObj.data);
+  const legacyDataUser = asObject(legacyData.user);
+  const legacyDataTimeline = asObject(legacyDataUser.edge_owner_to_timeline_media);
   const edgesFromLegacy =
-    legacy?.graphql?.user?.edge_owner_to_timeline_media?.edges ||
-    legacy?.data?.user?.edge_owner_to_timeline_media?.edges;
+    legacyGraphqlTimeline.edges ||
+    legacyDataTimeline.edges;
 
   if (Array.isArray(edgesFromLegacy) && edgesFromLegacy.length > 0) {
     return mapEdgesToPosts(edgesFromLegacy, boundedLimit);

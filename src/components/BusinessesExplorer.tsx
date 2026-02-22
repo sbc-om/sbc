@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { FiSearch, FiUpload, FiX, FiFilter, FiZap, FiMessageCircle, FiSend, FiTrash2, FiArrowRight } from "react-icons/fi";
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { BusinessFeedCard } from "@/components/BusinessFeedCard";
 import { useAISearch } from "@/lib/ai/AISearchProvider";
+import { createTtlCache } from "@/lib/cache/ttlCache";
 
 function normalize(s: string) {
   return s
@@ -50,6 +51,7 @@ export function BusinessesExplorer({
   engagementByBusiness,
   onToggleLike,
   onToggleSave,
+  serverPagination,
 }: {
   locale: Locale;
   dict: Dictionary;
@@ -75,7 +77,11 @@ export function BusinessesExplorer({
   onToggleLike?: (businessId: string) => Promise<{ liked: boolean; count: number }>;
   /** Optional server action to toggle saves. */
   onToggleSave?: (businessId: string) => Promise<{ saved: boolean }>;
+  serverPagination?: { page: number; perPage: number; total: number; totalPages: number };
 }) {
+  const ITEMS_PER_PAGE = 12;
+  const EXPLORER_CACHE_TTL_MS = 60_000;
+  const EXPLORER_CACHE_MAX_ENTRIES = 120;
   // Unified search state
   const [searchQuery, setSearchQuery] = useState("");
   const [city, setCity] = useState("");
@@ -97,6 +103,53 @@ export function BusinessesExplorer({
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [serverBusinesses, setServerBusinesses] = useState<Business[]>(businesses);
+  const [serverEngagementByBusiness, setServerEngagementByBusiness] = useState(engagementByBusiness ?? {});
+  const [serverStoryIds, setServerStoryIds] = useState<Set<string>>(new Set(Array.from(businessIdsWithStories)));
+  const [serverPage, setServerPage] = useState(serverPagination?.page ?? 1);
+  const [serverTotal, setServerTotal] = useState(serverPagination?.total ?? businesses.length);
+  const [serverTotalPages, setServerTotalPages] = useState(serverPagination?.totalPages ?? 1);
+  const [isServerLoading, setIsServerLoading] = useState(false);
+  const serverReqRef = useRef(false);
+
+  type ExplorerPayload = {
+    businesses: Business[];
+    engagementByBusiness: Record<string, {
+      categoryName?: string;
+      categoryIconId?: string;
+      initialLikeCount: number;
+      initialLiked: boolean;
+      initialSaved: boolean;
+      commentCount: number;
+    }>;
+    storyBusinessIds: string[];
+    pagination: { page: number; total: number; totalPages: number };
+  };
+
+  const serverCacheRef = useRef(createTtlCache<ExplorerPayload>(EXPLORER_CACHE_TTL_MS, EXPLORER_CACHE_MAX_ENTRIES));
+  const explorerEtagByKeyRef = useRef(new Map<string, string>());
+  const explorerStalePayloadByKeyRef = useRef(new Map<string, ExplorerPayload>());
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const loadMoreAbortRef = useRef<AbortController | null>(null);
+
+  const rememberExplorerStalePayload = useCallback((key: string, payload: ExplorerPayload) => {
+    if (explorerStalePayloadByKeyRef.current.size >= EXPLORER_CACHE_MAX_ENTRIES) {
+      const firstKey = explorerStalePayloadByKeyRef.current.keys().next().value;
+      if (firstKey) explorerStalePayloadByKeyRef.current.delete(firstKey);
+    }
+    explorerStalePayloadByKeyRef.current.set(key, payload);
+  }, [EXPLORER_CACHE_MAX_ENTRIES]);
+
+  const rememberExplorerEtag = useCallback((key: string, etag: string | null) => {
+    if (!etag) return;
+    if (explorerEtagByKeyRef.current.size >= EXPLORER_CACHE_MAX_ENTRIES) {
+      const firstKey = explorerEtagByKeyRef.current.keys().next().value;
+      if (firstKey) explorerEtagByKeyRef.current.delete(firstKey);
+    }
+    explorerEtagByKeyRef.current.set(key, etag);
+  }, [EXPLORER_CACHE_MAX_ENTRIES]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -226,7 +279,11 @@ export function BusinessesExplorer({
   };
 
   const filtered = useMemo(() => {
-    const sourceBusinesses = aiResults || businesses;
+    const sourceBusinesses = aiResults || (serverPagination ? serverBusinesses : businesses);
+
+    if (serverPagination && !aiResults) {
+      return sourceBusinesses;
+    }
 
     const tokens = normalize(searchQuery)
       .split(" ")
@@ -258,7 +315,7 @@ export function BusinessesExplorer({
 
       return true;
     });
-  }, [businesses, aiResults, searchQuery, city, tags, categoryId, locale]);
+  }, [businesses, serverBusinesses, serverPagination, aiResults, searchQuery, city, tags, categoryId, locale]);
 
   const sorted = useMemo(() => {
     if (sortBy === "relevance") return filtered;
@@ -313,6 +370,293 @@ export function BusinessesExplorer({
 
     return withIndex.map((x) => x.b);
   }, [filtered, sortBy, locale]);
+
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [searchQuery, city, tags, categoryId, sortBy, aiResults]);
+
+  const buildServerParams = useCallback((page: number) => {
+    const params = new URLSearchParams();
+    params.set("page", String(page));
+    params.set("perPage", String(serverPagination?.perPage ?? ITEMS_PER_PAGE));
+    params.set("locale", locale);
+    if (searchQuery.trim()) params.set("q", searchQuery.trim());
+    if (city.trim()) params.set("city", city.trim());
+    if (tags.trim()) params.set("tags", tags.trim());
+    if (categoryId) params.set("categoryId", categoryId);
+    params.set("sortBy", sortBy);
+    return params;
+  }, [serverPagination?.perPage, locale, searchQuery, city, tags, categoryId, sortBy]);
+
+  const applyPageOnePayload = useCallback((data: ExplorerPayload) => {
+    setServerBusinesses(data.businesses);
+    setServerEngagementByBusiness(data.engagementByBusiness ?? {});
+    setServerStoryIds(new Set<string>(data.storyBusinessIds ?? []));
+    setServerPage(Number(data.pagination?.page ?? 1));
+    setServerTotal(Number(data.pagination?.total ?? 0));
+    setServerTotalPages(Number(data.pagination?.totalPages ?? 1));
+    setVisibleCount(Math.max(ITEMS_PER_PAGE, data.businesses.length));
+  }, [ITEMS_PER_PAGE]);
+
+  useEffect(() => {
+    if (!serverPagination) return;
+    if (aiResults) return;
+
+    const handle = setTimeout(() => {
+      serverReqRef.current = true;
+      setIsServerLoading(true);
+      const params = buildServerParams(1);
+      const cacheKey = params.toString();
+      const cached = serverCacheRef.current.get(cacheKey);
+      if (cached) {
+        applyPageOnePayload(cached);
+        serverReqRef.current = false;
+        setIsServerLoading(false);
+        return;
+      }
+
+      searchAbortRef.current?.abort();
+      const controller = new AbortController();
+      searchAbortRef.current = controller;
+      const previousEtag = explorerEtagByKeyRef.current.get(cacheKey);
+      const requestHeaders = new Headers();
+      if (previousEtag) requestHeaders.set("If-None-Match", previousEtag);
+
+      fetch(`/api/explorer/businesses?${cacheKey}`, { signal: controller.signal, headers: requestHeaders })
+        .then(async (response) => {
+          if (response.status === 304) {
+            const stale = explorerStalePayloadByKeyRef.current.get(cacheKey);
+            if (!stale) return null;
+            serverCacheRef.current.set(cacheKey, stale);
+            applyPageOnePayload(stale);
+            return null;
+          }
+
+          if (!response.ok) return null;
+          const etag = response.headers.get("etag");
+          const data = await response.json();
+          return { data, etag };
+        })
+        .then((data) => {
+          if (!data) return;
+          rememberExplorerEtag(cacheKey, data.etag);
+          const body = data.data;
+          if (!body?.ok || !Array.isArray(body.businesses)) return;
+
+          const payload = {
+            businesses: body.businesses as Business[],
+            engagementByBusiness: (body.engagementByBusiness ?? {}) as typeof serverEngagementByBusiness,
+            storyBusinessIds: (body.storyBusinessIds ?? []) as string[],
+            pagination: {
+              page: Number(body.pagination?.page ?? 1),
+              total: Number(body.pagination?.total ?? 0),
+              totalPages: Number(body.pagination?.totalPages ?? 1),
+            },
+          };
+
+          serverCacheRef.current.set(cacheKey, payload);
+          rememberExplorerStalePayload(cacheKey, payload);
+          applyPageOnePayload(payload);
+        })
+        .catch(() => {})
+        .finally(() => {
+          serverReqRef.current = false;
+          setIsServerLoading(false);
+        });
+    }, 450);
+
+    return () => {
+      clearTimeout(handle);
+      searchAbortRef.current?.abort();
+    };
+  }, [
+    serverPagination,
+    aiResults,
+    searchQuery,
+    city,
+    tags,
+    categoryId,
+    sortBy,
+    locale,
+    buildServerParams,
+    applyPageOnePayload,
+    rememberExplorerEtag,
+    rememberExplorerStalePayload,
+  ]);
+
+  useEffect(() => {
+    const target = loadMoreRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+
+        if (serverPagination && !aiResults) {
+          if (serverReqRef.current || isServerLoading) return;
+          if (serverPage >= serverTotalPages) return;
+
+          serverReqRef.current = true;
+          setIsServerLoading(true);
+
+          const nextPage = serverPage + 1;
+          const params = buildServerParams(nextPage);
+          const cacheKey = params.toString();
+          const cached = serverCacheRef.current.get(cacheKey);
+
+          if (cached) {
+            setServerBusinesses((prev) => {
+              const seen = new Set(prev.map((item) => item.id));
+              const merged = [...prev];
+              for (const item of cached.businesses) {
+                if (seen.has(item.id)) continue;
+                merged.push(item);
+              }
+              return merged;
+            });
+            setServerEngagementByBusiness((prev) => ({ ...prev, ...cached.engagementByBusiness }));
+            setServerStoryIds((prev) => {
+              const next = new Set(prev);
+              for (const id of cached.storyBusinessIds) next.add(id);
+              return next;
+            });
+            setServerPage(cached.pagination.page);
+            setServerTotal(cached.pagination.total);
+            setServerTotalPages(cached.pagination.totalPages);
+            serverReqRef.current = false;
+            setIsServerLoading(false);
+            return;
+          }
+
+          loadMoreAbortRef.current?.abort();
+          const controller = new AbortController();
+          loadMoreAbortRef.current = controller;
+          const previousEtag = explorerEtagByKeyRef.current.get(cacheKey);
+          const requestHeaders = new Headers();
+          if (previousEtag) requestHeaders.set("If-None-Match", previousEtag);
+
+          fetch(`/api/explorer/businesses?${cacheKey}`, { signal: controller.signal, headers: requestHeaders })
+            .then(async (response) => {
+              if (response.status === 304) {
+                const stale = explorerStalePayloadByKeyRef.current.get(cacheKey);
+                if (!stale) return null;
+                serverCacheRef.current.set(cacheKey, stale);
+                setServerBusinesses((prev) => {
+                  const seen = new Set(prev.map((item) => item.id));
+                  const merged = [...prev];
+                  for (const item of stale.businesses) {
+                    if (seen.has(item.id)) continue;
+                    merged.push(item);
+                  }
+                  return merged;
+                });
+                setServerEngagementByBusiness((prev) => ({ ...prev, ...stale.engagementByBusiness }));
+                setServerStoryIds((prev) => {
+                  const next = new Set(prev);
+                  for (const id of stale.storyBusinessIds) next.add(id);
+                  return next;
+                });
+                setServerPage(stale.pagination.page);
+                setServerTotal(stale.pagination.total);
+                setServerTotalPages(stale.pagination.totalPages);
+                return null;
+              }
+
+              if (!response.ok) return null;
+              const etag = response.headers.get("etag");
+              const data = await response.json();
+              return { data, etag };
+            })
+            .then((data) => {
+              if (!data) return;
+              rememberExplorerEtag(cacheKey, data.etag);
+              const body = data.data;
+              if (!body?.ok || !Array.isArray(body.businesses)) return;
+
+              const payload = {
+                businesses: body.businesses as Business[],
+                engagementByBusiness: (body.engagementByBusiness ?? {}) as typeof serverEngagementByBusiness,
+                storyBusinessIds: (body.storyBusinessIds ?? []) as string[],
+                pagination: {
+                  page: Number(body.pagination?.page ?? nextPage),
+                  total: Number(body.pagination?.total ?? 0),
+                  totalPages: Number(body.pagination?.totalPages ?? serverTotalPages),
+                },
+              };
+
+              serverCacheRef.current.set(cacheKey, payload);
+              rememberExplorerStalePayload(cacheKey, payload);
+
+              setServerBusinesses((prev) => {
+                const seen = new Set(prev.map((item) => item.id));
+                const merged = [...prev];
+                for (const item of payload.businesses) {
+                  if (seen.has(item.id)) continue;
+                  merged.push(item);
+                }
+                return merged;
+              });
+
+              setServerEngagementByBusiness((prev) => ({
+                ...prev,
+                ...payload.engagementByBusiness,
+              }));
+
+              setServerStoryIds((prev) => {
+                const next = new Set(prev);
+                for (const id of payload.storyBusinessIds) {
+                  next.add(id);
+                }
+                return next;
+              });
+
+              setServerPage(payload.pagination.page);
+              setServerTotal(payload.pagination.total);
+              setServerTotalPages(payload.pagination.totalPages);
+            })
+            .catch(() => {})
+            .finally(() => {
+              serverReqRef.current = false;
+              setIsServerLoading(false);
+            });
+
+          return;
+        }
+
+        setVisibleCount((current) => {
+          if (current >= sorted.length) return current;
+          return Math.min(current + ITEMS_PER_PAGE, sorted.length);
+        });
+      },
+      { rootMargin: "300px 0px" },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [
+    sorted.length,
+    serverPagination,
+    aiResults,
+    isServerLoading,
+    serverPage,
+    serverTotalPages,
+    searchQuery,
+    city,
+    tags,
+    categoryId,
+    sortBy,
+    locale,
+    buildServerParams,
+    rememberExplorerEtag,
+    rememberExplorerStalePayload,
+  ]);
+
+  const visibleBusinesses = useMemo(
+    () => (serverPagination && !aiResults
+      ? sorted
+      : sorted.slice(0, Math.min(visibleCount, sorted.length))),
+    [sorted, visibleCount, serverPagination, aiResults],
+  );
 
   return (
     <div>
@@ -707,8 +1051,8 @@ export function BusinessesExplorer({
 
       {onToggleLike && onToggleSave && engagementByBusiness ? (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {sorted.map((b) => {
-            const engagement = engagementByBusiness[b.id] ?? {
+          {visibleBusinesses.map((b) => {
+            const engagement = (serverPagination ? serverEngagementByBusiness[b.id] : engagementByBusiness?.[b.id]) ?? {
               initialLikeCount: 0,
               initialLiked: false,
               initialSaved: false,
@@ -729,19 +1073,19 @@ export function BusinessesExplorer({
                 onToggleLike={onToggleLike}
                 onToggleSave={onToggleSave}
                 detailsBasePath={detailsBasePath}
-                hasStories={businessIdsWithStories.has(b.id)}
+                hasStories={serverPagination ? serverStoryIds.has(b.id) : businessIdsWithStories.has(b.id)}
               />
             );
           })}
         </div>
       ) : (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {sorted.map((b) => {
+          {visibleBusinesses.map((b) => {
             const name = locale === "ar" ? b.name.ar : b.name.en;
             const description = b.description ? (locale === "ar" ? b.description.ar : b.description.en) : "";
             const img = b.media?.cover || b.media?.banner || b.media?.logo;
             const logo = b.media?.logo;
-            const hasStories = businessIdsWithStories.has(b.id);
+            const hasStories = serverPagination ? serverStoryIds.has(b.id) : businessIdsWithStories.has(b.id);
 
             const href = b.username
               ? `/@${b.username}`
@@ -824,6 +1168,18 @@ export function BusinessesExplorer({
           })}
         </div>
       )}
+
+      {(serverPagination && !aiResults ? serverPage < serverTotalPages : visibleBusinesses.length < sorted.length) ? (
+        <div className="mt-6">
+          <div ref={loadMoreRef} className="h-1 w-full" aria-hidden="true" />
+          <div className="mt-3 text-center text-xs text-(--muted-foreground)">
+            {locale === "ar"
+              ? `عرض ${visibleBusinesses.length} من ${serverPagination && !aiResults ? serverTotal : sorted.length}`
+              : `Showing ${visibleBusinesses.length} of ${serverPagination && !aiResults ? serverTotal : sorted.length}`}
+            {isServerLoading ? (locale === "ar" ? "... جارٍ التحميل" : "... loading") : ""}
+          </div>
+        </div>
+      ) : null}
 
       {filtered.length === 0 ? (
         <div className="mt-10 text-center text-(--muted-foreground)">

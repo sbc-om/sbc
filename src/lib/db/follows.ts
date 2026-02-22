@@ -240,6 +240,75 @@ export async function getUserUnfollowedBusinessIds(userId: string): Promise<stri
   return result.rows.map((row) => row.business_id);
 }
 
+export async function countUserHomeBusinesses(userId: string): Promise<number> {
+  const result = await query<{ total: string }>(`
+    SELECT COUNT(*)::text AS total
+    FROM businesses b
+    WHERE b.is_approved = true
+      AND (
+        EXISTS (
+          SELECT 1
+          FROM user_business_follows f
+          WHERE f.user_id = $1 AND f.business_id = b.id
+        )
+        OR (
+          NOT EXISTS (
+            SELECT 1
+            FROM user_business_unfollows uf
+            WHERE uf.user_id = $1 AND uf.business_id = b.id
+          )
+          AND b.category_id IS NOT NULL
+          AND EXISTS (
+            SELECT 1
+            FROM user_category_follows cf
+            WHERE cf.user_id = $1 AND cf.category_id = b.category_id
+          )
+        )
+      )
+  `, [userId]);
+
+  return parseInt(result.rows[0]?.total || "0", 10);
+}
+
+export async function listUserHomeBusinessesPaginated(
+  userId: string,
+  limit = 12,
+  offset = 0,
+): Promise<Business[]> {
+  const safeLimit = Math.max(1, Math.min(limit, 60));
+  const safeOffset = Math.max(0, offset);
+
+  const result = await query<BusinessRow>(`
+    SELECT b.*
+    FROM businesses b
+    WHERE b.is_approved = true
+      AND (
+        EXISTS (
+          SELECT 1
+          FROM user_business_follows f
+          WHERE f.user_id = $1 AND f.business_id = b.id
+        )
+        OR (
+          NOT EXISTS (
+            SELECT 1
+            FROM user_business_unfollows uf
+            WHERE uf.user_id = $1 AND uf.business_id = b.id
+          )
+          AND b.category_id IS NOT NULL
+          AND EXISTS (
+            SELECT 1
+            FROM user_category_follows cf
+            WHERE cf.user_id = $1 AND cf.category_id = b.category_id
+          )
+        )
+      )
+    ORDER BY b.created_at DESC
+    LIMIT $2 OFFSET $3
+  `, [userId, safeLimit, safeOffset]);
+
+  return result.rows.map(rowToBusiness);
+}
+
 /**
  * Get follower count for a business
  */

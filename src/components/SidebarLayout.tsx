@@ -24,8 +24,12 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
 
   // Keep first client render aligned with SSR, then hydrate responsive/user preference state.
   useEffect(() => {
-    setIsMobile(window.innerWidth < 1024);
-    setCollapsed(localStorage.getItem("sidebarCollapsed") === "true");
+    const timer = window.setTimeout(() => {
+      setIsMobile(window.innerWidth < 1024);
+      setCollapsed(localStorage.getItem("sidebarCollapsed") === "true");
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   // Check if mobile on mount and window resize

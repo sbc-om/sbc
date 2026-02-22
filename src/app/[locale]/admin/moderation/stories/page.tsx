@@ -4,12 +4,13 @@ import Image from "next/image";
 
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
-import { listStoriesModerationQueue } from "@/lib/db/stories";
+import { countStoriesModerationQueue, listStoriesModerationQueue } from "@/lib/db/stories";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
 import { moderateStoryAction } from "../actions";
 
 export const runtime = "nodejs";
+const ITEMS_PER_PAGE = 24;
 
 type ModerationFilter = "all" | "pending" | "approved" | "rejected";
 
@@ -35,7 +36,7 @@ export default async function AdminModerationStoriesPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{ status?: string; page?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
@@ -44,14 +45,40 @@ export default async function AdminModerationStoriesPage({
 
   const sp = await searchParams;
   const currentFilter = parseFilter(sp.status);
-  const items = await listStoriesModerationQueue(500);
-  const filteredItems = currentFilter === "all" ? items : items.filter((item) => item.moderationStatus === currentFilter);
+  const parsedPage = Number.parseInt(sp.page || "1", 10);
+  const currentPage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+  const statusFilter = currentFilter === "all" ? undefined : currentFilter;
   const ar = locale === "ar";
+
+  const [allCount, pendingCount, approvedCount, rejectedCount] = await Promise.all([
+    countStoriesModerationQueue(),
+    countStoriesModerationQueue("pending"),
+    countStoriesModerationQueue("approved"),
+    countStoriesModerationQueue("rejected"),
+  ]);
+
+  const totalFiltered = currentFilter === "all"
+    ? allCount
+    : currentFilter === "pending"
+      ? pendingCount
+      : currentFilter === "approved"
+        ? approvedCount
+        : rejectedCount;
+
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const offset = (safePage - 1) * ITEMS_PER_PAGE;
+  const filteredItems = await listStoriesModerationQueue({
+    limit: ITEMS_PER_PAGE,
+    offset,
+    status: statusFilter,
+  });
+
   const counts = {
-    all: items.length,
-    pending: items.filter((item) => item.moderationStatus === "pending").length,
-    approved: items.filter((item) => item.moderationStatus === "approved").length,
-    rejected: items.filter((item) => item.moderationStatus === "rejected").length,
+    all: allCount,
+    pending: pendingCount,
+    approved: approvedCount,
+    rejected: rejectedCount,
   };
   const filters: Array<{ value: ModerationFilter; label: string }> = [
     { value: "all", label: ar ? "الكل" : "All" },
@@ -59,6 +86,14 @@ export default async function AdminModerationStoriesPage({
     { value: "approved", label: ar ? "مقبول" : "Approved" },
     { value: "rejected", label: ar ? "مرفوض" : "Rejected" },
   ];
+
+  function buildModerationHref(filter: ModerationFilter, page = 1): string {
+    const query = new URLSearchParams();
+    if (filter !== "all") query.set("status", filter);
+    if (page > 1) query.set("page", String(page));
+    const qs = query.toString();
+    return qs ? `/${locale}/admin/moderation/stories?${qs}` : `/${locale}/admin/moderation/stories`;
+  }
 
   return (
     <AppPage>
@@ -72,9 +107,7 @@ export default async function AdminModerationStoriesPage({
       <div className="mb-4 flex flex-wrap gap-2">
         {filters.map((filter) => {
           const active = currentFilter === filter.value;
-          const href = filter.value === "all"
-            ? `/${locale}/admin/moderation/stories`
-            : `/${locale}/admin/moderation/stories?status=${filter.value}`;
+          const href = buildModerationHref(filter.value);
 
           return (
             <Link
@@ -102,47 +135,74 @@ export default async function AdminModerationStoriesPage({
           {ar ? "لا توجد عناصر في هذا الفلتر." : "No submissions for this filter."}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredItems.map((item) => {
-            const approve = moderateStoryAction.bind(null, locale as Locale, item.id, "approved");
-            const reject = moderateStoryAction.bind(null, locale as Locale, item.id, "rejected");
-            const businessName = ar ? item.businessName.ar : item.businessName.en;
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredItems.map((item) => {
+              const approve = moderateStoryAction.bind(null, locale as Locale, item.id, "approved");
+              const reject = moderateStoryAction.bind(null, locale as Locale, item.id, "rejected");
+              const businessName = ar ? item.businessName.ar : item.businessName.en;
 
-            return (
-              <article key={item.id} className="sbc-card rounded-2xl p-4">
-                <div className="relative mb-3 h-56 w-full overflow-hidden rounded-xl bg-(--surface)">
-                  {item.mediaType === "video" ? (
-                    <video src={item.mediaUrl} className="h-full w-full object-cover" controls />
-                  ) : (
-                    <Image src={item.mediaUrl} alt={businessName} fill className="object-cover" />
-                  )}
-                </div>
+              return (
+                <article key={item.id} className="sbc-card rounded-2xl p-4">
+                  <div className="relative mb-3 h-56 w-full overflow-hidden rounded-xl bg-(--surface)">
+                    {item.mediaType === "video" ? (
+                      <video src={item.mediaUrl} className="h-full w-full object-cover" controls />
+                    ) : (
+                      <Image src={item.mediaUrl} alt={businessName} fill className="object-cover" />
+                    )}
+                  </div>
 
-                <p className="text-xs text-(--muted-foreground)">
-                  {businessName} • @{item.businessUsername || "-"}
-                </p>
-                {item.caption ? <p className="mt-2 text-sm">{item.caption}</p> : null}
+                  <p className="text-xs text-(--muted-foreground)">
+                    {businessName} • @{item.businessUsername || "-"}
+                  </p>
+                  {item.caption ? <p className="mt-2 text-sm">{item.caption}</p> : null}
 
-                <div className={`mt-2 inline-flex rounded-lg border px-2 py-1 text-xs ${moderationClass(item.moderationStatus)}`}>
-                  {moderationLabel(item.moderationStatus, ar)}
-                </div>
+                  <div className={`mt-2 inline-flex rounded-lg border px-2 py-1 text-xs ${moderationClass(item.moderationStatus)}`}>
+                    {moderationLabel(item.moderationStatus, ar)}
+                  </div>
 
-                <div className="mt-4 flex items-center gap-2">
-                  <form action={approve}>
-                    <button type="submit" className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
-                      {ar ? "قبول" : "Approve"}
-                    </button>
-                  </form>
-                  <form action={reject}>
-                    <button type="submit" className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700">
-                      {ar ? "رفض" : "Reject"}
-                    </button>
-                  </form>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                  <div className="mt-4 flex items-center gap-2">
+                    <form action={approve}>
+                      <button type="submit" className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
+                        {ar ? "قبول" : "Approve"}
+                      </button>
+                    </form>
+                    <form action={reject}>
+                      <button type="submit" className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700">
+                        {ar ? "رفض" : "Reject"}
+                      </button>
+                    </form>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-(--surface-border) bg-(--surface) px-4 py-3 text-sm">
+              <div className="text-(--muted-foreground)">
+                {ar
+                  ? `عرض ${offset + 1}-${Math.min(offset + ITEMS_PER_PAGE, totalFiltered)} من ${totalFiltered}`
+                  : `Showing ${offset + 1}-${Math.min(offset + ITEMS_PER_PAGE, totalFiltered)} of ${totalFiltered}`}
+              </div>
+              <div className="flex items-center gap-2">
+                {safePage > 1 ? (
+                  <Link href={buildModerationHref(currentFilter, safePage - 1)} className="rounded-lg border border-(--surface-border) px-3 py-1.5 font-medium hover:bg-(--chip-bg)">
+                    {ar ? "السابق" : "Previous"}
+                  </Link>
+                ) : null}
+                <span className="px-2 font-medium">
+                  {safePage} / {totalPages}
+                </span>
+                {safePage < totalPages ? (
+                  <Link href={buildModerationHref(currentFilter, safePage + 1)} className="rounded-lg border border-(--surface-border) px-3 py-1.5 font-medium hover:bg-(--chip-bg)">
+                    {ar ? "التالي" : "Next"}
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </AppPage>
   );

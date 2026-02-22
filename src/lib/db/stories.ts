@@ -221,6 +221,173 @@ export async function listActiveStoriesWithBusiness(): Promise<StoryWithBusiness
   return result.rows.map(rowToStoryWithBusiness);
 }
 
+export async function getBusinessIdsWithActiveStories(businessIds: string[]): Promise<Set<string>> {
+  await ensureStoriesSchema();
+  const ids = Array.from(new Set(businessIds.filter(Boolean)));
+  if (ids.length === 0) return new Set<string>();
+
+  const result = await query<{ business_id: string }>(`
+    SELECT DISTINCT s.business_id
+    FROM stories s
+    JOIN businesses b ON s.business_id = b.id
+    WHERE s.expires_at > NOW()
+      AND s.moderation_status = 'approved'
+      AND b.is_approved = true
+      AND s.business_id = ANY($1::text[])
+  `, [ids]);
+
+  return new Set(result.rows.map((row) => row.business_id));
+}
+
+function groupStoryRowsByBusiness(rows: StoryWithBusinessRow[]): BusinessWithStories[] {
+  const businessMap = new Map<string, BusinessWithStories>();
+
+  for (const row of rows) {
+    const story = rowToStoryWithBusiness(row);
+    if (!businessMap.has(story.businessId)) {
+      businessMap.set(story.businessId, {
+        businessId: story.businessId,
+        businessName: story.businessName,
+        businessAvatar: story.businessAvatar,
+        businessUsername: story.businessUsername,
+        stories: [],
+        hasUnviewed: true,
+      });
+    }
+
+    businessMap.get(story.businessId)!.stories.push({
+      id: story.id,
+      businessId: story.businessId,
+      mediaUrl: story.mediaUrl,
+      mediaType: story.mediaType,
+      caption: story.caption,
+      overlays: story.overlays,
+      moderationStatus: story.moderationStatus,
+      reviewedByUserId: story.reviewedByUserId,
+      reviewedAt: story.reviewedAt,
+      createdAt: story.createdAt,
+      expiresAt: story.expiresAt,
+      viewCount: story.viewCount,
+    });
+  }
+
+  return Array.from(businessMap.values());
+}
+
+export async function countBusinessesWithActiveStories(): Promise<number> {
+  await ensureStoriesSchema();
+  const result = await query<{ total: string }>(`
+    SELECT COUNT(DISTINCT s.business_id)::text AS total
+    FROM stories s
+    JOIN businesses b ON s.business_id = b.id
+    WHERE s.expires_at > NOW()
+      AND s.moderation_status = 'approved'
+      AND b.is_approved = true
+  `);
+  return parseInt(result.rows[0]?.total || "0", 10);
+}
+
+export async function listBusinessesWithActiveStoriesPaginated(limit = 16, offset = 0): Promise<BusinessWithStories[]> {
+  await ensureStoriesSchema();
+  const safeLimit = Math.max(1, Math.min(limit, 60));
+  const safeOffset = Math.max(0, offset);
+
+  const result = await query<StoryWithBusinessRow>(`
+    WITH ranked AS (
+      SELECT
+        b.id AS business_id,
+        b.name_en,
+        b.name_ar,
+        b.media,
+        b.username,
+        MAX(s.created_at) AS latest_story_at
+      FROM stories s
+      JOIN businesses b ON s.business_id = b.id
+      WHERE s.expires_at > NOW()
+        AND s.moderation_status = 'approved'
+        AND b.is_approved = true
+      GROUP BY b.id, b.name_en, b.name_ar, b.media, b.username
+      ORDER BY latest_story_at DESC
+      LIMIT $1 OFFSET $2
+    )
+    SELECT s.*, r.name_en, r.name_ar, r.media, r.username
+    FROM stories s
+    JOIN ranked r ON r.business_id = s.business_id
+    WHERE s.expires_at > NOW()
+      AND s.moderation_status = 'approved'
+    ORDER BY r.latest_story_at DESC, s.created_at DESC
+  `, [safeLimit, safeOffset]);
+
+  return groupStoryRowsByBusiness(result.rows);
+}
+
+export async function countFollowedBusinessesWithActiveStoriesWithCategory(userId: string): Promise<number> {
+  await ensureStoriesSchema();
+  const result = await query<{ total: string }>(`
+    SELECT COUNT(DISTINCT b.id)::text AS total
+    FROM stories s
+    JOIN businesses b ON s.business_id = b.id
+    WHERE s.expires_at > NOW()
+      AND s.moderation_status = 'approved'
+      AND b.is_approved = true
+      AND (
+        EXISTS(SELECT 1 FROM user_business_follows f WHERE f.user_id = $1 AND f.business_id = b.id)
+        OR (
+          NOT EXISTS(SELECT 1 FROM user_business_unfollows uf WHERE uf.user_id = $1 AND uf.business_id = b.id)
+          AND b.category_id IS NOT NULL
+          AND EXISTS(SELECT 1 FROM user_category_follows cf WHERE cf.user_id = $1 AND cf.category_id = b.category_id)
+        )
+      )
+  `, [userId]);
+  return parseInt(result.rows[0]?.total || "0", 10);
+}
+
+export async function listFollowedBusinessesWithActiveStoriesWithCategoryPaginated(
+  userId: string,
+  limit = 16,
+  offset = 0,
+): Promise<BusinessWithStories[]> {
+  await ensureStoriesSchema();
+  const safeLimit = Math.max(1, Math.min(limit, 60));
+  const safeOffset = Math.max(0, offset);
+
+  const result = await query<StoryWithBusinessRow>(`
+    WITH ranked AS (
+      SELECT
+        b.id AS business_id,
+        b.name_en,
+        b.name_ar,
+        b.media,
+        b.username,
+        MAX(s.created_at) AS latest_story_at
+      FROM stories s
+      JOIN businesses b ON s.business_id = b.id
+      WHERE s.expires_at > NOW()
+        AND s.moderation_status = 'approved'
+        AND b.is_approved = true
+        AND (
+          EXISTS(SELECT 1 FROM user_business_follows f WHERE f.user_id = $1 AND f.business_id = b.id)
+          OR (
+            NOT EXISTS(SELECT 1 FROM user_business_unfollows uf WHERE uf.user_id = $1 AND uf.business_id = b.id)
+            AND b.category_id IS NOT NULL
+            AND EXISTS(SELECT 1 FROM user_category_follows cf WHERE cf.user_id = $1 AND cf.category_id = b.category_id)
+          )
+        )
+      GROUP BY b.id, b.name_en, b.name_ar, b.media, b.username
+      ORDER BY latest_story_at DESC
+      LIMIT $2 OFFSET $3
+    )
+    SELECT s.*, r.name_en, r.name_ar, r.media, r.username
+    FROM stories s
+    JOIN ranked r ON r.business_id = s.business_id
+    WHERE s.expires_at > NOW()
+      AND s.moderation_status = 'approved'
+    ORDER BY r.latest_story_at DESC, s.created_at DESC
+  `, [userId, safeLimit, safeOffset]);
+
+  return groupStoryRowsByBusiness(result.rows);
+}
+
 /**
  * Get businesses that have active stories, grouped by business
  */
@@ -393,6 +560,7 @@ export async function getActiveStoryCountByBusiness(businessId: string): Promise
 }
 
 export type ModerationQueueStoryItem = StoryWithBusiness;
+export type StoryModerationStatus = Story["moderationStatus"];
 
 export async function listPendingStoriesWithBusiness(limit = 100): Promise<ModerationQueueStoryItem[]> {
   await ensureStoriesSchema();
@@ -408,12 +576,19 @@ export async function listPendingStoriesWithBusiness(limit = 100): Promise<Moder
   return result.rows.map(rowToStoryWithBusiness);
 }
 
-export async function listStoriesModerationQueue(limit = 200): Promise<ModerationQueueStoryItem[]> {
+export async function listStoriesModerationQueue(options: {
+  limit?: number;
+  offset?: number;
+  status?: StoryModerationStatus;
+} = {}): Promise<ModerationQueueStoryItem[]> {
+  const limit = Math.max(1, Math.min(options.limit ?? 200, 1000));
+  const offset = Math.max(0, options.offset ?? 0);
   await ensureStoriesSchema();
   const result = await query<StoryWithBusinessRow>(`
     SELECT s.*, b.name_en, b.name_ar, b.media, b.username
     FROM stories s
     JOIN businesses b ON s.business_id = b.id
+    WHERE ($1::text IS NULL OR s.moderation_status = $1)
     ORDER BY
       CASE s.moderation_status
         WHEN 'pending' THEN 0
@@ -423,10 +598,20 @@ export async function listStoriesModerationQueue(limit = 200): Promise<Moderatio
       END,
       s.reviewed_at DESC NULLS LAST,
       s.created_at DESC
-    LIMIT $1
-  `, [Math.max(1, Math.min(limit, 1000))]);
+    LIMIT $2 OFFSET $3
+  `, [options.status ?? null, limit, offset]);
 
   return result.rows.map(rowToStoryWithBusiness);
+}
+
+export async function countStoriesModerationQueue(status?: StoryModerationStatus): Promise<number> {
+  await ensureStoriesSchema();
+  const result = await query<{ count: string }>(`
+    SELECT COUNT(*)::text AS count
+    FROM stories s
+    WHERE ($1::text IS NULL OR s.moderation_status = $1)
+  `, [status ?? null]);
+  return parseInt(result.rows[0]?.count || "0", 10);
 }
 
 export async function moderateStory(

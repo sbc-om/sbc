@@ -396,6 +396,131 @@ export async function listApprovedBusinesses(): Promise<Business[]> {
   return result.rows.map(rowToBusiness);
 }
 
+export type ExplorerBusinessSort =
+  | "relevance"
+  | "name-asc"
+  | "name-desc"
+  | "city-asc"
+  | "created-desc"
+  | "created-asc"
+  | "updated-desc"
+  | "verified-first"
+  | "special-first"
+  | "featured-first";
+
+export interface ListExplorerBusinessesOptions {
+  search?: string;
+  city?: string;
+  tags?: string;
+  categoryId?: string;
+  sortBy?: ExplorerBusinessSort;
+  limit?: number;
+  offset?: number;
+}
+
+function applyExplorerFilters(
+  queryStr: string,
+  params: (string | number)[],
+  options: Omit<ListExplorerBusinessesOptions, "limit" | "offset" | "sortBy">,
+): { queryStr: string; paramIndex: number } {
+  let paramIndex = params.length + 1;
+
+  if (options.search?.trim()) {
+    const value = `%${options.search.trim()}%`;
+    queryStr += ` AND (
+      b.name_en ILIKE $${paramIndex} OR
+      b.name_ar ILIKE $${paramIndex} OR
+      b.username ILIKE $${paramIndex} OR
+      b.slug ILIKE $${paramIndex} OR
+      b.city ILIKE $${paramIndex} OR
+      b.phone ILIKE $${paramIndex} OR
+      b.category ILIKE $${paramIndex}
+    )`;
+    params.push(value);
+    paramIndex++;
+  }
+
+  if (options.city?.trim()) {
+    queryStr += ` AND COALESCE(b.city, '') ILIKE $${paramIndex}`;
+    params.push(`%${options.city.trim()}%`);
+    paramIndex++;
+  }
+
+  if (options.categoryId?.trim()) {
+    queryStr += ` AND b.category_id = $${paramIndex}`;
+    params.push(options.categoryId.trim());
+    paramIndex++;
+  }
+
+  const tagTokens = (options.tags || "")
+    .split(/[ ,]+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+  for (const token of tagTokens) {
+    queryStr += ` AND LOWER(COALESCE(array_to_string(b.tags, ' '), '')) LIKE $${paramIndex}`;
+    params.push(`%${token.toLowerCase()}%`);
+    paramIndex++;
+  }
+
+  return { queryStr, paramIndex };
+}
+
+function explorerSortToOrderBy(sortBy: ExplorerBusinessSort): string {
+  switch (sortBy) {
+    case "name-asc":
+      return `ORDER BY b.name_en ASC, b.created_at DESC`;
+    case "name-desc":
+      return `ORDER BY b.name_en DESC, b.created_at DESC`;
+    case "city-asc":
+      return `ORDER BY b.city ASC NULLS LAST, b.created_at DESC`;
+    case "created-asc":
+      return `ORDER BY b.created_at ASC`;
+    case "updated-desc":
+      return `ORDER BY b.updated_at DESC`;
+    case "verified-first":
+      return `ORDER BY COALESCE(b.is_verified, false) DESC, b.created_at DESC`;
+    case "special-first":
+      return `ORDER BY COALESCE(b.is_special, false) DESC, b.created_at DESC`;
+    case "featured-first":
+      return `ORDER BY (COALESCE(b.homepage_top, false) OR COALESCE(b.homepage_featured, false)) DESC, b.created_at DESC`;
+    case "relevance":
+    case "created-desc":
+    default:
+      return `ORDER BY b.created_at DESC`;
+  }
+}
+
+export async function listExplorerBusinessesPaginated(
+  options: ListExplorerBusinessesOptions = {},
+): Promise<Business[]> {
+  const { limit = 12, offset = 0, sortBy = "relevance" } = options;
+  const safeLimit = Math.max(1, Math.min(limit, 60));
+  const safeOffset = Math.max(0, offset);
+
+  let queryStr = `SELECT b.* FROM businesses b WHERE b.is_approved = true`;
+  const params: (string | number)[] = [];
+  const filtered = applyExplorerFilters(queryStr, params, options);
+  queryStr = filtered.queryStr;
+  let paramIndex = filtered.paramIndex;
+
+  queryStr += ` ${explorerSortToOrderBy(sortBy)} LIMIT $${paramIndex++} OFFSET $${paramIndex++}`;
+  params.push(safeLimit, safeOffset);
+
+  const result = await query<BusinessRow>(queryStr, params);
+  return result.rows.map(rowToBusiness);
+}
+
+export async function countExplorerBusinesses(
+  options: Omit<ListExplorerBusinessesOptions, "limit" | "offset" | "sortBy"> = {},
+): Promise<number> {
+  let queryStr = `SELECT COUNT(*)::text AS total FROM businesses b WHERE b.is_approved = true`;
+  const params: (string | number)[] = [];
+  queryStr = applyExplorerFilters(queryStr, params, options).queryStr;
+
+  const result = await query<{ total: string }>(queryStr, params);
+  return parseInt(result.rows[0]?.total || "0", 10);
+}
+
 export async function createBusiness(input: BusinessInput): Promise<Business> {
   await ensureBusinessInstagramSchema();
   const data = businessInputSchema.parse(input);

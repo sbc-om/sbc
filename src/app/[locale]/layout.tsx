@@ -85,26 +85,6 @@ export async function generateMetadata({
 // ── Route classification ──────────────────────────────────────────────
 // First URL segment after /{locale}/... that determines the shell.
 
-/** Routes that ALWAYS render in the **public** shell (header + footer)
- *  even when the user is authenticated. */
-const ALWAYS_PUBLIC_SECTIONS = new Set([
-  "map",
-  "about",
-  "contact",
-  "faq",
-  "terms",
-  "rules",
-  "login",
-  "register",
-  "businesses",
-  "business-card",
-  "marketing-platform",
-  "loyalty",
-  "email",
-  "domain",
-  "u",
-]);
-
 /** Routes that ALWAYS require authentication – the user is redirected to
  *  the login page when not logged in.  These always get the dashboard shell. */
 const REQUIRE_AUTH_SECTIONS = new Set([

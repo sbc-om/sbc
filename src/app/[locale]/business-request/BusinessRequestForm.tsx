@@ -392,7 +392,7 @@ export function BusinessRequestForm({
           <StepInfo ar={ar} formData={formData} set={set} categories={categories} locale={locale} />
         )}
         {steps[currentStep].id === "contact" && (
-          <StepContact ar={ar} formData={formData} set={set} locale={locale} />
+          <StepContact ar={ar} formData={formData} set={set} />
         )}
         {steps[currentStep].id === "location" && (
           <StepLocation
@@ -568,12 +568,10 @@ function StepContact({
   ar,
   formData,
   set,
-  locale,
 }: {
   ar: boolean;
   formData: FormData;
   set: <K extends keyof FormData>(key: K, value: FormData[K]) => void;
-  locale: Locale;
 }) {
   return (
     <div className="space-y-6">

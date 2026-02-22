@@ -115,7 +115,6 @@ export default async function AdminModerationNewsPage({
             const approve = moderateBusinessNewsAction.bind(null, locale as Locale, item.id, "approved");
             const reject = moderateBusinessNewsAction.bind(null, locale as Locale, item.id, "rejected");
             const title = ar ? item.title.ar : item.title.en;
-            const content = ar ? item.content.ar : item.content.en;
             const businessName = ar ? item.businessName.ar : item.businessName.en;
             const localeValue = locale as Locale;
 

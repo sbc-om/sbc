@@ -362,11 +362,14 @@ export function useBusinessEngagementRealtime(
   businessId: string,
   initial: EngagementCounts
 ): EngagementCounts {
-  const [counts, setCounts] = useState<EngagementCounts>(initial);
+  const [counts, setCounts] = useState<EngagementCounts>(() => initial);
 
   useEffect(() => {
-    setCounts(initial);
-  }, [businessId, initial.likes, initial.comments]);
+    const timer = window.setTimeout(() => {
+      setCounts(initial);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [businessId, initial]);
 
   useEffect(() => {
     if (!businessId) return;

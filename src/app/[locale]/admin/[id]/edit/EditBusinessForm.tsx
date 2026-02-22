@@ -576,7 +576,10 @@ export function EditBusinessForm({
 
   useEffect(() => {
     if (currentStep !== steps.length - 1) return;
-    captureReviewSnapshot();
+    const timer = window.setTimeout(() => {
+      captureReviewSnapshot();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [
     currentStep,
     steps.length,

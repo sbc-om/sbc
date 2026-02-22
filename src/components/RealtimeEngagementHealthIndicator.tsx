@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useBusinessEngagementRealtimeHealth } from "@/lib/hooks/useBusinessEngagementRealtime";
 
@@ -23,11 +23,7 @@ function shouldEnableDebug(): boolean {
 
 export function RealtimeEngagementHealthIndicator() {
   const health = useBusinessEngagementRealtimeHealth();
-  const [enabled, setEnabled] = useState(false);
-
-  useEffect(() => {
-    setEnabled(shouldEnableDebug());
-  }, []);
+  const [enabled] = useState(() => shouldEnableDebug());
 
   const badge = useMemo(() => {
     if (health.mode === "sse") return { label: "SSE", cls: "bg-emerald-500/15 text-emerald-600" };

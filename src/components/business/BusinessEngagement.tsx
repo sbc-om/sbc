@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { BusinessComment } from "@/lib/db/types";

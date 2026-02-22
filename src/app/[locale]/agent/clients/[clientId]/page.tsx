@@ -229,7 +229,7 @@ export default async function AgentClientDetailsPage({
                     <td className="px-2 py-2">{sub.productSlug}</td>
                     <td className="px-2 py-2">{sub.program}</td>
                     <td className="px-2 py-2">
-                      {sub.isActive && new Date(sub.endDate).getTime() > Date.now() ? "Active" : "Inactive"}
+                      {sub.isActive ? "Active" : "Inactive"}
                     </td>
                     <td className="px-2 py-2">{new Date(sub.startDate).toLocaleDateString(locale)}</td>
                     <td className="px-2 py-2">{new Date(sub.endDate).toLocaleDateString(locale)}</td>

@@ -2,23 +2,28 @@ import { notFound } from "next/navigation";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
-import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
-import { listBusinesses, listBusinessesByOwner } from "@/lib/db/businesses";
-import { getUserFollowedCategoryIds, getUserFollowedBusinessIds, getUserUnfollowedBusinessIds } from "@/lib/db/follows";
-import { getCategoryById } from "@/lib/db/categories";
-import { listBusinessesWithActiveStories, listFollowedBusinessesWithActiveStoriesWithCategory } from "@/lib/db/stories";
+import { listBusinessesByOwner } from "@/lib/db/businesses";
 import {
-  getBusinessLikeCount,
-  hasUserLikedBusiness,
-  hasUserSavedBusiness,
-  getApprovedBusinessComments,
-} from "@/lib/db/businessEngagement";
+  countUserHomeBusinesses,
+  getUserFollowedBusinessIds,
+  getUserFollowedCategoryIds,
+  listUserHomeBusinessesPaginated,
+} from "@/lib/db/follows";
+import { getCategoryById } from "@/lib/db/categories";
+import {
+  countFollowedBusinessesWithActiveStoriesWithCategory,
+  listFollowedBusinessesWithActiveStoriesWithCategoryPaginated,
+} from "@/lib/db/stories";
+import { buildHomeFeedItems } from "@/lib/home/feed";
 import { toggleBusinessLikeAction, toggleBusinessSaveAction } from "./actions";
 import { AppPage } from "@/components/AppPage";
-import { BusinessFeedCard } from "@/components/BusinessFeedCard";
 import { FeedProfileHeader } from "@/components/FeedProfileHeader";
 import { StoriesContainer } from "@/components/stories";
+import { HomeInfiniteFeed } from "./HomeInfiniteFeed";
+
+const HOME_FEED_PER_PAGE = 12;
+const HOME_STORIES_PER_PAGE = 16;
 
 async function FollowedCategoriesDisplay({
   categoryIds,
@@ -57,7 +62,6 @@ export default async function HomeFollowedPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const dict = await getDictionary(locale as Locale);
   const user = await requireUser(locale as Locale);
 
   // Calculate user stats
@@ -79,82 +83,34 @@ export default async function HomeFollowedPage({
 
   const followedCategoryIds = new Set(await getUserFollowedCategoryIds(user.id));
   const followedBusinessIds = new Set(await getUserFollowedBusinessIds(user.id));
-  const unfollowedBusinessIds = new Set(await getUserUnfollowedBusinessIds(user.id));
-  const allBusinesses = await listBusinesses();
-  
-  // Get stories from followed businesses/categories only for home page
-  const [allBusinessesWithStories, followedBusinessesWithStories] = await Promise.all([
-    listBusinessesWithActiveStories(),
-    listFollowedBusinessesWithActiveStoriesWithCategory(user.id),
+
+  const [initialStories, totalStories, initialFeedBusinesses, totalFeedBusinesses] = await Promise.all([
+    listFollowedBusinessesWithActiveStoriesWithCategoryPaginated(user.id, HOME_STORIES_PER_PAGE, 0),
+    countFollowedBusinessesWithActiveStoriesWithCategory(user.id),
+    listUserHomeBusinessesPaginated(user.id, HOME_FEED_PER_PAGE, 0),
+    countUserHomeBusinesses(user.id),
   ]);
-  
-  // Create a Set of business IDs that have stories for quick lookup
-  const businessIdsWithStories = new Set(allBusinessesWithStories.map(b => b.businessId));
 
-  // Filter businesses:
-  // 1. Include if user directly follows the business (highest priority)
-  // 2. Otherwise include if business's category is followed AND business is not unfollowed
-  const businesses = allBusinesses.filter((b) => {
-    // Include if directly following this business
-    if (followedBusinessIds.has(b.id)) return true;
-
-    // Exclude unfollowed businesses when not directly followed
-    if (unfollowedBusinessIds.has(b.id)) return false;
-    
-    // Include if following the category
-    if (b.categoryId && followedCategoryIds.has(b.categoryId)) return true;
-    
-    return false;
-  });
-
-  // Prepare engagement data for each business
-  const businessesWithEngagement = await Promise.all(
-    businesses.map(async (b) => {
-      const category = b.categoryId ? await getCategoryById(b.categoryId) : null;
-      const approvedComments = await getApprovedBusinessComments(b.id);
-
-      return {
-        business: b,
-        categoryName: category ? (locale === "ar" ? category.name.ar : category.name.en) : undefined,
-        categoryIconId: category?.iconId,
-        initialLikeCount: await getBusinessLikeCount(b.id),
-        initialLiked: await hasUserLikedBusiness(user.id, b.id),
-        initialSaved: await hasUserSavedBusiness(user.id, b.id),
-        commentCount: approvedComments.length,
-        hasStories: businessIdsWithStories.has(b.id),
-      };
-    })
-  );
+  const initialFeedItems = await buildHomeFeedItems(user.id, locale, initialFeedBusinesses);
 
   return (
     <AppPage>
       <FeedProfileHeader user={viewUser} locale={locale as Locale} />
 
       {/* Stories Section - Only from followed businesses/categories */}
-      {followedBusinessesWithStories.length > 0 && (
+      {initialStories.length > 0 && (
         <div className="my-6 -mx-4 sm:-mx-6">
           <StoriesContainer
-            initialBusinesses={followedBusinessesWithStories}
+            initialBusinesses={initialStories}
             locale={locale as Locale}
             currentUserId={user.id}
             ownedBusinessIds={ownedBusinesses.map(b => b.id)}
             isAdmin={user.role === "admin"}
+            initialTotal={totalStories}
+            fetchScope="followed"
           />
         </div>
       )}
-
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {locale === "ar" ? "الرئيسية" : (dict.nav.home ?? "Home")}
-            </h1>
-            <p className="mt-1 text-sm text-(--muted-foreground)">
-              {locale === "ar"
-                ? "الأعمال من التصنيفات التي تتابعها."
-                : "Businesses from the categories you follow."}
-            </p>
-          </div>
-        </div>
 
         {followedCategoryIds.size === 0 && followedBusinessIds.size === 0 ? (
           <div className="mt-8 sbc-card rounded-2xl p-6">
@@ -169,27 +125,15 @@ export default async function HomeFollowedPage({
           </div>
         ) : null}
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {businessesWithEngagement.map((item) => (
-            <BusinessFeedCard
-              key={item.business.id}
-              business={item.business}
-              locale={locale}
-              categoryName={item.categoryName}
-              categoryIconId={item.categoryIconId}
-              initialLikeCount={item.initialLikeCount}
-              initialLiked={item.initialLiked}
-              initialSaved={item.initialSaved}
-              commentCount={item.commentCount}
-              onToggleLike={toggleBusinessLikeAction.bind(null, locale)}
-              onToggleSave={toggleBusinessSaveAction.bind(null, locale)}
-              detailsBasePath="/explorer"
-              hasStories={item.hasStories}
-            />
-          ))}
-        </div>
+        <HomeInfiniteFeed
+          locale={locale as Locale}
+          initialItems={initialFeedItems}
+          initialTotal={totalFeedBusinesses}
+          onToggleLike={toggleBusinessLikeAction.bind(null, locale)}
+          onToggleSave={toggleBusinessSaveAction.bind(null, locale)}
+        />
 
-        {(followedCategoryIds.size > 0 || followedBusinessIds.size > 0) && businessesWithEngagement.length === 0 ? (
+        {(followedCategoryIds.size > 0 || followedBusinessIds.size > 0) && totalFeedBusinesses === 0 ? (
           <div className="mt-10 text-center text-(--muted-foreground)">
             {locale === "ar"
               ? "لا توجد أعمال في التصنيفات أو الأنشطة التي تتابعها حالياً."

@@ -202,7 +202,7 @@ export function ExplorerBusinessView({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeydown);
     };
-  }, [activeGalleryIndex, galleryImages.length]);
+  }, [activeGalleryIndex, galleryImages.length, locale]);
 
   useEffect(() => {
     if (!galleryEmblaApi) return;
@@ -753,11 +753,14 @@ export function ExplorerBusinessView({
                 }
               }}
                 >
-                  <img
+                  <Image
                     src={galleryImages[activeGalleryIndex]}
                     alt={locale === "ar" ? `صورة ${activeGalleryIndex + 1}` : `Gallery image ${activeGalleryIndex + 1}`}
-                      className="block max-h-[78vh] w-auto max-w-[96vw] object-contain"
+                    width={1600}
+                    height={1200}
+                    className="block max-h-[78vh] w-auto max-w-[96vw] object-contain"
                     draggable={false}
+                    unoptimized
                   />
                 </div>
               </div>

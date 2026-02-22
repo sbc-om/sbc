@@ -114,6 +114,9 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   // Avoid setState-on-navigation-effect lint by tying visibility to the pathname
   // at the time the menu was opened.
   const isProfileMenuVisible = profileMenuOpen && profileMenuOpenedAtPath === pathname;
+  const isNotificationsEnabled = notificationPreferences.notificationsEnabled;
+  const displayNotificationUnread = isNotificationsEnabled ? notificationUnread : 0;
+  const displayNotificationPulse = isNotificationsEnabled ? notificationPulse : false;
 
   // Close profile menu when clicking outside or pressing Escape
   useEffect(() => {
@@ -197,11 +200,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   }, []);
 
   useEffect(() => {
-    if (!notificationPreferences.notificationsEnabled) {
-      setNotificationPulse(false);
-      setNotificationUnread(0);
-      return;
-    }
+    if (!notificationPreferences.notificationsEnabled) return;
 
     let eventSource: EventSource | null = null;
     let pulseTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -360,14 +359,14 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               isActive("/notifications")
                 ? "border-accent/40 bg-linear-to-r from-accent/10 to-accent-2/10 text-accent"
                 : "border-(--surface-border) bg-(--chip-bg) text-(--muted-foreground) hover:text-foreground"
-            } ${notificationPulse ? "motion-safe:animate-pulse" : ""}`}
+            } ${displayNotificationPulse ? "motion-safe:animate-pulse" : ""}`}
             aria-label={locale === "ar" ? "الإشعارات" : "Notifications"}
             title={locale === "ar" ? "الإشعارات" : "Notifications"}
           >
             {isActive("/notifications") ? <HiBell className="h-5 w-5" /> : <HiOutlineBell className="h-5 w-5" />}
-            {notificationPreferences.notificationsEnabled && notificationUnread > 0 && (
+            {displayNotificationUnread > 0 && (
               <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-5 text-center shadow">
-                {notificationUnread > 99 ? "99+" : notificationUnread}
+                {displayNotificationUnread > 99 ? "99+" : displayNotificationUnread}
               </span>
             )}
           </Link>
