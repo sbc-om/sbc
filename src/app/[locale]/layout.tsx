@@ -201,6 +201,18 @@ export default async function LocaleLayout({
 
   const requiresAuth = REQUIRE_AUTH_SECTIONS.has(routeSection) || isLoyaltyManageRoute(segments);
   const isLocaleHomePage = segments.length <= 1; // bare /{locale}
+  const isLoyaltyStaffRoute = segments[1] === "loyalty" && segments[2] === "staff";
+
+  if (isLoyaltyStaffRoute) {
+    return (
+      <DictionaryProvider locale={locale as Locale} dict={dict}>
+        <AISearchProvider>
+          <DirectionSync locale={locale as Locale} />
+          {children}
+        </AISearchProvider>
+      </DictionaryProvider>
+    );
+  }
 
   // ── Authentication ─────────────────────────────────────────────────
   const user = requiresAuth

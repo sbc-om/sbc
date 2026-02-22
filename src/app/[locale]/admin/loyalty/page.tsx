@@ -285,16 +285,6 @@ export default async function AdminLoyaltyPage({
         <div className="grid gap-4">
           {enriched.map(({ profile, user, stats }, idx) => (
             <div key={profile.userId} className="sbc-card overflow-hidden">
-              {/* Top accent bar */}
-              <div
-                className="h-1"
-                style={{
-                  background: `linear-gradient(90deg, 
-                    hsl(${(idx * 47) % 360}, 60%, 55%), 
-                    hsl(${((idx * 47) % 360) + 40}, 55%, 60%))`,
-                }}
-              />
-
               <div className="p-6">
                 {/* ── Row 1: Business identity ──────────────────── */}
                 <div className="flex items-start gap-4">
