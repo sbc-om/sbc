@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
@@ -27,6 +27,7 @@ import { DynamicShell } from "@/components/DynamicShell";
 import { buttonVariants } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { getCurrentLoyaltyStaffSession } from "@/lib/auth/loyaltyStaffSession";
 
 const BASE_DOMAINS = ["sbc.om", "localhost", "127.0.0.1"] as const;
 const MAIN_DOMAINS = ["sbc.om", "www.sbc.om", "localhost", "127.0.0.1"] as const;
@@ -201,9 +202,20 @@ export default async function LocaleLayout({
 
   const requiresAuth = REQUIRE_AUTH_SECTIONS.has(routeSection) || isLoyaltyManageRoute(segments);
   const isLocaleHomePage = segments.length <= 1; // bare /{locale}
-  const isLoyaltyStaffRoute = segments[1] === "loyalty" && segments[2] === "staff";
+  const isLoyaltyStaffWorkspaceRoute =
+    segments[1] === "loyalty" &&
+    segments[2] === "staff" &&
+    typeof segments[3] === "string" &&
+    segments[3].length > 0;
 
-  if (isLoyaltyStaffRoute) {
+  const staffAppModeCookie = (await cookies()).get("sbc_staff_app_mode")?.value === "1";
+  let hidePublicChromeForStaffApp = false;
+  if (isLoyaltyStaffWorkspaceRoute && staffAppModeCookie) {
+    const staffSession = await getCurrentLoyaltyStaffSession();
+    hidePublicChromeForStaffApp = !!staffSession && staffSession.joinCode === segments[3];
+  }
+
+  if (hidePublicChromeForStaffApp) {
     return (
       <DictionaryProvider locale={locale as Locale} dict={dict}>
         <AISearchProvider>

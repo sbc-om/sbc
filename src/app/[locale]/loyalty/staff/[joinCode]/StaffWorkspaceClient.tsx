@@ -117,6 +117,25 @@ export function StaffWorkspaceClient({
     return () => window.removeEventListener("beforeinstallprompt", onBeforeInstallPrompt);
   }, []);
 
+  useEffect(() => {
+    if (isStandalone === null) return;
+
+    const shouldEnableAppMode = isStandalone && isLoggedIn;
+    const currentCookie = document.cookie
+      .split("; ")
+      .find((item) => item.startsWith("sbc_staff_app_mode="))
+      ?.split("=")[1];
+    const hasEnabledCookie = currentCookie === "1";
+
+    if (shouldEnableAppMode === hasEnabledCookie) return;
+
+    document.cookie = shouldEnableAppMode
+      ? "sbc_staff_app_mode=1; Path=/; Max-Age=2592000; SameSite=Lax"
+      : "sbc_staff_app_mode=0; Path=/; Max-Age=0; SameSite=Lax";
+
+    router.refresh();
+  }, [isStandalone, isLoggedIn, router]);
+
   const installApp = async () => {
     if (!deferredInstallPrompt) return;
     setInstalling(true);
