@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Business } from "@/lib/db/types";
@@ -12,9 +12,43 @@ import type {
 } from "leaflet";
 import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
+declare namespace L {
+  interface MarkerClusterGroupOptions {
+    maxClusterRadius?: number;
+    spiderfyOnMaxZoom?: boolean;
+    showCoverageOnHover?: boolean;
+    zoomToBoundsOnClick?: boolean;
+    disableClusteringAtZoom?: number;
+    animate?: boolean;
+    animateAddingMarkers?: boolean;
+    iconCreateFunction?: (cluster: { getChildCount(): number }) => LeafletDivIcon;
+  }
+  function markerClusterGroup(options?: MarkerClusterGroupOptions): import("leaflet").LayerGroup;
+}
+
+type ClusterGroup = import("leaflet").LayerGroup & { addLayer(layer: LeafletMarker): unknown };
+
 type Props = { locale: Locale };
 
 const DEFAULT_CENTER = { lat: 23.588, lng: 58.3829 };
+
+/* ── Zoom-based marker sizing ──────────────────────────────── */
+const MARKER_SIZE_BY_ZOOM: Record<number, number> = {
+  1: 10, 2: 12, 3: 14, 4: 16, 5: 18,
+  6: 20, 7: 22, 8: 24, 9: 26, 10: 28,
+  11: 30, 12: 34, 13: 36, 14: 38, 15: 40, 16: 42, 17: 44, 18: 46, 19: 48,
+};
+
+function markerSizeForZoom(zoom: number): number {
+  if (zoom <= 1) return MARKER_SIZE_BY_ZOOM[1];
+  if (zoom >= 19) return MARKER_SIZE_BY_ZOOM[19];
+  const lo = Math.floor(zoom);
+  const hi = Math.ceil(zoom);
+  if (lo === hi) return MARKER_SIZE_BY_ZOOM[lo];
+  const t = zoom - lo;
+  return Math.round(MARKER_SIZE_BY_ZOOM[lo] * (1 - t) + MARKER_SIZE_BY_ZOOM[hi] * t);
+}
 
 function escapeHtml(value: string) {
   return value
@@ -66,6 +100,7 @@ export default function MapPageClient({ locale }: Props) {
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const markerIconsRef = useRef<Map<string, LeafletIcon | LeafletDivIcon>>(new Map());
   const markersRef = useRef<Map<string, LeafletMarker>>(new Map());
+  const clusterGroupRef = useRef<ClusterGroup | null>(null);
   const sharedLocationMarkerRef = useRef<LeafletMarker | null>(null);
   const listItemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const lastActiveIdRef = useRef<string | null>(null);
@@ -154,6 +189,7 @@ export default function MapPageClient({ locale }: Props) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         markersRef.current.clear();
+        clusterGroupRef.current = null;
         sharedLocationMarkerRef.current = null;
         markerIconsRef.current.clear();
       }
@@ -170,6 +206,14 @@ export default function MapPageClient({ locale }: Props) {
       });
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+
+      /* ── Import marker-cluster plugin ──────────────────────── */
+      // @ts-expect-error -- CSS dynamic import handled by Next.js bundler
+      await import("leaflet.markercluster/dist/MarkerCluster.css");
+      // @ts-expect-error -- CSS dynamic import handled by Next.js bundler
+      await import("leaflet.markercluster/dist/MarkerCluster.Default.css");
+      await import("leaflet.markercluster");
+
       mapInstanceRef.current = map;
       setMapReady(true);
     };
@@ -187,6 +231,7 @@ export default function MapPageClient({ locale }: Props) {
         mapInstanceRef.current = null;
       }
       markers.clear();
+      clusterGroupRef.current = null;
       sharedLocationMarkerRef.current = null;
       markerIcons.clear();
     };
@@ -222,6 +267,36 @@ export default function MapPageClient({ locale }: Props) {
     };
   }, []);
 
+  /* ── Helper: build a div-icon at a given pixel size ──── */
+  const buildBusinessIcon = useCallback(
+    (L: typeof import("leaflet"), src: string, size: number): LeafletDivIcon => {
+      const safeSrc = escapeHtml(src).replaceAll('"', "&quot;");
+      return L.divIcon({
+        className: "map-business-marker",
+        iconSize: [size, size],
+        iconAnchor: [size / 2, size],
+        popupAnchor: [0, -(size * 0.75)],
+        html: `<img src="${safeSrc}" alt="marker" style="width:${size}px;height:${size}px;object-fit:contain;display:block;border-radius:${Math.round(size * 0.22)}px;box-shadow:0 2px 6px rgba(0,0,0,.25);background:#fff;" onerror="this.onerror=null;this.src='/images/sbc.svg'" />`,
+      });
+    },
+    [],
+  );
+
+  /* ── Re-scale all markers when the zoom level changes ── */
+  const rescaleMarkers = useCallback(() => {
+    const map = mapInstanceRef.current;
+    const L = leafletRef.current;
+    if (!map || !L) return;
+
+    const size = markerSizeForZoom(map.getZoom());
+
+    markersRef.current.forEach((marker) => {
+      const src =
+        (marker.options as Record<string, string>).__logoSrc || "/images/sbc.svg";
+      marker.setIcon(buildBusinessIcon(L, src, size));
+    });
+  }, [buildBusinessIcon]);
+
   // update markers when businesses change
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -229,10 +304,51 @@ export default function MapPageClient({ locale }: Props) {
     if (!map || !leaflet) return;
     const L = leaflet;
 
-    // clear existing markers
+    // remove previous cluster group / markers
+    if (clusterGroupRef.current) {
+      map.removeLayer(clusterGroupRef.current);
+      clusterGroupRef.current = null;
+    }
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current.clear();
+    markerIconsRef.current.clear();
 
+    /* ── Try to create cluster group (graceful fallback) ── */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mcgFactory = (L as any).markerClusterGroup as typeof L.markerClusterGroup | undefined;
+    let clusterGroup: ClusterGroup | null = null;
+
+    if (typeof mcgFactory === "function") {
+      try {
+        clusterGroup = mcgFactory({
+          maxClusterRadius: 45,
+          spiderfyOnMaxZoom: true,
+          showCoverageOnHover: false,
+          zoomToBoundsOnClick: true,
+          disableClusteringAtZoom: 17,
+          animate: true,
+          animateAddingMarkers: false,
+          iconCreateFunction: (cluster: { getChildCount: () => number }) => {
+            const count = cluster.getChildCount();
+            let sizeClass = "map-cluster-small";
+            if (count >= 50) sizeClass = "map-cluster-large";
+            else if (count >= 10) sizeClass = "map-cluster-medium";
+
+            return L.divIcon({
+              html: `<div class="map-cluster-inner"><span>${count}</span></div>`,
+              className: `map-cluster ${sizeClass}`,
+              iconSize: L.point(44, 44),
+            });
+          },
+        }) as ClusterGroup;
+        clusterGroupRef.current = clusterGroup;
+      } catch {
+        clusterGroup = null;
+      }
+    }
+
+    const currentZoom = map.getZoom();
+    const iconSize = markerSizeForZoom(currentZoom);
     const points: [number, number][] = [];
 
     for (const business of mappableBusinesses) {
@@ -240,21 +356,13 @@ export default function MapPageClient({ locale }: Props) {
       if (typeof latitude !== "number" || typeof longitude !== "number") continue;
 
       const markerSrc = (business.media?.logo || "").trim() || "/images/sbc.svg";
-      let markerIcon = markerIconsRef.current.get(markerSrc) ?? null;
+      const markerIcon = buildBusinessIcon(L, markerSrc, iconSize);
 
-      if (!markerIcon) {
-        const safeSrc = escapeHtml(markerSrc).replaceAll('"', "&quot;");
-        markerIcon = L.divIcon({
-          className: "map-business-marker",
-          iconSize: [40, 40],
-          iconAnchor: [20, 40],
-          popupAnchor: [0, -30],
-          html: `<img src="${safeSrc}" alt="marker" style="width:40px;height:40px;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='/images/sbc.svg'" />`,
-        });
-        markerIconsRef.current.set(markerSrc, markerIcon);
-      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const marker = L.marker([latitude, longitude], { icon: markerIcon } as any);
+      // store logo src for zoom rescaling
+      (marker.options as Record<string, unknown>).__logoSrc = markerSrc;
 
-      const marker = L.marker([latitude, longitude], { icon: markerIcon }).addTo(map);
       const name = locale === "ar" ? business.name.ar : business.name.en;
       const href = business.username
         ? `/${locale}/@${business.username}`
@@ -284,8 +392,21 @@ export default function MapPageClient({ locale }: Props) {
       marker.on("click", () => setActiveId(business.id));
 
       markersRef.current.set(business.id, marker);
+
+      if (clusterGroup) {
+        clusterGroup.addLayer(marker);
+      } else {
+        marker.addTo(map);
+      }
       points.push([latitude, longitude]);
     }
+
+    if (clusterGroup) {
+      map.addLayer(clusterGroup);
+    }
+
+    /* ── Listen for zoom changes to rescale markers ──────── */
+    map.on("zoomend", rescaleMarkers);
 
     if (sharedLocation) {
       map.setView([sharedLocation.lat, sharedLocation.lng], 17);
@@ -293,7 +414,11 @@ export default function MapPageClient({ locale }: Props) {
       const bounds = L.latLngBounds(points.map((p) => L.latLng(p[0], p[1])));
       map.fitBounds(bounds.pad(0.15));
     }
-  }, [mappableBusinesses, locale, mapReady, sharedLocation]);
+
+    return () => {
+      map.off("zoomend", rescaleMarkers);
+    };
+  }, [mappableBusinesses, locale, mapReady, sharedLocation, buildBusinessIcon, rescaleMarkers]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
