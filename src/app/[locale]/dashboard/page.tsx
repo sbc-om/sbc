@@ -79,8 +79,8 @@ export default async function DashboardPage({
       glowColor: "rgba(16,185,129,0.12)",
     },
     marketing: {
-      title: ar ? "منصة التسويق" : "Marketing Platform",
-      href: `/${locale}/marketing-platform/app`,
+      title: ar ? "خدمات SBC" : "SBC Services",
+      href: `/${locale}/services/app`,
       storeHref: `/${locale}/store?q=marketing`,
       subtitle: ar ? "الرسائل والحملات" : "Messages & campaigns",
       Icon: HiOutlineMegaphone,

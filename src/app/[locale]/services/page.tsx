@@ -11,6 +11,7 @@ import {
   HiOutlineSparkles,
   HiOutlineViewGrid,
 } from "react-icons/hi";
+import { HiOutlineCpuChip } from "react-icons/hi2";
 
 import { PublicPage } from "@/components/PublicPage";
 import { AddToCartButton } from "@/components/store/AddToCartButton";
@@ -52,10 +53,10 @@ export default async function MarketingPlatformPage({
   );
 
   const copy = {
-    title: ar ? "خدمات ماركتينج" : "Marketing Services",
+    title: ar ? "خدمات SBC" : "SBC Services",
     subtitle: ar
-      ? "خدمات كاملة للبزنس في صفحة واحدة: Business Directory، واجهات API خاصة لواتساب وتلغرام من تطويرنا، Website Builder، Business Email، وLoyalty Card."
-      : "Everything your business needs in one place: Directory, our in-house WhatsApp & Telegram APIs, Website Builder, Business Email, and Loyalty Card.",
+      ? "خدمات كاملة للبزنس في صفحة واحدة: Business Directory، واجهات API خاصة لواتساب وتلغرام، Website Builder، Business Email، Loyalty Card، و AI Agent Builder."
+      : "Everything your business needs in one place: Directory, WhatsApp & Telegram APIs, Website Builder, Business Email, Loyalty Card, and AI Agent Builder.",
     ctaPrimary: ar ? "ابدأ الآن" : "Get Started",
     ctaDemo: ar ? "اطلب عرضاً" : "Request Demo",
     ctaHome: ar ? "الرئيسية" : "Back Home",
@@ -83,7 +84,7 @@ export default async function MarketingPlatformPage({
       desc: ar
         ? "واجهات API خاصة بواتساب وتلغرام من تطويرنا لإرسال الرسائل، إدارة المحادثات، وتشغيل الحملات من مكان واحد."
         : "Proprietary WhatsApp and Telegram APIs built by our team to run messaging, chat management, and campaigns from one place.",
-      href: `/${locale}/marketing-platform/app`,
+      href: `/${locale}/services/app`,
       hrefLabel: ar ? "افتح لوحة الرسائل" : "Open Messaging App",
       tone: "bg-accent-2/15 text-accent-2",
     },
@@ -116,6 +117,16 @@ export default async function MarketingPlatformPage({
       href: `/${locale}/loyalty`,
       hrefLabel: ar ? "الذهاب لصفحة الولاء" : "Go to Loyalty Page",
       tone: "bg-accent/15 text-accent",
+    },
+    {
+      icon: HiOutlineCpuChip,
+      title: ar ? "AI Agent Builder" : "AI Agent Builder",
+      desc: ar
+        ? "صمّم عملاء ذكاء اصطناعي بصرياً بدون كود — ربط API، معالجة بيانات، واتخاذ قرارات تلقائية لأعمالك."
+        : "Visually build AI agents with no code — connect APIs, process data, and automate decisions for your business.",
+      href: `/${locale}/ai`,
+      hrefLabel: ar ? "ابدأ ببناء العميل" : "Start Building Agents",
+      tone: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
     },
   ];
 
@@ -159,7 +170,7 @@ export default async function MarketingPlatformPage({
         <div className="mt-7 flex flex-wrap items-center gap-3">
           {user && isActive ? (
             <Link
-              href={`/${locale}/marketing-platform/app`}
+              href={`/${locale}/services/app`}
               className={buttonVariants({
                 variant: "primary",
                 size: "lg",
@@ -213,14 +224,14 @@ export default async function MarketingPlatformPage({
           {services.map((service) => {
             const Icon = service.icon;
             return (
-              <div key={service.title} className="sbc-card sbc-card--interactive rounded-2xl p-6">
+              <div key={service.title} className="sbc-card sbc-card--interactive flex flex-col rounded-2xl p-6">
                 <div className="flex items-center gap-3">
                   <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${service.tone}`}>
                     <Icon className="h-9 w-9" />
                   </div>
                   <h3 className="font-semibold leading-6">{service.title}</h3>
                 </div>
-                <p className="mt-4 text-sm leading-7 text-(--muted-foreground)">{service.desc}</p>
+                <p className="mt-4 flex-1 text-sm leading-7 text-(--muted-foreground)">{service.desc}</p>
                 <Link
                   href={service.href}
                   className={buttonVariants({
@@ -288,6 +299,14 @@ export default async function MarketingPlatformPage({
               {ar ? "اذهب لصفحة الولاء" : "Open Loyalty Page"}
             </Link>
           </li>
+          <li>
+            {ar
+              ? "• AI Agent Builder: بناء عملاء ذكاء اصطناعي بصرياً لأتمتة العمليات بدون كود."
+              : "• AI Agent Builder: visually create AI agents to automate workflows with no code."}{" "}
+            <Link href={`/${locale}/ai`} className="text-accent hover:underline">
+              {ar ? "ابدأ ببناء العميل" : "Open Agent Builder"}
+            </Link>
+          </li>
         </ul>
       </section>
 
@@ -302,7 +321,7 @@ export default async function MarketingPlatformPage({
         {!user ? (
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Link
-              href={`/${locale}/login?next=${encodeURIComponent(`/${locale}/marketing-platform`)}`}
+              href={`/${locale}/login?next=${encodeURIComponent(`/${locale}/services`)}`}
               className={buttonVariants({
                 variant: "primary",
                 size: "lg",
@@ -312,7 +331,7 @@ export default async function MarketingPlatformPage({
               {ar ? "سجّل الدخول للشراء" : "Login to Buy"}
             </Link>
             <Link
-              href={`/${locale}/register?next=${encodeURIComponent(`/${locale}/marketing-platform`)}`}
+              href={`/${locale}/register?next=${encodeURIComponent(`/${locale}/services`)}`}
               className={buttonVariants({
                 variant: "secondary",
                 size: "lg",

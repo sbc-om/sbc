@@ -110,10 +110,10 @@ export function Footer({ locale, dict, homepageOnlyInstagram = true }: FooterPro
                   </Link>
                   <span className="text-(--muted-foreground) opacity-40">•</span>
                   <Link
-                    href={`/${locale}/marketing-platform`}
+                    href={`/${locale}/services`}
                     className="text-foreground hover:text-accent transition-colors"
                   >
-                    {locale === "ar" ? "منصة التسويق" : "Marketing"}
+                    {locale === "ar" ? "خدمات SBC" : "Services"}
                   </Link>
                   <span className="text-(--muted-foreground) opacity-40">•</span>
                   <Link

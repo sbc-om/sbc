@@ -19,7 +19,7 @@ const ALWAYS_PUBLIC_SECTIONS = new Set([
   "register",
   "businesses",
   "business-card",
-  "marketing-platform",
+  "services",
   "loyalty",
   "email",
   "domain",

@@ -30,6 +30,6 @@ export async function finalizeCheckoutAction(locale: Locale, slugs: string[]) {
 
   revalidatePath(`/${locale}/dashboard`);
   revalidatePath(`/${locale}/loyalty`);
-  revalidatePath(`/${locale}/marketing-platform`);
+  revalidatePath(`/${locale}/services`);
   revalidatePath(`/${locale}/directory`);
 }

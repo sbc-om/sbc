@@ -31,7 +31,7 @@ export default async function MarketingAppPage({
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {ar ? "منصة التسويق" : "Marketing Platform"}
+            {ar ? "خدمات SBC" : "SBC Services"}
           </h1>
           <p className="mt-1 text-sm text-(--muted-foreground)">
             {ar
@@ -65,7 +65,7 @@ export default async function MarketingAppPage({
               {ar ? "اذهب للمتجر" : "Go to store"}
             </Link>
             <Link
-              href={`/${locale}/marketing-platform`}
+              href={`/${locale}/services`}
               className={buttonVariants({ variant: "secondary", size: "md" })}
             >
               {ar ? "صفحة المنتج" : "Product page"}

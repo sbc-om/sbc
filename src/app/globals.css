@@ -61,24 +61,24 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
 }
 
 .dark {
-  --background: #0f1115;
+  --background: #121212;
   --foreground: #e8eaed;
   --foreground-rgb: 232, 234, 237;
-  --surface: rgba(24, 27, 32, 0.85);
-  --surface-rgb: 24, 27, 32;
-  --surface-border: rgba(255, 255, 255, 0.12);
-  --surface-hover: rgba(255, 255, 255, 0.08);
+  --surface: rgba(38, 38, 38, 0.92);
+  --surface-rgb: 38, 38, 38;
+  --surface-border: rgba(255, 255, 255, 0.14);
+  --surface-hover: rgba(255, 255, 255, 0.10);
   --shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
   --shadow-hover: 0 16px 50px rgba(0, 0, 0, 0.60);
   --muted-foreground: rgba(232, 234, 237, 0.72);
 
   --accent: #818cf8;
   --accent-2: #22d3ee;
-  --accent-foreground: #0f1115;
+  --accent-foreground: #121212;
   --ring: rgba(129, 140, 248, 0.40);
 
-  --chip-bg: rgba(255, 255, 255, 0.08);
-  --chip-border: rgba(255, 255, 255, 0.14);
+  --chip-bg: rgba(255, 255, 255, 0.10);
+  --chip-border: rgba(255, 255, 255, 0.16);
   --chip-foreground: rgba(255, 255, 255, 0.88);
 }
 
