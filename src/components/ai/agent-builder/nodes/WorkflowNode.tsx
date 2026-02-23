@@ -4,10 +4,10 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Trash2 } from "lucide-react";
 
 import { NodeIcon } from "@/lib/ai/agentflow/icons";
-import type { WorkflowNodeData } from "@/lib/ai/agentflow/types";
+import type { WorkflowNode as WorkflowNodeType } from "@/lib/ai/agentflow/types";
 import { useWorkflowStore } from "@/store/agentflow/workflow-store";
 
-export function WorkflowNode({ id, data, selected }: NodeProps<WorkflowNodeData>) {
+export function WorkflowNode({ id, data, selected }: NodeProps<WorkflowNodeType>) {
   const deleteNode = useWorkflowStore((state) => state.deleteNode);
   const isCondition = data.type === "ifCondition";
 
