@@ -275,8 +275,8 @@ export default function MapPageClient({ locale }: Props) {
         className: "map-business-marker",
         iconSize: [size, size],
         iconAnchor: [size / 2, size],
-        popupAnchor: [0, -(size * 0.75)],
-        html: `<img src="${safeSrc}" alt="marker" style="width:${size}px;height:${size}px;object-fit:contain;display:block;border-radius:${Math.round(size * 0.22)}px;box-shadow:0 2px 6px rgba(0,0,0,.25);background:#fff;" onerror="this.onerror=null;this.src='/images/sbc.svg'" />`,
+        popupAnchor: [0, -size],
+        html: `<img src="${safeSrc}" alt="" style="width:${size}px;height:${size}px;object-fit:contain;display:block;" onerror="this.onerror=null;this.src='/images/sbc.svg'" />`,
       });
     },
     [],
