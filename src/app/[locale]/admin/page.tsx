@@ -337,6 +337,16 @@ export default async function AdminPage({
       badge: allAgentsList.length > 0 ? allAgentsList.length : undefined,
     },
     {
+      href: `/${locale}/ai`,
+      icon: (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h9a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0015.75 4.5h-9A2.25 2.25 0 004.5 6.75v10.5A2.25 2.25 0 006.75 19.5z" />
+        </svg>
+      ),
+      label: ar ? "منشئ الوكيل الذكي" : "AI Agent Builder",
+      color: "purple",
+    },
+    {
       href: `/${locale}/admin/backup`,
       icon: (
         <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

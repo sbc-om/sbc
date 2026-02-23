@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   HiOutlineBuildingOffice2,
+  HiOutlineCpuChip,
   HiOutlineEnvelope,
   HiOutlineGlobeAlt,
   HiOutlineMegaphone,
@@ -57,6 +58,7 @@ export default async function StorePage({
     marketing: products.filter((p) => p.program === "marketing"),
     website: products.filter((p) => p.program === "website"),
     email: products.filter((p) => p.program === "email"),
+    "agent-builder": products.filter((p) => p.program === "agent-builder"),
   };
 
   const ar = locale === "ar";
@@ -180,6 +182,15 @@ export default async function StorePage({
                 iconClassName: "text-orange-600 dark:text-orange-300",
                 iconBgClassName: "bg-orange-500/12",
                 borderClassName: "border-orange-500/25 dark:border-orange-400/25",
+              },
+              {
+                key: "agent-builder" as const,
+                title: ar ? "منشئ الوكيل الذكي" : "AI Agent Builder",
+                subtitle: ar ? "أنشئ وكيلاً ذكياً لنشاطك التجاري بدون برمجة." : "Build smart AI agents for your business — no code required.",
+                Icon: HiOutlineCpuChip,
+                iconClassName: "text-violet-600 dark:text-violet-300",
+                iconBgClassName: "bg-violet-500/12",
+                borderClassName: "border-violet-500/25 dark:border-violet-400/25",
               },
             ] as const
           ).map((section) => {

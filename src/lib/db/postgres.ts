@@ -1042,6 +1042,25 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     END $$;
     CREATE INDEX IF NOT EXISTS idx_business_requests_agent ON business_requests(agent_user_id);
 
+    -- Business AI Agents (workflow builder)
+    CREATE TABLE IF NOT EXISTS business_ai_agents (
+      id TEXT PRIMARY KEY,
+      business_id TEXT NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+      owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      description TEXT,
+      plan TEXT NOT NULL DEFAULT 'starter',
+      workflow JSONB NOT NULL DEFAULT '{}',
+      is_active BOOLEAN DEFAULT true,
+      is_deployed BOOLEAN DEFAULT false,
+      execution_count INTEGER DEFAULT 0,
+      last_executed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_business_ai_agents_business ON business_ai_agents(business_id);
+    CREATE INDEX IF NOT EXISTS idx_business_ai_agents_owner ON business_ai_agents(owner_id);
+
     -- Create SBC Treasury system user if not exists
     INSERT INTO users (id, email, phone, full_name, password_hash, role, is_active, is_verified, display_name, approval_status, created_at, updated_at)
     VALUES ('sbc-treasury', 'treasury@sbc.om', 'sbc', 'SBC Treasury', '$2b$10$placeholder', 'system', true, true, 'SBC Treasury', 'approved', NOW(), NOW())

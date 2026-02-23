@@ -20,6 +20,7 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "node scripts/seed.js",
+    "seed-agent-builder": "node scripts/seed-agent-builder-products.js",
     "generate-vapid": "node scripts/generate-vapid.js --write",
     "generate-icons": "node scripts/generate-icons.js",
     "generate-encryption-key": "node scripts/generate-encryption-key.js",

@@ -4,6 +4,7 @@ import {
   HiArrowUpRight,
   HiCheckBadge,
   HiOutlineBuildingOffice2,
+  HiOutlineCpuChip,
   HiOutlineEnvelope,
   HiOutlineGlobeAlt,
   HiOutlineMegaphone,
@@ -109,6 +110,17 @@ export default async function DashboardPage({
       iconBgClassName: "bg-orange-500/12 ring-1 ring-orange-500/18",
       borderClassName: "border-orange-500/25 dark:border-orange-400/25",
       glowColor: "rgba(249,115,22,0.12)",
+    },
+    "agent-builder": {
+      title: ar ? "منشئ الوكيل الذكي" : "AI Agent Builder",
+      href: `/${locale}/ai`,
+      storeHref: `/${locale}/store?q=agent-builder`,
+      subtitle: ar ? "أنشئ وكيلاً ذكياً لنشاطك" : "Build smart AI agents",
+      Icon: HiOutlineCpuChip,
+      iconClassName: "text-violet-600 dark:text-violet-300",
+      iconBgClassName: "bg-violet-500/12 ring-1 ring-violet-500/18",
+      borderClassName: "border-violet-500/25 dark:border-violet-400/25",
+      glowColor: "rgba(139,92,246,0.12)",
     },
   } as const;
 
