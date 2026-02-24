@@ -14,6 +14,11 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = isDark ? "dark" : "light";
 }
 
+function persistTheme(theme: Theme) {
+  window.localStorage.setItem("theme", theme);
+  document.cookie = `theme=${theme}; Path=/; Max-Age=31536000; SameSite=Lax`;
+}
+
 function getInitialTheme(): Theme {
   if (typeof window === "undefined") return "light";
   const saved = window.localStorage.getItem("theme");
@@ -77,7 +82,7 @@ export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
       onClick={() => {
         const next: Theme = theme === "dark" ? "light" : "dark";
         setTheme(next);
-        window.localStorage.setItem("theme", next);
+        persistTheme(next);
         applyTheme(next);
       }}
       className={buttonVariants({ variant: "secondary", size: "icon", className: "rounded-xl" })}

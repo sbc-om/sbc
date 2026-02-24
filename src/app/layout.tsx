@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import type { CSSProperties } from "react";
+import { cookies, headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Noto_Kufi_Arabic } from "next/font/google";
 import "./globals.css";
@@ -90,19 +91,39 @@ async function getRequestLocale() {
   return isLocale(raw) ? raw : defaultLocale;
 }
 
+async function getRequestTheme() {
+  const c = await cookies();
+  const raw = c.get("theme")?.value;
+  if (raw === "dark" || raw === "light" || raw === "system") return raw;
+  return "light" as const;
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const locale = await getRequestLocale();
+  const theme = await getRequestTheme();
+  const initialIsDark = theme === "dark";
   const dir = localeDir(locale);
 
   // Critical inline script - MUST run before any CSS/rendering to prevent flash
-  const themeInit = `(function(){try{var p=window.performance;var wrapPerfFn=function(name){try{if(!p||typeof p[name]!=='function'||p['__sbcWrapped_'+name])return;var orig=p[name].bind(p);p[name]=function(){try{return orig.apply(p,arguments)}catch(err){var msg=String(err&&err.message||'');if(err instanceof TypeError&&/negative time stamp/i.test(msg)){return}throw err}};p['__sbcWrapped_'+name]=true}catch(_){}};wrapPerfFn('mark');wrapPerfFn('measure');var r=document.documentElement;try{r.dataset.osPending='true';var st=document.createElement('style');st.id='os-pending-style';st.textContent='html[data-os-pending="true"],html[data-os-pending="true"] body{-ms-overflow-style:none;scrollbar-width:none;}html[data-os-pending="true"]::-webkit-scrollbar,html[data-os-pending="true"] body::-webkit-scrollbar{width:0;height:0;}';(document.head||document.documentElement).appendChild(st)}catch(e0){}var s=localStorage.getItem('theme');var d=s==='dark';if(d){r.classList.add('dark')}r.style.colorScheme=d?'dark':'light';try{var isDesktop=matchMedia('(min-width:1024px)').matches;var sc=localStorage.getItem('sidebarCollapsed');var collapsed=sc==='true';r.dataset.sidebarCollapsed=collapsed?'true':'false';var w=isDesktop?(collapsed?'5rem':'16rem'):'0rem';r.style.setProperty('--sidebar-width',w)}catch(e2){}window.addEventListener('load',function(){r.classList.add('loaded')},false)}catch(e){}})();`;
+  const themeInit = `(function(){try{var p=window.performance;var wrapPerfFn=function(name){try{if(!p||typeof p[name]!=='function'||p['__sbcWrapped_'+name])return;var orig=p[name].bind(p);p[name]=function(){try{return orig.apply(p,arguments)}catch(err){var msg=String(err&&err.message||'');if(err instanceof TypeError&&/negative time stamp/i.test(msg)){return}throw err}};p['__sbcWrapped_'+name]=true}catch(_){}};wrapPerfFn('mark');wrapPerfFn('measure');var r=document.documentElement;try{r.dataset.osPending='true';var st=document.createElement('style');st.id='os-pending-style';st.textContent='html[data-os-pending="true"],html[data-os-pending="true"] body{-ms-overflow-style:none;scrollbar-width:none;}html[data-os-pending="true"]::-webkit-scrollbar,html[data-os-pending="true"] body::-webkit-scrollbar{width:0;height:0;}';(document.head||document.documentElement).appendChild(st)}catch(e0){}var s=localStorage.getItem('theme');var d=s==='dark'||(s==='system'&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);r.classList.toggle('dark',d);r.style.colorScheme=d?'dark':'light';r.style.backgroundColor=d?'#121212':'#ffffff';r.style.color=d?'#e8eaed':'#0f172a';try{var isDesktop=matchMedia('(min-width:1024px)').matches;var sc=localStorage.getItem('sidebarCollapsed');var collapsed=sc==='true';r.dataset.sidebarCollapsed=collapsed?'true':'false';var w=isDesktop?(collapsed?'5rem':'16rem'):'0rem';r.style.setProperty('--sidebar-width',w)}catch(e2){}window.addEventListener('load',function(){r.classList.add('loaded')},false)}catch(e){}})();`;
+  const htmlStyle: CSSProperties = {
+    colorScheme: initialIsDark ? "dark" : "light",
+    backgroundColor: initialIsDark ? "#121212" : "#ffffff",
+    color: initialIsDark ? "#e8eaed" : "#0f172a",
+  };
 
   return (
-    <html lang={locale} dir={dir} suppressHydrationWarning>
+    <html
+      lang={locale}
+      dir={dir}
+      className={initialIsDark ? "dark" : undefined}
+      style={htmlStyle}
+      suppressHydrationWarning
+    >
       <head>
         {/* CRITICAL: This script MUST be first to prevent theme flash */}
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />

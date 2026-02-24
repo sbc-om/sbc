@@ -71,9 +71,12 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
     root.style.colorScheme = isDark ? "dark" : "light";
   }, []);
 
+  // NOTE: Do NOT call applyTheme on mount — the blocking <script> in <head>
+  // already applied the correct theme. Calling it with the default "light"
+  // state would briefly strip the "dark" class and cause a visible flash.
   useEffect(() => {
-    applyTheme(themeMode);
     if (themeMode !== "system") return;
+    applyTheme("system");
     const mql = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => applyTheme("system");
     mql.addEventListener("change", handler);
@@ -84,6 +87,7 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
     (mode: ThemeMode) => {
       setThemeMode(mode);
       localStorage.setItem("theme", mode);
+      document.cookie = `theme=${mode}; Path=/; Max-Age=31536000; SameSite=Lax`;
       applyTheme(mode);
     },
     [applyTheme],

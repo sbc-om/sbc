@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
 
 type SidebarContextType = {
   collapsed: boolean;
@@ -21,15 +21,12 @@ export function useSidebar() {
 export function SidebarLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const isFirstSidebarRun = useRef(true);
 
   // Keep first client render aligned with SSR, then hydrate responsive/user preference state.
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setIsMobile(window.innerWidth < 1024);
-      setCollapsed(localStorage.getItem("sidebarCollapsed") === "true");
-    }, 0);
-
-    return () => window.clearTimeout(timer);
+    setIsMobile(window.innerWidth < 1024);
+    setCollapsed(localStorage.getItem("sidebarCollapsed") === "true");
   }, []);
 
   // Check if mobile on mount and window resize
@@ -42,8 +39,16 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Update CSS variable for sidebar width
+  // Update CSS variable for sidebar width.
+  // On initial mount, skip: the blocking <script> in <head> already set
+  // --sidebar-width correctly. Running with the default React state
+  // (collapsed=false) would briefly widen the sidebar and cause a flash.
   useEffect(() => {
+    if (isFirstSidebarRun.current) {
+      isFirstSidebarRun.current = false;
+      return;
+    }
+
     let width: string;
     if (isMobile) {
       width = "0rem"; // Mobile: no margin

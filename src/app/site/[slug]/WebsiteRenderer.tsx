@@ -132,7 +132,12 @@ function SiteThemeToggle({ locale }: { locale: Locale }) {
   const toggle = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
-    try { localStorage.setItem("theme", next); } catch { /* */ }
+    try {
+      localStorage.setItem("theme", next);
+      document.cookie = `theme=${next}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    } catch {
+      /* */
+    }
   };
 
   const label = theme === "dark"

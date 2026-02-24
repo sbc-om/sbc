@@ -121,10 +121,17 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     root.style.colorScheme = isDark ? "dark" : "light";
   }, []);
 
-  // Listen for system preference changes when in "system" mode
+  // Listen for system preference changes when in "system" mode.
+  // NOTE: We intentionally do NOT call applyTheme on mount here.
+  // The blocking <script> in <head> already applied the correct theme
+  // from localStorage. Calling applyTheme with the default React state
+  // ("light") would briefly remove the "dark" class and cause a flash.
+  // Theme is only applied via handleThemeChange (user interaction) or
+  // the system-preference listener below.
   useEffect(() => {
-    applyTheme(themeMode);
     if (themeMode !== "system") return;
+    // Apply immediately in case system preference differs from blocking script
+    applyTheme("system");
     const mql = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => applyTheme("system");
     mql.addEventListener("change", handler);
@@ -135,6 +142,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     (mode: ThemeMode) => {
       setThemeMode(mode);
       localStorage.setItem("theme", mode);
+      document.cookie = `theme=${mode}; Path=/; Max-Age=31536000; SameSite=Lax`;
       applyTheme(mode);
     },
     [applyTheme],
