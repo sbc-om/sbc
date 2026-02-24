@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
@@ -30,6 +30,9 @@ import {
   HiOutlineBriefcase,
   HiLocationMarker,
   HiOutlineLocationMarker,
+  HiSun,
+  HiMoon,
+  HiDesktopComputer,
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
 
@@ -39,12 +42,53 @@ interface MobileNavProps {
   user: { role: string };
 }
 
+type ThemeMode = "light" | "dark" | "system";
+
 export function MobileNav({ locale, dict, user }: MobileNavProps) {
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileMenuOpenedAtPath, setProfileMenuOpenedAtPath] = useState<string | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
+
+  // ── Theme state ────────────────────────────────────────────────────
+  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") as ThemeMode | null;
+    if (saved === "light" || saved === "dark" || saved === "system") {
+      setThemeMode(saved);
+    }
+  }, []);
+
+  const applyTheme = useCallback((mode: ThemeMode) => {
+    const root = document.documentElement;
+    let isDark = mode === "dark";
+    if (mode === "system") {
+      isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+    root.classList.toggle("dark", isDark);
+    root.style.colorScheme = isDark ? "dark" : "light";
+  }, []);
+
+  useEffect(() => {
+    applyTheme(themeMode);
+    if (themeMode !== "system") return;
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => applyTheme("system");
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [themeMode, applyTheme]);
+
+  const handleThemeChange = useCallback(
+    (mode: ThemeMode) => {
+      setThemeMode(mode);
+      localStorage.setItem("theme", mode);
+      applyTheme(mode);
+    },
+    [applyTheme],
+  );
+  // ──────────────────────────────────────────────────────────────────
 
   const isActive = (path: string) => pathname.startsWith(`/${locale}${path}`);
 
@@ -221,7 +265,7 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
             <div
               role="menu"
               aria-label="Profile menu"
-              className="absolute bottom-full mb-2 w-56 max-w-[calc(100vw-16px)] rounded-xl border bg-background shadow-xl p-2"
+              className="absolute bottom-full mb-2 w-56 max-w-[calc(100vw-16px)] rounded-xl border bg-(--surface) shadow-xl p-2"
               style={{
                 borderColor: "var(--surface-border)",
                 ...(locale === "ar" ? { left: 8 } : { right: 8 }),
@@ -337,6 +381,38 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
                   {locale === "ar" ? "المحفظة" : "Wallet"}
                 </span>
               </Link>
+
+              <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
+
+              {/* Theme Switcher */}
+              <div className="px-2 py-2">
+                <div className="flex items-center gap-1 rounded-xl bg-(--chip-bg) p-1">
+                  {(
+                    [
+                      { mode: "light" as ThemeMode, icon: HiSun },
+                      { mode: "dark" as ThemeMode, icon: HiMoon },
+                      { mode: "system" as ThemeMode, icon: HiDesktopComputer },
+                    ] as const
+                  ).map(({ mode, icon: Icon }) => {
+                    const isSelected = themeMode === mode;
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        role="menuitem"
+                        onClick={() => handleThemeChange(mode)}
+                        className={`flex flex-1 items-center justify-center rounded-lg px-3 py-2 transition-all ${
+                          isSelected
+                            ? "bg-(--background) text-(--foreground) shadow-sm"
+                            : "text-(--muted-foreground) hover:text-(--foreground)"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
               <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -37,6 +37,7 @@ import {
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline, IoWallet, IoWalletOutline } from "react-icons/io5";
 import { HiPlus, HiOutlinePlus, HiBriefcase, HiOutlineBriefcase, HiUserGroup, HiOutlineUserGroup } from "react-icons/hi";
+import { HiSun, HiMoon, HiDesktopComputer } from "react-icons/hi";
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   normalizeNotificationPreferences,
@@ -98,6 +99,47 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     DEFAULT_NOTIFICATION_PREFERENCES,
   );
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Theme state ────────────────────────────────────────────────────
+  type ThemeMode = "light" | "dark" | "system";
+  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") as ThemeMode | null;
+    if (saved === "light" || saved === "dark" || saved === "system") {
+      setThemeMode(saved);
+    }
+  }, []);
+
+  const applyTheme = useCallback((mode: ThemeMode) => {
+    const root = document.documentElement;
+    let isDark = mode === "dark";
+    if (mode === "system") {
+      isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+    root.classList.toggle("dark", isDark);
+    root.style.colorScheme = isDark ? "dark" : "light";
+  }, []);
+
+  // Listen for system preference changes when in "system" mode
+  useEffect(() => {
+    applyTheme(themeMode);
+    if (themeMode !== "system") return;
+    const mql = window.matchMedia("(prefers-color-scheme: dark)");
+    const handler = () => applyTheme("system");
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [themeMode, applyTheme]);
+
+  const handleThemeChange = useCallback(
+    (mode: ThemeMode) => {
+      setThemeMode(mode);
+      localStorage.setItem("theme", mode);
+      applyTheme(mode);
+    },
+    [applyTheme],
+  );
+  // ──────────────────────────────────────────────────────────────────
 
   const iconOnly = collapsed && !isMobile;
 
@@ -480,7 +522,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           <div
             role="menu"
             aria-label="Profile menu"
-            className="absolute bottom-full mb-2 w-64 rounded-xl border bg-background shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150"
+            className="absolute bottom-full mb-2 w-64 rounded-xl border bg-(--surface) shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150"
             style={{
               borderColor: "var(--surface-border)",
               ...(locale === "ar" ? { right: 0 } : { left: 0 }),
@@ -625,6 +667,42 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 {locale === "ar" ? "المحفظة" : "Wallet"}
               </span>
             </Link>
+
+            <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
+
+            {/* Theme Switcher */}
+            <div className="px-2 py-2">
+              <p className="mb-2 text-xs font-medium text-(--muted-foreground)">
+                {locale === "ar" ? "المظهر" : "Theme"}
+              </p>
+              <div className="flex items-center gap-1 rounded-xl bg-(--chip-bg) p-1">
+                {(
+                  [
+                    { mode: "light" as ThemeMode, icon: HiSun, label: locale === "ar" ? "فاتح" : "Light" },
+                    { mode: "dark" as ThemeMode, icon: HiMoon, label: locale === "ar" ? "داكن" : "Dark" },
+                    { mode: "system" as ThemeMode, icon: HiDesktopComputer, label: locale === "ar" ? "النظام" : "System" },
+                  ] as const
+                ).map(({ mode, icon: Icon, label }) => {
+                  const isSelected = themeMode === mode;
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      role="menuitem"
+                      onClick={() => handleThemeChange(mode)}
+                      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-all ${
+                        isSelected
+                          ? "bg-(--background) text-(--foreground) shadow-sm"
+                          : "text-(--muted-foreground) hover:text-(--foreground)"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
 

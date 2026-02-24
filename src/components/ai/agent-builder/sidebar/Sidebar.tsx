@@ -9,11 +9,14 @@ import { Input } from "@/components/ui/Input";
 
 const categoryLabel = {
   triggers: "Triggers",
-  ai: "AI",
-  tools: "Tools",
-  flow: "Flow",
-  actions: "Actions",
-  data: "Data",
+  ai: "AI / LangChain",
+  flow: "Flow Control",
+  data: "Data Transformation",
+  tools: "Developer Tools",
+  actions: "Actions / Output",
+  communication: "Communication",
+  integration: "Integrations",
+  utility: "Utility",
 } as const;
 
 export function Sidebar() {
@@ -24,10 +27,13 @@ export function Sidebar() {
     const byCategory = {
       triggers: [] as typeof nodeDefinitions,
       ai: [] as typeof nodeDefinitions,
-      tools: [] as typeof nodeDefinitions,
       flow: [] as typeof nodeDefinitions,
-      actions: [] as typeof nodeDefinitions,
       data: [] as typeof nodeDefinitions,
+      tools: [] as typeof nodeDefinitions,
+      actions: [] as typeof nodeDefinitions,
+      communication: [] as typeof nodeDefinitions,
+      integration: [] as typeof nodeDefinitions,
+      utility: [] as typeof nodeDefinitions,
     };
 
     const q = query.trim().toLowerCase();

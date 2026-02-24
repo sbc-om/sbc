@@ -1,6 +1,17 @@
 import type { Edge, Node, XYPosition } from "@xyflow/react";
 
-export type NodeCategory = "triggers" | "ai" | "tools" | "flow" | "actions" | "data";
+import type { NodeIconName } from "./icons";
+
+export type NodeCategory =
+  | "triggers"
+  | "ai"
+  | "flow"
+  | "data"
+  | "tools"
+  | "actions"
+  | "communication"
+  | "integration"
+  | "utility";
 
 export type ConfigFieldType = "text" | "number" | "select" | "textarea" | "toggle";
 
@@ -18,7 +29,7 @@ export type NodeDefinition = {
   label: string;
   description: string;
   category: NodeCategory;
-  icon: "MessageCircle" | "Webhook" | "Clock3" | "Bot" | "Brain" | "MemoryStick" | "Globe" | "Code2" | "GitBranch" | "Split" | "Combine" | "Send" | "Mail" | "Database" | "Braces";
+  icon: NodeIconName;
   configFields: ConfigField[];
 };
 
@@ -26,7 +37,7 @@ export type WorkflowNodeData = {
   type: string;
   label: string;
   description: string;
-  icon: NodeDefinition["icon"];
+  icon: NodeIconName;
   config: Record<string, string | number | boolean>;
 };
 

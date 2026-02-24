@@ -3,7 +3,6 @@
 import {
   Background,
   Controls,
-  MiniMap,
   ReactFlow,
   ReactFlowProvider,
   type NodeTypes,
@@ -54,6 +53,7 @@ function InnerCanvas() {
         edges={edges}
         nodeTypes={nodeTypes}
         fitView
+        proOptions={{ hideAttribution: true }}
         onDrop={onDrop}
         onDragOver={onDragOver}
         onNodesChange={onNodesChange}
@@ -63,14 +63,6 @@ function InnerCanvas() {
         onPaneClick={() => setSelectedNodeId(null)}
       >
         <Background gap={18} />
-        <MiniMap
-          pannable
-          zoomable
-          bgColor="var(--surface)"
-          maskColor="rgba(var(--foreground-rgb), 0.08)"
-          nodeColor="var(--accent)"
-          nodeStrokeColor="var(--surface-border)"
-        />
         <Controls />
       </ReactFlow>
     </div>
