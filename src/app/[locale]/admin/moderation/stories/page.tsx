@@ -136,7 +136,7 @@ export default async function AdminModerationStoriesPage({
         </div>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {filteredItems.map((item) => {
               const approve = moderateStoryAction.bind(null, locale as Locale, item.id, "approved");
               const reject = moderateStoryAction.bind(null, locale as Locale, item.id, "rejected");
@@ -144,11 +144,11 @@ export default async function AdminModerationStoriesPage({
 
               return (
                 <article key={item.id} className="sbc-card rounded-2xl p-4">
-                  <div className="relative mb-3 h-56 w-full overflow-hidden rounded-xl bg-(--surface)">
+                  <div className="relative mb-3 w-full aspect-[9/16] overflow-hidden rounded-xl bg-(--surface)">
                     {item.mediaType === "video" ? (
-                      <video src={item.mediaUrl} className="h-full w-full object-cover" controls />
+                      <video src={item.mediaUrl} className="h-full w-full object-cover object-top" controls />
                     ) : (
-                      <Image src={item.mediaUrl} alt={businessName} fill className="object-cover" />
+                      <Image src={item.mediaUrl} alt={businessName} fill className="object-cover object-top" />
                     )}
                   </div>
 

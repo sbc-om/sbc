@@ -114,7 +114,7 @@ export function AgentBuilder({
             onClick={() => setMobilePanel(null)}
           />
 
-          <div className="absolute inset-x-3 bottom-3 top-16 flex min-h-0 flex-col rounded-2xl border border-(--surface-border) bg-(--background) p-2 shadow-[var(--shadow)]">
+          <div className="absolute inset-x-3 top-3 bottom-[calc(var(--mobile-nav-height,72px)+env(safe-area-inset-bottom)+8px)] flex min-h-0 flex-col rounded-2xl border border-(--surface-border) bg-(--background) p-2 shadow-[var(--shadow)]">
             <div className="mb-2 flex items-center justify-between px-1">
               <h3 className="text-sm font-semibold">
                 {mobilePanel === "nodes"

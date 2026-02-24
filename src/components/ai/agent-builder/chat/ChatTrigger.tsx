@@ -14,7 +14,7 @@ export function ChatTrigger({ label }: { label: string }) {
     <button
       type="button"
       onClick={toggleOpen}
-      className="fixed bottom-5 end-5 z-40 inline-flex items-center gap-2 rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-(--accent-foreground) shadow-[var(--shadow)]"
+      className="fixed end-5 z-40 inline-flex items-center gap-2 rounded-full bg-(--accent) px-4 py-2 text-sm font-semibold text-(--accent-foreground) shadow-[var(--shadow)] bottom-[calc(var(--mobile-nav-height,72px)+env(safe-area-inset-bottom)+12px)] lg:bottom-5"
     >
       <MessageCircle className="h-4 w-4" />
       {label}

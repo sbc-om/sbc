@@ -42,7 +42,7 @@ export function ChatBox({ locale }: { locale: "ar" | "en" }) {
   };
 
   return (
-    <div className="fixed bottom-5 end-5 z-40 w-[380px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-(--surface-border) bg-(--background) p-3 shadow-[var(--shadow)]">
+    <div className="fixed end-5 z-40 w-[380px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-(--surface-border) bg-(--background) p-3 shadow-[var(--shadow)] bottom-[calc(var(--mobile-nav-height,72px)+env(safe-area-inset-bottom)+12px)] lg:bottom-5">
       <div className="mb-2 flex items-center justify-between">
         <h4 className="text-sm font-semibold">{locale === "ar" ? "اختبار الوكيل" : "Test Agent"}</h4>
         <button type="button" onClick={() => setOpen(false)} className="rounded-md p-1 hover:bg-(--chip-bg)">
