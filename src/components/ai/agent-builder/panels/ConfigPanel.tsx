@@ -12,7 +12,7 @@ export function ConfigPanel() {
 
   if (!node) {
     return (
-      <aside className="flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+      <aside className="flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface) p-4 lg:w-80">
         <h3 className="text-sm font-semibold">Node Configuration</h3>
         <p className="mt-2 text-xs text-(--muted-foreground)">Select a node on canvas to edit settings.</p>
       </aside>
@@ -23,7 +23,7 @@ export function ConfigPanel() {
   if (!definition) return null;
 
   return (
-    <aside className="flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+    <aside className="flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface) p-4 lg:w-80">
       <h3 className="text-sm font-semibold">{node.data.label}</h3>
       <p className="mt-1 text-xs text-(--muted-foreground)">{node.data.description}</p>
 

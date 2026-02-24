@@ -45,7 +45,7 @@ export function Sidebar() {
   }, [query]);
 
   return (
-    <aside className="flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface) p-3">
+    <aside className="flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface) p-3 lg:w-80">
       <h3 className="text-sm font-semibold">Node Palette</h3>
       <p className="mt-1 text-xs text-(--muted-foreground)">Drag to canvas or click to add.</p>
 
