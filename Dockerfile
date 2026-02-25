@@ -4,8 +4,6 @@
 ARG NODE_IMAGE=node:22-alpine
 
 FROM ${NODE_IMAGE} AS deps
-ENV npm_config_build_from_source=true
-ENV npm_config_update_notifier=false
 RUN apk add --no-cache \
     libc6-compat \
     python3 \
@@ -25,7 +23,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Copy lock files first for better layer caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --unsafe-perm
-RUN pnpm rebuild canvas --unsafe-perm
+RUN npm_config_build_from_source=true pnpm rebuild canvas --unsafe-perm
 RUN find /app/node_modules/.pnpm -path '*/canvas/build/Release/canvas.node' -print -quit | grep -q .
 
 # ──────────────────────────────────────────────
@@ -33,9 +31,6 @@ RUN find /app/node_modules/.pnpm -path '*/canvas/build/Release/canvas.node' -pri
 # ──────────────────────────────────────────────
 FROM ${NODE_IMAGE} AS builder
 WORKDIR /app
-
-ENV npm_config_build_from_source=true
-ENV npm_config_update_notifier=false
 
 RUN apk add --no-cache \
     libc6-compat \
