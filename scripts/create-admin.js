@@ -13,7 +13,7 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const email = process.argv[2] || "admin@sbc.com";
+const email = process.argv[2] || "admin@sbc.om";
 const password = process.argv[3] || "admin123";
 
 async function main() {
