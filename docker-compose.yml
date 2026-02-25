@@ -1,0 +1,159 @@
+services:
+  # ─── PostgreSQL Database ───────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: sbc-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-sbc}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sbc-network
+
+  # ─── Next.js Application ──────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://sbc.om}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://sbc.om}
+        NEXT_PUBLIC_SOCIAL_FACEBOOK: ${NEXT_PUBLIC_SOCIAL_FACEBOOK:-}
+        NEXT_PUBLIC_SOCIAL_TWITTER: ${NEXT_PUBLIC_SOCIAL_TWITTER:-}
+    container_name: sbc-app
+    restart: unless-stopped
+    environment:
+      # ── Nginx Proxy (nginx-proxy + acme-companion) ──
+      VIRTUAL_HOST: ${DOMAIN:-sbc.om}
+      VIRTUAL_PORT: 3000
+      VIRTUAL_PROTO: http
+      VIRTUAL_NETWORK: proxy
+      LETSENCRYPT_HOST: ${DOMAIN:-sbc.om}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@sbc.om}
+
+      # ── Application ──
+      NODE_ENV: production
+      PORT: 3000
+      PUBLIC_URL: ${PUBLIC_URL:-https://sbc.om}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://sbc.om}
+
+      # ── Database ──
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sbc}
+      DB_PROVIDER: postgres
+      DB_ENCRYPTION_KEY: ${DB_ENCRYPTION_KEY}
+      DB_ENCRYPTION_ENABLED: ${DB_ENCRYPTION_ENABLED:-true}
+
+      # ── Auth / Security ──
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET}
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-30}
+      HUMAN_CHALLENGE_SECRET: ${HUMAN_CHALLENGE_SECRET:-}
+      CRON_SECRET: ${CRON_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@sbc.om}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+
+      # ── Push Notifications (VAPID) ──
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@sbc.om}
+
+      # ── WAHA (WhatsApp) ──
+      WAHA_API_URL: ${WAHA_API_URL:-}
+      WAHA_SESSION: ${WAHA_SESSION:-}
+      WAHA_API_KEY: ${WAHA_API_KEY:-}
+      WAHA_ENABLED: ${WAHA_ENABLED:-false}
+      OTP_EXPIRY_MINUTES: ${OTP_EXPIRY_MINUTES:-5}
+      OTP_MAX_ATTEMPTS: ${OTP_MAX_ATTEMPTS:-3}
+
+      # ── Google Wallet ──
+      GOOGLE_WALLET_ENABLED: ${GOOGLE_WALLET_ENABLED:-false}
+      GOOGLE_ISSUER_ID: ${GOOGLE_ISSUER_ID:-}
+      GOOGLE_WALLET_ISSUER_ID: ${GOOGLE_WALLET_ISSUER_ID:-${GOOGLE_ISSUER_ID:-}}
+      GOOGLE_SA_JSON: /app/certs/google-credentials.json
+      GOOGLE_APPLICATION_CREDENTIALS: /app/certs/google-credentials.json
+      GOOGLE_WALLET_PUBLIC_LOGO_URL: ${GOOGLE_WALLET_PUBLIC_LOGO_URL:-}
+
+      # ── Apple Wallet ──
+      APPLE_WALLET_ENABLED: ${APPLE_WALLET_ENABLED:-false}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_PASS_TYPE_ID: ${APPLE_PASS_TYPE_ID:-}
+      APPLE_CERT_PATH: /app/certs/pass.p12
+      APPLE_CERT_PASSWORD: ${APPLE_CERT_PASSWORD:-}
+      APPLE_WWDR_PATH: /app/certs/wwdr.pem
+      APPLE_SIGNER_CERT_PATH: /app/certs/pass_cert.pem
+      APPLE_SIGNER_KEY_PATH: /app/certs/pass_key.pem
+      APPLE_WALLET_WEB_SERVICE_URL: ${APPLE_WALLET_WEB_SERVICE_URL:-}
+
+      # ── APNs Push (Apple Pass updates) ──
+      APPLE_APNS_AUTH_KEY_P8_PATH: /app/certs/AuthKey_KDP29L8J65.p8
+      APPLE_APNS_KEY_ID: ${APPLE_APNS_KEY_ID:-}
+      APNS_SANDBOX: ${APNS_SANDBOX:-false}
+      APNS_SOCKS5_HOST: ${APNS_SOCKS5_HOST:-}
+      APNS_SOCKS5_PORT: ${APNS_SOCKS5_PORT:-}
+
+      # ── File Upload ──
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+      UPLOAD_DIR: /app/public/uploads
+      BACKUP_PATH: /app/backups
+    expose:
+      - "3000"
+    volumes:
+      # Persistent data volumes
+      - uploads-data:/app/public/uploads
+      - app-data:/app/data
+      - logs-data:/app/logs
+      - backups-data:/app/backups
+      # Mount certificates (read-only)
+      - ./certs:/app/certs:ro
+      # Persistent Next.js ISR/image cache
+      - nextcache-data:/app/.next/cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sbc-network
+      - proxy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  sbc-network:
+    external: false
+    name: sbc-network
+  proxy:
+    external: true
+    name: proxy
+
+volumes:
+  postgres-data:
+    driver: local
+    name: sbc-postgres-data
+  uploads-data:
+    driver: local
+    name: sbc-uploads-data
+  app-data:
+    driver: local
+    name: sbc-app-data
+  logs-data:
+    driver: local
+    name: sbc-logs-data
+  backups-data:
+    driver: local
+    name: sbc-backups-data
+  nextcache-data:
+    driver: local
+    name: sbc-nextcache-data

@@ -1,0 +1,51 @@
+# Dependencies (will be installed fresh in container)
+node_modules
+.pnpm-store
+
+# Build output (will be generated fresh)
+.next
+out
+
+# Version control
+.git
+.gitignore
+
+# Environment files (secrets — passed via docker-compose env)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# IDE / editor
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dev/CI config not needed at runtime
+.eslintrc*
+eslint.config.*
+.prettierrc*
+tsconfig.tsbuildinfo
+*.md
+!README.md
+LICENSE
+docs/
+
+# Docker files (avoid recursive context)
+Dockerfile
+docker-compose*.yml
+SERVER/
+
+# Data / local backups
+.data
+backups/
+logs/
+
+# Test / scripts not needed in production image
+scripts/
