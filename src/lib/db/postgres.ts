@@ -726,6 +726,35 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       END IF;
     END $$;
 
+    -- Migrations: Add missing users columns for backward compatibility
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'is_phone_verified') THEN
+        ALTER TABLE users ADD COLUMN is_phone_verified BOOLEAN DEFAULT false;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'is_archived') THEN
+        ALTER TABLE users ADD COLUMN is_archived BOOLEAN DEFAULT false;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'archived_at') THEN
+        ALTER TABLE users ADD COLUMN archived_at TIMESTAMPTZ;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'approval_reason') THEN
+        ALTER TABLE users ADD COLUMN approval_reason TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'approval_requested_at') THEN
+        ALTER TABLE users ADD COLUMN approval_requested_at TIMESTAMPTZ;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'pending_email') THEN
+        ALTER TABLE users ADD COLUMN pending_email TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'pending_phone') THEN
+        ALTER TABLE users ADD COLUMN pending_phone TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'approved_at') THEN
+        ALTER TABLE users ADD COLUMN approved_at TIMESTAMPTZ;
+      END IF;
+    END $$;
+
     -- Migrations: Add show_similar_businesses column to businesses table if not exists
     DO $$ 
     BEGIN 
