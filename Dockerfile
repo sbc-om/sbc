@@ -23,9 +23,9 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Copy lock files first for better layer caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --unsafe-perm
-RUN npm_config_build_from_source=true pnpm rebuild canvas --unsafe-perm
-RUN ls /app/node_modules/.pnpm/canvas@*/node_modules/canvas/build/Release/canvas.node \
-    && echo '✓ canvas.node binary found' || (echo '✗ canvas.node NOT found' && exit 1)
+RUN npm_config_build_from_source=true pnpm rebuild --unsafe-perm
+RUN find /app/node_modules -name canvas.node -type f | head -1 | grep -q . \
+    && echo '✓ canvas.node binary found' || (echo '✗ canvas.node NOT found — listing .pnpm:' && ls -R /app/node_modules/.pnpm/canvas* 2>/dev/null && exit 1)
 
 # ──────────────────────────────────────────────
 # Stage 2: Build the application
@@ -50,7 +50,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN ls node_modules/.pnpm/canvas@*/node_modules/canvas/build/Release/canvas.node \
+RUN find node_modules -name canvas.node -type f | head -1 | grep -q . \
     && echo '✓ canvas.node in builder: OK' || (echo '✗ canvas.node NOT found in builder' && exit 1)
 
 # Disable telemetry during build
@@ -72,10 +72,13 @@ ENV NEXT_PUBLIC_SOCIAL_TWITTER=$NEXT_PUBLIC_SOCIAL_TWITTER
 RUN pnpm build
 
 # Stage native modules that the standalone output may not trace through pnpm symlinks
+# Use find to locate the actual pnpm store paths (avoids glob issues in sh)
 RUN mkdir -p /runtime-modules && \
-    cp -rL node_modules/.pnpm/sbcwallet@*/node_modules/sbcwallet /runtime-modules/sbcwallet && \
-    cp -rL node_modules/.pnpm/canvas@*/node_modules/canvas /runtime-modules/canvas && \
-    echo '✓ runtime modules staged'
+    CANVAS_DIR=$(find node_modules/.pnpm -path '*/canvas@*/node_modules/canvas' -maxdepth 4 -type d | head -1) && \
+    SBC_DIR=$(find node_modules/.pnpm -path '*/sbcwallet@*/node_modules/sbcwallet' -maxdepth 4 -type d | head -1) && \
+    cp -rL "$CANVAS_DIR" /runtime-modules/canvas && \
+    cp -rL "$SBC_DIR" /runtime-modules/sbcwallet && \
+    echo "✓ runtime modules staged (canvas=$CANVAS_DIR, sbcwallet=$SBC_DIR)"
 
 # ──────────────────────────────────────────────
 # Stage 3: Production runner (minimal image)
