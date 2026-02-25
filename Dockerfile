@@ -24,7 +24,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --unsafe-perm
 RUN npm_config_build_from_source=true pnpm rebuild canvas --unsafe-perm
-RUN find /app/node_modules/.pnpm -path '*/canvas/build/Release/canvas.node' -print -quit | grep -q .
+RUN node -e "require('canvas'); console.log('canvas native module: OK')"
 
 # ──────────────────────────────────────────────
 # Stage 2: Build the application
@@ -49,7 +49,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN find /app/node_modules/.pnpm -path '*/canvas/build/Release/canvas.node' -print -quit | grep -q .
+RUN node -e "require('canvas'); console.log('canvas available in builder: OK')"
 
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
