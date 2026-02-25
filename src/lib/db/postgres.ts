@@ -29,6 +29,16 @@ export function getPool(): pg.Pool {
 // Promise for schema initialization (acts as a mutex)
 let schemaInitPromise: Promise<void> | null = null;
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientDbInitError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = String((error as { code?: unknown }).code ?? "");
+  return ["EAI_AGAIN", "ENOTFOUND", "ECONNREFUSED", "ETIMEDOUT", "57P03"].includes(code);
+}
+
 /**
  * Ensure database schema is initialized
  */
@@ -37,7 +47,10 @@ async function ensureSchema(): Promise<void> {
   
   // Use a single promise to prevent concurrent initialization
   if (!schemaInitPromise) {
-    schemaInitPromise = doEnsureSchema();
+    schemaInitPromise = doEnsureSchema().catch((error) => {
+      schemaInitPromise = null;
+      throw error;
+    });
   }
   await schemaInitPromise;
 }
@@ -49,7 +62,20 @@ async function doEnsureSchema(): Promise<void> {
   // Always run schema init — all statements use IF NOT EXISTS so it's safe
   // This ensures new tables added to the schema are created even on existing DBs
   console.log("[DB] Ensuring database schema...");
-  await runSchemaInit(pool);
+  const maxAttempts = 8;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      await runSchemaInit(pool);
+      break;
+    } catch (error) {
+      if (!isTransientDbInitError(error) || attempt === maxAttempts) {
+        throw error;
+      }
+      const delayMs = Math.min(1000 * 2 ** (attempt - 1), 8000);
+      console.warn(`[DB] Schema init transient error (${attempt}/${maxAttempts}), retrying in ${delayMs}ms...`);
+      await sleep(delayMs);
+    }
+  }
   console.log("[DB] Schema ready");
   
   globalThis.__sbcDbInitialized = true;
