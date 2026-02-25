@@ -27,6 +27,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
+        NODE_IMAGE: ${NODE_IMAGE:-node:22-alpine}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-https://sbc.om}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://sbc.om}
         NEXT_PUBLIC_SOCIAL_FACEBOOK: ${NEXT_PUBLIC_SOCIAL_FACEBOOK:-}

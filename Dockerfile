@@ -1,7 +1,9 @@
 # ──────────────────────────────────────────────
 # Stage 1: Install dependencies
 # ──────────────────────────────────────────────
-FROM node:20-alpine AS deps
+ARG NODE_IMAGE=node:22-alpine
+
+FROM ${NODE_IMAGE} AS deps
 RUN apk add --no-cache \
     libc6-compat \
     python3 \
@@ -26,7 +28,7 @@ RUN pnpm rebuild canvas
 # ──────────────────────────────────────────────
 # Stage 2: Build the application
 # ──────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM ${NODE_IMAGE} AS builder
 WORKDIR /app
 
 RUN apk add --no-cache \
@@ -67,7 +69,7 @@ RUN pnpm build
 # ──────────────────────────────────────────────
 # Stage 3: Production runner (minimal image)
 # ──────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM ${NODE_IMAGE} AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
