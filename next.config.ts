@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   // Standalone output for Docker deployment
   output: "standalone",
   // Native/optional-dep packages are best required at runtime, not bundled.
-  serverExternalPackages: ["sharp", "pg", "bcryptjs", "node-forge", "web-push", "archiver", "tar"],
+  serverExternalPackages: ["sharp", "canvas", "sbcwallet", "pg", "bcryptjs", "node-forge", "web-push", "archiver", "tar"],
   // Allow dev requests from ngrok tunnels
   allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok.io"],
   // Increase body size limit for file uploads (stories, images, etc.)

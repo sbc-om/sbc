@@ -2,7 +2,17 @@
 # Stage 1: Install dependencies
 # ──────────────────────────────────────────────
 FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++ \
+    pkgconf \
+    cairo-dev \
+    pango-dev \
+    jpeg-dev \
+    giflib-dev \
+    pixman-dev
 WORKDIR /app
 
 # Install pnpm
@@ -11,12 +21,25 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Copy lock files first for better layer caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
+RUN pnpm rebuild canvas
 
 # ──────────────────────────────────────────────
 # Stage 2: Build the application
 # ──────────────────────────────────────────────
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++ \
+    pkgconf \
+    cairo-dev \
+    pango-dev \
+    jpeg-dev \
+    giflib-dev \
+    pixman-dev
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -51,7 +74,14 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install runtime OS deps (sharp needs vips on Alpine)
-RUN apk add --no-cache libc6-compat vips-dev \
+RUN apk add --no-cache \
+    libc6-compat \
+    vips-dev \
+    cairo \
+    pango \
+    jpeg \
+    giflib \
+    pixman \
     && rm -rf /var/cache/apk/*
 
 # Create non-root user
@@ -66,6 +96,9 @@ COPY --from=builder /app/.next/static ./.next/static
 # Copy sharp from node_modules for image optimization
 COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
 COPY --from=builder /app/node_modules/@img ./node_modules/@img
+
+# Copy canvas native module required by sbcwallet
+COPY --from=builder /app/node_modules/canvas ./node_modules/canvas
 
 # Create directories for persistent data (will be mounted as volumes)
 RUN mkdir -p \
