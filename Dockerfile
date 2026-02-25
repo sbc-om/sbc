@@ -24,7 +24,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --unsafe-perm
 RUN npm_config_build_from_source=true pnpm rebuild canvas --unsafe-perm
-RUN node -e "require('canvas'); console.log('canvas native module: OK')"
+RUN node -e "const path=require('path');const sbc=require.resolve('sbcwallet');const canvas=require.resolve('canvas',{paths:[path.dirname(sbc)]});require(canvas);console.log('canvas via sbcwallet: OK')"
 
 # ──────────────────────────────────────────────
 # Stage 2: Build the application
@@ -49,7 +49,7 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN node -e "require('canvas'); console.log('canvas available in builder: OK')"
+RUN node -e "const path=require('path');const sbc=require.resolve('sbcwallet');const canvas=require.resolve('canvas',{paths:[path.dirname(sbc)]});require(canvas);console.log('canvas via sbcwallet in builder: OK')"
 
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -101,9 +101,6 @@ COPY --from=builder /app/.next/static ./.next/static
 # Copy sharp from node_modules for image optimization
 COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
 COPY --from=builder /app/node_modules/@img ./node_modules/@img
-
-# Copy canvas native module required by sbcwallet
-COPY --from=builder /app/node_modules/canvas ./node_modules/canvas
 
 # Create directories for persistent data (will be mounted as volumes)
 RUN mkdir -p \
