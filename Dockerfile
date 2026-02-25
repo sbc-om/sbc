@@ -23,9 +23,14 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Copy lock files first for better layer caching
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --unsafe-perm
-RUN npm_config_build_from_source=true pnpm rebuild --unsafe-perm
+# Rebuild only canvas native addon from source (not sharp — it uses prebuilt binaries)
+RUN CANVAS_DIR=$(find node_modules/.pnpm -path '*/canvas@*/node_modules/canvas' -maxdepth 4 -type d | head -1) \
+    && echo "canvas dir: $CANVAS_DIR" \
+    && cd "$CANVAS_DIR" \
+    && npm_config_build_from_source=true npx --yes node-gyp rebuild \
+    && echo '✓ canvas native addon built'
 RUN find /app/node_modules -name canvas.node -type f | head -1 | grep -q . \
-    && echo '✓ canvas.node binary found' || (echo '✗ canvas.node NOT found — listing .pnpm:' && ls -R /app/node_modules/.pnpm/canvas* 2>/dev/null && exit 1)
+    && echo '✓ canvas.node binary found' || (echo '✗ canvas.node NOT found — listing .pnpm:' && find /app/node_modules/.pnpm -name 'canvas*' -maxdepth 2 2>/dev/null && exit 1)
 
 # ──────────────────────────────────────────────
 # Stage 2: Build the application
