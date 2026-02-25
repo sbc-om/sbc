@@ -8,8 +8,6 @@ import path from "node:path";
 
 import { PKPass } from "passkit-generator";
 import {
-  GoogleWalletAdapter,
-  getProfile,
   type ChildPassData,
   type ParentPassData,
 } from "sbcwallet";
@@ -25,6 +23,22 @@ import {
 import { getBusinessById } from "@/lib/db/businesses";
 import { getBusinessCardById } from "@/lib/db/businessCards";
 import type { LoyaltySettings } from "@/lib/db/types";
+
+type SbcwalletRuntime = {
+  GoogleWalletAdapter: new (input: { issuerId: string; serviceAccountPath: string }) => {
+    generatePassObject: (data: unknown, profile: unknown, type: "parent" | "child") => Promise<{ saveUrl: string }>;
+  };
+  getProfile: (profile: "loyalty") => unknown;
+};
+
+let sbcwalletRuntimePromise: Promise<SbcwalletRuntime> | null = null;
+
+async function loadSbcwalletRuntime(): Promise<SbcwalletRuntime> {
+  if (!sbcwalletRuntimePromise) {
+    sbcwalletRuntimePromise = import("sbcwallet") as Promise<SbcwalletRuntime>;
+  }
+  return sbcwalletRuntimePromise;
+}
 
 // ============================================================================
 // Helper Functions
@@ -497,11 +511,12 @@ async function generateApplePkpass(options: {
   return pass.getAsBuffer();
 }
 
-function getGoogleAdapter(): GoogleWalletAdapter {
+async function getGoogleAdapter() {
+  const runtime = await loadSbcwalletRuntime();
   const issuerId = env("GOOGLE_ISSUER_ID") || "";
   const serviceAccountPath = env("GOOGLE_SA_JSON") || "";
 
-  return new GoogleWalletAdapter({
+  return new runtime.GoogleWalletAdapter({
     issuerId,
     serviceAccountPath: serviceAccountPath ? resolveFromCwd(serviceAccountPath) : serviceAccountPath,
   });
@@ -779,8 +794,9 @@ export async function getSbcwalletGoogleSaveUrlForLoyaltyCard(input: {
     logoUrl,
   } = await prepareLoyaltyCardData({ cardId: input.cardId, origin: input.origin });
 
-  const profileConfig = getProfile("loyalty");
-  const adapter = getGoogleAdapter();
+  const runtime = await loadSbcwalletRuntime();
+  const profileConfig = runtime.getProfile("loyalty");
+  const adapter = await getGoogleAdapter();
 
   const parentPassData = buildLoyaltyParentPassData({
     programId,
@@ -836,8 +852,9 @@ export async function getSbcwalletGoogleSaveUrlForBusinessCard(input: {
     publicCardUrl: input.publicCardUrl,
   });
 
-  const profileConfig = getProfile("loyalty");
-  const adapter = getGoogleAdapter();
+  const runtime = await loadSbcwalletRuntime();
+  const profileConfig = runtime.getProfile("loyalty");
+  const adapter = await getGoogleAdapter();
 
   const parentPassData = buildLoyaltyParentPassData({
     programId: data.programId,
@@ -903,8 +920,9 @@ export async function updateGoogleWalletLoyaltyPoints(input: {
     logoUrl,
   } = await prepareLoyaltyCardData({ cardId: input.cardId });
 
-  const profileConfig = getProfile("loyalty");
-  const adapter = getGoogleAdapter();
+  const runtime = await loadSbcwalletRuntime();
+  const profileConfig = runtime.getProfile("loyalty");
+  const adapter = await getGoogleAdapter();
 
   // Always ensure the parent class exists before creating/updating the child object
   const parentPassData = buildLoyaltyParentPassData({

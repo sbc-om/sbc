@@ -16,9 +16,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 # Force IPv4 to avoid ETIMEDOUT on servers with broken IPv6 routing
 RUN echo "shamefully-hoist=true" > .npmrc
 RUN NODE_OPTIONS="--dns-result-order=ipv4first" pnpm install --frozen-lockfile --unsafe-perm
-RUN npm_config_build_from_source=true pnpm rebuild canvas --unsafe-perm
-RUN find /app/node_modules -name canvas.node -type f | head -1 | grep -q . \
-    && echo 'canvas.node found' || (echo 'canvas.node missing' && exit 1)
 
 # ──────────────────────────────────────────────
 # Stage 2: Builder

@@ -164,7 +164,6 @@ export function getWalletStatus(): {
 // Template-based Wallet Generation
 // ============================================================================
 
-import { GoogleWalletAdapter, getProfile } from "sbcwallet";
 import type { LoyaltyCardTemplate, LoyaltyProfile } from "@/lib/db/types";
 
 function normalizeHexColor(input?: string): string | undefined {
@@ -181,7 +180,8 @@ function resolveBarcodeMessage(template: string | undefined, vars: Record<string
   return raw.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, k: string) => vars[k] ?? "").trim() || raw;
 }
 
-function getGoogleAdapter(): GoogleWalletAdapter {
+async function getGoogleAdapter() {
+  const { GoogleWalletAdapter } = await import("sbcwallet");
   const issuerId = process.env.GOOGLE_ISSUER_ID || "";
   const serviceAccountPath = process.env.GOOGLE_SA_JSON || "";
   const resolvedPath = serviceAccountPath.startsWith("/") 
@@ -238,8 +238,9 @@ export async function generateGoogleWalletSaveUrl(input: {
   // Resolve logo URL
   const logoUrl = template.images?.logoUrl || profile?.logoUrl;
 
+  const { getProfile } = await import("sbcwallet");
   const profileConfig = getProfile("loyalty");
-  const adapter = getGoogleAdapter();
+  const adapter = await getGoogleAdapter();
 
   // Build parent pass data (loyalty class)
   const parentPassData = {
