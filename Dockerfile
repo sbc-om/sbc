@@ -24,7 +24,8 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --unsafe-perm
 RUN npm_config_build_from_source=true pnpm rebuild canvas --unsafe-perm
-RUN node -e "const path=require('path');const sbc=require.resolve('sbcwallet');const canvas=require.resolve('canvas',{paths:[path.dirname(sbc)]});require(canvas);console.log('canvas via sbcwallet: OK')"
+RUN ls /app/node_modules/.pnpm/canvas@*/node_modules/canvas/build/Release/canvas.node \
+    && echo '✓ canvas.node binary found' || (echo '✗ canvas.node NOT found' && exit 1)
 
 # ──────────────────────────────────────────────
 # Stage 2: Build the application
@@ -49,7 +50,8 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN node -e "const path=require('path');const sbc=require.resolve('sbcwallet');const canvas=require.resolve('canvas',{paths:[path.dirname(sbc)]});require(canvas);console.log('canvas via sbcwallet in builder: OK')"
+RUN ls node_modules/.pnpm/canvas@*/node_modules/canvas/build/Release/canvas.node \
+    && echo '✓ canvas.node in builder: OK' || (echo '✗ canvas.node NOT found in builder' && exit 1)
 
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -68,6 +70,12 @@ ENV NEXT_PUBLIC_SOCIAL_TWITTER=$NEXT_PUBLIC_SOCIAL_TWITTER
 
 # Build Next.js (produces .next/standalone with output: "standalone")
 RUN pnpm build
+
+# Stage native modules that the standalone output may not trace through pnpm symlinks
+RUN mkdir -p /runtime-modules && \
+    cp -rL node_modules/.pnpm/sbcwallet@*/node_modules/sbcwallet /runtime-modules/sbcwallet && \
+    cp -rL node_modules/.pnpm/canvas@*/node_modules/canvas /runtime-modules/canvas && \
+    echo '✓ runtime modules staged'
 
 # ──────────────────────────────────────────────
 # Stage 3: Production runner (minimal image)
@@ -101,6 +109,10 @@ COPY --from=builder /app/.next/static ./.next/static
 # Copy sharp from node_modules for image optimization
 COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
 COPY --from=builder /app/node_modules/@img ./node_modules/@img
+
+# Copy native modules (sbcwallet + canvas) that pnpm symlinks may prevent standalone from tracing
+COPY --from=builder /runtime-modules/canvas ./node_modules/canvas
+COPY --from=builder /runtime-modules/sbcwallet ./node_modules/sbcwallet
 
 # Create directories for persistent data (will be mounted as volumes)
 RUN mkdir -p \
