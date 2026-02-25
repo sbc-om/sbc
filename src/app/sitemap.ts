@@ -2,6 +2,9 @@ import type { MetadataRoute } from "next";
 
 import { listBusinesses } from "@/lib/db/businesses";
 
+// Force dynamic generation — sitemap queries the database
+export const dynamic = "force-dynamic";
+
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 const locales = ["en", "ar"] as const;
 const staticPaths = [

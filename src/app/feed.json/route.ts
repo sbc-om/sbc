@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 
 import { listBusinesses } from "@/lib/db/businesses";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 async function getBaseUrl() {
