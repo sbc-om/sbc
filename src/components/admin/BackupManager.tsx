@@ -6,12 +6,18 @@ import { Button } from "@/components/ui/Button";
 
 interface BackupMetadata {
   id: string;
-  timestamp: string;
-  type: "full" | "database-only" | "files-only";
-  size: number;
-  encrypted: boolean;
+  createdAt: string;
+  type: "full" | "database" | "database-only" | "files-only";
+  sizeBytes: number;
+  sizeFormatted: string;
+  filename: string;
+  includes: {
+    database: boolean;
+    media: boolean;
+    certs: boolean;
+    public: boolean;
+  };
   description?: string;
-  version: string;
 }
 
 interface BackupManagerProps {
@@ -352,6 +358,8 @@ export default function BackupManager({ locale }: BackupManagerProps) {
     switch (type) {
       case "full":
         return ar ? "كاملة" : "Full";
+      case "database":
+        return ar ? "قاعدة البيانات" : "Database";
       case "database-only":
         return ar ? "قاعدة البيانات فقط" : "Database Only";
       case "files-only":
@@ -481,17 +489,12 @@ export default function BackupManager({ locale }: BackupManagerProps) {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h4 className="truncate font-mono text-sm font-medium">{backup.id}</h4>
-                    {backup.encrypted && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                        🔒 {ar ? "مشفر" : "Encrypted"}
-                      </span>
-                    )}
                     <span className="inline-flex items-center rounded-full bg-(--chip-bg) px-2 py-0.5 text-xs font-medium text-(--muted-foreground)">
                       {getTypeLabel(backup.type)}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-(--muted-foreground)">
-                    {new Date(backup.timestamp).toLocaleString(ar ? "ar" : "en")} • {formatSize(backup.size)}
+                    {new Date(backup.createdAt).toLocaleString(ar ? "ar" : "en")} • {formatSize(backup.sizeBytes)}
                   </p>
                   {backup.description && (
                     <p className="mt-1 text-xs text-(--muted-foreground) line-clamp-1">{backup.description}</p>

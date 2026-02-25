@@ -362,7 +362,7 @@ export function ProfileClient({
         | { ok: true; avatarUrl: string | null }
         | { ok: false; error: string };
 
-      if (!res.ok) throw new Error(`HTTP_${res.status}`);
+      if (!res.ok) throw new Error(json.ok ? `HTTP_${res.status}` : json.error);
       if (!json.ok) throw new Error(json.error);
 
       setAvatarUrl(json.avatarUrl);

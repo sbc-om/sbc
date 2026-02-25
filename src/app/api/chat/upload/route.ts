@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/auth/currentUser";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { mediaUrlFromRelativePath } from "@/lib/uploads/storage";
 
 // Generate a unique filename
 function generateFilename(originalName: string): string {
@@ -54,8 +55,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const uploadsRoot = process.env.UPLOAD_DIR?.trim()
+      ? (process.env.UPLOAD_DIR.startsWith("/")
+          ? process.env.UPLOAD_DIR
+          : join(process.cwd(), process.env.UPLOAD_DIR))
+      : join(process.cwd(), ".data", "uploads");
+
     // Create upload directory if it doesn't exist
-    const uploadDir = join(process.cwd(), "public", "uploads", "chat", user.id);
+    const uploadDir = join(uploadsRoot, "chat", user.id);
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
     }
@@ -68,8 +75,8 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(bytes);
     await writeFile(filepath, buffer);
 
-    // Return the public URL
-    const url = `/uploads/chat/${user.id}/${filename}`;
+    // Return media URL served by /media/[...path]
+    const url = mediaUrlFromRelativePath(`chat/${user.id}/${filename}`);
 
     return NextResponse.json({
       ok: true,

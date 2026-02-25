@@ -104,13 +104,13 @@ services:
 
       # ── File Upload ──
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
-      UPLOAD_DIR: /app/public/uploads
+      UPLOAD_DIR: /app/.data/uploads
       BACKUP_PATH: /app/backups
     expose:
       - "3000"
     volumes:
       # Persistent data volumes
-      - uploads-data:/app/public/uploads
+      - uploads-data:/app/.data/uploads
       - app-data:/app/data
       - logs-data:/app/logs
       - backups-data:/app/backups

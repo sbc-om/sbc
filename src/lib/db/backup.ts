@@ -1,16 +1,21 @@
 /**
  * Database Backup Utilities
- * 
- * Stub implementations for backup/restore functionality.
- * TODO: Implement actual backup logic using pg_dump and file archiving.
  */
 
+import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import * as tar from "tar";
+import { getUploadsRoot } from "@/lib/uploads/storage";
+
+const execFileAsync = promisify(execFile);
 
 /** Options for creating a backup */
 export interface BackupOptions {
-  /** Type of backup: 'full' includes everything, 'database' is DB only */
-  type?: "full" | "database";
+  /** Type of backup */
+  type?: "full" | "database" | "database-only" | "files-only";
   /** Optional description for the backup */
   description?: string;
   /** Include media files (uploads) in backup */
@@ -38,7 +43,7 @@ export interface BackupMetadata {
   /** When the backup was created */
   createdAt: string;
   /** Type of backup */
-  type: "full" | "database";
+  type: "full" | "database" | "database-only" | "files-only";
   /** Optional description */
   description?: string;
   /** Size in bytes */
@@ -56,8 +61,127 @@ export interface BackupMetadata {
   };
 }
 
-/** Directory where backups are stored */
-const BACKUP_DIR = process.env.BACKUP_DIR || ".data/backups";
+type BackupMetaFile = BackupMetadata & {
+  createdBy?: string;
+};
+
+function resolveBackupDir(): string {
+  const configured = process.env.BACKUP_PATH || process.env.BACKUP_DIR || ".data/backups";
+  const abs = path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured);
+  fs.mkdirSync(abs, { recursive: true });
+  return abs;
+}
+
+function formatBytes(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const exp = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / 1024 ** exp;
+  return `${value >= 10 ? value.toFixed(0) : value.toFixed(1)} ${units[exp]}`;
+}
+
+function normalizeType(type?: BackupOptions["type"]): BackupMetadata["type"] {
+  if (type === "database-only" || type === "files-only" || type === "database") return type;
+  return "full";
+}
+
+function includesFromOptions(options: BackupOptions, type: BackupMetadata["type"]) {
+  if (type === "database-only" || type === "database") {
+    return {
+      database: true,
+      media: false,
+      certs: false,
+      public: false,
+    };
+  }
+  if (type === "files-only") {
+    return {
+      database: false,
+      media: options.includeMedia !== false,
+      certs: options.includeCerts !== false,
+      public: options.includePublic === true,
+    };
+  }
+  return {
+    database: true,
+    media: options.includeMedia !== false,
+    certs: options.includeCerts !== false,
+    public: options.includePublic === true,
+  };
+}
+
+function resolveUploadsDir(): string {
+  const configured = process.env.UPLOAD_DIR;
+  if (configured && configured.trim()) {
+    return path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured);
+  }
+  return getUploadsRoot();
+}
+
+function resolveCertsDir(): string {
+  const configured = process.env.CERTS_DIR || "/app/certs";
+  return path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured);
+}
+
+function resolvePublicDir(): string {
+  return path.resolve(process.cwd(), "public");
+}
+
+async function createDatabaseDump(outputPath: string): Promise<void> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL_REQUIRED_FOR_BACKUP");
+  }
+
+  try {
+    await execFileAsync("pg_dump", [
+      "--no-owner",
+      "--no-privileges",
+      "--format=plain",
+      "--encoding=UTF8",
+      "--file",
+      outputPath,
+      databaseUrl,
+    ]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`PG_DUMP_FAILED: ${message}`);
+  }
+}
+
+function copyDirIfExists(from: string, to: string): boolean {
+  if (!fs.existsSync(from)) return false;
+  fs.cpSync(from, to, { recursive: true, force: true });
+  return true;
+}
+
+function replaceDirContents(from: string, to: string): boolean {
+  if (!fs.existsSync(from)) return false;
+  fs.mkdirSync(to, { recursive: true });
+  fs.cpSync(from, to, { recursive: true, force: true });
+  return true;
+}
+
+async function restoreDatabaseFromDump(dumpPath: string): Promise<void> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL_REQUIRED_FOR_RESTORE");
+  }
+
+  try {
+    await execFileAsync("psql", [
+      "--set",
+      "ON_ERROR_STOP=1",
+      "--single-transaction",
+      "--file",
+      dumpPath,
+      databaseUrl,
+    ]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`PSQL_RESTORE_FAILED: ${message}`);
+  }
+}
 
 /**
  * Create a new backup
@@ -66,35 +190,105 @@ const BACKUP_DIR = process.env.BACKUP_DIR || ".data/backups";
  */
 export async function createBackup(options: BackupOptions = {}): Promise<BackupMetadata> {
   const id = `backup_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const timestamp = new Date().toISOString();
+  const createdAt = new Date().toISOString();
+  const type = normalizeType(options.type);
   const filename = `${id}.tar.gz`;
+  const backupDir = resolveBackupDir();
+  const archivePath = path.join(backupDir, filename);
 
-  // TODO: Implement actual backup creation
-  // 1. Create PostgreSQL dump using pg_dump
-  // 2. Archive database files
-  // 3. Optionally include media, certs, public files
-  // 4. Compress into tar.gz
+  const includes = includesFromOptions(options, type);
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sbc-backup-"));
 
-  const metadata: BackupMetadata = {
-    id,
-    createdAt: timestamp,
-    type: options.type || "full",
-    description: options.description,
-    sizeBytes: 0,
-    sizeFormatted: "0 B",
-    filename,
-    includes: {
-      database: true,
-      media: options.includeMedia !== false,
-      certs: options.includeCerts !== false,
-      public: options.includePublic || false,
-    },
-  };
+  try {
+    const includedFiles: string[] = [];
+    const warnings: string[] = [];
 
-  console.log("[backup] Stub: createBackup called with options:", options);
-  console.log("[backup] Stub: Would create backup:", metadata);
+    if (includes.database) {
+      const dbDumpPath = path.join(tmpDir, "database.sql");
+      await createDatabaseDump(dbDumpPath);
+      includedFiles.push("database.sql");
+    }
 
-  return metadata;
+    if (includes.media) {
+      const mediaSource = resolveUploadsDir();
+      const copied = copyDirIfExists(mediaSource, path.join(tmpDir, "uploads"));
+      if (copied) {
+        includedFiles.push("uploads/");
+      } else {
+        warnings.push(`uploads directory not found: ${mediaSource}`);
+      }
+    }
+
+    if (includes.certs) {
+      const certsSource = resolveCertsDir();
+      const copied = copyDirIfExists(certsSource, path.join(tmpDir, "certs"));
+      if (copied) {
+        includedFiles.push("certs/");
+      } else {
+        warnings.push(`certs directory not found: ${certsSource}`);
+      }
+    }
+
+    if (includes.public) {
+      const publicSource = resolvePublicDir();
+      if (fs.existsSync(publicSource)) {
+        fs.mkdirSync(path.join(tmpDir, "public"), { recursive: true });
+        fs.cpSync(publicSource, path.join(tmpDir, "public"), {
+          recursive: true,
+          force: true,
+          filter: (src) => !src.includes(`${path.sep}uploads${path.sep}`),
+        });
+        includedFiles.push("public/");
+      } else {
+        warnings.push(`public directory not found: ${publicSource}`);
+      }
+    }
+
+    const manifest = {
+      id,
+      createdAt,
+      type,
+      description: options.description,
+      includes,
+      app: "sbc",
+      includedFiles,
+      warnings,
+    };
+    fs.writeFileSync(path.join(tmpDir, "manifest.json"), JSON.stringify(manifest, null, 2), "utf8");
+
+    const entries = fs.readdirSync(tmpDir);
+    await tar.c(
+      {
+        gzip: true,
+        file: archivePath,
+        cwd: tmpDir,
+      },
+      entries
+    );
+
+    const stats = fs.statSync(archivePath);
+    const metadata: BackupMetaFile = {
+      id,
+      createdAt,
+      type,
+      description: options.description,
+      sizeBytes: stats.size,
+      sizeFormatted: formatBytes(stats.size),
+      filename,
+      includes,
+      createdBy: "admin",
+    };
+
+    fs.writeFileSync(
+      path.join(backupDir, `${id}.meta.json`),
+      JSON.stringify(metadata, null, 2),
+      "utf8"
+    );
+
+    return metadata;
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
 }
 
 /**
@@ -102,15 +296,57 @@ export async function createBackup(options: BackupOptions = {}): Promise<BackupM
  * @returns Array of backup metadata sorted by creation date (newest first)
  */
 export async function listBackups(): Promise<BackupMetadata[]> {
-  // TODO: Implement actual backup listing
-  // 1. Read backup directory
-  // 2. Parse metadata files or archive headers
-  // 3. Return sorted list
+  const backupDir = resolveBackupDir();
+  const files = fs
+    .readdirSync(backupDir)
+    .filter((file) => file.endsWith(".tar.gz"));
 
-  console.log("[backup] Stub: listBackups called");
+  const backups: BackupMetadata[] = files.map((filename) => {
+    const id = filename.replace(/\.tar\.gz$/, "");
+    const filePath = path.join(backupDir, filename);
+    const metaPath = path.join(backupDir, `${id}.meta.json`);
+    const stats = fs.statSync(filePath);
 
-  // Return empty array for stub
-  return [];
+    if (fs.existsSync(metaPath)) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(metaPath, "utf8")) as Partial<BackupMetaFile>;
+        return {
+          id,
+          createdAt: parsed.createdAt || stats.mtime.toISOString(),
+          type: normalizeType(parsed.type as BackupOptions["type"]),
+          description: parsed.description,
+          sizeBytes: stats.size,
+          sizeFormatted: formatBytes(stats.size),
+          filename,
+          includes: parsed.includes || {
+            database: true,
+            media: true,
+            certs: true,
+            public: false,
+          },
+        };
+      } catch {
+      }
+    }
+
+    return {
+      id,
+      createdAt: stats.mtime.toISOString(),
+      type: "full",
+      sizeBytes: stats.size,
+      sizeFormatted: formatBytes(stats.size),
+      filename,
+      includes: {
+        database: true,
+        media: true,
+        certs: true,
+        public: false,
+      },
+    };
+  });
+
+  backups.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  return backups;
 }
 
 /**
@@ -121,7 +357,7 @@ export async function listBackups(): Promise<BackupMetadata[]> {
 export function getBackupFilePath(backupId: string): string {
   // Sanitize backupId to prevent path traversal
   const sanitizedId = backupId.replace(/[^a-zA-Z0-9_-]/g, "");
-  return path.resolve(BACKUP_DIR, `${sanitizedId}.tar.gz`);
+  return path.resolve(resolveBackupDir(), `${sanitizedId}.tar.gz`);
 }
 
 /**
@@ -129,12 +365,17 @@ export function getBackupFilePath(backupId: string): string {
  * @param backupId - ID of the backup to delete
  */
 export async function deleteBackup(backupId: string): Promise<void> {
-  // TODO: Implement actual backup deletion
-  // 1. Verify backup exists
-  // 2. Delete archive file
-  // 3. Delete metadata if stored separately
+  const sanitizedId = backupId.replace(/[^a-zA-Z0-9_-]/g, "");
+  const backupDir = resolveBackupDir();
+  const archivePath = path.join(backupDir, `${sanitizedId}.tar.gz`);
+  const metaPath = path.join(backupDir, `${sanitizedId}.meta.json`);
 
-  console.log("[backup] Stub: deleteBackup called for:", backupId);
+  if (!fs.existsSync(archivePath)) {
+    throw new Error("BACKUP_NOT_FOUND");
+  }
+
+  fs.rmSync(archivePath, { force: true });
+  fs.rmSync(metaPath, { force: true });
 }
 
 /**
@@ -142,17 +383,51 @@ export async function deleteBackup(backupId: string): Promise<void> {
  * @param options - Restore options
  */
 export async function restoreBackup(options: RestoreOptions): Promise<void> {
-  // TODO: Implement actual restore logic
-  // 1. Verify backup exists and is valid
-  // 2. Stop any active database connections if possible
-  // 3. Extract archive to temporary location
-  // 4. Restore database files
-  // 5. Optionally restore media/certs/public files
-  // 6. Restart connections
-
-  console.log("[backup] Stub: restoreBackup called with options:", options);
-
   if (!options.backupId) {
     throw new Error("backupId is required");
+  }
+
+  const filePath = getBackupFilePath(options.backupId);
+  if (!fs.existsSync(filePath)) {
+    throw new Error("BACKUP_NOT_FOUND");
+  }
+
+  const restoreDatabase = options.restoreDatabase !== false;
+  const restoreFiles = options.restoreFiles !== false;
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "sbc-restore-"));
+  try {
+    await tar.x({ file: filePath, cwd: tmpDir, gzip: true });
+
+    if (restoreDatabase) {
+      const dumpPath = path.join(tmpDir, "database.sql");
+      if (!fs.existsSync(dumpPath)) {
+        throw new Error("DATABASE_DUMP_NOT_FOUND_IN_BACKUP");
+      }
+      await restoreDatabaseFromDump(dumpPath);
+    }
+
+    if (restoreFiles) {
+      const uploadsSource = path.join(tmpDir, "uploads");
+      const certsSource = path.join(tmpDir, "certs");
+      const publicSource = path.join(tmpDir, "public");
+
+      const uploadsTarget = resolveUploadsDir();
+      const certsTarget = resolveCertsDir();
+      const publicTarget = resolvePublicDir();
+
+      if (fs.existsSync(uploadsSource)) replaceDirContents(uploadsSource, uploadsTarget);
+      if (fs.existsSync(certsSource)) replaceDirContents(certsSource, certsTarget);
+      if (fs.existsSync(publicSource)) replaceDirContents(publicSource, publicTarget);
+    }
+
+    console.log("[backup] Restore completed:", {
+      backupId: options.backupId,
+      restoreDatabase,
+      restoreFiles,
+      filePath,
+    });
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 }

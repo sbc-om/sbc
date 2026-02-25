@@ -50,7 +50,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache libc6-compat cairo pango jpeg giflib pixman
+RUN apk add --no-cache libc6-compat cairo pango jpeg giflib pixman postgresql-client
 
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs
@@ -59,8 +59,8 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-RUN mkdir -p /app/public/uploads /app/data /app/logs /app/backups /app/certs /app/.next/cache \
-    && chown -R nextjs:nodejs /app/public/uploads /app/data /app/logs /app/backups /app/certs /app/.next/cache /app/public
+RUN mkdir -p /app/.data/uploads /app/data /app/logs /app/backups /app/certs /app/.next/cache \
+    && chown -R nextjs:nodejs /app/.data/uploads /app/data /app/logs /app/backups /app/certs /app/.next/cache /app/public /app/.data
 
 USER nextjs
 

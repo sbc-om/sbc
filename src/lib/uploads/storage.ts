@@ -11,10 +11,30 @@ export type UploadKind = "cover" | "logo" | "banner" | "gallery" | "video";
 export type UserUploadKind = "avatar" | "loyalty-logo" | "loyalty-point-icon";
 
 const MEDIA_URL_PREFIX = "/media/";
+let uploadsMigrationChecked = false;
+
+function migrateLegacyPublicUploads(targetRoot: string) {
+  if (uploadsMigrationChecked) return;
+  uploadsMigrationChecked = true;
+
+  const legacyRoot = path.join(process.cwd(), "public", "uploads");
+  if (!fssync.existsSync(legacyRoot)) return;
+
+  const hasLegacyFiles = fssync.readdirSync(legacyRoot).length > 0;
+  if (!hasLegacyFiles) return;
+
+  fssync.mkdirSync(targetRoot, { recursive: true });
+  fssync.cpSync(legacyRoot, targetRoot, { recursive: true, force: false, errorOnExist: false });
+  // Remove legacy folder after successful merge-copy so migration is effectively a move.
+  fssync.rmSync(legacyRoot, { recursive: true, force: true });
+}
 
 function resolveUploadsRoot() {
-  // Required by the user: keep uploads under `.data/`.
-  const root = path.join(process.cwd(), ".data", "uploads");
+  const configured = process.env.UPLOAD_DIR?.trim();
+  const root = configured
+    ? (path.isAbsolute(configured) ? configured : path.resolve(process.cwd(), configured))
+    : path.join(process.cwd(), ".data", "uploads");
+  migrateLegacyPublicUploads(root);
   return root;
 }
 
@@ -77,6 +97,10 @@ function extFromMime(mime: string) {
       return ".webp";
     case "image/gif":
       return ".gif";
+    case "image/heic":
+      return ".heic";
+    case "image/heif":
+      return ".heif";
     case "video/mp4":
       return ".mp4";
     case "video/webm":
@@ -99,6 +123,10 @@ export function contentTypeFromExt(ext: string) {
       return "image/webp";
     case ".gif":
       return "image/gif";
+    case ".heic":
+      return "image/heic";
+    case ".heif":
+      return "image/heif";
     case ".mp4":
       return "video/mp4";
     case ".webm":
@@ -216,11 +244,16 @@ export function validateUserImageUpload(params: {
     throw new Error("INVALID_KIND");
   }
 
-  const mime = file.type;
+  const mime = (file.type || "").toLowerCase();
   const size = file.size;
+  const ext = path.extname(file.name || "").toLowerCase();
 
-  const imageMimes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  if (!imageMimes.includes(mime)) throw new Error("UNSUPPORTED_IMAGE_TYPE");
+  const imageMimes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
+  const imageExts = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif"];
+  const mimeAllowed = mime.length > 0 && imageMimes.includes(mime);
+  const extAllowed = ext.length > 0 && imageExts.includes(ext);
+
+  if (!mimeAllowed && !extAllowed) throw new Error("UNSUPPORTED_IMAGE_TYPE");
   // Slightly stricter for avatars
   const max = kind === "avatar" ? 5 * 1024 * 1024 : 10 * 1024 * 1024;
   if (size > max) throw new Error("IMAGE_TOO_LARGE");
