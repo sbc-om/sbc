@@ -162,6 +162,38 @@ function replaceDirContents(from: string, to: string): boolean {
   return true;
 }
 
+function isNonWritableFsError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const code = String((error as { code?: unknown }).code ?? "");
+  return code === "EROFS" || code === "EACCES" || code === "EPERM";
+}
+
+function looksLikeAlreadyExistsError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return lower.includes("already exists") || lower.includes("relation ") && lower.includes(" exists");
+}
+
+async function runPsqlFile(databaseUrl: string, dumpPath: string): Promise<void> {
+  await execFileAsync("psql", [
+    "--set",
+    "ON_ERROR_STOP=1",
+    "--single-transaction",
+    "--file",
+    dumpPath,
+    databaseUrl,
+  ]);
+}
+
+async function resetPublicSchema(databaseUrl: string): Promise<void> {
+  await execFileAsync("psql", [
+    "--set",
+    "ON_ERROR_STOP=1",
+    "-c",
+    "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;",
+    databaseUrl,
+  ]);
+}
+
 async function restoreDatabaseFromDump(dumpPath: string): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -169,17 +201,21 @@ async function restoreDatabaseFromDump(dumpPath: string): Promise<void> {
   }
 
   try {
-    await execFileAsync("psql", [
-      "--set",
-      "ON_ERROR_STOP=1",
-      "--single-transaction",
-      "--file",
-      dumpPath,
-      databaseUrl,
-    ]);
+    await runPsqlFile(databaseUrl, dumpPath);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`PSQL_RESTORE_FAILED: ${message}`);
+    if (!looksLikeAlreadyExistsError(message)) {
+      throw new Error(`PSQL_RESTORE_FAILED: ${message}`);
+    }
+
+    try {
+      await resetPublicSchema(databaseUrl);
+      await runPsqlFile(databaseUrl, dumpPath);
+      return;
+    } catch (retryError) {
+      const retryMessage = retryError instanceof Error ? retryError.message : String(retryError);
+      throw new Error(`PSQL_RESTORE_FAILED_AFTER_SCHEMA_RESET: ${retryMessage}`);
+    }
   }
 }
 
@@ -416,9 +452,31 @@ export async function restoreBackup(options: RestoreOptions): Promise<void> {
       const certsTarget = resolveCertsDir();
       const publicTarget = resolvePublicDir();
 
-      if (fs.existsSync(uploadsSource)) replaceDirContents(uploadsSource, uploadsTarget);
-      if (fs.existsSync(certsSource)) replaceDirContents(certsSource, certsTarget);
-      if (fs.existsSync(publicSource)) replaceDirContents(publicSource, publicTarget);
+      if (fs.existsSync(uploadsSource)) {
+        replaceDirContents(uploadsSource, uploadsTarget);
+      }
+
+      if (fs.existsSync(certsSource)) {
+        try {
+          replaceDirContents(certsSource, certsTarget);
+        } catch (error) {
+          if (!isNonWritableFsError(error)) {
+            throw error;
+          }
+          console.warn("[backup] Skipping certs restore (target not writable):", certsTarget);
+        }
+      }
+
+      if (fs.existsSync(publicSource)) {
+        try {
+          replaceDirContents(publicSource, publicTarget);
+        } catch (error) {
+          if (!isNonWritableFsError(error)) {
+            throw error;
+          }
+          console.warn("[backup] Skipping public restore (target not writable):", publicTarget);
+        }
+      }
     }
 
     console.log("[backup] Restore completed:", {

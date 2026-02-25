@@ -294,16 +294,27 @@ export default function BackupManager({ locale }: BackupManagerProps) {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed to restore backup");
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+        details?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(json.details || json.error || "Failed to restore backup");
+      }
 
       setMessage({ 
         type: "success", 
         text: ar ? "تمت استعادة النسخة الاحتياطية بنجاح" : "Backup restored successfully"
       });
-    } catch {
+    } catch (error) {
+      const details = error instanceof Error ? error.message : "";
       setMessage({ 
         type: "error", 
-        text: ar ? "خطأ في استعادة النسخة الاحتياطية" : "Failed to restore backup"
+        text: ar
+          ? `خطأ في استعادة النسخة الاحتياطية${details ? `: ${details}` : ""}`
+          : `Failed to restore backup${details ? `: ${details}` : ""}`
       });
     }
   };
