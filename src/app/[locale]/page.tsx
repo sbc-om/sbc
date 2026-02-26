@@ -122,7 +122,7 @@ export default async function LocaleHome({
         <Container size="lg">
           <FadeInSection duration={800} delay={0}>
             <div className="text-center mb-12">
-              <h1 className="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6 bg-linear-to-r from-accent via-accent-2 to-accent bg-clip-text text-transparent">
+              <h1 className="mb-6 whitespace-nowrap text-[clamp(1.45rem,7vw,4.5rem)] font-bold leading-tight tracking-tight bg-linear-to-r from-accent via-accent-2 to-accent bg-clip-text text-transparent">
                 {dict.home.title}
               </h1>
               <p className="max-w-3xl mx-auto text-xl leading-8 text-muted-foreground">

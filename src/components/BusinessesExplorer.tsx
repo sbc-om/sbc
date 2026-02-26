@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { BusinessFeedCard } from "@/components/BusinessFeedCard";
+import { MarkdownRenderer } from "@/components/ui/MarkdownEditor";
 import { useAISearch } from "@/lib/ai/AISearchProvider";
 import { createTtlCache } from "@/lib/cache/ttlCache";
 
@@ -1144,9 +1145,10 @@ export function BusinessesExplorer({
 
                 <div className="p-5">
                   {description ? (
-                    <p className="line-clamp-2 text-sm text-(--muted-foreground)">
-                      {description}
-                    </p>
+                    <MarkdownRenderer
+                      content={description}
+                      className="text-sm text-(--muted-foreground) [&>p]:m-0 [&>p]:line-clamp-2 [&>p]:overflow-hidden [&>p]:text-ellipsis [&>p]:break-words [&_a]:text-(--accent) [&_a]:underline"
+                    />
                   ) : (
                     <p className="text-sm text-(--muted-foreground)">
                       {locale === "ar" ? "لا يوجد وصف" : "No description"}
