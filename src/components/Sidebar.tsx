@@ -530,7 +530,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           <div
             role="menu"
             aria-label="Profile menu"
-            className="absolute bottom-full mb-2 w-64 rounded-xl border bg-(--surface) shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150"
+            className="absolute bottom-full mb-2 w-64 rounded-xl border bg-(--background) shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150"
             style={{
               borderColor: "var(--surface-border)",
               ...(locale === "ar" ? { right: 0 } : { left: 0 }),

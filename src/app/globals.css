@@ -74,7 +74,7 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
 
   --accent: #818cf8;
   --accent-2: #22d3ee;
-  --accent-foreground: #121212;
+  --accent-foreground: #ffffff;
   --ring: rgba(129, 140, 248, 0.40);
 
   --chip-bg: rgba(255, 255, 255, 0.10);
@@ -87,6 +87,7 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
   --color-foreground: var(--foreground);
   --color-accent: var(--accent);
   --color-accent-2: var(--accent-2);
+  --color-accent-foreground: var(--accent-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
