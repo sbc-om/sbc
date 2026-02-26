@@ -49,3 +49,4 @@ logs/
 
 # Test / scripts not needed in production image
 scripts/
+!scripts/wildcard-cert-daemon.sh
