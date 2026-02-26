@@ -5,7 +5,7 @@ import tls from "node:tls";
 import { importPKCS8, SignJWT } from "jose";
 import { SocksClient } from "socks";
 
-import { listAppleWalletPushTokensForSerial } from "@/lib/db/loyalty";
+import { deleteAppleWalletRegistrationsByPushTokens, listAppleWalletPushTokensForSerial } from "@/lib/db/loyalty";
 
 function env(name: string): string | undefined {
   const v = process.env[name];
@@ -205,13 +205,30 @@ export async function notifyAppleWalletPassUpdated(input: { cardId: string }): P
       try {
         const result = await sendOnePushToken({ token: t, passTypeIdentifier });
         console.log(`[APNs] Push result for token ${t.slice(0, 8)}...: ${result.ok ? "OK" : `FAILED (${(result as { status: number; body: string }).status}: ${(result as { body: string }).body})`}`);
-        return result;
+        return { token: t, ...result };
       } catch (e) {
         console.error(`[APNs] Push error for token ${t.slice(0, 8)}...:`, e);
-        return { ok: false as const, status: 0, body: e instanceof Error ? e.message : "APNS_FAILED" };
+        return { token: t, ok: false as const, status: 0, body: e instanceof Error ? e.message : "APNS_FAILED" };
       }
     })
   );
+
+  // Auto-purge tokens that APNs reports as permanently invalid
+  const PURGE_REASONS = ["BadDeviceToken", "Unregistered", "DeviceTokenNotForTopic"];
+  const badTokens = results.filter((r) => {
+    if (r.ok) return false;
+    const body = (r as { body?: string }).body ?? "";
+    return PURGE_REASONS.some((reason) => body.includes(reason));
+  }).map((r) => r.token);
+
+  if (badTokens.length) {
+    try {
+      const purged = await deleteAppleWalletRegistrationsByPushTokens(badTokens);
+      console.log(`[APNs] Auto-purged ${purged} registration(s) with invalid token(s): ${badTokens.map((t) => t.slice(0, 8) + "...").join(", ")}`);
+    } catch (e) {
+      console.error("[APNs] Failed to purge bad tokens:", e);
+    }
+  }
 
   const ok = results.filter((r) => r.ok).length;
   const failed = results.length - ok;

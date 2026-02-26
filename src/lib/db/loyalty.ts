@@ -594,6 +594,22 @@ export async function listAppleWalletPushTokensForSerial(
   return regs.map((r) => r.pushToken);
 }
 
+/**
+ * Remove all registrations that carry one of the given push tokens.
+ * Used to auto-purge tokens that APNs reports as invalid (BadDeviceToken, Unregistered, etc.).
+ */
+export async function deleteAppleWalletRegistrationsByPushTokens(
+  tokens: string[]
+): Promise<number> {
+  if (!tokens.length) return 0;
+  const placeholders = tokens.map((_, i) => `$${i + 1}`).join(", ");
+  const result = await query(
+    `DELETE FROM apple_wallet_registrations WHERE push_token IN (${placeholders})`,
+    tokens
+  );
+  return result.rowCount ?? 0;
+}
+
 // ==================== Alias Functions for API Compatibility ====================
 
 /** Alias for getLoyaltyProfile */
