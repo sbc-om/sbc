@@ -1,4 +1,69 @@
 services:
+  # ─── Edge Proxy (nginx-proxy) ───────────────────────────────
+  proxy:
+    image: nginxproxy/nginx-proxy
+    container_name: proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - conf:/etc/nginx/conf.d
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - dhparam:/etc/nginx/dhparam
+      - certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./SERVER/nginx.conf:/etc/nginx/conf.d/blockcore.conf:ro
+    networks:
+      - proxy
+
+  # ─── ACME Companion (HTTP-01 for apex/www) ──────────────────
+  letsencrypt:
+    image: nginxproxy/acme-companion:2.2.1
+    container_name: letsencrypt
+    restart: unless-stopped
+    depends_on:
+      - proxy
+    volumes:
+      - conf:/etc/nginx/conf.d
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - dhparam:/etc/nginx/dhparam
+      - certs:/etc/nginx/certs:rw
+      - acme-data:/etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      DEFAULT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@sbc.om}
+    networks:
+      - proxy
+
+  # ─── Wildcard TLS automation (DNS-01 via Cloudflare) ───────
+  wildcard-cert:
+    image: python:3.12-alpine
+    container_name: sbc-wildcard-cert
+    restart: unless-stopped
+    depends_on:
+      - proxy
+    environment:
+      DOMAIN: ${DOMAIN:-sbc.om}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@sbc.om}
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
+      CERT_RENEW_INTERVAL_HOURS: ${CERT_RENEW_INTERVAL_HOURS:-12}
+    volumes:
+      - certs:/etc/nginx/certs
+      - acme-data:/etc/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./scripts/wildcard-cert-daemon.sh:/usr/local/bin/wildcard-cert-daemon.sh:ro
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      apk add --no-cache bash docker-cli &&
+      pip install --no-cache-dir certbot certbot-dns-cloudflare &&
+      chmod +x /usr/local/bin/wildcard-cert-daemon.sh &&
+      /usr/local/bin/wildcard-cert-daemon.sh
+    networks:
+      - proxy
+
   # ─── PostgreSQL Database ───────────────────────────────────────
   postgres:
     image: postgres:16-alpine
@@ -40,7 +105,7 @@ services:
       VIRTUAL_PORT: 3000
       VIRTUAL_PROTO: http
       VIRTUAL_NETWORK: proxy
-      LETSENCRYPT_HOST: ${LETSENCRYPT_HOST:-${DOMAIN:-sbc.om},www.${DOMAIN:-sbc.om},*.${DOMAIN:-sbc.om}}
+      LETSENCRYPT_HOST: ${LETSENCRYPT_HOST:-${DOMAIN:-sbc.om},www.${DOMAIN:-sbc.om}}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@sbc.om}
 
       # ── Application ──
@@ -121,6 +186,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      proxy:
+        condition: service_started
     networks:
       - sbc-network
       - proxy
@@ -136,10 +203,16 @@ networks:
     external: false
     name: sbc-network
   proxy:
-    external: true
+    external: false
     name: proxy
 
 volumes:
+  conf:
+  vhost:
+  html:
+  dhparam:
+  certs:
+  acme-data:
   postgres-data:
     driver: local
     name: sbc-postgres-data
