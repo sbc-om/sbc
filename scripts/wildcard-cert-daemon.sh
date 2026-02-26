@@ -7,6 +7,29 @@ TOKEN="${CLOUDFLARE_API_TOKEN:-}"
 INTERVAL_HOURS="${CERT_RENEW_INTERVAL_HOURS:-12}"
 SELF_CONTAINER_REF="${HOSTNAME:-sbc-wildcard-cert}"
 
+mount_spec_for() {
+  local container_name="$1"
+  local destination="$2"
+  local info type name source
+  info="$(docker inspect -f "{{range .Mounts}}{{if eq .Destination \"${destination}\"}}{{.Type}}|{{.Name}}|{{.Source}}{{end}}{{end}}" "$container_name" 2>/dev/null || true)"
+  if [[ -z "$info" ]]; then
+    return 1
+  fi
+
+  IFS='|' read -r type name source <<< "$info"
+  if [[ "$type" == "volume" && -n "$name" ]]; then
+    printf "%s" "$name"
+    return 0
+  fi
+
+  if [[ "$type" == "bind" && -n "$source" ]]; then
+    printf "%s" "$source"
+    return 0
+  fi
+
+  return 1
+}
+
 if [[ -z "$TOKEN" ]]; then
   echo "[wildcard-cert] CLOUDFLARE_API_TOKEN is empty. Waiting (no wildcard cert issuance)."
   sleep infinity
@@ -47,30 +70,24 @@ certbot_issue_or_renew() {
   cp "$fullchain" "/etc/nginx/certs/${DOMAIN}.crt"
   cp "$privkey" "/etc/nginx/certs/${DOMAIN}.key"
 
-  # Try installing into running proxy container directly.
-  local copied_into_proxy=0
-  if docker cp "${SELF_CONTAINER_REF}:${fullchain}" "proxy:/etc/nginx/certs/${DOMAIN}.crt" >/dev/null 2>&1 && \
-     docker cp "${SELF_CONTAINER_REF}:${privkey}" "proxy:/etc/nginx/certs/${DOMAIN}.key" >/dev/null 2>&1; then
-    copied_into_proxy=1
-  else
-    echo "[wildcard-cert] Direct copy to proxy failed (likely read-only mount). Trying volume sync fallback..."
+  # Sync cert files from wildcard-cert ACME mount into proxy cert mount via helper container.
+  local acme_mount proxy_certs_mount helper
+  acme_mount="$(mount_spec_for "$SELF_CONTAINER_REF" "/etc/letsencrypt" || true)"
+  proxy_certs_mount="$(mount_spec_for "proxy" "/etc/nginx/certs" || true)"
+
+  if [[ -z "$acme_mount" || -z "$proxy_certs_mount" ]]; then
+    echo "[wildcard-cert] Could not detect required mounts (acme/proxy-certs); skipping sync"
+    return 1
   fi
 
-  # Fallback: write cert files into proxy cert volume via helper container.
-  if [[ "$copied_into_proxy" -ne 1 ]]; then
-    local certs_volume
-    certs_volume="$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/etc/nginx/certs"}}{{.Name}}{{end}}{{end}}' proxy 2>/dev/null || true)"
-    if [[ -n "$certs_volume" ]]; then
-      local helper
-      helper="$(docker create -v "${certs_volume}:/proxy-certs" alpine:3.21 sh -c 'sleep 120')"
-      docker cp "${SELF_CONTAINER_REF}:${fullchain}" "${helper}:/proxy-certs/${DOMAIN}.crt"
-      docker cp "${SELF_CONTAINER_REF}:${privkey}" "${helper}:/proxy-certs/${DOMAIN}.key"
-      docker rm -f "$helper" >/dev/null 2>&1 || true
-      echo "[wildcard-cert] Synced certificate into proxy volume: ${certs_volume}"
-    else
-      echo "[wildcard-cert] Could not detect proxy cert volume; skipping volume sync fallback"
-    fi
-  fi
+  helper="$(docker create \
+    -v "${acme_mount}:/acme:ro" \
+    -v "${proxy_certs_mount}:/proxy-certs" \
+    alpine:3.21 \
+    sh -lc "cp -L /acme/live/${DOMAIN}/fullchain.pem /proxy-certs/${DOMAIN}.crt && cp -L /acme/live/${DOMAIN}/privkey.pem /proxy-certs/${DOMAIN}.key")"
+  docker start -a "$helper" >/dev/null
+  docker rm -f "$helper" >/dev/null 2>&1 || true
+  echo "[wildcard-cert] Synced certificate into proxy mount: ${proxy_certs_mount}"
 
   if ! docker exec proxy test -s "/etc/nginx/certs/${DOMAIN}.crt" || ! docker exec proxy test -s "/etc/nginx/certs/${DOMAIN}.key"; then
     echo "[wildcard-cert] Proxy certificate files are missing after sync; skipping reload"
