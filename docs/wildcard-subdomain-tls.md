@@ -31,13 +31,13 @@ cp .env.production.example .env
 docker compose up -d --build
 ```
 
-The root `docker-compose.yml` now includes:
+The default `docker compose up -d` brings up:
 
-- `proxy` (nginx-proxy)
-- `letsencrypt` (acme-companion for apex/www)
 - `wildcard-cert` daemon (DNS-01 wildcard issuance + periodic renewal)
 - `app`
 - `postgres`
+
+`proxy` and `letsencrypt` are optional (profile `edge`) and can remain managed by your existing global proxy stack.
 
 So a single `docker compose up -d` brings up full production stack.
 
@@ -83,11 +83,18 @@ Optional pre-check only:
 What this does automatically:
 
 0. Validates required `.env` values (including Cloudflare token and wildcard host)
-1. Starts proxy stack (`SERVER/docker-compose.yml`)
+1. Ensures `proxy` Docker network exists
 2. Starts app stack (`docker-compose.yml`)
 3. Issues/renews wildcard certificate (`sbc.om` + `*.sbc.om`) using DNS-01
-4. Installs certificate into `proxy` and reloads nginx
+4. Syncs certificate into running `proxy` and reloads nginx
 5. Runs subdomain diagnostics
+6. Verifies wildcard SAN (`DNS:*.sbc.om`) on live TLS endpoint
+
+To disable strict SAN verification temporarily:
+
+```bash
+VERIFY_WILDCARD_SAN=false ./scripts/start-production.sh
+```
 
 ### Automatic periodic renewal
 

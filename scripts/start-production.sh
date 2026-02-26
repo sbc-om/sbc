@@ -20,6 +20,9 @@ else
   exit 1
 fi
 
+echo "0.5) Ensuring shared proxy network exists ..."
+docker network inspect proxy >/dev/null 2>&1 || docker network create proxy >/dev/null
+
 echo "1) Starting full stack (proxy + tls + app + db) ..."
 (
   cd "$ROOT_DIR"
@@ -30,6 +33,7 @@ echo "2) Final diagnostics ..."
 DOMAIN="${DOMAIN:-sbc.om}"
 TARGET_SUBDOMAIN="${TEST_SUBDOMAIN:-spirithub}.${DOMAIN}"
 TARGET_IP="${TARGET_IP:-}"
+VERIFY_WILDCARD_SAN="${VERIFY_WILDCARD_SAN:-true}"
 
 if [[ -z "$TARGET_IP" ]]; then
   TARGET_IP="$(getent hosts "$DOMAIN" | awk '{print $1}' | head -n1 || true)"
@@ -39,6 +43,11 @@ if [[ -n "$TARGET_IP" ]]; then
   "$ROOT_DIR/scripts/diagnose-subdomain.sh" "$TARGET_SUBDOMAIN" "$TARGET_IP" || true
 else
   echo "Could not detect target IP for diagnostics."
+fi
+
+if [[ "$VERIFY_WILDCARD_SAN" == "true" ]]; then
+  echo "3) Verifying wildcard SAN ..."
+  "$ROOT_DIR/scripts/verify-wildcard-san.sh" "$DOMAIN" "$TARGET_SUBDOMAIN" "$TARGET_IP"
 fi
 
 echo "Startup automation completed."

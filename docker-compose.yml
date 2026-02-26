@@ -194,7 +194,7 @@ networks:
     external: false
     name: sbc-network
   proxy:
-    external: false
+    external: true
     name: proxy
 
 volumes:
