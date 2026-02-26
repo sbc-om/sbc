@@ -40,8 +40,13 @@ certbot_issue_or_renew() {
     return 1
   fi
 
+  # Keep local copies (useful when proxy is in same compose stack)
   cp "$fullchain" "/etc/nginx/certs/${DOMAIN}.crt"
   cp "$privkey" "/etc/nginx/certs/${DOMAIN}.key"
+
+  # Always try to install into running proxy container (global/external stack)
+  docker cp "$fullchain" "proxy:/etc/nginx/certs/${DOMAIN}.crt" || true
+  docker cp "$privkey" "proxy:/etc/nginx/certs/${DOMAIN}.key" || true
 
   if docker ps --format '{{.Names}}' | grep -q '^proxy$'; then
     echo "[wildcard-cert] Reloading proxy"

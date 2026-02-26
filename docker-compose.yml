@@ -3,6 +3,7 @@ services:
   proxy:
     image: nginxproxy/nginx-proxy
     container_name: proxy
+    profiles: ["edge"]
     restart: unless-stopped
     ports:
       - "80:80"
@@ -22,6 +23,7 @@ services:
   letsencrypt:
     image: nginxproxy/acme-companion:2.2.1
     container_name: letsencrypt
+    profiles: ["edge"]
     restart: unless-stopped
     depends_on:
       - proxy
@@ -43,8 +45,6 @@ services:
     image: python:3.12-alpine
     container_name: sbc-wildcard-cert
     restart: unless-stopped
-    depends_on:
-      - proxy
     environment:
       DOMAIN: ${DOMAIN:-sbc.om}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@sbc.om}
@@ -186,8 +186,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      proxy:
-        condition: service_started
     networks:
       - sbc-network
       - proxy
