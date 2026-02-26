@@ -100,8 +100,6 @@ services:
       VIRTUAL_PORT: 3000
       VIRTUAL_PROTO: http
       VIRTUAL_NETWORK: proxy
-      LETSENCRYPT_HOST: ${LETSENCRYPT_HOST:-${DOMAIN:-sbc.om},www.${DOMAIN:-sbc.om}}
-      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@sbc.om}
 
       # ── Application ──
       NODE_ENV: production

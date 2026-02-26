@@ -5,6 +5,7 @@ DOMAIN="${DOMAIN:-sbc.om}"
 EMAIL="${LETSENCRYPT_EMAIL:-admin@${DOMAIN}}"
 TOKEN="${CLOUDFLARE_API_TOKEN:-}"
 INTERVAL_HOURS="${CERT_RENEW_INTERVAL_HOURS:-12}"
+SELF_CONTAINER_REF="${HOSTNAME:-sbc-wildcard-cert}"
 
 if [[ -z "$TOKEN" ]]; then
   echo "[wildcard-cert] CLOUDFLARE_API_TOKEN is empty. Waiting (no wildcard cert issuance)."
@@ -48,8 +49,8 @@ certbot_issue_or_renew() {
 
   # Try installing into running proxy container directly.
   local copied_into_proxy=0
-  if docker cp "$fullchain" "proxy:/etc/nginx/certs/${DOMAIN}.crt" >/dev/null 2>&1 && \
-     docker cp "$privkey" "proxy:/etc/nginx/certs/${DOMAIN}.key" >/dev/null 2>&1; then
+  if docker cp "${SELF_CONTAINER_REF}:${fullchain}" "proxy:/etc/nginx/certs/${DOMAIN}.crt" >/dev/null 2>&1 && \
+     docker cp "${SELF_CONTAINER_REF}:${privkey}" "proxy:/etc/nginx/certs/${DOMAIN}.key" >/dev/null 2>&1; then
     copied_into_proxy=1
   else
     echo "[wildcard-cert] Direct copy to proxy failed (likely read-only mount). Trying volume sync fallback..."
@@ -62,13 +63,18 @@ certbot_issue_or_renew() {
     if [[ -n "$certs_volume" ]]; then
       local helper
       helper="$(docker create -v "${certs_volume}:/proxy-certs" alpine:3.21 sh -c 'sleep 120')"
-      docker cp "$fullchain" "${helper}:/proxy-certs/${DOMAIN}.crt" >/dev/null 2>&1 || true
-      docker cp "$privkey" "${helper}:/proxy-certs/${DOMAIN}.key" >/dev/null 2>&1 || true
+      docker cp "${SELF_CONTAINER_REF}:${fullchain}" "${helper}:/proxy-certs/${DOMAIN}.crt"
+      docker cp "${SELF_CONTAINER_REF}:${privkey}" "${helper}:/proxy-certs/${DOMAIN}.key"
       docker rm -f "$helper" >/dev/null 2>&1 || true
       echo "[wildcard-cert] Synced certificate into proxy volume: ${certs_volume}"
     else
       echo "[wildcard-cert] Could not detect proxy cert volume; skipping volume sync fallback"
     fi
+  fi
+
+  if ! docker exec proxy test -s "/etc/nginx/certs/${DOMAIN}.crt" || ! docker exec proxy test -s "/etc/nginx/certs/${DOMAIN}.key"; then
+    echo "[wildcard-cert] Proxy certificate files are missing after sync; skipping reload"
+    return 1
   fi
 
   if docker ps --format '{{.Names}}' | grep -q '^proxy$'; then
