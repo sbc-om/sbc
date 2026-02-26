@@ -41,6 +41,24 @@ function detectLocaleFromAcceptLanguage(header: string | null): Locale {
   return "en";
 }
 
+function getPrimaryForwardedHost(forwardedHost: string | null): string {
+  if (!forwardedHost) return "";
+  return forwardedHost.split(",")[0]?.trim() ?? "";
+}
+
+function normalizeHostnameFromHostHeader(hostValue: string): string {
+  const trimmed = hostValue.trim();
+  if (!trimmed) return "";
+
+  if (trimmed.startsWith("[")) {
+    const end = trimmed.indexOf("]");
+    return end > 0 ? trimmed.slice(1, end).toLowerCase() : trimmed.toLowerCase();
+  }
+
+  const [hostOnly] = trimmed.split(":");
+  return (hostOnly ?? "").toLowerCase();
+}
+
 // Extract subdomain from hostname (e.g., "spirithub" from "spirithub.sbc.om")
 // Hostname should already have port removed
 function extractSubdomain(hostname: string): string | null {
@@ -58,9 +76,10 @@ function extractSubdomain(hostname: string): string | null {
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  // Use the Host header to get the full hostname including subdomain
-  const hostHeader = req.headers.get("host") || req.nextUrl.hostname;
-  const hostname = hostHeader.split(":")[0];
+  // Prefer forwarded host behind reverse proxies/load balancers.
+  const forwardedHostHeader = getPrimaryForwardedHost(req.headers.get("x-forwarded-host"));
+  const hostHeader = forwardedHostHeader || req.headers.get("host") || req.nextUrl.host || req.nextUrl.hostname;
+  const hostname = normalizeHostnameFromHostHeader(hostHeader);
   const subdomain = extractSubdomain(hostname);
 
   // Skip Next internals, static files, and non-locale routes.

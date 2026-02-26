@@ -124,6 +124,24 @@ function extractSubdomain(hostname: string): string | null {
   return null;
 }
 
+function getPrimaryForwardedHost(forwardedHost: string | null): string {
+  if (!forwardedHost) return "";
+  return forwardedHost.split(",")[0]?.trim() ?? "";
+}
+
+function normalizeHostnameFromHostHeader(hostValue: string): string {
+  const trimmed = hostValue.trim();
+  if (!trimmed) return "";
+
+  if (trimmed.startsWith("[")) {
+    const end = trimmed.indexOf("]");
+    return end > 0 ? trimmed.slice(1, end).toLowerCase() : trimmed.toLowerCase();
+  }
+
+  const [hostOnly] = trimmed.split(":");
+  return (hostOnly ?? "").toLowerCase();
+}
+
 export default async function LocaleLayout({
   children,
   params,
@@ -144,8 +162,9 @@ export default async function LocaleLayout({
     headersList.get("next-url") ||
     "";
   const pathname = normalizePathname(rawPathname);
-  const hostHeader = headersList.get("host") || "";
-  const hostname = hostHeader.split(":")[0] || "";
+  const forwardedHostHeader = getPrimaryForwardedHost(headersList.get("x-forwarded-host"));
+  const hostHeader = forwardedHostHeader || headersList.get("host") || "";
+  const hostname = normalizeHostnameFromHostHeader(hostHeader);
   const headerSubdomain = headersList.get("x-subdomain") || "";
   const headerCustomDomain = headersList.get("x-custom-domain") || "";
   const forwardedProto = headersList.get("x-forwarded-proto") || "https";

@@ -36,7 +36,7 @@ services:
     restart: unless-stopped
     environment:
       # ── Nginx Proxy (nginx-proxy + acme-companion) ──
-      VIRTUAL_HOST: ${DOMAIN:-sbc.om}
+      VIRTUAL_HOST: ${VIRTUAL_HOST:-${DOMAIN:-sbc.om},www.${DOMAIN:-sbc.om},*.${DOMAIN:-sbc.om}}
       VIRTUAL_PORT: 3000
       VIRTUAL_PROTO: http
       VIRTUAL_NETWORK: proxy

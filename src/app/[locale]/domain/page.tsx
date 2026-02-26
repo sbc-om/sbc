@@ -20,6 +20,10 @@ export default async function DomainPage({ params, searchParams }: Props) {
     notFound();
   }
 
-  // Redirect to the business page
-  redirect(`/${locale}/directory/businesses/${business.id}`);
+  // Redirect to the public business page
+  if (business.username) {
+    redirect(`/${locale}/u/${business.username}`);
+  }
+
+  redirect(`/${locale}/businesses/${business.slug}`);
 }
