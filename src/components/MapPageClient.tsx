@@ -178,7 +178,38 @@ export default function MapPageClient({ locale }: Props) {
 
     let mounted = true;
 
+    /**
+     * Wait until the map container has non-zero dimensions.
+     * On mobile the layout may not have settled yet when the effect first runs
+     * (address-bar animation, font swap, etc.), which causes Leaflet to create
+     * a 0×0 map that never renders tiles.
+     */
+    const waitForSize = (el: HTMLElement): Promise<void> => {
+      if (el.clientWidth > 0 && el.clientHeight > 0) return Promise.resolve();
+
+      return new Promise<void>((resolve) => {
+        // Use ResizeObserver with a timeout fallback so we never hang forever.
+        const fallback = setTimeout(() => {
+          obs?.disconnect();
+          resolve();              // proceed anyway — resize stabilizer will fix it
+        }, 2000);
+
+        const obs = new ResizeObserver(() => {
+          if (el.clientWidth > 0 && el.clientHeight > 0) {
+            clearTimeout(fallback);
+            obs.disconnect();
+            resolve();
+          }
+        });
+        obs.observe(el);
+      });
+    };
+
     const init = async () => {
+      // Ensure the container is laid-out before we hand it to Leaflet.
+      await waitForSize(mapRef.current!);
+      if (!mounted || !mapRef.current) return;
+
       const leaflet = await import("leaflet");
       const L = leaflet;
 
@@ -516,7 +547,7 @@ export default function MapPageClient({ locale }: Props) {
 
   return (
     <div className="relative min-h-[100dvh] w-full overflow-hidden">
-      <div ref={mapRef} className="fixed inset-0 z-0" />
+      <div ref={mapRef} className="fixed inset-0 z-0" style={{ willChange: "transform" }} />
       <div className="pointer-events-none fixed inset-0 z-[1] bg-black/10" />
 
       <div className="pointer-events-none relative z-10 px-4 pb-8 pt-24 sm:px-6 sm:pt-28">
