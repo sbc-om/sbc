@@ -58,6 +58,8 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+# Ensure external native modules (e.g. canvas via sbcwallet) are available at runtime.
+COPY --from=deps /app/node_modules ./node_modules
 
 RUN mkdir -p /app/.data/uploads /app/data /app/logs /app/backups /app/certs /app/.next/cache \
     && chown -R nextjs:nodejs /app/.data/uploads /app/data /app/logs /app/backups /app/certs /app/.next/cache /app/public /app/.data
