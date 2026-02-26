@@ -5,6 +5,14 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Native/optional-dep packages are best required at runtime, not bundled.
   serverExternalPackages: ["sharp", "canvas", "sbcwallet", "pg", "bcryptjs", "node-forge", "web-push", "archiver", "tar"],
+  // Ensure native binaries/assets are copied into standalone output.
+  outputFileTracingIncludes: {
+    "/*": [
+      "node_modules/.pnpm/canvas@*/node_modules/canvas/build/Release/**/*",
+      "node_modules/.pnpm/canvas@*/node_modules/canvas/**/*.node",
+      "node_modules/.pnpm/sbcwallet@*/node_modules/sbcwallet/**/*",
+    ],
+  },
   // Allow dev requests from ngrok tunnels
   allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok.io"],
   // Increase body size limit for file uploads (stories, images, etc.)
