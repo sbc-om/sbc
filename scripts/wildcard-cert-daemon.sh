@@ -26,6 +26,8 @@ certbot_issue_or_renew() {
     --agree-tos \
     --non-interactive \
     --email "$EMAIL" \
+    --cert-name "$DOMAIN" \
+    --expand \
     --keep-until-expiring \
     --config-dir /etc/letsencrypt \
     --work-dir /var/lib/letsencrypt \

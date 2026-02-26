@@ -42,7 +42,9 @@ services:
 
   # ─── Wildcard TLS automation (DNS-01 via Cloudflare) ───────
   wildcard-cert:
-    image: python:3.12-alpine
+    build:
+      context: .
+      dockerfile: docker/wildcard-cert/Dockerfile
     container_name: sbc-wildcard-cert
     restart: unless-stopped
     environment:
@@ -54,13 +56,6 @@ services:
       - certs:/etc/nginx/certs
       - acme-data:/etc/letsencrypt
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./scripts/wildcard-cert-daemon.sh:/usr/local/bin/wildcard-cert-daemon.sh:ro
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      apk add --no-cache bash docker-cli &&
-      pip install --no-cache-dir certbot certbot-dns-cloudflare &&
-      chmod +x /usr/local/bin/wildcard-cert-daemon.sh &&
-      /usr/local/bin/wildcard-cert-daemon.sh
     networks:
       - proxy
 

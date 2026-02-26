@@ -35,6 +35,8 @@ CERTBOT_ARGS=(
   --agree-tos
   --non-interactive
   --email "$EMAIL"
+  --cert-name "$DOMAIN"
+  --expand
   -d "$DOMAIN"
   -d "$WILDCARD_DOMAIN"
   --config-dir /etc/letsencrypt
