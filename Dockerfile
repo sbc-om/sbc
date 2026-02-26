@@ -17,12 +17,14 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN echo "shamefully-hoist=true" > .npmrc
 RUN NODE_OPTIONS="--dns-result-order=ipv4first" pnpm install --frozen-lockfile --unsafe-perm
 
-# prebuild-install for canvas may silently fail on Alpine/musl.
-# Force a node-gyp rebuild so the native .node binary is guaranteed present.
-RUN pnpm rebuild canvas 2>&1 | tail -20 \
-    && test -f node_modules/.pnpm/canvas@*/node_modules/canvas/build/Release/canvas.node \
-    && echo "✓ canvas.node native binary OK" \
-    || (echo "FATAL: canvas.node not found after rebuild" && find node_modules -name "canvas.node" 2>/dev/null && exit 1)
+# prebuild-install for canvas silently fails on Alpine/musl — no prebuilt binary exists.
+# Locate the canvas package dir and run node-gyp rebuild from source explicitly.
+RUN CANVAS_DIR=$(find node_modules -path '*/canvas/binding.gyp' -exec dirname {} \; | head -1) \
+    && echo ">>> Building canvas native addon in: $CANVAS_DIR" \
+    && cd "$CANVAS_DIR" \
+    && npx --yes node-gyp rebuild --verbose 2>&1 | tail -40 \
+    && ls -la build/Release/canvas.node \
+    && echo "✓ canvas.node native binary OK"
 
 # ──────────────────────────────────────────────
 # Stage 2: Builder
