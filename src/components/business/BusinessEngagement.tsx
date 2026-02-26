@@ -72,7 +72,7 @@ export function BusinessEngagement({
   });
 
   const t = {
-    title: locale === "ar" ? "التفاعل" : "Engagement",
+    title: locale === "ar" ? "التعليقات والتقييم" : "Comments & Reviews",
     like: locale === "ar" ? "إعجاب" : "Like",
     liked: locale === "ar" ? "تم الإعجاب" : "Liked",
     comments: locale === "ar" ? "التعليقات" : "Comments",
@@ -158,44 +158,41 @@ export function BusinessEngagement({
     <section className="sbc-card rounded-2xl p-6 md:p-7">
       <div className="flex items-center justify-between gap-3 border-b border-(--surface-border) pb-4">
         <div className="min-w-0">
-          <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-(--chip-bg) border border-(--surface-border)">
-              <IoChatbubbleEllipsesOutline className="h-4 w-4" />
+          <h2 className="text-base font-semibold tracking-tight flex items-center gap-2">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-(--chip-bg) border border-(--surface-border)">
+              <IoChatbubbleEllipsesOutline className="h-3.5 w-3.5" />
             </span>
-            {t.title}
-          </h2>
-          <div className="mt-2 text-sm text-(--muted-foreground)">
             {t.comments}: {Math.max(liveCounts.comments, localApproved.length)}
-          </div>
+          </h2>
         </div>
 
         <button
           type="button"
           disabled={isPending}
           onClick={onToggleLike}
-          className={`group relative isolate inline-flex min-w-[11.5rem] items-center justify-between gap-2 rounded-2xl border px-4 py-2.5 shadow-sm transition-[background-color,border-color,color,box-shadow,transform] duration-200 disabled:opacity-60 motion-reduce:transition-none ${
+          className={`group relative isolate inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-sm shadow-sm transition-[background-color,border-color,color,box-shadow,transform] duration-200 disabled:opacity-60 motion-reduce:transition-none ${
             liked
               ? "border-red-500/35 bg-red-500/10 text-red-500 hover:shadow-red-500/20"
               : "border-(--surface-border) bg-(--chip-bg) text-(--muted-foreground) hover:text-foreground hover:shadow-[var(--shadow)]"
           }`}
           aria-label={liked ? t.liked : t.like}
         >
-          <span className={`relative inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${liked ? "bg-red-500/15" : "bg-(--surface)"}`}>
+          <span className={`relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${liked ? "bg-red-500/15" : "bg-(--surface)"}`}>
             {likeAnimating ? (
               <>
                 <span className="pointer-events-none absolute inset-0 rounded-full bg-red-500/20 motion-safe:animate-ping" aria-hidden />
-                <span className="pointer-events-none absolute -inset-1 rounded-full border border-red-500/30 motion-safe:animate-ping" aria-hidden />
+                <span className="pointer-events-none absolute -inset-0.5 rounded-full border border-red-500/30 motion-safe:animate-ping" aria-hidden />
               </>
             ) : null}
             {liked ? (
-              <IoHeart className={`relative z-10 h-4.5 w-4.5 text-red-500 ${likeAnimating ? "motion-safe:animate-[pulse_260ms_ease-out_1]" : ""}`} />
+              <IoHeart className={`relative z-10 h-3.5 w-3.5 text-red-500 ${likeAnimating ? "motion-safe:animate-[pulse_260ms_ease-out_1]" : ""}`} />
             ) : (
-              <IoHeartOutline className="relative z-10 h-4.5 w-4.5" />
+              <IoHeartOutline className="relative z-10 h-3.5 w-3.5" />
             )}
           </span>
 
-          <span className="text-sm font-semibold truncate">{liked ? t.liked : t.like}</span>
-          <span className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${liked ? "bg-red-500/15 text-red-500" : "bg-(--surface) text-(--muted-foreground)"}`}>
+          <span className="font-medium truncate">{liked ? t.liked : t.like}</span>
+          <span className={`rounded-full px-1.5 py-px text-xs font-semibold tabular-nums ${liked ? "bg-red-500/15 text-red-500" : "bg-(--surface) text-(--muted-foreground)"}`}>
             {liveCounts.likes}
           </span>
         </button>

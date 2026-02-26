@@ -430,10 +430,7 @@ export function ExplorerBusinessView({
         <div className="min-w-0">
           {description ? (
             <section className="sbc-card rounded-2xl p-6">
-              <h2 className="text-lg font-semibold tracking-tight">
-                {locale === "ar" ? "نبذة" : "About"}
-              </h2>
-              <div className="mt-3 text-sm leading-7 text-foreground">
+              <div className="text-sm leading-7 text-foreground">
                 <MarkdownRenderer content={description} />
               </div>
             </section>
@@ -441,10 +438,7 @@ export function ExplorerBusinessView({
 
           {latitude !== null && longitude !== null ? (
             <section className="sbc-card mt-6 rounded-2xl p-6">
-              <h2 className="text-lg font-semibold tracking-tight">
-                {locale === "ar" ? "الموقع" : "Location"}
-              </h2>
-              <div className="mt-4 overflow-hidden rounded-xl">
+              <div className="overflow-hidden rounded-xl">
                 <StaticLocationMap
                   latitude={latitude}
                   longitude={longitude}
@@ -490,9 +484,6 @@ export function ExplorerBusinessView({
         <aside className="min-w-0 space-y-6">
           {coverImage ? (
             <div className="sbc-card overflow-hidden rounded-2xl p-3">
-              <h3 className="px-1 pb-3 text-sm font-semibold tracking-tight">
-                {locale === "ar" ? "صورة الغلاف" : "Cover"}
-              </h3>
               <div className="relative h-44 w-full overflow-hidden rounded-xl">
                 <Image
                   src={coverImage}
@@ -506,9 +497,6 @@ export function ExplorerBusinessView({
           ) : null}
 
           <div className="sbc-card rounded-2xl p-4">
-            <h3 className="text-sm font-semibold tracking-tight mb-3">
-              {locale === "ar" ? "معلومات الاتصال" : "Contact"}
-            </h3>
             <div className="space-y-1.5">
               {business.phone ? (
                 <a
