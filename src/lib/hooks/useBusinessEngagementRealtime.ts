@@ -363,13 +363,25 @@ export function useBusinessEngagementRealtime(
   initial: EngagementCounts
 ): EngagementCounts {
   const [counts, setCounts] = useState<EngagementCounts>(() => initial);
+  const initialSignature = `${initial.likes}:${initial.comments}`;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      setCounts(initial);
+      const cached = latestCountsByBusinessId.get(businessId);
+      if (cached) {
+        setCounts(cached);
+        return;
+      }
+
+      setCounts((prev) => {
+        if (prev.likes === initial.likes && prev.comments === initial.comments) {
+          return prev;
+        }
+        return initial;
+      });
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [businessId, initial]);
+  }, [businessId, initialSignature]);
 
   useEffect(() => {
     if (!businessId) return;

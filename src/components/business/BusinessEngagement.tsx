@@ -56,7 +56,9 @@ export function BusinessEngagement({
   pendingForModeration: BusinessComment[];
   usersById: Record<string, { displayName?: string; email?: string } | undefined>;
 }) {
-  const [isPending, startTransition] = useTransition();
+  const [isLikePending, startLikeTransition] = useTransition();
+  const [isCommentPending, startCommentTransition] = useTransition();
+  const [isModeratePending, startModerateTransition] = useTransition();
 
   const [liked, setLiked] = useState(initialLiked);
   const [likeAnimating, setLikeAnimating] = useState(false);
@@ -100,7 +102,7 @@ export function BusinessEngagement({
     setLikeAnimating(true);
     window.setTimeout(() => setLikeAnimating(false), 380);
 
-    startTransition(async () => {
+    startLikeTransition(async () => {
       try {
         const r = await toggleBusinessLikeAction(locale, businessId, businessSlug);
         setLiked(r.liked);
@@ -114,7 +116,7 @@ export function BusinessEngagement({
     const text = commentText.trim();
     if (!text) return;
 
-    startTransition(async () => {
+    startCommentTransition(async () => {
       try {
         const c = await createBusinessCommentAction(locale, businessId, businessSlug, text);
         setCommentText("");
@@ -131,7 +133,7 @@ export function BusinessEngagement({
   };
 
   const onModerate = (commentId: string, action: "approve" | "reject" | "delete") => {
-    startTransition(async () => {
+    startModerateTransition(async () => {
       try {
         if (action === "approve") {
           const updated = await approveBusinessCommentAction(locale, businessId, businessSlug, commentId);
@@ -168,9 +170,8 @@ export function BusinessEngagement({
 
         <button
           type="button"
-          disabled={isPending}
           onClick={onToggleLike}
-          className={`group relative isolate inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-sm shadow-sm transition-[background-color,border-color,color,box-shadow,transform] duration-200 disabled:opacity-60 motion-reduce:transition-none ${
+          className={`group relative isolate inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-sm shadow-sm transition-[background-color,border-color,color,box-shadow,transform] duration-200 motion-reduce:transition-none ${
             liked
               ? "border-red-500/35 bg-red-500/10 text-red-500 hover:shadow-red-500/20"
               : "border-(--surface-border) bg-(--chip-bg) text-(--muted-foreground) hover:text-foreground hover:shadow-[var(--shadow)]"
@@ -203,12 +204,11 @@ export function BusinessEngagement({
           value={commentText}
           onChange={(e) => setCommentText(e.target.value)}
           placeholder={t.write}
-          disabled={isPending}
           className="min-h-28 rounded-2xl border-(--surface-border) bg-(--background) focus:border-(--accent)"
         />
         <div className="flex items-center justify-between gap-3 rounded-xl border border-(--surface-border) bg-(--chip-bg) px-3 py-2.5">
           <div className="text-xs text-(--muted-foreground)">{t.pendingHint}</div>
-          <Button variant="primary" size="sm" disabled={isPending || !commentText.trim()} onClick={onPostComment} className="min-w-20">
+          <Button variant="primary" size="sm" disabled={!commentText.trim()} onClick={onPostComment} className="min-w-20">
             {t.post}
           </Button>
         </div>
@@ -275,13 +275,13 @@ export function BusinessEngagement({
                       <div className="mt-1 text-xs text-(--muted-foreground)">{fmtTime(c.createdAt, locale)}</div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Button size="xs" variant="secondary" disabled={isPending} onClick={() => onModerate(c.id, "reject")}>
+                      <Button size="xs" variant="secondary" onClick={() => onModerate(c.id, "reject")}>
                         {t.reject}
                       </Button>
-                      <Button size="xs" variant="primary" disabled={isPending} onClick={() => onModerate(c.id, "approve")}>
+                      <Button size="xs" variant="primary" onClick={() => onModerate(c.id, "approve")}>
                         {t.approve}
                       </Button>
-                      <Button size="xs" variant="destructive" disabled={isPending} onClick={() => onModerate(c.id, "delete")}>
+                      <Button size="xs" variant="destructive" onClick={() => onModerate(c.id, "delete")}>
                         {t.remove}
                       </Button>
                     </div>
