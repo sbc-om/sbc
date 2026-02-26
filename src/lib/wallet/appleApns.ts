@@ -115,6 +115,18 @@ async function connectThroughSocks5(targetHost: string, targetPort: number): Pro
   });
 }
 
+function isSocks5ConnectionError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = String(error.message || "").toUpperCase();
+  return (
+    message.includes("ECONNREFUSED")
+    || message.includes("ETIMEDOUT")
+    || message.includes("EHOSTUNREACH")
+    || message.includes("ENETUNREACH")
+    || message.includes("SOCKS")
+  );
+}
+
 async function sendOnePushToken(input: { token: string; passTypeIdentifier: string }): Promise<{ ok: true } | { ok: false; status: number; body: string }> {
   const jwt = await getApnsJwt();
   const apnsHost = isSandbox() ? "api.sandbox.push.apple.com" : "api.push.apple.com";
@@ -126,11 +138,19 @@ async function sendOnePushToken(input: { token: string; passTypeIdentifier: stri
   let client: http2.ClientHttp2Session;
 
   if (socks5) {
-    // Connect through SOCKS5 proxy
-    const tlsSocket = await connectThroughSocks5(apnsHost, apnsPort);
-    client = http2.connect(`https://${apnsHost}`, {
-      createConnection: () => tlsSocket,
-    });
+    try {
+      // Connect through SOCKS5 proxy
+      const tlsSocket = await connectThroughSocks5(apnsHost, apnsPort);
+      client = http2.connect(`https://${apnsHost}`, {
+        createConnection: () => tlsSocket,
+      });
+    } catch (error) {
+      if (!isSocks5ConnectionError(error)) {
+        throw error;
+      }
+      console.warn(`[APNs] SOCKS5 failed (${socks5.host}:${socks5.port}), falling back to direct connection`);
+      client = http2.connect(`https://${apnsHost}`);
+    }
   } else {
     // Direct connection
     client = http2.connect(`https://${apnsHost}`);

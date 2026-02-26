@@ -5,7 +5,7 @@ ARG NODE_IMAGE=node:22-alpine
 
 FROM ${NODE_IMAGE} AS deps
 RUN apk add --no-cache libc6-compat python3 make g++ pkgconf \
-    cairo-dev pango-dev jpeg-dev giflib-dev pixman-dev
+    cairo-dev pango-dev jpeg-dev giflib-dev pixman-dev librsvg-dev
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
@@ -50,7 +50,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN apk add --no-cache libc6-compat cairo pango jpeg giflib pixman postgresql-client
+RUN apk add --no-cache libc6-compat cairo pango jpeg giflib pixman librsvg postgresql-client
 
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs
