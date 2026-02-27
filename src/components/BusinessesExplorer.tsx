@@ -659,6 +659,10 @@ export function BusinessesExplorer({
     [sorted, visibleCount, serverPagination, aiResults],
   );
 
+  const hasSearchState = Boolean(
+    searchQuery || uploadedImage || aiResults || city || tags || categoryId || activeMode !== "none",
+  );
+
   return (
     <div>
       {/* Unified Search Interface */}
@@ -687,7 +691,7 @@ export function BusinessesExplorer({
                   handleSearch();
                 }}
                 disabled={!searchQuery.trim() || isAiSearching}
-                className="h-12 w-full rounded-xl px-4 sm:h-11 sm:w-12 sm:min-w-12 sm:px-0"
+                className="h-12 w-full rounded-xl px-4 shadow-none sm:h-11 sm:w-12 sm:min-w-12 sm:px-0"
               >
                 {isAiSearching ? (
                   <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -698,15 +702,19 @@ export function BusinessesExplorer({
             </div>
 
             {/* Quick Action Buttons - Toggle Group */}
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            <div
+              className={`grid grid-cols-2 gap-2 sm:grid-cols-2 ${
+                hasSearchState ? "lg:grid-cols-4" : "lg:grid-cols-3"
+              }`}
+            >
               <Button
                 type="button"
-                variant={activeMode === "advanced" ? "primary" : "secondary"}
+                variant="secondary"
                 size="sm"
                 onClick={() => toggleMode("advanced")}
                 className={
-                  "h-10 w-full justify-center rounded-xl px-3 text-xs sm:text-sm " +
-                  (activeMode === "advanced" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : "")
+                  "h-10 w-full justify-center rounded-xl px-3 text-xs shadow-none sm:text-sm " +
+                  (activeMode === "advanced" ? "border-(--accent) bg-(--accent)/10 text-(--accent)" : "")
                 }
               >
                 <FiFilter className="h-3.5 w-3.5" />
@@ -715,7 +723,7 @@ export function BusinessesExplorer({
               
               <Button
                 type="button"
-                variant={activeMode === "image" ? "primary" : "secondary"}
+                variant="secondary"
                 size="sm"
                 onClick={() => {
                   if (activeMode === "image") {
@@ -726,8 +734,8 @@ export function BusinessesExplorer({
                 }}
                 disabled={isAiSearching}
                 className={
-                  "h-10 w-full justify-center rounded-xl px-3 text-xs sm:text-sm " +
-                  (activeMode === "image" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : "")
+                  "h-10 w-full justify-center rounded-xl px-3 text-xs shadow-none sm:text-sm " +
+                  (activeMode === "image" ? "border-(--accent) bg-(--accent)/10 text-(--accent)" : "")
                 }
               >
                 <FiUpload className="h-3.5 w-3.5" />
@@ -745,25 +753,25 @@ export function BusinessesExplorer({
 
               <Button
                 type="button"
-                variant={activeMode === "chat" ? "primary" : "secondary"}
+                variant="secondary"
                 size="sm"
                 onClick={() => toggleMode("chat")}
                 className={
-                  "h-10 w-full justify-center rounded-xl px-3 text-xs sm:text-sm " +
-                  (activeMode === "chat" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : "")
+                  "h-10 w-full justify-center rounded-xl px-3 text-xs shadow-none sm:text-sm " +
+                  (activeMode === "chat" ? "border-(--accent) bg-(--accent)/10 text-(--accent)" : "")
                 }
               >
                 <FiMessageCircle className="h-3.5 w-3.5" />
                 {locale === "ar" ? "محادثة ذكية" : "AI Chat"}
               </Button>
 
-              {(searchQuery || uploadedImage || aiResults || city || tags || categoryId || activeMode !== "none") && (
+              {hasSearchState && (
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={clearSearch}
-                  className="h-10 w-full justify-center rounded-xl px-3 text-xs sm:text-sm"
+                  className="h-10 w-full justify-center rounded-xl px-3 text-xs shadow-none sm:text-sm"
                 >
                   <FiX className="h-3.5 w-3.5" />
                   {locale === "ar" ? "مسح الكل" : "Clear All"}
@@ -1091,7 +1099,7 @@ export function BusinessesExplorer({
           })}
         </div>
       ) : (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:gap-5 lg:grid-cols-3">
           {visibleBusinesses.map((b) => {
             const name = locale === "ar" ? b.name.ar : b.name.en;
             const description = b.description ? (locale === "ar" ? b.description.ar : b.description.en) : "";
@@ -1107,14 +1115,15 @@ export function BusinessesExplorer({
               <Link
                 key={b.id}
                 href={href}
-                className="group sbc-card sbc-card--interactive overflow-hidden rounded-2xl"
+                className="group sbc-card sbc-card--interactive overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface) shadow-(--shadow) transition-colors hover:border-(--accent)/30"
               >
-                <div className="relative aspect-square w-full bg-linear-to-br from-accent/10 via-accent-2/10 to-transparent">
+                <div className="relative aspect-square w-full overflow-hidden bg-linear-to-br from-accent/12 via-accent-2/10 to-transparent">
                   {img ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={img} alt={name} className="h-full w-full object-cover" />
+                    <img src={img} alt={name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
                   ) : null}
-                  <div className="absolute inset-0 bg-linear-to-t from-black/45 via-black/10 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/20 to-black/0" />
+                  <div className="absolute inset-x-0 top-0 h-20 bg-linear-to-b from-black/35 to-transparent" />
                   <div className="absolute bottom-3 left-3 right-3">
                     <div className="flex items-center gap-2 min-w-0">
                       {/* Business Logo with story ring */}
@@ -1128,7 +1137,7 @@ export function BusinessesExplorer({
                           </div>
                         </div>
                       )}
-                      <div className="truncate text-base font-semibold text-white drop-shadow">
+                      <div className="truncate text-base font-semibold text-white drop-shadow-sm">
                         {name}
                       </div>
                       {b.isVerified ? (
@@ -1154,7 +1163,7 @@ export function BusinessesExplorer({
                   </div>
                 </div>
 
-                <div className="p-5">
+                <div className="p-4 sm:p-5">
                   {description ? (
                     <MarkdownRenderer
                       content={description}
@@ -1166,11 +1175,11 @@ export function BusinessesExplorer({
                     </p>
                   )}
 
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs text-(--muted-foreground)">
-                    <span className="font-mono">/{b.slug}</span>
-                    {b.city ? <span className="sbc-chip rounded-full px-2 py-0.5">{b.city}</span> : null}
+                  <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-(--muted-foreground)">
+                    <span className="rounded-full border border-(--surface-border) bg-(--chip-bg) px-2 py-0.5 font-mono">/{b.slug}</span>
+                    {b.city ? <span className="sbc-chip rounded-full px-2 py-0.5 font-medium">{b.city}</span> : null}
                     {b.tags?.slice(0, 5).map((t) => (
-                      <span key={t} className="sbc-chip rounded-full px-2 py-0.5">
+                      <span key={t} className="sbc-chip rounded-full px-2 py-0.5 font-medium">
                         {t}
                       </span>
                     ))}

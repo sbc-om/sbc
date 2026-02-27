@@ -424,16 +424,16 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 overflow-y-auto px-2">
+      <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-2">
         {navItems.map((item) => {
           const active = isActive(item.path);
           const IconComponent = active ? item.Icon : item.IconOutline;
           const href = `/${locale}${item.path}`;
-          const className = `sbc-sidebar-navlink flex items-center rounded-xl py-3 text-base transition-all ${
+          const className = `sbc-sidebar-navlink flex items-center rounded-xl text-base transition-all ${
             active
               ? "bg-linear-to-r from-accent/10 to-accent-2/10 font-bold text-accent"
               : "hover:bg-(--surface) font-normal"
-          } ${iconOnly ? "justify-center px-2" : "justify-start gap-4 px-3"}`;
+          } ${iconOnly ? "mx-auto h-12 w-12 justify-center px-0" : "w-full justify-start gap-4 px-3 py-3"}`;
 
           if (item.hardNavigate) {
             return (
@@ -500,9 +500,9 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               return next;
             });
           }}
-          className={`w-full flex items-center gap-3 rounded-xl p-3 hover:bg-(--surface) transition-colors ${
+          className={`flex items-center gap-3 rounded-xl hover:bg-(--surface) transition-colors ${
             isProfileMenuVisible ? "bg-(--surface)" : ""
-          } ${iconOnly ? "justify-center" : "justify-start"}`}
+          } ${iconOnly ? "mx-auto h-12 w-12 justify-center p-0" : "w-full justify-start p-3"}`}
           aria-haspopup="menu"
           aria-expanded={isProfileMenuVisible}
         >
@@ -740,7 +740,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className="sbc-sidebar fixed top-0 bottom-0 z-40 border-e shadow-none hidden lg:flex flex-col transition-[width] duration-300"
+        className="sbc-sidebar fixed top-0 bottom-0 z-40 hidden overflow-x-hidden border-e shadow-none lg:flex flex-col transition-[width] duration-300"
         style={{
           [locale === "ar" ? "right" : "left"]: 0,
           width: "var(--sidebar-width, 16rem)",
@@ -767,7 +767,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           
           {/* Mobile sidebar */}
           <aside
-            className={`fixed top-0 bottom-0 z-50 w-72 border-e shadow-none lg:hidden flex flex-col transition-transform duration-300 ease-in-out ${
+            className={`fixed top-0 bottom-0 z-50 w-72 overflow-x-hidden border-e shadow-none lg:hidden flex flex-col transition-transform duration-300 ease-in-out ${
               mobileOpen ? "translate-x-0" : (locale === "ar" ? "translate-x-full" : "-translate-x-full")
             }`}
             style={{
