@@ -126,12 +126,12 @@ export default async function DashboardPage({
 
   return (
     <AppPage>
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="text-center sm:text-start">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             {dict.nav.dashboard}
           </h1>
-          <p className="mt-1 text-sm text-(--muted-foreground)">
+          <p className="mt-1 text-sm text-(--muted-foreground) sm:text-base">
             {locale === "ar" ? "مرحباً" : "Welcome"}: <span className="font-medium">{user.email}</span>
           </p>
         </div>
@@ -139,7 +139,7 @@ export default async function DashboardPage({
         {user.role === "admin" ? (
           <Link
             href={`/${locale}/admin`}
-            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-(--muted-foreground) hover:text-foreground"
+            className="inline-flex items-center justify-center gap-2 self-center rounded-2xl border border-(--surface-border) bg-(--surface)/90 px-4 py-2.5 text-sm font-semibold text-foreground shadow-(--shadow) backdrop-blur-md hover:bg-(--chip-bg) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)/35 sm:self-auto"
           >
             <HiArrowUpRight className="h-4 w-4" />
             {dict.nav.admin}
@@ -147,7 +147,7 @@ export default async function DashboardPage({
         ) : null}
       </div>
 
-      <div className="mt-8 flex flex-col gap-4">
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:mt-8 sm:gap-5">
         {await Promise.all((Object.keys(programMeta) as Array<keyof typeof programMeta>).map(async (programId) => {
           const meta = programMeta[programId];
           const sub = subscriptions.find((s) => s.program === programId) ?? null;
@@ -180,21 +180,21 @@ export default async function DashboardPage({
               borderClassName={meta.borderClassName}
               glowColor={meta.glowColor}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex min-w-0 items-start gap-4">
+              <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-start sm:justify-between sm:text-start">
+                <div className="flex min-w-0 flex-col items-center gap-3 sm:flex-row sm:items-start sm:gap-4">
                   <div
                     className={
-                      "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl " +
+                      "flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ring-1 ring-inset sm:h-14 sm:w-14 " +
                       meta.iconBgClassName +
                       (active ? "" : " opacity-75")
                     }
                     aria-hidden
                   >
-                    <meta.Icon className={"h-8 w-8 " + meta.iconClassName} />
+                    <meta.Icon className={"h-9 w-9 sm:h-8 sm:w-8 " + meta.iconClassName} />
                   </div>
 
                   <div className="min-w-0">
-                    <h2 className="truncate text-base font-semibold tracking-tight">{meta.title}</h2>
+                    <h2 className="truncate text-lg font-semibold tracking-tight sm:text-base">{meta.title}</h2>
                     <p className="mt-1 line-clamp-1 text-sm text-(--muted-foreground)">{meta.subtitle}</p>
                   </div>
                 </div>
@@ -202,7 +202,7 @@ export default async function DashboardPage({
                 <div className="shrink-0">
                   <span
                     className={
-                      "sbc-chip inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold " +
+                      "sbc-chip inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold sm:px-3 sm:py-1 " +
                       (active ? "text-foreground" : "text-(--muted-foreground)")
                     }
                   >
@@ -215,19 +215,19 @@ export default async function DashboardPage({
               </div>
 
               <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <span className="sbc-chip rounded-full px-3 py-1">
+                <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 sm:gap-3 lg:flex lg:flex-wrap lg:items-center">
+                  <span className="sbc-chip rounded-xl px-3 py-2 text-center sm:rounded-full sm:px-3 sm:py-1">
                     <span className="text-(--muted-foreground)">{ar ? "الخطة" : "Plan"}: </span>
                     <span className="font-semibold">{planLabel}</span>
                   </span>
 
                   {sub ? (
                     <>
-                      <span className="sbc-chip rounded-full px-3 py-1">
+                      <span className="sbc-chip rounded-xl px-3 py-2 text-center sm:rounded-full sm:px-3 sm:py-1">
                         <span className="text-(--muted-foreground)">{ar ? "الانتهاء" : "Expires"}: </span>
                         <span className="font-semibold">{formatDate(sub.expiresAt)}</span>
                       </span>
-                      <span className="sbc-chip rounded-full px-3 py-1">
+                      <span className="sbc-chip rounded-xl px-3 py-2 text-center sm:rounded-full sm:px-3 sm:py-1 sm:col-span-2 lg:col-auto">
                         <span className="text-(--muted-foreground)">{ar ? "المتبقي" : "Remaining"}: </span>
                         <span className="font-semibold">
                           {active
@@ -241,17 +241,17 @@ export default async function DashboardPage({
                       </span>
                     </>
                   ) : (
-                    <span className="text-(--muted-foreground)">
+                    <span className="text-center text-(--muted-foreground) sm:text-start sm:col-span-2 lg:col-auto">
                       {ar ? "غير مشتراة" : "Not purchased"}
                     </span>
                   )}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="grid w-full grid-cols-1 gap-2 sm:w-auto sm:grid-cols-2 sm:gap-3 lg:flex lg:flex-wrap lg:items-center">
                 <Link
                   href={active ? meta.href : meta.storeHref}
                   className={
-                    "inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold " +
+                    "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold sm:min-h-10 sm:py-2 " +
                     (active
                       ? "bg-accent text-(--accent-foreground)"
                       : "bg-(--chip-bg) text-foreground")
@@ -267,7 +267,7 @@ export default async function DashboardPage({
 
                 <Link
                   href={meta.storeHref}
-                  className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-(--muted-foreground) hover:text-foreground"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-(--surface-border) bg-(--surface)/95 px-3.5 py-3 text-sm font-semibold text-foreground shadow-(--shadow) hover:bg-(--chip-bg) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)/30 sm:min-h-10 sm:py-2"
                 >
                   {ar ? "ترقية" : "Upgrade"}
                   <HiArrowUpRight className="h-4 w-4" />
