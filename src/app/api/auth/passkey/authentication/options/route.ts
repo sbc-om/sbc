@@ -13,53 +13,58 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const body = await req.json().catch(() => ({}));
-  const { identifier } = bodySchema.parse(body);
+  try {
+    const body = await req.json().catch(() => ({}));
+    const { identifier } = bodySchema.parse(body);
 
-  const rpID = resolvePasskeyRpId(req);
+    const rpID = resolvePasskeyRpId(req);
 
-  let userId: string | undefined;
-  let allowCredentials:
-    | {
-        id: string;
-        type: "public-key";
-        transports?: AuthenticatorTransport[];
-      }[]
-    | undefined;
+    let userId: string | undefined;
+    let allowCredentials:
+      | {
+          id: string;
+          type: "public-key";
+          transports?: AuthenticatorTransport[];
+        }[]
+      | undefined;
 
-  if (identifier) {
-    const user = identifier.includes("@")
-      ? await getUserByEmail(identifier)
-      : await getUserByPhone(identifier);
+    if (identifier) {
+      const user = identifier.includes("@")
+        ? await getUserByEmail(identifier)
+        : await getUserByPhone(identifier);
 
-    if (!user) {
-      return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
+      if (!user) {
+        return NextResponse.json({ ok: false, error: "NOT_FOUND" }, { status: 404 });
+      }
+
+      userId = user.id;
+      const passkeys = await listUserPasskeys(user.id);
+      if (passkeys.length === 0) {
+        return NextResponse.json({ ok: false, error: "NO_PASSKEYS" }, { status: 404 });
+      }
+
+      allowCredentials = passkeys.map((credential) => ({
+        id: credential.id,
+        type: "public-key",
+        transports: credential.transports,
+      }));
     }
 
-    userId = user.id;
-    const passkeys = await listUserPasskeys(user.id);
-    if (passkeys.length === 0) {
-      return NextResponse.json({ ok: false, error: "NO_PASSKEYS" }, { status: 404 });
-    }
+    const options = await generateAuthenticationOptions({
+      rpID,
+      allowCredentials,
+      userVerification: "preferred",
+    });
 
-    allowCredentials = passkeys.map((credential) => ({
-      id: credential.id,
-      type: "public-key",
-      transports: credential.transports,
-    }));
+    const challenge = await createPasskeyChallenge({
+      challenge: options.challenge,
+      userId,
+      expiresInMs: 5 * 60 * 1000,
+    });
+
+    return NextResponse.json({ ok: true, options, requestId: challenge.id });
+  } catch (err) {
+    console.error("[passkey/auth/options]", err);
+    return NextResponse.json({ ok: false, error: "OPTIONS_FAILED" }, { status: 500 });
   }
-
-  const options = await generateAuthenticationOptions({
-    rpID,
-    allowCredentials,
-    userVerification: "preferred",
-  });
-
-  const challenge = await createPasskeyChallenge({
-    challenge: options.challenge,
-    userId,
-    expiresInMs: 5 * 60 * 1000,
-  });
-
-  return NextResponse.json({ ok: true, options, requestId: challenge.id });
 }

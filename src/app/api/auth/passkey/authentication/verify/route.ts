@@ -16,87 +16,92 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const { requestId, response: authResponse } = bodySchema.parse(body);
+  try {
+    const body = await req.json();
+    const { requestId, response: authResponse } = bodySchema.parse(body);
 
-  const challenge = await consumePasskeyChallenge(requestId);
-  if (!challenge) {
-    return NextResponse.json({ ok: false, error: "CHALLENGE_INVALID" }, { status: 400 });
+    const challenge = await consumePasskeyChallenge(requestId);
+    if (!challenge) {
+      return NextResponse.json({ ok: false, error: "CHALLENGE_INVALID" }, { status: 400 });
+    }
+
+    const credentialId = authResponse?.id as string | undefined;
+    if (!credentialId) {
+      return NextResponse.json({ ok: false, error: "CREDENTIAL_MISSING" }, { status: 400 });
+    }
+
+    const passkey = await getPasskeyById(credentialId);
+    if (!passkey) {
+      return NextResponse.json({ ok: false, error: "CREDENTIAL_NOT_FOUND" }, { status: 404 });
+    }
+
+    if (challenge.userId && passkey.userId !== challenge.userId) {
+      return NextResponse.json({ ok: false, error: "CREDENTIAL_MISMATCH" }, { status: 400 });
+    }
+
+    // Resolve expected origin and RP ID from request
+    const expectedOrigin = resolvePasskeyOrigin(req);
+    const expectedRPID = resolvePasskeyRpId(req);
+
+    const verification = await verifyAuthenticationResponse({
+      response: authResponse,
+      expectedChallenge: challenge.challenge,
+      expectedOrigin,
+      expectedRPID,
+      credential: {
+        id: passkey.id,
+        publicKey: base64UrlToBuffer(passkey.publicKey),
+        counter: passkey.counter,
+        transports: passkey.transports,
+      },
+    });
+
+    if (!verification.verified || !verification.authenticationInfo) {
+      return NextResponse.json({ ok: false, error: "VERIFICATION_FAILED" }, { status: 401 });
+    }
+
+    const user = await getUserById(passkey.userId);
+    if (!user) {
+      return NextResponse.json({ ok: false, error: "USER_NOT_FOUND" }, { status: 404 });
+    }
+    if (user.approvalStatus && user.approvalStatus !== "approved") {
+      return NextResponse.json({ ok: false, error: "ACCOUNT_PENDING_APPROVAL" }, { status: 403 });
+    }
+    if (user.isActive === false) {
+      return NextResponse.json({ ok: false, error: "ACCOUNT_INACTIVE" }, { status: 403 });
+    }
+
+    await updatePasskeyCounter(passkey.id, verification.authenticationInfo.newCounter);
+
+    const token = await signAuthToken({ sub: user.id, email: user.email, role: user.role });
+    const cookieName = getAuthCookieName();
+    const secure = process.env.NODE_ENV === "production";
+
+    // Send login notification
+    if (user.phone && isWAHAEnabled()) {
+      sendLoginNotification(user.phone, "en", "passkey").catch(console.error);
+    }
+
+    const authRes = NextResponse.json({
+      ok: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        displayName: user.displayName ?? user.email.split("@")[0],
+      },
+    });
+
+    authRes.cookies.set(cookieName, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure,
+      path: "/",
+    });
+
+    return authRes;
+  } catch (err) {
+    console.error("[passkey/auth/verify]", err);
+    return NextResponse.json({ ok: false, error: "VERIFICATION_FAILED" }, { status: 400 });
   }
-
-  const credentialId = authResponse?.id as string | undefined;
-  if (!credentialId) {
-    return NextResponse.json({ ok: false, error: "CREDENTIAL_MISSING" }, { status: 400 });
-  }
-
-  const passkey = await getPasskeyById(credentialId);
-  if (!passkey) {
-    return NextResponse.json({ ok: false, error: "CREDENTIAL_NOT_FOUND" }, { status: 404 });
-  }
-
-  if (challenge.userId && passkey.userId !== challenge.userId) {
-    return NextResponse.json({ ok: false, error: "CREDENTIAL_MISMATCH" }, { status: 400 });
-  }
-
-  // Resolve expected origin and RP ID from request
-  const expectedOrigin = resolvePasskeyOrigin(req);
-  const expectedRPID = resolvePasskeyRpId(req);
-
-  const verification = await verifyAuthenticationResponse({
-    response: authResponse,
-    expectedChallenge: challenge.challenge,
-    expectedOrigin,
-    expectedRPID,
-    credential: {
-      id: passkey.id,
-      publicKey: base64UrlToBuffer(passkey.publicKey),
-      counter: passkey.counter,
-      transports: passkey.transports,
-    },
-  });
-
-  if (!verification.verified || !verification.authenticationInfo) {
-    return NextResponse.json({ ok: false, error: "VERIFICATION_FAILED" }, { status: 401 });
-  }
-
-  const user = await getUserById(passkey.userId);
-  if (!user) {
-    return NextResponse.json({ ok: false, error: "USER_NOT_FOUND" }, { status: 404 });
-  }
-  if (user.approvalStatus && user.approvalStatus !== "approved") {
-    return NextResponse.json({ ok: false, error: "ACCOUNT_PENDING_APPROVAL" }, { status: 403 });
-  }
-  if (user.isActive === false) {
-    return NextResponse.json({ ok: false, error: "ACCOUNT_INACTIVE" }, { status: 403 });
-  }
-
-  await updatePasskeyCounter(passkey.id, verification.authenticationInfo.newCounter);
-
-  const token = await signAuthToken({ sub: user.id, email: user.email, role: user.role });
-  const cookieName = getAuthCookieName();
-  const secure = process.env.NODE_ENV === "production";
-
-  // Send login notification
-  if (user.phone && isWAHAEnabled()) {
-    sendLoginNotification(user.phone, "en", "passkey").catch(console.error);
-  }
-
-  const authRes = NextResponse.json({
-    ok: true,
-    user: {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      displayName: user.displayName ?? user.email.split("@")[0],
-    },
-  });
-
-  authRes.cookies.set(cookieName, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure,
-    path: "/",
-  });
-
-  return authRes;
 }

@@ -109,6 +109,8 @@ const texts = {
 export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsProps) {
   const t = texts[locale];
   const [activeTab, setActiveTab] = useState<TabId>("password");
+  // Shared identifier state — filled by the password tab, also used by the passkey tab
+  const [identifier, setIdentifier] = useState("");
   // WhatsApp state
   const [whatsappEnabled, setWhatsappEnabled] = useState<boolean | null>(null);
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -195,10 +197,14 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
     setPasskeyBusy(true);
 
     try {
+      // Send identifier (if filled in the password tab) so the server can
+      // include allowCredentials – this helps when the passkey is not a
+      // discoverable credential.
+      const id = identifier.trim() || undefined;
       const optionsRes = await fetch("/api/auth/passkey/authentication/options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ identifier: id }),
       });
 
       const optionsJson = (await optionsRes.json()) as
@@ -379,6 +385,8 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
               required
               autoComplete="username"
               placeholder={locale === "ar" ? "البريد الإلكتروني أو الهاتف" : "Email or mobile"}
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
             />
           </label>
 
