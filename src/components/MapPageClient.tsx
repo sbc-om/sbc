@@ -101,6 +101,7 @@ export default function MapPageClient({ locale }: Props) {
   const markerIconsRef = useRef<Map<string, LeafletIcon | LeafletDivIcon>>(new Map());
   const markersRef = useRef<Map<string, LeafletMarker>>(new Map());
   const clusterGroupRef = useRef<ClusterGroup | null>(null);
+  const clusterPluginLoadRef = useRef<Promise<void> | null>(null);
   const sharedLocationMarkerRef = useRef<LeafletMarker | null>(null);
   const listItemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const lastActiveIdRef = useRef<string | null>(null);
@@ -110,6 +111,7 @@ export default function MapPageClient({ locale }: Props) {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [clusterPluginReady, setClusterPluginReady] = useState(false);
   const [isListOpen, setIsListOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -238,13 +240,6 @@ export default function MapPageClient({ locale }: Props) {
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
 
-      /* ── Import marker-cluster plugin ──────────────────────── */
-      // @ts-expect-error -- CSS dynamic import handled by Next.js bundler
-      await import("leaflet.markercluster/dist/MarkerCluster.css");
-      // @ts-expect-error -- CSS dynamic import handled by Next.js bundler
-      await import("leaflet.markercluster/dist/MarkerCluster.Default.css");
-      await import("leaflet.markercluster");
-
       mapInstanceRef.current = map;
       setMapReady(true);
     };
@@ -257,6 +252,8 @@ export default function MapPageClient({ locale }: Props) {
     return () => {
       mounted = false;
       setMapReady(false);
+      setClusterPluginReady(false);
+      clusterPluginLoadRef.current = null;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -267,6 +264,36 @@ export default function MapPageClient({ locale }: Props) {
       markerIcons.clear();
     };
   }, []);
+
+  useEffect(() => {
+    if (!mapReady) return;
+    if (mappableBusinesses.length <= 1) return;
+    if (clusterPluginReady) return;
+
+    let cancelled = false;
+
+    if (!clusterPluginLoadRef.current) {
+      clusterPluginLoadRef.current = (async () => {
+        // @ts-expect-error -- CSS dynamic import handled by Next.js bundler
+        await import("leaflet.markercluster/dist/MarkerCluster.css");
+        // @ts-expect-error -- CSS dynamic import handled by Next.js bundler
+        await import("leaflet.markercluster/dist/MarkerCluster.Default.css");
+        await import("leaflet.markercluster");
+      })();
+    }
+
+    void clusterPluginLoadRef.current
+      .then(() => {
+        if (!cancelled) setClusterPluginReady(true);
+      })
+      .catch(() => {
+        clusterPluginLoadRef.current = null;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mapReady, mappableBusinesses.length, clusterPluginReady]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
@@ -349,7 +376,7 @@ export default function MapPageClient({ locale }: Props) {
     const mcgFactory = (L as any).markerClusterGroup as typeof L.markerClusterGroup | undefined;
     let clusterGroup: ClusterGroup | null = null;
 
-    if (typeof mcgFactory === "function") {
+    if (clusterPluginReady && typeof mcgFactory === "function") {
       try {
         clusterGroup = mcgFactory({
           maxClusterRadius: 45,
@@ -449,7 +476,7 @@ export default function MapPageClient({ locale }: Props) {
     return () => {
       map.off("zoomend", rescaleMarkers);
     };
-  }, [mappableBusinesses, locale, mapReady, sharedLocation, buildBusinessIcon, rescaleMarkers]);
+  }, [mappableBusinesses, locale, mapReady, sharedLocation, buildBusinessIcon, rescaleMarkers, clusterPluginReady]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
