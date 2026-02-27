@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
@@ -10,109 +10,78 @@ type QrScannerProps = {
   locale: string;
 };
 
-type QrScanResult = { data: string };
-
-type QrScannerInstance = {
-  start: () => Promise<void>;
-  stop: () => void;
-  destroy: () => void;
-};
-
-type QrScannerConstructor = new (
-  video: HTMLVideoElement,
-  onDecode: (result: QrScanResult) => void,
-  options: {
-    returnDetailedScanResult: true;
-    highlightScanRegion: boolean;
-    highlightCodeOutline: boolean;
-  }
-) => QrScannerInstance;
-
 export function QrScanner({ onScan, onClose, locale }: QrScannerProps) {
   const ar = locale === "ar";
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
-  const scannerRef = useRef<QrScannerInstance | null>(null);
+
+  // Keep onScan in a ref so the effect doesn't re-run when the parent
+  // passes a new function reference.
+  const onScanRef = useRef(onScan);
+  onScanRef.current = onScan;
+
+  // Stable close handler
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
     let mounted = true;
+    let scanner: InstanceType<typeof import("qr-scanner").default> | null = null;
 
-    async function startScanner() {
+    async function init() {
       try {
-        // Dynamically import the QR scanner library
-        const { default: QrScanner } = await import("qr-scanner");
-        const QrScannerClass = QrScanner as unknown as QrScannerConstructor;
+        const { default: QrScannerLib } = await import("qr-scanner");
 
         if (!videoRef.current || !mounted) return;
 
-        // Request camera access
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-        });
-
-        if (!mounted) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-
-        // Initialize QR scanner
-        const scanner = new QrScannerClass(
+        // Let the library fully manage the camera & video stream.
+        // Do NOT call getUserMedia manually — that conflicts with the
+        // library's internal stream management and breaks scanning.
+        scanner = new QrScannerLib(
           videoRef.current,
           (result) => {
-            if (mounted) {
-              onScan(result.data);
-              cleanup();
+            if (mounted && result.data) {
+              onScanRef.current(result.data);
             }
           },
           {
             returnDetailedScanResult: true,
             highlightScanRegion: true,
             highlightCodeOutline: true,
-          }
+            preferredCamera: "environment",
+            maxScansPerSecond: 5,
+          },
         );
 
-        scannerRef.current = scanner;
         await scanner.start();
-        if (mounted) setScanning(true);
+
+        if (mounted) {
+          setScanning(true);
+        }
       } catch (err) {
         if (mounted) {
           console.error("QR Scanner error:", err);
           setError(
             ar
               ? "خطأ في الوصول إلى الكاميرا. تأكد من السماح بالوصول."
-              : "Camera access error. Please allow camera permissions."
+              : "Camera access error. Please allow camera permissions.",
           );
         }
       }
     }
 
-    function cleanup() {
-      if (scannerRef.current) {
-        scannerRef.current.stop();
-        scannerRef.current.destroy();
-        scannerRef.current = null;
-      }
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
-        stream = null;
-      }
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-    }
-
-    void startScanner();
+    void init();
 
     return () => {
       mounted = false;
-      cleanup();
+      if (scanner) {
+        scanner.stop();
+        scanner.destroy();
+        scanner = null;
+      }
     };
-  }, [ar, onScan]);
+  }, [ar]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
@@ -131,11 +100,11 @@ export function QrScanner({ onScan, onClose, locale }: QrScannerProps) {
             {error}
           </div>
         ) : (
-          <div className="relative overflow-hidden rounded-xl bg-black">
+          <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-black">
             <video
               ref={videoRef}
               className={cn(
-                "h-full w-full object-cover",
+                "absolute inset-0 h-full w-full object-cover",
                 scanning ? "opacity-100" : "opacity-0"
               )}
               playsInline
