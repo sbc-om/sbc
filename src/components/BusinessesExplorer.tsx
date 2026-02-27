@@ -662,11 +662,11 @@ export function BusinessesExplorer({
   return (
     <div>
       {/* Unified Search Interface */}
-      <div className="sbc-card rounded-2xl overflow-hidden">
-        <div className="p-5 space-y-4">
+      <div className="sbc-card overflow-hidden rounded-2xl sm:rounded-3xl">
+        <div className="space-y-4 p-4 sm:space-y-5 sm:p-5">
           {/* Main Search Bar with AI */}
-          <div className="space-y-3">
-            <div className="flex gap-2">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto] sm:gap-3">
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -678,7 +678,7 @@ export function BusinessesExplorer({
                 }}
                 placeholder={locale === "ar" ? "ابحث عن نشاط تجاري... (بحث ذكي)" : "Search businesses... (Smart search)"}
                 disabled={isAiSearching}
-                className="flex-1"
+                className="h-12 rounded-xl text-sm sm:h-11"
               />
               <Button
                 type="button"
@@ -687,6 +687,7 @@ export function BusinessesExplorer({
                   handleSearch();
                 }}
                 disabled={!searchQuery.trim() || isAiSearching}
+                className="h-12 w-full rounded-xl px-4 sm:h-11 sm:w-12 sm:min-w-12 sm:px-0"
               >
                 {isAiSearching ? (
                   <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -697,13 +698,16 @@ export function BusinessesExplorer({
             </div>
 
             {/* Quick Action Buttons - Toggle Group */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-4">
               <Button
                 type="button"
                 variant={activeMode === "advanced" ? "primary" : "secondary"}
                 size="sm"
                 onClick={() => toggleMode("advanced")}
-                className={activeMode === "advanced" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : ""}
+                className={
+                  "h-10 w-full justify-center rounded-xl px-3 text-xs sm:text-sm " +
+                  (activeMode === "advanced" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : "")
+                }
               >
                 <FiFilter className="h-3.5 w-3.5" />
                 {locale === "ar" ? "فلاتر متقدمة" : "Advanced Filters"}
@@ -721,7 +725,10 @@ export function BusinessesExplorer({
                   }
                 }}
                 disabled={isAiSearching}
-                className={activeMode === "image" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : ""}
+                className={
+                  "h-10 w-full justify-center rounded-xl px-3 text-xs sm:text-sm " +
+                  (activeMode === "image" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : "")
+                }
               >
                 <FiUpload className="h-3.5 w-3.5" />
                 {locale === "ar" ? "بحث بالصورة" : "Search by Image"}
@@ -741,7 +748,10 @@ export function BusinessesExplorer({
                 variant={activeMode === "chat" ? "primary" : "secondary"}
                 size="sm"
                 onClick={() => toggleMode("chat")}
-                className={activeMode === "chat" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : ""}
+                className={
+                  "h-10 w-full justify-center rounded-xl px-3 text-xs sm:text-sm " +
+                  (activeMode === "chat" ? "ring-2 ring-(--accent) ring-offset-1 ring-offset-(--background)" : "")
+                }
               >
                 <FiMessageCircle className="h-3.5 w-3.5" />
                 {locale === "ar" ? "محادثة ذكية" : "AI Chat"}
@@ -753,6 +763,7 @@ export function BusinessesExplorer({
                   variant="ghost"
                   size="sm"
                   onClick={clearSearch}
+                  className="h-10 w-full justify-center rounded-xl px-3 text-xs sm:text-sm"
                 >
                   <FiX className="h-3.5 w-3.5" />
                   {locale === "ar" ? "مسح الكل" : "Clear All"}
@@ -1025,8 +1036,8 @@ export function BusinessesExplorer({
           )}
 
           {/* Results Summary */}
-          <div className="flex items-center justify-between gap-3 pt-2 border-t border-(--surface-border) text-sm">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 border-t border-(--surface-border) pt-2 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               {aiResults && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium">
                   <FiZap className="h-3 w-3" />
