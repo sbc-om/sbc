@@ -3,6 +3,17 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import type L from "leaflet";
+import {
+  clampToOmanBounds,
+  OMAN_BOUNDS_TUPLE,
+  OMAN_CITY_ZOOM,
+  OMAN_DEFAULT_CENTER,
+  OMAN_DETAIL_ZOOM,
+  OMAN_MAX_ZOOM,
+  OMAN_MIN_ZOOM,
+  OMAN_TILE_LAYER_OPTIONS,
+  OMAN_TILE_TEMPLATE,
+} from "@/lib/maps/oman";
 
 type LocationPickerModalProps = {
   isOpen: boolean;
@@ -10,28 +21,6 @@ type LocationPickerModalProps = {
   onSelectLocation: (lat: number, lng: number) => void;
   locale: string;
 };
-
-// Default center
-const DEFAULT_CENTER = { lat: 23.588, lng: 58.3829 }; // Oman
-const DEFAULT_ZOOM = 13;
-
-// Hook to detect dark mode
-function useIsDarkMode(): boolean {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const root = document.documentElement;
-    const compute = () => setIsDark(root.classList.contains("dark"));
-    compute();
-
-    const obs = new MutationObserver(() => compute());
-    obs.observe(root, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
-
-  return isDark;
-}
 
 export function LocationPickerModal({
   isOpen,
@@ -47,20 +36,15 @@ export function LocationPickerModal({
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
-  const isDark = useIsDarkMode();
-
   // Get user's current location when modal opens
   useEffect(() => {
     if (isOpen && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
+          setUserLocation(clampToOmanBounds(position.coords.latitude, position.coords.longitude));
         },
         () => {
-          setUserLocation(DEFAULT_CENTER);
+          setUserLocation(OMAN_DEFAULT_CENTER);
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
       );
@@ -85,22 +69,23 @@ export function LocationPickerModal({
         markerRef.current = null;
       }
 
-      const center = userLocation || DEFAULT_CENTER;
-
-      // Tile URL - no labels version for clean professional look
-      const tileUrl = isDark
-        ? "https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png"
-        : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager_nolabels/{z}/{x}/{y}{r}.png";
+      const center = userLocation || OMAN_DEFAULT_CENTER;
 
       // Create map
       const map = L.map(mapRef.current, {
         center: [center.lat, center.lng],
-        zoom: DEFAULT_ZOOM,
+        zoom: OMAN_CITY_ZOOM,
+        minZoom: OMAN_MIN_ZOOM,
+        maxZoom: OMAN_MAX_ZOOM,
+        maxBounds: L.latLngBounds(OMAN_BOUNDS_TUPLE),
+        maxBoundsViscosity: 1,
         zoomControl: false,
         attributionControl: false,
+        preferCanvas: true,
+        fadeAnimation: false,
       });
 
-      L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(map);
+      L.tileLayer(OMAN_TILE_TEMPLATE, { ...OMAN_TILE_LAYER_OPTIONS }).addTo(map);
 
       // Custom marker icon
       const markerIcon = L.divIcon({
@@ -146,7 +131,7 @@ export function LocationPickerModal({
       }
       markerRef.current = null;
     };
-  }, [isOpen, userLocation, isDark]);
+  }, [isOpen, userLocation]);
 
   // Center map on user location
   const handleCenterOnUser = useCallback(() => {
@@ -154,10 +139,10 @@ export function LocationPickerModal({
       setIsLoadingLocation(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const { latitude, longitude } = position.coords;
-          setUserLocation({ lat: latitude, lng: longitude });
+          const { lat, lng } = clampToOmanBounds(position.coords.latitude, position.coords.longitude);
+          setUserLocation({ lat, lng });
           if (mapInstanceRef.current) {
-            mapInstanceRef.current.setView([latitude, longitude], 16, { animate: true });
+            mapInstanceRef.current.setView([lat, lng], OMAN_DETAIL_ZOOM, { animate: true });
           }
           setIsLoadingLocation(false);
         },
@@ -180,7 +165,8 @@ export function LocationPickerModal({
 
   const handleConfirm = () => {
     if (selectedLocation) {
-      onSelectLocation(selectedLocation.lat, selectedLocation.lng);
+      const safeLocation = clampToOmanBounds(selectedLocation.lat, selectedLocation.lng);
+      onSelectLocation(safeLocation.lat, safeLocation.lng);
       onClose();
     }
   };

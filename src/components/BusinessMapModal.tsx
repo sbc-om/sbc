@@ -5,15 +5,22 @@ import { Button } from "@/components/ui/Button";
 import type { Business } from "@/lib/db/types";
 import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
 import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
+import {
+  isWithinOmanBounds,
+  OMAN_BOUNDS_TUPLE,
+  OMAN_CITY_ZOOM,
+  OMAN_DEFAULT_CENTER,
+  OMAN_MAX_ZOOM,
+  OMAN_MIN_ZOOM,
+  OMAN_TILE_LAYER_OPTIONS,
+  OMAN_TILE_TEMPLATE,
+} from "@/lib/maps/oman";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   locale: string;
 };
-
-const DEFAULT_CENTER = { lat: 23.588, lng: 58.3829 };
-const DEFAULT_ZOOM = 12;
 
 export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -59,14 +66,19 @@ export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
       }
 
       const map = L.map(mapRef.current, {
-        center: [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng],
-        zoom: DEFAULT_ZOOM,
+        center: [OMAN_DEFAULT_CENTER.lat, OMAN_DEFAULT_CENTER.lng],
+        zoom: OMAN_CITY_ZOOM,
+        minZoom: OMAN_MIN_ZOOM,
+        maxZoom: OMAN_MAX_ZOOM,
+        maxBounds: L.latLngBounds(OMAN_BOUNDS_TUPLE),
+        maxBoundsViscosity: 1,
         zoomControl: false,
         attributionControl: false,
+        preferCanvas: true,
+        fadeAnimation: false,
       });
 
-      const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
-      L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(map);
+      L.tileLayer(OMAN_TILE_TEMPLATE, { ...OMAN_TILE_LAYER_OPTIONS }).addTo(map);
 
       mapInstanceRef.current = map;
       resizeCleanupRef.current = attachMapResizeStabilizer(map);
@@ -76,7 +88,11 @@ export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
         if (!businesses || !mapInstanceRef.current) return;
         const points: [number, number][] = [];
         for (const b of businesses) {
-          if (typeof b.latitude !== "number" || typeof b.longitude !== "number") continue;
+          if (
+            typeof b.latitude !== "number" ||
+            typeof b.longitude !== "number" ||
+            !isWithinOmanBounds(b.latitude, b.longitude)
+          ) continue;
           const marker = L.marker([b.latitude, b.longitude]).addTo(map);
           const name = (locale === "ar" ? b.name.ar : b.name.en) || b.slug || "";
           const href = b.username ? `/${locale}/businesses/@${b.username}` : `/${locale}/businesses/${b.slug}`;
@@ -87,9 +103,13 @@ export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
 
         if (points.length > 0) {
           const bounds = L.latLngBounds(points.map((p) => L.latLng(p[0], p[1])));
-          map.fitBounds(bounds.pad(0.2));
+          map.fitBounds(bounds.pad(0.15), { animate: false, maxZoom: OMAN_CITY_ZOOM, padding: [24, 24] });
         } else {
-          map.setView([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], DEFAULT_ZOOM);
+          map.fitBounds(L.latLngBounds(OMAN_BOUNDS_TUPLE), {
+            animate: false,
+            maxZoom: OMAN_CITY_ZOOM,
+            padding: [24, 24],
+          });
         }
       };
 

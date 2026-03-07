@@ -16,6 +16,20 @@ import { cn } from "@/lib/cn";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
+import {
+  clampToOmanBounds,
+  isWithinOmanBounds,
+  OMAN_BOUNDS,
+  OMAN_BOUNDS_TUPLE,
+  OMAN_CITY_ZOOM,
+  OMAN_DEFAULT_CENTER,
+  OMAN_DETAIL_ZOOM,
+  OMAN_MAX_ZOOM,
+  OMAN_MIN_ZOOM,
+  OMAN_TILE_ATTRIBUTION,
+  OMAN_TILE_SUBDOMAINS,
+  OMAN_TILE_TEMPLATE,
+} from "@/lib/maps/oman";
 
 export type OsmLocationValue = {
   lat: number;
@@ -35,34 +49,19 @@ function toSafeLatLng(lat: unknown, lng: unknown): { lat: number; lng: number } 
   return { lat: Number(lat), lng: Number(lng) };
 }
 
-function useIsDarkMode(): boolean {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const compute = () => setIsDark(root.classList.contains("dark"));
-    compute();
-
-    const obs = new MutationObserver(() => compute());
-    obs.observe(root, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
-
-  return isDark;
-}
-
 function FlyTo({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
   useEffect(() => {
     try {
       const safe = toSafeLatLng(lat, lng);
       if (!safe) return;
+      if (!isWithinOmanBounds(safe.lat, safe.lng)) return;
 
       const maybeLoaded = (map as unknown as { _loaded?: boolean })._loaded;
       if (!maybeLoaded) return;
 
       const currentZoom = map.getZoom();
-      const nextZoom = Number.isFinite(currentZoom) ? Math.max(currentZoom, 16) : 16;
+      const nextZoom = Number.isFinite(currentZoom) ? Math.max(currentZoom, OMAN_DETAIL_ZOOM) : OMAN_DETAIL_ZOOM;
 
       const currentCenter = map.getCenter();
       if (!isValidLatLng(currentCenter.lat, currentCenter.lng)) return;
@@ -100,7 +99,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string | null> 
   // Nominatim usage note: keep requests minimal; one per click is ok.
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(
     String(lat)
-  )}&lon=${encodeURIComponent(String(lng))}`;
+  )}&lon=${encodeURIComponent(String(lng))}&zoom=18&accept-language=en,ar`;
 
   const res = await fetch(url, {
     headers: {
@@ -115,7 +114,9 @@ async function reverseGeocode(lat: number, lng: number): Promise<string | null> 
 }
 
 async function searchPlaces(q: string): Promise<Array<{ label: string; lat: number; lng: number }>> {
-  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&limit=5`;
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
+    q
+  )}&limit=5&countrycodes=om&bounded=1&viewbox=${OMAN_BOUNDS.west},${OMAN_BOUNDS.north},${OMAN_BOUNDS.east},${OMAN_BOUNDS.south}&accept-language=en,ar`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   if (!res.ok) return [];
   const json = (await res.json()) as Array<{ display_name: string; lat: string; lon: string }>;
@@ -125,7 +126,7 @@ async function searchPlaces(q: string): Promise<Array<{ label: string; lat: numb
       lat: Number(r.lat),
       lng: Number(r.lon),
     }))
-    .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng));
+    .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng) && isWithinOmanBounds(r.lat, r.lng));
 }
 
 export function OsmLocationPicker({
@@ -155,8 +156,6 @@ export function OsmLocationPicker({
   const [searching, setSearching] = useState(false);
   const [geoBusy, setGeoBusy] = useState(false);
 
-  const isDark = useIsDarkMode();
-
   const [localRadius, setLocalRadius] = useState(String(value?.radiusMeters ?? 250));
 
   useEffect(() => {
@@ -178,8 +177,7 @@ export function OsmLocationPicker({
 
   const center = useMemo(() => {
     if (safeValue) return { lat: safeValue.lat, lng: safeValue.lng };
-    // Default: Muscat-ish (since repo says sbc-om)
-    return { lat: 23.588, lng: 58.3829 };
+    return OMAN_DEFAULT_CENTER;
   }, [safeValue]);
 
   const radiusMeters = useMemo(() => {
@@ -224,9 +222,10 @@ export function OsmLocationPicker({
       // ignore
     }
 
+    const safeCoords = clampToOmanBounds(lat, lng);
     onChange({
-      lat,
-      lng,
+      lat: safeCoords.lat,
+      lng: safeCoords.lng,
       radiusMeters: safeValue?.radiusMeters ?? 250,
       label,
     });
@@ -258,24 +257,6 @@ export function OsmLocationPicker({
     if (!safeValue) return;
     onChange({ ...safeValue, radiusMeters });
   }
-
-  const tiles = useMemo(() => {
-    // CARTO tiles are a solid default and have both light/dark variants.
-    // Note: attribution is still required; we hide Leaflet's default label and expose it via a minimal info popover.
-    return isDark
-      ? {
-          url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-          label: "CARTO dark",
-          attribution:
-            'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors • Tiles © <a href="https://carto.com/attributions">CARTO</a>',
-        }
-      : {
-          url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-          label: "CARTO light",
-          attribution:
-            'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors • Tiles © <a href="https://carto.com/attributions">CARTO</a>',
-        };
-  }, [isDark]);
 
   const containerClassName = viewOnly
     ? cn("w-full h-full", className)
@@ -368,16 +349,27 @@ export function OsmLocationPicker({
       >
         <MapContainer
           center={[center.lat, center.lng]}
-          zoom={value ? 16 : 12}
+          zoom={value ? OMAN_DETAIL_ZOOM : OMAN_CITY_ZOOM}
+          minZoom={OMAN_MIN_ZOOM}
+          maxZoom={OMAN_MAX_ZOOM}
+          maxBounds={OMAN_BOUNDS_TUPLE}
+          maxBoundsViscosity={1}
           scrollWheelZoom={false}
           attributionControl={false}
           style={{ height: viewOnly ? "100%" : 320, width: "100%" }}
         >
           <TileLayer
-            attribution={tiles.attribution}
-            url={tiles.url}
-            // Force layer remount on theme switch
-            key={tiles.url}
+            attribution={OMAN_TILE_ATTRIBUTION}
+            url={OMAN_TILE_TEMPLATE}
+            subdomains={[...OMAN_TILE_SUBDOMAINS]}
+            detectRetina
+            keepBuffer={8}
+            updateWhenIdle={false}
+            updateWhenZooming={false}
+            crossOrigin
+            noWrap
+            bounds={OMAN_BOUNDS_TUPLE}
+            key={OMAN_TILE_TEMPLATE}
           />
           <InvalidateSizeOnVisible />
           <ClickHandler onPick={pick} />

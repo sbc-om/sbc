@@ -11,6 +11,19 @@ import type {
   Marker as LeafletMarker,
 } from "leaflet";
 import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
+import {
+  buildOmanTileWarmupUrls,
+  isWithinOmanBounds,
+  OMAN_BOUNDS,
+  OMAN_BOUNDS_TUPLE,
+  OMAN_CITY_ZOOM,
+  OMAN_DEFAULT_CENTER,
+  OMAN_DETAIL_ZOOM,
+  OMAN_MAX_ZOOM,
+  OMAN_MIN_ZOOM,
+  OMAN_TILE_LAYER_OPTIONS,
+  OMAN_TILE_TEMPLATE,
+} from "@/lib/maps/oman";
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
 declare namespace L {
@@ -30,8 +43,7 @@ declare namespace L {
 type ClusterGroup = import("leaflet").LayerGroup & { addLayer(layer: LeafletMarker): unknown };
 
 type Props = { locale: Locale };
-
-const DEFAULT_CENTER = { lat: 23.588, lng: 58.3829 };
+const TILE_WARMUP_DEBOUNCE_MS = 180;
 
 /* ── Zoom-based marker sizing ──────────────────────────────── */
 const MARKER_SIZE_BY_ZOOM: Record<number, number> = {
@@ -106,6 +118,7 @@ export default function MapPageClient({ locale }: Props) {
   const listItemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const lastActiveIdRef = useRef<string | null>(null);
   const pendingTransitionRef = useRef<number | null>(null);
+  const tileWarmupTimeoutRef = useRef<number | null>(null);
   const transitionVersionRef = useRef(0);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +136,7 @@ export default function MapPageClient({ locale }: Props) {
     const lat = Number(latRaw);
     const lng = Number(lngRaw);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-    if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+    if (!isWithinOmanBounds(lat, lng)) return null;
 
     return { lat, lng };
   }, [searchParams]);
@@ -135,7 +148,8 @@ export default function MapPageClient({ locale }: Props) {
           typeof business.latitude === "number" &&
           typeof business.longitude === "number" &&
           Number.isFinite(business.latitude) &&
-          Number.isFinite(business.longitude),
+          Number.isFinite(business.longitude) &&
+          isWithinOmanBounds(business.latitude, business.longitude),
       ),
     [businesses],
   );
@@ -157,6 +171,42 @@ export default function MapPageClient({ locale }: Props) {
       );
     });
   }, [mappableBusinesses, searchQuery, locale]);
+
+  const requestTileWarmup = useCallback(async () => {
+    const map = mapInstanceRef.current;
+    if (!map || typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+
+    const bounds = map.getBounds();
+    const urls = buildOmanTileWarmupUrls({
+      south: Math.max(bounds.getSouth(), OMAN_BOUNDS.south),
+      west: Math.max(bounds.getWest(), OMAN_BOUNDS.west),
+      north: Math.min(bounds.getNorth(), OMAN_BOUNDS.north),
+      east: Math.min(bounds.getEast(), OMAN_BOUNDS.east),
+      zooms: [Math.round(map.getZoom()), Math.round(map.getZoom()) + 1],
+      devicePixelRatio: window.devicePixelRatio,
+    });
+
+    if (urls.length === 0) return;
+
+    try {
+      const registration = await navigator.serviceWorker.getRegistration("/");
+      const worker = registration?.active ?? navigator.serviceWorker.controller;
+      worker?.postMessage({ type: "SBC_MAP_WARM_TILES", urls });
+    } catch {
+      // Ignore service worker races. Runtime tile caching still works once active.
+    }
+  }, []);
+
+  const scheduleTileWarmup = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (tileWarmupTimeoutRef.current !== null) {
+      window.clearTimeout(tileWarmupTimeoutRef.current);
+    }
+    tileWarmupTimeoutRef.current = window.setTimeout(() => {
+      tileWarmupTimeoutRef.current = null;
+      void requestTileWarmup();
+    }, TILE_WARMUP_DEBOUNCE_MS);
+  }, [requestTileWarmup]);
 
   useEffect(() => {
     let mounted = true;
@@ -228,20 +278,32 @@ export default function MapPageClient({ locale }: Props) {
       }
 
       const map = L.map(mapRef.current, {
-        center: [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng],
-        zoom: 12,
+        center: [OMAN_DEFAULT_CENTER.lat, OMAN_DEFAULT_CENTER.lng],
+        zoom: OMAN_CITY_ZOOM,
+        minZoom: OMAN_MIN_ZOOM,
+        maxZoom: OMAN_MAX_ZOOM,
+        maxBounds: L.latLngBounds(OMAN_BOUNDS_TUPLE),
+        maxBoundsViscosity: 1,
         zoomControl: false,
         attributionControl: false,
+        preferCanvas: true,
         dragging: true,
         touchZoom: true,
         doubleClickZoom: true,
         scrollWheelZoom: true,
+        zoomAnimation: true,
+        fadeAnimation: false,
+        markerZoomAnimation: true,
+        zoomSnap: 0.25,
+        zoomDelta: 0.5,
+        worldCopyJump: false,
       });
 
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(map);
+      L.tileLayer(OMAN_TILE_TEMPLATE, { ...OMAN_TILE_LAYER_OPTIONS }).addTo(map);
 
       mapInstanceRef.current = map;
       setMapReady(true);
+      scheduleTileWarmup();
     };
 
     init();
@@ -251,6 +313,10 @@ export default function MapPageClient({ locale }: Props) {
 
     return () => {
       mounted = false;
+      if (tileWarmupTimeoutRef.current !== null) {
+        window.clearTimeout(tileWarmupTimeoutRef.current);
+        tileWarmupTimeoutRef.current = null;
+      }
       setMapReady(false);
       setClusterPluginReady(false);
       clusterPluginLoadRef.current = null;
@@ -263,7 +329,7 @@ export default function MapPageClient({ locale }: Props) {
       sharedLocationMarkerRef.current = null;
       markerIcons.clear();
     };
-  }, []);
+  }, [scheduleTileWarmup]);
 
   useEffect(() => {
     if (!mapReady) return;
@@ -301,6 +367,24 @@ export default function MapPageClient({ locale }: Props) {
 
     return attachMapResizeStabilizer(map);
   }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!mapReady || !map) return;
+
+    scheduleTileWarmup();
+    map.on("moveend", scheduleTileWarmup);
+    map.on("zoomend", scheduleTileWarmup);
+
+    return () => {
+      map.off("moveend", scheduleTileWarmup);
+      map.off("zoomend", scheduleTileWarmup);
+      if (tileWarmupTimeoutRef.current !== null) {
+        window.clearTimeout(tileWarmupTimeoutRef.current);
+        tileWarmupTimeoutRef.current = null;
+      }
+    };
+  }, [mapReady, scheduleTileWarmup]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 768px)");
@@ -467,10 +551,20 @@ export default function MapPageClient({ locale }: Props) {
     map.on("zoomend", rescaleMarkers);
 
     if (sharedLocation) {
-      map.setView([sharedLocation.lat, sharedLocation.lng], 17);
+      map.setView([sharedLocation.lat, sharedLocation.lng], OMAN_DETAIL_ZOOM);
     } else if (points.length > 0) {
       const bounds = L.latLngBounds(points.map((p) => L.latLng(p[0], p[1])));
-      map.fitBounds(bounds.pad(0.15));
+      map.fitBounds(bounds.pad(0.12), {
+        animate: false,
+        maxZoom: OMAN_CITY_ZOOM,
+        padding: [24, 24],
+      });
+    } else {
+      map.fitBounds(L.latLngBounds(OMAN_BOUNDS_TUPLE), {
+        animate: false,
+        maxZoom: OMAN_CITY_ZOOM,
+        padding: [24, 24],
+      });
     }
 
     return () => {
@@ -504,7 +598,7 @@ export default function MapPageClient({ locale }: Props) {
     marker.openPopup();
     sharedLocationMarkerRef.current = marker;
 
-    map.flyTo([sharedLocation.lat, sharedLocation.lng], 17, {
+    map.flyTo([sharedLocation.lat, sharedLocation.lng], OMAN_DETAIL_ZOOM, {
       animate: true,
       duration: 1,
       easeLinearity: 0.25,
@@ -550,7 +644,7 @@ export default function MapPageClient({ locale }: Props) {
       pendingTransitionRef.current = window.setTimeout(() => {
         if (transitionVersionRef.current !== transitionVersion) return;
 
-        map.flyTo([latitude, longitude], 16, {
+        map.flyTo([latitude, longitude], OMAN_DETAIL_ZOOM, {
           animate: true,
           duration: 1,
           easeLinearity: 0.25,
@@ -559,7 +653,7 @@ export default function MapPageClient({ locale }: Props) {
         openTargetMarker();
       }, 720);
     } else {
-      map.flyTo([latitude, longitude], 16, {
+      map.flyTo([latitude, longitude], OMAN_DETAIL_ZOOM, {
         animate: true,
         duration: 1,
         easeLinearity: 0.25,

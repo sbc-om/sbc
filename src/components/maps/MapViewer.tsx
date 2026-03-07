@@ -4,6 +4,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type L from "leaflet";
 import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
+import {
+  clampToOmanBounds,
+  OMAN_BOUNDS_TUPLE,
+  OMAN_DETAIL_ZOOM,
+  OMAN_MAX_ZOOM,
+  OMAN_MIN_ZOOM,
+  OMAN_TILE_LAYER_OPTIONS,
+  OMAN_TILE_TEMPLATE,
+} from "@/lib/maps/oman";
 
 type MapViewerProps = {
   lat: number;
@@ -11,24 +20,6 @@ type MapViewerProps = {
   label?: string;
   locale: string;
 };
-
-// Hook to detect dark mode
-function useIsDarkMode(): boolean {
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const root = document.documentElement;
-    const compute = () => setIsDark(root.classList.contains("dark"));
-    compute();
-
-    const obs = new MutationObserver(() => compute());
-    obs.observe(root, { attributes: true, attributeFilter: ["class"] });
-    return () => obs.disconnect();
-  }, []);
-
-  return isDark;
-}
 
 export function MapViewer({ lat, lng, label, locale }: MapViewerProps) {
   const router = useRouter();
@@ -40,7 +31,6 @@ export function MapViewer({ lat, lng, label, locale }: MapViewerProps) {
   const [showCopied, setShowCopied] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
 
-  const isDark = useIsDarkMode();
   const ar = locale === "ar";
 
   // Initialize map
@@ -62,20 +52,21 @@ export function MapViewer({ lat, lng, label, locale }: MapViewerProps) {
         mapInstanceRef.current = null;
       }
 
-      // Tile URL - with labels for better navigation
-      const tileUrl = isDark
-        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-        : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-
       // Create map
       const map = L.map(mapRef.current, {
         center: [lat, lng],
-        zoom: 16,
+        zoom: OMAN_DETAIL_ZOOM,
+        minZoom: OMAN_MIN_ZOOM,
+        maxZoom: OMAN_MAX_ZOOM,
+        maxBounds: L.latLngBounds(OMAN_BOUNDS_TUPLE),
+        maxBoundsViscosity: 1,
         zoomControl: false,
         attributionControl: false,
+        preferCanvas: true,
+        fadeAnimation: false,
       });
 
-      L.tileLayer(tileUrl, { maxZoom: 19 }).addTo(map);
+      L.tileLayer(OMAN_TILE_TEMPLATE, { ...OMAN_TILE_LAYER_OPTIONS }).addTo(map);
 
       // Custom marker icon for the location
       const markerIcon = L.divIcon({
@@ -111,11 +102,11 @@ export function MapViewer({ lat, lng, label, locale }: MapViewerProps) {
         mapInstanceRef.current = null;
       }
     };
-  }, [lat, lng, isDark]);
+  }, [lat, lng]);
 
   // Center on target location
   const handleCenterOnLocation = useCallback(() => {
-    mapInstanceRef.current?.setView([lat, lng], 16, { animate: true });
+    mapInstanceRef.current?.setView([lat, lng], OMAN_DETAIL_ZOOM, { animate: true });
   }, [lat, lng]);
 
   // Get and show user location
@@ -125,7 +116,10 @@ export function MapViewer({ lat, lng, label, locale }: MapViewerProps) {
     setIsLoadingLocation(true);
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        const { latitude, longitude } = position.coords;
+        const { lat: latitude, lng: longitude } = clampToOmanBounds(
+          position.coords.latitude,
+          position.coords.longitude
+        );
 
         if (mapInstanceRef.current) {
           const L = (await import("leaflet")).default;
