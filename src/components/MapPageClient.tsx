@@ -412,8 +412,8 @@ export default function MapPageClient({ locale }: Props) {
             noClip: true,
             style: {
               stroke: false,
-              fillColor: "#0b1220",
-              fillOpacity: 0.45,
+              fillColor: "#f5f7fa",
+              fillOpacity: 1,
             },
           } as any
         );
