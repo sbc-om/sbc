@@ -6,6 +6,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import type { Business } from "@/lib/db/types";
 import type {
   DivIcon as LeafletDivIcon,
+  GeoJSON as LeafletGeoJSON,
   Icon as LeafletIcon,
   Map as LeafletMap,
   Marker as LeafletMarker,
@@ -44,6 +45,19 @@ type ClusterGroup = import("leaflet").LayerGroup & { addLayer(layer: LeafletMark
 
 type Props = { locale: Locale };
 const TILE_WARMUP_DEBOUNCE_MS = 180;
+
+type GeoJsonRing = [number, number][];
+type GeoJsonPolygon = GeoJsonRing[];
+type OmanBorderGeometry =
+  | { type: "Polygon"; coordinates: GeoJsonPolygon }
+  | { type: "MultiPolygon"; coordinates: GeoJsonPolygon[] };
+type OmanBorderFeatureCollection = {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    geometry: OmanBorderGeometry;
+  }>;
+};
 
 /* ── Zoom-based marker sizing ──────────────────────────────── */
 const MARKER_SIZE_BY_ZOOM: Record<number, number> = {
@@ -105,6 +119,30 @@ function localizedCategory(category: string | undefined, locale: Locale) {
   return category;
 }
 
+function toMaskGeometry(geometry: OmanBorderGeometry) {
+  const worldRing: GeoJsonRing = [
+    [-180, -90],
+    [180, -90],
+    [180, 90],
+    [-180, 90],
+    [-180, -90],
+  ];
+
+  const holes =
+    geometry.type === "Polygon"
+      ? [geometry.coordinates[0]]
+      : geometry.coordinates.map((polygon) => polygon[0]);
+
+  return {
+    type: "Feature" as const,
+    properties: {},
+    geometry: {
+      type: "Polygon" as const,
+      coordinates: [worldRing, ...holes],
+    },
+  };
+}
+
 export default function MapPageClient({ locale }: Props) {
   const searchParams = useSearchParams();
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -115,6 +153,8 @@ export default function MapPageClient({ locale }: Props) {
   const clusterGroupRef = useRef<ClusterGroup | null>(null);
   const clusterPluginLoadRef = useRef<Promise<void> | null>(null);
   const sharedLocationMarkerRef = useRef<LeafletMarker | null>(null);
+  const omanBorderLayerRef = useRef<LeafletGeoJSON | null>(null);
+  const omanMaskLayerRef = useRef<LeafletGeoJSON | null>(null);
   const listItemRefs = useRef<Map<string, HTMLLIElement>>(new Map());
   const lastActiveIdRef = useRef<string | null>(null);
   const pendingTransitionRef = useRef<number | null>(null);
@@ -274,6 +314,8 @@ export default function MapPageClient({ locale }: Props) {
         markersRef.current.clear();
         clusterGroupRef.current = null;
         sharedLocationMarkerRef.current = null;
+        omanBorderLayerRef.current = null;
+        omanMaskLayerRef.current = null;
         markerIconsRef.current.clear();
       }
 
@@ -301,6 +343,14 @@ export default function MapPageClient({ locale }: Props) {
 
       L.tileLayer(OMAN_TILE_TEMPLATE, { ...OMAN_TILE_LAYER_OPTIONS }).addTo(map);
 
+      const maskPane = map.createPane("oman-mask-pane");
+      maskPane.style.zIndex = "350";
+      maskPane.style.pointerEvents = "none";
+
+      const borderPane = map.createPane("oman-border-pane");
+      borderPane.style.zIndex = "360";
+      borderPane.style.pointerEvents = "none";
+
       mapInstanceRef.current = map;
       setMapReady(true);
       scheduleTileWarmup();
@@ -327,9 +377,80 @@ export default function MapPageClient({ locale }: Props) {
       markers.clear();
       clusterGroupRef.current = null;
       sharedLocationMarkerRef.current = null;
+      omanBorderLayerRef.current = null;
+      omanMaskLayerRef.current = null;
       markerIcons.clear();
     };
   }, [scheduleTileWarmup]);
+
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const leaflet = leafletRef.current;
+    if (!mapReady || !map || !leaflet) return;
+
+    let cancelled = false;
+
+    void fetch("/geo/oman-border.geojson")
+      .then((response) => {
+        if (!response.ok) throw new Error("Failed to load Oman border");
+        return response.json() as Promise<OmanBorderFeatureCollection>;
+      })
+      .then((geojson) => {
+        if (cancelled) return;
+        const feature = geojson.features[0];
+        if (!feature?.geometry) return;
+
+        omanMaskLayerRef.current?.remove();
+        omanBorderLayerRef.current?.remove();
+
+        const maskLayer = leaflet.geoJSON(
+          toMaskGeometry(feature.geometry),
+          {
+            pane: "oman-mask-pane",
+            interactive: false,
+            smoothFactor: 0,
+            noClip: true,
+            style: {
+              stroke: false,
+              fillColor: "#0b1220",
+              fillOpacity: 0.45,
+            },
+          } as any
+        );
+
+        const borderLayer = leaflet.geoJSON(
+          feature,
+          {
+            pane: "oman-border-pane",
+            interactive: false,
+            smoothFactor: 0,
+            noClip: true,
+            style: {
+              color: "#0ea5e9",
+              weight: 1.8,
+              opacity: 0.95,
+              fillOpacity: 0,
+              lineCap: "round",
+              lineJoin: "round",
+            },
+          } as any
+        );
+
+        maskLayer.addTo(map);
+        borderLayer.addTo(map);
+        omanMaskLayerRef.current = maskLayer;
+        omanBorderLayerRef.current = borderLayer;
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+      omanMaskLayerRef.current?.remove();
+      omanBorderLayerRef.current?.remove();
+      omanMaskLayerRef.current = null;
+      omanBorderLayerRef.current = null;
+    };
+  }, [mapReady]);
 
   useEffect(() => {
     if (!mapReady) return;
