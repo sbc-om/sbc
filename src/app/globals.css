@@ -1,6 +1,4 @@
 @import "tailwindcss";
-@import "overlayscrollbars/overlayscrollbars.css";
-@import "leaflet/dist/leaflet.css";
 
 /* Tailwind v4: make `dark:` respond to a `.dark` class (so we can toggle theme). */
 @custom-variant dark (&:where(.dark, .dark *));

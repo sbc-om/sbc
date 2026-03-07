@@ -3,6 +3,8 @@ import type { CSSProperties } from "react";
 import { cookies, headers } from "next/headers";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Noto_Kufi_Arabic } from "next/font/google";
+import "overlayscrollbars/overlayscrollbars.css";
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 import { defaultLocale, isLocale, localeDir } from "@/lib/i18n/locales";
 import { OverlayScrollbarsInit } from "@/components/OverlayScrollbarsInit";
