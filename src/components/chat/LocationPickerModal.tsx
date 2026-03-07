@@ -14,6 +14,13 @@ import {
   OMAN_TILE_LAYER_OPTIONS,
   OMAN_TILE_TEMPLATE,
 } from "@/lib/maps/oman";
+import {
+  getPrimaryOmanGeometry,
+  isPointInsideOmanGeometry,
+  loadOmanBorderGeoJson,
+  OmanBorderGeometry,
+  toMaskGeometry,
+} from "@/lib/maps/omanBorder";
 
 type LocationPickerModalProps = {
   isOpen: boolean;
@@ -31,10 +38,27 @@ export function LocationPickerModal({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
+  const omanBorderLayerRef = useRef<L.GeoJSON | null>(null);
+  const omanMaskLayerRef = useRef<L.GeoJSON | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
+  const [omanGeometry, setOmanGeometry] = useState<OmanBorderGeometry | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void loadOmanBorderGeoJson()
+      .then((geojson) => {
+        if (!cancelled) setOmanGeometry(getPrimaryOmanGeometry(geojson));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Get user's current location when modal opens
   useEffect(() => {
@@ -87,6 +111,46 @@ export function LocationPickerModal({
 
       L.tileLayer(OMAN_TILE_TEMPLATE, { ...OMAN_TILE_LAYER_OPTIONS }).addTo(map);
 
+      const maskPane = map.createPane("oman-mask-pane");
+      maskPane.style.zIndex = "350";
+      maskPane.style.pointerEvents = "none";
+
+      const borderPane = map.createPane("oman-border-pane");
+      borderPane.style.zIndex = "360";
+      borderPane.style.pointerEvents = "none";
+
+      if (omanGeometry) {
+        omanMaskLayerRef.current = L.geoJSON(toMaskGeometry(omanGeometry), {
+          pane: "oman-mask-pane",
+          interactive: false,
+          smoothFactor: 0,
+          noClip: true,
+          style: {
+            stroke: false,
+            fillColor: "#f5f7fa",
+            fillOpacity: 1,
+          },
+        } as any).addTo(map);
+
+        omanBorderLayerRef.current = L.geoJSON(
+          { type: "Feature", properties: {}, geometry: omanGeometry } as any,
+          {
+            pane: "oman-border-pane",
+            interactive: false,
+            smoothFactor: 0,
+            noClip: true,
+            style: {
+              color: "#0ea5e9",
+              weight: 1.8,
+              opacity: 0.95,
+              fillOpacity: 0,
+              lineCap: "round",
+              lineJoin: "round",
+            },
+          } as any
+        ).addTo(map);
+      }
+
       // Custom marker icon
       const markerIcon = L.divIcon({
         className: "chat-location-marker",
@@ -103,6 +167,7 @@ export function LocationPickerModal({
       // Handle map click
       map.on("click", (e: L.LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
+        if (omanGeometry && !isPointInsideOmanGeometry(lat, lng, omanGeometry)) return;
         setSelectedLocation({ lat, lng });
 
         if (markerRef.current) {
@@ -129,9 +194,11 @@ export function LocationPickerModal({
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
+      omanBorderLayerRef.current = null;
+      omanMaskLayerRef.current = null;
       markerRef.current = null;
     };
-  }, [isOpen, userLocation]);
+  }, [isOpen, userLocation, omanGeometry]);
 
   // Center map on user location
   const handleCenterOnUser = useCallback(() => {

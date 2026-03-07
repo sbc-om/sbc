@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Circle,
+  GeoJSON,
   MapContainer,
   TileLayer,
   useMap,
@@ -30,6 +31,14 @@ import {
   OMAN_TILE_SUBDOMAINS,
   OMAN_TILE_TEMPLATE,
 } from "@/lib/maps/oman";
+import {
+  getPrimaryOmanGeometry,
+  isPointInsideOmanGeometry,
+  loadOmanBorderGeoJson,
+  OmanBorderFeatureCollection,
+  OmanBorderGeometry,
+  toMaskGeometry,
+} from "@/lib/maps/omanBorder";
 
 export type OsmLocationValue = {
   lat: number;
@@ -84,11 +93,14 @@ function InvalidateSizeOnVisible() {
 
 function ClickHandler({
   onPick,
+  omanGeometry,
 }: {
   onPick: (lat: number, lng: number) => void;
+  omanGeometry: OmanBorderGeometry | null;
 }) {
   useMapEvents({
     click(e: LeafletMouseEvent) {
+      if (!isPointInsideOmanGeometry(e.latlng.lat, e.latlng.lng, omanGeometry)) return;
       onPick(e.latlng.lat, e.latlng.lng);
     },
   });
@@ -155,12 +167,27 @@ export function OsmLocationPicker({
   const [results, setResults] = useState<Array<{ label: string; lat: number; lng: number }>>([]);
   const [searching, setSearching] = useState(false);
   const [geoBusy, setGeoBusy] = useState(false);
+  const [omanBorder, setOmanBorder] = useState<OmanBorderFeatureCollection | null>(null);
 
   const [localRadius, setLocalRadius] = useState(String(value?.radiusMeters ?? 250));
 
   useEffect(() => {
     setLocalRadius(String(value?.radiusMeters ?? 250));
   }, [value?.radiusMeters]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void loadOmanBorderGeoJson()
+      .then((geojson) => {
+        if (!cancelled) setOmanBorder(geojson);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const safeValue = useMemo(() => {
     if (!value) return null;
@@ -179,6 +206,12 @@ export function OsmLocationPicker({
     if (safeValue) return { lat: safeValue.lat, lng: safeValue.lng };
     return OMAN_DEFAULT_CENTER;
   }, [safeValue]);
+
+  const omanGeometry = useMemo(() => getPrimaryOmanGeometry(omanBorder ?? { type: "FeatureCollection", features: [] }), [omanBorder]);
+  const omanMaskFeature = useMemo(
+    () => (omanGeometry ? toMaskGeometry(omanGeometry) : null),
+    [omanGeometry]
+  );
 
   const radiusMeters = useMemo(() => {
     const n = Math.trunc(Number(localRadius));
@@ -214,6 +247,7 @@ export function OsmLocationPicker({
 
   async function pick(lat: number, lng: number) {
     if (disabled) return;
+    if (omanGeometry && !isPointInsideOmanGeometry(lat, lng, omanGeometry)) return;
     let label: string | undefined;
     try {
       const name = await reverseGeocode(lat, lng);
@@ -371,8 +405,28 @@ export function OsmLocationPicker({
             bounds={OMAN_BOUNDS_TUPLE}
             key={OMAN_TILE_TEMPLATE}
           />
+          {omanMaskFeature ? (
+            <GeoJSON
+              data={omanMaskFeature as any}
+              interactive={false}
+              pathOptions={{ stroke: false, fillColor: "#f5f7fa", fillOpacity: 1 }}
+            />
+          ) : null}
+          {omanBorder ? (
+            <GeoJSON
+              data={omanBorder as any}
+              interactive={false}
+              pathOptions={{
+                color: "#0ea5e9",
+                weight: 1.8,
+                opacity: 0.95,
+                fillOpacity: 0,
+                smoothFactor: 0,
+              } as any}
+            />
+          ) : null}
           <InvalidateSizeOnVisible />
-          <ClickHandler onPick={pick} />
+          <ClickHandler onPick={pick} omanGeometry={omanGeometry} />
           <FlyTo lat={center.lat} lng={center.lng} />
 
           {safeValue ? (
