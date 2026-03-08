@@ -15,6 +15,7 @@ const staticPaths = [
   "categories",
   "loyalty",
   "services",
+  "ai-business-indexing",
   "store",
 ];
 

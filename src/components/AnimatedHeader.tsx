@@ -25,6 +25,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuRootRef = useRef<HTMLDivElement | null>(null);
   const pathname = usePathname();
+  const servicesLabel = locale === "ar" ? "الخدمات" : "Services";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -43,7 +44,9 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   // Close mobile menu on navigation
   useEffect(() => {
     // Defer to a microtask to satisfy react-hooks/set-state-in-effect.
-    queueMicrotask(() => setMobileOpen(false));
+    queueMicrotask(() => {
+      setMobileOpen(false);
+    });
   }, [pathname]);
 
   // Close on Escape, and close when clicking outside.
@@ -158,6 +161,16 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
 
               {/* Desktop Navigation */}
               <nav className="hidden md:flex items-center gap-2">
+                <Link
+                  href={`/${locale}/services`}
+                  className={buttonVariants({
+                    variant: "primary",
+                    size: "sm",
+                  })}
+                >
+                  {servicesLabel}
+                </Link>
+
                 {user ? (
                   <a
                     href={`/${locale}/explorer`}
@@ -281,6 +294,18 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
             >
               <div className="p-2">
                 <div className="grid gap-1">
+                  <Link
+                    href={`/${locale}/services`}
+                    onClick={() => setMobileOpen(false)}
+                    className={buttonVariants({
+                      variant: "primary",
+                      size: "md",
+                      className: "w-full justify-start rounded-xl",
+                    })}
+                  >
+                    {servicesLabel}
+                  </Link>
+
                   {user ? (
                     <a
                       href={`/${locale}/explorer`}
