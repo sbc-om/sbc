@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import {
   HiOutlineArrowRight,
   HiOutlineChat,
-  HiOutlineGift,
   HiOutlineGlobeAlt,
+  HiOutlineGift,
   HiOutlineLightningBolt,
   HiOutlineMail,
   HiOutlineQrcode,
@@ -53,104 +53,125 @@ export default async function MarketingPlatformPage({
   );
 
   const copy = {
-    title: ar ? "خدمات SBC" : "SBC Services",
+    title: ar ? "منصة نمو SBC" : "SBC Growth Platform",
     subtitle: ar
-      ? "خدمات كاملة للبزنس في صفحة واحدة: Business Directory، واجهات API خاصة لواتساب وتلغرام، Website Builder، Business Email، Loyalty Card، و AI Agent Builder."
-      : "Everything your business needs in one place: Directory, WhatsApp & Telegram APIs, Website Builder, Business Email, Loyalty Card, and AI Agent Builder.",
-    ctaPrimary: ar ? "ابدأ الآن" : "Get Started",
-    ctaDemo: ar ? "اطلب عرضاً" : "Request Demo",
+      ? "منصة متكاملة لزيادة المبيعات: اكتشاف عملاء جدد، التواصل السريع، رفع تكرار الشراء، وأتمتة التسويق."
+      : "A complete growth system to get discovered, talk to customers, increase repeat sales, and automate marketing.",
+    ctaPrimary: ar ? "افتح منصة النمو" : "Open Growth App",
+    ctaDemo: ar ? "تحدث مع المبيعات" : "Talk to Sales",
     ctaHome: ar ? "الرئيسية" : "Back Home",
-    sectionServices: ar ? "الخدمات الأساسية" : "Core Services",
-    sectionWhy: ar ? "ليش هذي المنصة؟" : "Why It Helps",
-    sectionIncludes: ar ? "ماذا ستحصل؟" : "What You Get",
+    sectionServices: ar ? "أعمدة النمو" : "Growth Pillars",
+    sectionWhy: ar ? "مصممة لزيادة المبيعات" : "Built for Sales",
+    sectionIncludes: ar ? "SBC يساعد نشاطك على:" : "SBC helps your business:",
     sectionPackages: ar ? "الباقات" : "Packages",
-    sectionNotes: ar ? "ملاحظات" : "Notes",
   };
 
   const services = [
     {
       icon: HiOutlineViewGrid,
-      title: ar ? "Business Directory" : "Business Directory",
+      title: ar ? "اكتشفك عملاء أكثر" : "Get discovered",
       desc: ar
-        ? "عرض نشاطك في دليل منظم يساعد العملاء يوصلوا لك بسرعة حسب التصنيف والموقع."
-        : "Show your business in a clear directory so people can find you fast.",
+        ? "خلّي نشاطك يظهر في الدليل والموقع حتى يجدك العملاء القريبون بسرعة."
+        : "Show up in SBC Directory and your website so nearby customers can find you fast.",
       href: `/${locale}/businesses`,
-      hrefLabel: ar ? "افتح الدليل" : "Open Directory",
+      hrefLabel: ar ? "زِد الظهور" : "Boost Visibility",
       tone: "bg-accent/15 text-accent",
     },
     {
       icon: HiOutlineChat,
-      title: ar ? "واتساب + تلغرام" : "WhatsApp + Telegram",
+      title: ar ? "تواصل مع العملاء" : "Talk to customers",
       desc: ar
-        ? "واجهات API خاصة بواتساب وتلغرام من تطويرنا لإرسال الرسائل، إدارة المحادثات، وتشغيل الحملات من مكان واحد."
-        : "Proprietary WhatsApp and Telegram APIs built by our team to run messaging, chat management, and campaigns from one place.",
+        ? "شغّل واتساب وتلغرام من مكان واحد للرد السريع، إدارة المحادثات، وتنفيذ الحملات."
+        : "Run WhatsApp and Telegram from one place for replies, conversations, and campaigns.",
       href: `/${locale}/services/app`,
-      hrefLabel: ar ? "افتح لوحة الرسائل" : "Open Messaging App",
+      hrefLabel: ar ? "افتح الرسائل" : "Open Messaging",
       tone: "bg-accent-2/15 text-accent-2",
     },
     {
-      icon: HiOutlineGlobeAlt,
-      title: ar ? "Website Builder" : "Website Builder",
+      icon: HiOutlineQrcode,
+      title: ar ? "أعدهم للشراء" : "Bring them back",
       desc: ar
-        ? "أنشئ موقع أعمالك بسرعة وعدّل المحتوى بسهولة بدون تعقيد تقني."
-        : "Build your website quickly and update content anytime without hassle.",
-      href: `/${locale}/dashboard/websites`,
-      hrefLabel: ar ? "ابدأ بناء الموقع" : "Start Building",
+        ? "فعّل الولاء والمكافآت ليعود العملاء للشراء أكثر."
+        : "Launch loyalty rewards so customers return more often and spend more.",
+      href: `/${locale}/loyalty`,
+      hrefLabel: ar ? "افتح الولاء" : "Open Loyalty",
       tone: "bg-accent/15 text-accent",
+    },
+    {
+      icon: HiOutlineLightningBolt,
+      title: ar ? "أتمتة التسويق" : "Automate marketing",
+      desc: ar
+        ? "ابنِ حملات وتسلسلات متابعة مرة واحدة ودع SBC يديرها تلقائياً."
+        : "Set campaigns once, then let SBC run follow-ups and reminders automatically.",
+      href: `/${locale}/services/app`,
+      hrefLabel: ar ? "ابدأ الأتمتة" : "Start Automation",
+      tone: "bg-accent-2/15 text-accent-2",
+    },
+    {
+      icon: HiOutlineSparkles,
+      title: ar ? "SBC Smart Card" : "SBC Smart Card",
+      desc: ar
+        ? "بطاقة ولاء مشتركة بين الأنشطة المشاركة: استخدمها في أي مكان، اكسب نقاط، واصرف نقاط."
+        : "A shared loyalty card ecosystem: use anywhere, earn points, spend points.",
+      href: `/${locale}/loyalty`,
+      hrefLabel: ar ? "استكشف Smart Card" : "Explore Smart Card",
+      tone: "bg-accent/15 text-accent",
+    },
+    {
+      icon: HiOutlineGlobeAlt,
+      title: ar ? "موقع أعمالك" : "Website Builder",
+      desc: ar
+        ? "أنشئ موقعاً احترافياً بسرعة وحوّل الزيارات إلى فرص بيع."
+        : "Launch a professional website fast and turn traffic into leads.",
+      href: `/${locale}/dashboard/websites`,
+      hrefLabel: ar ? "افتح منشئ المواقع" : "Open Website Builder",
+      tone: "bg-accent-2/15 text-accent-2",
     },
     {
       icon: HiOutlineMail,
       title: ar ? "Business Email" : "Business Email",
       desc: ar
-        ? "إيميل رسمي باسم نشاطك يعطي ثقة أعلى وتواصل احترافي مع العملاء."
-        : "Use a professional email with your business name to build trust.",
+        ? "إيميل رسمي باسم نشاطك لثقة أعلى وتواصل احترافي."
+        : "Branded business email to build trust and look professional.",
       href: `/${locale}/email/manage`,
-      hrefLabel: ar ? "إدارة الإيميل" : "Manage Email",
-      tone: "bg-accent-2/15 text-accent-2",
-    },
-    {
-      icon: HiOutlineQrcode,
-      title: ar ? "Loyalty Card" : "Loyalty Card",
-      desc: ar
-        ? "نظام نقاط بسيط يشجع العملاء يرجعوا ويشتروا أكثر."
-        : "Give points and rewards so customers come back more often.",
-      href: `/${locale}/loyalty`,
-      hrefLabel: ar ? "الذهاب لصفحة الولاء" : "Go to Loyalty Page",
+      hrefLabel: ar ? "افتح البريد" : "Open Email",
       tone: "bg-accent/15 text-accent",
     },
     {
       icon: HiOutlineCpuChip,
       title: ar ? "AI Agent Builder" : "AI Agent Builder",
       desc: ar
-        ? "صمّم عملاء ذكاء اصطناعي بصرياً بدون كود — ربط API، معالجة بيانات، واتخاذ قرارات تلقائية لأعمالك."
-        : "Visually build AI agents with no code — connect APIs, process data, and automate decisions for your business.",
+        ? "أنشئ وكلاء ذكاء اصطناعي بدون كود لأتمتة المهام وعمليات المتابعة."
+        : "Build no-code AI agents to automate operations and follow-ups.",
       href: `/${locale}/ai`,
-      hrefLabel: ar ? "ابدأ ببناء العميل" : "Start Building Agents",
+      hrefLabel: ar ? "افتح AI Builder" : "Open AI Builder",
       tone: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
     },
   ];
 
   const highlights = [
     {
-      icon: HiOutlineLightningBolt,
-      title: ar ? "بداية سريعة" : "Quick Start",
-      desc: ar ? "ابدأ خلال دقائق." : "Set things up in minutes and start right away.",
+      icon: HiOutlineGlobeAlt,
+      title: ar ? "عملاء جدد أكثر" : "More new customers",
+      desc: ar
+        ? "الظهور في القنوات الصحيحة يجلب طلباً مستمراً لنشاطك."
+        : "Discovery channels bring you steady, qualified local demand.",
       tone: "bg-accent/15 text-accent",
     },
     {
-      icon: HiOutlineSparkles,
-      title: ar ? "واجهة سهلة" : "Simple UI",
+      icon: HiOutlineGift,
+      title: ar ? "مبيعات تكرارية أعلى" : "Higher repeat sales",
       desc: ar
-        ? "واجهة واضحة وسهلة لفريقك وعملائك."
-        : "Simple and clean interface for your team and your customers.",
+        ? "الولاء والحملات يرفعان احتمالية رجوع العميل والشراء مرة أخرى."
+        : "Loyalty and campaigns increase customer return rate and basket size.",
       tone: "bg-accent-2/15 text-accent-2",
     },
     {
-      icon: HiOutlineGift,
-      title: ar ? "نمو أفضل" : "Better Growth",
+      icon: HiOutlineMail,
+      title: ar ? "ماركتينغ أبسط" : "Simpler marketing ops",
       desc: ar
-        ? "الدليل + الرسائل + الولاء = عملاء راجعين أكثر."
-        : "Directory + messaging + loyalty helps you get more repeat customers.",
+        ? "بدل أدوات متفرقة، فريقك يدير كل شيء من منصة واحدة."
+        : "Your team runs discovery, messaging, and retention from one platform.",
       tone: "bg-accent/15 text-accent",
     },
   ];
@@ -162,7 +183,7 @@ export default async function MarketingPlatformPage({
           <h1 className="text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
             {copy.title}
           </h1>
-          <p className="mt-3 text-base leading-7 text-(--muted-foreground)">
+          <p className="mt-3 text-lg leading-8 font-medium text-(--muted-foreground)">
             {copy.subtitle}
           </p>
         </div>
@@ -189,7 +210,7 @@ export default async function MarketingPlatformPage({
                 className: "min-w-[180px]",
               })}
             >
-              {ar ? "اشترك الآن" : "Buy Subscription"}
+              {ar ? "ابدأ النمو الآن" : "Start Growing"}
               <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "rotate-180" : "")} />
             </Link>
           )}
@@ -229,9 +250,9 @@ export default async function MarketingPlatformPage({
                   <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${service.tone}`}>
                     <Icon className="h-9 w-9" />
                   </div>
-                  <h3 className="font-semibold leading-6">{service.title}</h3>
+                  <h3 className="text-lg font-semibold leading-7">{service.title}</h3>
                 </div>
-                <p className="mt-4 flex-1 text-sm leading-7 text-(--muted-foreground)">{service.desc}</p>
+                <p className="mt-4 flex-1 text-base font-medium leading-8 text-(--muted-foreground)">{service.desc}</p>
                 <Link
                   href={service.href}
                   className={buttonVariants({
@@ -259,9 +280,9 @@ export default async function MarketingPlatformPage({
                   <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${item.tone}`}>
                     <Icon className="h-9 w-9" />
                   </div>
-                  <h3 className="font-semibold">{item.title}</h3>
+                  <h3 className="text-lg font-semibold">{item.title}</h3>
                 </div>
-                <p className="mt-4 text-sm leading-7 text-(--muted-foreground)">{item.desc}</p>
+                <p className="mt-4 text-base font-medium leading-8 text-(--muted-foreground)">{item.desc}</p>
               </div>
             );
           })}
@@ -270,49 +291,56 @@ export default async function MarketingPlatformPage({
 
       <section className="mt-8 sbc-card rounded-2xl p-6">
         <h3 className="text-lg font-semibold">{copy.sectionIncludes}</h3>
-        <ul className="mt-3 grid gap-2 text-sm leading-7 text-(--muted-foreground)">
+        <ul className="mt-3 grid gap-3 text-base font-medium leading-8 text-(--muted-foreground)">
           <li>
             {ar
-              ? "• Business Directory: عرض نشاطك في الدليل لزيادة الوصول."
-              : "• Business Directory: get discovered by more local customers."}
+              ? "• اكتشفك عملاء جدد"
+              : "• Get discovered"}
           </li>
           <li>
             {ar
-              ? "• WhatsApp + Telegram: واجهات API خاصة مبنية من فريقنا للحملات والرسائل ومتابعة المحادثات."
-              : "• WhatsApp + Telegram: in-house APIs built by our team for campaigns, messaging, and customer conversations."}
+              ? "• تواصل مع العملاء"
+              : "• Talk to customers"}
           </li>
           <li>
             {ar
-              ? "• Website Builder: بناء موقعك بسرعة وبدون تعقيد."
-              : "• Website Builder: launch your site fast and edit it easily."}
+              ? "• أعدهم للشراء"
+              : "• Bring them back"}
           </li>
           <li>
             {ar
-              ? "• Business Email: إيميل رسمي لبزنسك بثقة أعلى."
-              : "• Business Email: look more professional with branded email."}
+              ? "• أتمتة التسويق"
+              : "• Automate marketing"}
           </li>
           <li>
             {ar
-              ? "• Loyalty Card: نظام نقاط بسيط يزيد ولاء العملاء."
-              : "• Loyalty Card: reward customers and increase repeat orders."}{" "}
+              ? "• SBC Smart Card: استخدم في أي مكان، اكسب نقاط، واصرف نقاط."
+              : "• SBC Smart Card: use anywhere, earn points, spend points."}{" "}
             <Link href={`/${locale}/loyalty`} className="text-accent hover:underline">
-              {ar ? "اذهب لصفحة الولاء" : "Open Loyalty Page"}
+              {ar ? "افتح الولاء" : "Open Loyalty"}
             </Link>
           </li>
           <li>
             {ar
-              ? "• AI Agent Builder: بناء عملاء ذكاء اصطناعي بصرياً لأتمتة العمليات بدون كود."
-              : "• AI Agent Builder: visually create AI agents to automate workflows with no code."}{" "}
-            <Link href={`/${locale}/ai`} className="text-accent hover:underline">
-              {ar ? "ابدأ ببناء العميل" : "Open Agent Builder"}
-            </Link>
+              ? "• Website Builder: موقع أعمالك الجاهز للبيع."
+              : "• Website Builder: launch a sales-ready website."}
+          </li>
+          <li>
+            {ar
+              ? "• Business Email: بريد احترافي باسم نشاطك."
+              : "• Business Email: branded professional email."}
+          </li>
+          <li>
+            {ar
+              ? "• AI Agent Builder: أتمتة ذكية بدون كود."
+              : "• AI Agent Builder: no-code intelligent automation."}
           </li>
         </ul>
       </section>
 
       <section className="mt-8 sbc-card rounded-2xl p-6">
         <h3 className="text-lg font-semibold">{copy.sectionPackages}</h3>
-        <p className="mt-2 text-sm text-(--muted-foreground)">
+        <p className="mt-2 text-base font-medium text-(--muted-foreground)">
           {ar
             ? "اختر باقة شهرية أو 6 أشهر أو سنوية، وتقدر تمدد أو تغيّر الباقة بأي وقت."
             : "Choose monthly, 6-month, or yearly plans. You can switch or renew anytime."}
@@ -348,10 +376,10 @@ export default async function MarketingPlatformPage({
               return (
                 <div key={product.slug} className="sbc-card rounded-2xl p-5">
                   <div className="font-semibold">{productText.name}</div>
-                  <div className="mt-1 text-sm text-(--muted-foreground)">
+                  <div className="mt-1 text-base font-medium text-(--muted-foreground)">
                     {formatStorePrice(product.price, locale as Locale)}
                   </div>
-                  <p className="mt-3 text-sm text-(--muted-foreground)">{productText.description}</p>
+                  <p className="mt-3 text-base font-medium leading-8 text-(--muted-foreground)">{productText.description}</p>
                   <div className="mt-4">
                     <AddToCartButton productSlug={product.slug} locale={locale as Locale} />
                   </div>
@@ -362,10 +390,10 @@ export default async function MarketingPlatformPage({
         )}
       </section>
 
-      <div className="mt-8 text-xs text-(--muted-foreground)">
+      <div className="mt-8 text-sm font-medium text-(--muted-foreground)">
         {ar
-          ? "ملاحظة: تفاصيل التنفيذ النهائي لتكامل واتساب/تلغرام تعتمد على احتياج نشاطك."
-          : "Note: WhatsApp and Telegram setup details depend on what your business needs."}
+          ? "SBC Smart Card فعّال الآن: استخدم البطاقة، اكسب نقاط، واصرف نقاط عبر الأنشطة المشاركة."
+          : "SBC Smart Card is live now: use the card, earn points, and spend points across participating businesses."}
       </div>
     </PublicPage>
   );

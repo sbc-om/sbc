@@ -60,7 +60,7 @@ export default async function DashboardPage({
       title: ar ? "دليل الأعمال" : "Business Directory",
       href: `/${locale}/directory`,
       storeHref: `/${locale}/store?q=directory`,
-      subtitle: ar ? "العضوية والظهور" : "Membership & visibility",
+      subtitle: ar ? "خلّي العملاء يكتشفون نشاطك بسهولة" : "Get discovered by nearby customers",
       Icon: HiOutlineBuildingOffice2,
       iconClassName: "text-indigo-600 dark:text-indigo-300",
       iconBgClassName: "bg-indigo-500/12 ring-1 ring-indigo-500/18",
@@ -71,7 +71,7 @@ export default async function DashboardPage({
       title: ar ? "نظام الولاء" : "Loyalty System",
       href: `/${locale}/loyalty/manage`,
       storeHref: `/${locale}/store?q=loyalty`,
-      subtitle: ar ? "العملاء والنقاط" : "Customers & points",
+      subtitle: ar ? "زيد تكرار الشراء بالنقاط والمكافآت" : "Bring customers back with points",
       Icon: HiOutlineSparkles,
       iconClassName: "text-emerald-600 dark:text-emerald-300",
       iconBgClassName: "bg-emerald-500/12 ring-1 ring-emerald-500/18",
@@ -82,7 +82,7 @@ export default async function DashboardPage({
       title: ar ? "خدمات SBC" : "SBC Services",
       href: `/${locale}/services/app`,
       storeHref: `/${locale}/store?q=marketing`,
-      subtitle: ar ? "الرسائل والحملات" : "Messages & campaigns",
+      subtitle: ar ? "تواصل مع العملاء وشغّل الحملات تلقائياً" : "Talk to customers, automate campaigns",
       Icon: HiOutlineMegaphone,
       iconClassName: "text-fuchsia-600 dark:text-fuchsia-300",
       iconBgClassName: "bg-fuchsia-500/12 ring-1 ring-fuchsia-500/18",
@@ -93,7 +93,7 @@ export default async function DashboardPage({
       title: ar ? "منشئ المواقع" : "Website Builder",
       href: `/${locale}/dashboard/websites`,
       storeHref: `/${locale}/store?q=website`,
-      subtitle: ar ? "صمم موقعك الخاص" : "Design your own website",
+      subtitle: ar ? "حوّل الزيارات إلى عملاء محتملين 24/7" : "Turn traffic into leads 24/7",
       Icon: HiOutlineGlobeAlt,
       iconClassName: "text-cyan-600 dark:text-cyan-300",
       iconBgClassName: "bg-cyan-500/12 ring-1 ring-cyan-500/18",
@@ -104,7 +104,7 @@ export default async function DashboardPage({
       title: ar ? "البريد المؤسسي" : "Business Email",
       href: `/${locale}/email/manage`,
       storeHref: `/${locale}/store?q=email`,
-      subtitle: ar ? "بريد إلكتروني بدامنتك الخاصة" : "Email with your own domain",
+      subtitle: ar ? "ابنِ الثقة ببريد رسمي باسم نشاطك" : "Build trust with branded email",
       Icon: HiOutlineEnvelope,
       iconClassName: "text-orange-600 dark:text-orange-300",
       iconBgClassName: "bg-orange-500/12 ring-1 ring-orange-500/18",
@@ -115,7 +115,7 @@ export default async function DashboardPage({
       title: ar ? "منشئ الوكيل الذكي" : "AI Agent Builder",
       href: `/${locale}/ai`,
       storeHref: `/${locale}/store?q=agent-builder`,
-      subtitle: ar ? "أنشئ وكيلاً ذكياً لنشاطك" : "Build smart AI agents",
+      subtitle: ar ? "أتمتة المهام اليومية بدون تعقيد" : "Automate daily work with AI",
       Icon: HiOutlineCpuChip,
       iconClassName: "text-violet-600 dark:text-violet-300",
       iconBgClassName: "bg-violet-500/12 ring-1 ring-violet-500/18",
@@ -131,8 +131,13 @@ export default async function DashboardPage({
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             {dict.nav.dashboard}
           </h1>
-          <p className="mt-1 text-sm text-(--muted-foreground) sm:text-base">
+          <p className="mt-1 text-base font-medium text-(--muted-foreground)">
             {locale === "ar" ? "مرحباً" : "Welcome"}: <span className="font-medium">{user.email}</span>
+          </p>
+          <p className="mt-2 text-base font-medium text-(--muted-foreground)">
+            {ar
+              ? "SBC يساعد نشاطك على: اكتشاف عملاء جدد، التواصل معهم، إعادتهم للشراء، وأتمتة التسويق."
+              : "SBC helps your business: get discovered, talk to customers, bring them back, and automate marketing."}
           </p>
         </div>
 
@@ -194,15 +199,15 @@ export default async function DashboardPage({
                   </div>
 
                   <div className="min-w-0">
-                    <h2 className="truncate text-lg font-semibold tracking-tight sm:text-base">{meta.title}</h2>
-                    <p className="mt-1 line-clamp-1 text-sm text-(--muted-foreground)">{meta.subtitle}</p>
+                    <h2 className="truncate text-xl font-semibold tracking-tight sm:text-lg">{meta.title}</h2>
+                    <p className="mt-1 line-clamp-2 text-base font-medium text-(--muted-foreground)">{meta.subtitle}</p>
                   </div>
                 </div>
 
                 <div className="shrink-0">
                   <span
                     className={
-                      "sbc-chip inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold sm:px-3 sm:py-1 " +
+                      "sbc-chip inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold sm:px-3 sm:py-1 " +
                       (active ? "text-foreground" : "text-(--muted-foreground)")
                     }
                   >
@@ -215,7 +220,7 @@ export default async function DashboardPage({
               </div>
 
               <div className="mt-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2 sm:gap-3 lg:flex lg:flex-wrap lg:items-center">
+                <div className="grid grid-cols-1 gap-2 text-base font-medium sm:grid-cols-2 sm:gap-3 lg:flex lg:flex-wrap lg:items-center">
                   <span className="sbc-chip rounded-xl px-3 py-2 text-center sm:rounded-full sm:px-3 sm:py-1">
                     <span className="text-(--muted-foreground)">{ar ? "الخطة" : "Plan"}: </span>
                     <span className="font-semibold">{planLabel}</span>
@@ -241,7 +246,7 @@ export default async function DashboardPage({
                       </span>
                     </>
                   ) : (
-                    <span className="text-center text-(--muted-foreground) sm:text-start sm:col-span-2 lg:col-auto">
+                    <span className="text-center text-base font-medium text-(--muted-foreground) sm:text-start sm:col-span-2 lg:col-auto">
                       {ar ? "غير مشتراة" : "Not purchased"}
                     </span>
                   )}
@@ -251,7 +256,7 @@ export default async function DashboardPage({
                 <Link
                   href={active ? meta.href : meta.storeHref}
                   className={
-                    "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold sm:min-h-10 sm:py-2 " +
+                    "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-semibold sm:min-h-10 sm:py-2 " +
                     (active
                       ? "bg-accent text-(--accent-foreground)"
                       : "bg-(--chip-bg) text-foreground")
@@ -267,7 +272,7 @@ export default async function DashboardPage({
 
                 <Link
                   href={meta.storeHref}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-(--surface-border) bg-(--surface)/95 px-3.5 py-3 text-sm font-semibold text-foreground shadow-(--shadow) hover:bg-(--chip-bg) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)/30 sm:min-h-10 sm:py-2"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-(--surface-border) bg-(--surface)/95 px-3.5 py-3 text-base font-semibold text-foreground shadow-(--shadow) hover:bg-(--chip-bg) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--accent)/30 sm:min-h-10 sm:py-2"
                 >
                   {ar ? "ترقية" : "Upgrade"}
                   <HiArrowUpRight className="h-4 w-4" />
