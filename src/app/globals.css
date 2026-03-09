@@ -66,8 +66,8 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
   --surface-rgb: 38, 38, 38;
   --surface-border: rgba(255, 255, 255, 0.14);
   --surface-hover: rgba(255, 255, 255, 0.10);
-  --shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
-  --shadow-hover: 0 16px 50px rgba(0, 0, 0, 0.60);
+  --shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+  --shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.36);
   --muted-foreground: rgba(232, 234, 237, 0.72);
 
   --accent: #818cf8;

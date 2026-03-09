@@ -269,7 +269,7 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
             <div
               role="menu"
               aria-label="Profile menu"
-              className="absolute bottom-full mb-2 w-56 max-w-[calc(100vw-16px)] rounded-xl border bg-(--surface) shadow-xl p-2"
+              className="absolute bottom-full mb-2 w-56 max-w-[calc(100vw-16px)] rounded-xl border bg-(--surface) shadow-[var(--shadow)] p-2"
               style={{
                 borderColor: "var(--surface-border)",
                 ...(locale === "ar" ? { left: 8 } : { right: 8 }),
@@ -407,7 +407,7 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
                         onClick={() => handleThemeChange(mode)}
                         className={`flex flex-1 items-center justify-center rounded-lg px-3 py-2 transition-all ${
                           isSelected
-                            ? "bg-(--background) text-(--foreground) shadow-sm"
+                            ? "bg-(--background) text-(--foreground) shadow-sm dark:shadow-none"
                             : "text-(--muted-foreground) hover:text-(--foreground)"
                         }`}
                       >

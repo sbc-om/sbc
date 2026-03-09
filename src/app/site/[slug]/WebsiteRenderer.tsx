@@ -258,7 +258,7 @@ function BlockRenderer({ block, locale }: { block: WebsiteBlock; locale: Locale 
     case "image":
       return (
         <section className="mx-auto max-w-4xl px-6 py-14">
-          <div className="overflow-hidden rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/30 ring-1 ring-gray-200/50 dark:ring-white/10">
+          <div className="overflow-hidden rounded-2xl shadow-xl shadow-black/5 dark:shadow-black/15 ring-1 ring-gray-200/50 dark:ring-white/10">
             <Image src={block.data.url} alt={block.data.alt || ""} width={1600} height={900} className="w-full h-auto object-cover" />
           </div>
           {block.data.caption && (
@@ -301,7 +301,7 @@ function BlockRenderer({ block, locale }: { block: WebsiteBlock; locale: Locale 
             {block.data.items.map((item, i) => (
               <div
                 key={i}
-                className="group relative rounded-2xl p-8 bg-white dark:bg-white/[0.04] ring-1 ring-gray-200 dark:ring-white/10 shadow-sm hover:shadow-xl hover:shadow-[var(--site-primary)]/5 transition-all duration-300"
+                className="group relative rounded-2xl p-8 bg-white dark:bg-white/[0.04] ring-1 ring-gray-200 dark:ring-white/10 shadow-sm hover:shadow-lg hover:shadow-[var(--site-primary)]/5 transition-all duration-300"
               >
                 {/* accent bar */}
                 <div className="absolute top-0 inset-x-6 h-[3px] rounded-b-full bg-gradient-to-r from-[var(--site-primary)] to-[var(--site-secondary)] opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -505,7 +505,7 @@ function SiteNavigation({
     <nav
       className={`sticky top-0 z-50 transition-all duration-300 ${
         scrolled
-          ? "bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl shadow-sm shadow-black/5 dark:shadow-black/30"
+          ? "bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl shadow-sm shadow-black/5 dark:shadow-black/15"
           : "bg-white/60 dark:bg-gray-950/60 backdrop-blur-md"
       } border-b border-gray-200/60 dark:border-white/10`}
     >

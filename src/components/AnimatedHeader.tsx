@@ -99,12 +99,13 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
         <Container size="lg">
           <div
             ref={mobileMenuRootRef}
-            className={`relative rounded-2xl overflow-visible backdrop-blur-xl shadow-lg border ${
+            className={`relative rounded-2xl overflow-visible backdrop-blur-xl border ${
               scrolled ? "py-2 px-4" : "py-3 px-6"
             }`}
             style={{
               background: "rgba(var(--surface-rgb, 255, 255, 255), 0.9)",
               borderColor: "var(--surface-border)",
+              boxShadow: "var(--shadow)",
               transform: `translateY(${-scrollProgress * 2}px) scale(${1 - scrollProgress * 0.1})`,
               transformOrigin: "center top",
               willChange: "transform",
@@ -280,7 +281,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
             <div
               id="mobile-nav"
               className={
-                "md:hidden absolute inset-x-0 top-full mt-2 origin-top rounded-2xl border backdrop-blur-xl shadow-lg overflow-hidden transition-all duration-200 ease-out " +
+                "md:hidden absolute inset-x-0 top-full mt-2 origin-top rounded-2xl border backdrop-blur-xl overflow-hidden transition-all duration-200 ease-out " +
                 (mobileOpen
                   ? "opacity-100 translate-y-0 scale-100"
                   : "pointer-events-none opacity-0 -translate-y-1 scale-[0.98]")
@@ -288,6 +289,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
               style={{
                 background: "rgba(var(--surface-rgb, 255, 255, 255), 0.96)",
                 borderColor: "var(--surface-border)",
+                boxShadow: "var(--shadow)",
               }}
               role="dialog"
               aria-label={locale === "ar" ? "قائمة التنقل" : "Navigation"}
