@@ -133,7 +133,7 @@ export default async function LocaleHome({
 
           {/* Scroll-controlled Lottie Animation */}
           <FadeInSection duration={1000} delay={200}>
-            <ScrollLottie />
+            <ScrollLottie scrollFactor={1.2} />
           </FadeInSection>
         </Container>
       </section>
