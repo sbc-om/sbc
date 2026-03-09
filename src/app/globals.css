@@ -16,7 +16,7 @@
   --muted-foreground: rgba(15, 23, 42, 0.70);
 
   /* Brand / accents */
-  --accent: #4f46e5; /* indigo-600-ish */
+  --accent: #0079f4;
   --accent-2: #06b6d4; /* cyan-500-ish */
   --accent-foreground: #ffffff;
   --ring: rgba(79, 70, 229, 0.35);
@@ -70,7 +70,7 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
   --shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.36);
   --muted-foreground: rgba(232, 234, 237, 0.72);
 
-  --accent: #818cf8;
+  --accent: #0079f4;
   --accent-2: #22d3ee;
   --accent-foreground: #ffffff;
   --ring: rgba(129, 140, 248, 0.40);
