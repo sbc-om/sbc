@@ -1,6 +1,9 @@
+"use client";
+
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { HiChevronDown } from "react-icons/hi";
+import { HiChevronDown, HiOutlineQrcode } from "react-icons/hi";
 import {
   HiOutlineBuildingOffice2,
   HiOutlineCpuChip,
@@ -20,7 +23,14 @@ interface FooterProps {
   homepageOnlyInstagram?: boolean;
 }
 
-export function Footer({ locale, dict, homepageOnlyInstagram = true }: FooterProps) {
+export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
+  const platformMenuRef = React.useRef<HTMLDetailsElement | null>(null);
+
+  function closePlatformMenu() {
+    if (platformMenuRef.current) {
+      platformMenuRef.current.open = false;
+    }
+  }
 
   const brand = locale === "ar" ? "مركز الأعمال الذكية" : "Smart Business Center";
   const instagramUrl = "https://www.instagram.com/sbc._.om";
@@ -107,6 +117,13 @@ export function Footer({ locale, dict, homepageOnlyInstagram = true }: FooterPro
       Icon: HiOutlineMegaphone,
     },
     {
+      key: "qrcode",
+      label: locale === "ar" ? "مولد QR" : "QR Generator",
+      description: locale === "ar" ? "إنشاء QR احترافي وتحميله بجودة عالية" : "Create professional QR and download in high quality",
+      href: `/${locale}/qrcode`,
+      Icon: HiOutlineQrcode,
+    },
+    {
       key: "agent-builder",
       label: locale === "ar" ? "منشئ وكيل AI" : "AI Agent Builder",
       description: locale === "ar" ? "أتمتة ذكية بدون كود" : "Build no-code AI workflows",
@@ -161,7 +178,7 @@ export function Footer({ locale, dict, homepageOnlyInstagram = true }: FooterPro
               </div>
 
               <div className="flex flex-col md:flex-row items-center gap-4 md:gap-4 text-center">
-                <details className="group relative w-full max-w-md">
+                <details ref={platformMenuRef} className="group relative w-full max-w-md">
                   <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-foreground">
                     <span
                       className="inline-flex w-full items-center justify-between rounded-xl border border-(--surface-border) px-4 py-2.5"
@@ -184,6 +201,7 @@ export function Footer({ locale, dict, homepageOnlyInstagram = true }: FooterPro
                           <Link
                             key={item.key}
                             href={item.href}
+                            onClick={closePlatformMenu}
                             className="group/item flex items-start gap-3 rounded-xl border border-transparent px-3 py-3 text-start transition hover:border-(--surface-border) hover:bg-(--chip-bg)"
                             style={{ background: "rgb(var(--surface-rgb, 255, 255, 255))" }}
                           >
