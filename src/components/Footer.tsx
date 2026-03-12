@@ -10,6 +10,7 @@ import {
   HiOutlineGlobeAlt,
   HiOutlineMegaphone,
   HiOutlineSparkles,
+  HiOutlineWrenchScrewdriver,
 } from "react-icons/hi2";
 import { FaInstagram, FaFacebook, FaTwitter } from "react-icons/fa";
 import { FiInfo, FiMail } from "react-icons/fi";
@@ -117,11 +118,11 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
       Icon: HiOutlineMegaphone,
     },
     {
-      key: "qrcode",
-      label: locale === "ar" ? "مولد QR" : "QR Generator",
-      description: locale === "ar" ? "إنشاء QR احترافي وتحميله بجودة عالية" : "Create professional QR and download in high quality",
-      href: `/${locale}/qrcode`,
-      Icon: HiOutlineQrcode,
+      key: "tools",
+      label: locale === "ar" ? "الأدوات" : "Tools",
+      description: locale === "ar" ? "أدوات مجانية احترافية لأعمالك" : "Free professional tools for your business",
+      href: `/${locale}/tools`,
+      Icon: HiOutlineWrenchScrewdriver,
     },
     {
       key: "agent-builder",

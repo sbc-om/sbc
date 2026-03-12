@@ -3,11 +3,10 @@ import { redirect } from "next/navigation";
 
 import { defaultLocale, isLocale } from "@/lib/i18n/locales";
 
-/** Redirect legacy /qrcode to /tools/qrcode */
-export default async function RootQrCodePage() {
+export default async function RootToolsPage() {
   const headerList = await headers();
   const headerLocale = headerList.get("x-locale") ?? defaultLocale;
   const locale = isLocale(headerLocale) ? headerLocale : defaultLocale;
 
-  redirect(`/${locale}/tools/qrcode`);
+  redirect(`/${locale}/tools`);
 }

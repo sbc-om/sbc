@@ -140,7 +140,7 @@ export function CryptoListClient({
         return (
           <Link
             key={pair.symbol}
-            href={`/${locale}/crypto/${pair.symbol}`}
+            href={`/${locale}/tools/crypto/${pair.symbol}`}
             className="flex items-center gap-3 px-4 py-3 transition hover:bg-(--chip-bg)/60"
           >
             <CoinLogo asset={pair.baseAsset} size={36} />
