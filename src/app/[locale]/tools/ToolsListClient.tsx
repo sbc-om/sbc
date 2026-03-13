@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   QrCode,
   Bitcoin,
+  FileText,
   Wrench,
 } from "lucide-react";
 import type { Locale } from "@/lib/i18n/locales";
@@ -42,6 +43,16 @@ export function ToolsListClient({ locale }: { locale: Locale }) {
         ? "متابعة لحظية لأسعار أهم العملات الرقمية من Binance مع تحديثات فورية."
         : "Live tracking of top cryptocurrency prices from Binance with real-time updates.",
       tone: "accent-2",
+    },
+    {
+      key: "pdf-to-word",
+      href: `/${locale}/tools/pdf-to-word`,
+      icon: <FileText className="h-7 w-7" />,
+      label: ar ? "تحويل PDF إلى Word" : "PDF to Word",
+      description: ar
+        ? "حوّل ملفات PDF إلى مستندات Word قابلة للتعديل مع دعم كامل للغة العربية والإنجليزية."
+        : "Convert PDF files to editable Word documents with full Arabic & English support.",
+      tone: "accent",
     },
   ];
 

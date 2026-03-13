@@ -37,6 +37,7 @@ yarn-error.log*
 # misc
 .DS_Store
 *.pem
+.venv-pdf/
 
 # vercel
 .vercel
