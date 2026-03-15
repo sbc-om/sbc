@@ -11,12 +11,7 @@ import { LoyaltyPushSwInit } from "@/components/loyalty/LoyaltyPushSwInit";
 import { ToastProvider } from "@/components/ui/Toast";
 
 const sbcSans = localFont({
-  src: [
-    { path: "../../public/fonts/sbc-Light.otf", weight: "300", style: "normal" },
-    { path: "../../public/fonts/sbc-Regular.otf", weight: "400", style: "normal" },
-    { path: "../../public/fonts/sbc-Medium.otf", weight: "500", style: "normal" },
-    { path: "../../public/fonts/sbc-Bold.otf", weight: "700", style: "normal" },
-  ],
+  src: [{ path: "../../public/fonts/sbc.otf", style: "normal" }],
   variable: "--font-sbc-sans",
   display: "swap",
   preload: true,
@@ -24,7 +19,7 @@ const sbcSans = localFont({
 });
 
 const sbcMono = localFont({
-  src: [{ path: "../../public/fonts/sbc-Regular.otf", weight: "400", style: "normal" }],
+  src: [{ path: "../../public/fonts/sbc.otf", style: "normal" }],
   variable: "--font-sbc-mono",
   display: "swap",
   preload: true,
