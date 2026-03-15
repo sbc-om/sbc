@@ -26,6 +26,7 @@ interface TextOverlay {
   y: number;
   fontSize: number;
   fontFamily: string;
+  fontWeight: 300 | 400 | 500 | 700;
   color: string;
   backgroundColor: string;
   rotation: number;
@@ -59,7 +60,13 @@ const FILTERS: { key: string; label: string; css: string }[] = [
   { key: "vivid", label: "Vivid", css: "saturate(1.5) contrast(1.1)" },
 ];
 
-const FONTS = ["sans-serif", "serif", "monospace", "cursive", "fantasy"];
+const STORY_TEXT_FONT_FAMILY = "var(--font-sbc-sans), 'Segoe UI', Tahoma, Arial, sans-serif";
+const FONT_WEIGHTS: { weight: 300 | 400 | 500 | 700; label: string }[] = [
+  { weight: 300, label: "Light" },
+  { weight: 400, label: "Regular" },
+  { weight: 500, label: "Medium" },
+  { weight: 700, label: "Bold" },
+];
 const TEXT_COLORS = ["#ffffff", "#000000", "#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#a855f7", "#ec4899", "#06b6d4"];
 const BG_COLORS = ["transparent", "rgba(0,0,0,0.6)", "rgba(255,255,255,0.8)", "rgba(0,0,0,0.9)", "rgba(239,68,68,0.7)", "rgba(59,130,246,0.7)", "rgba(34,197,94,0.7)"];
 
@@ -211,7 +218,8 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
       x: 50,
       y: 50,
       fontSize: 24,
-      fontFamily: "sans-serif",
+      fontFamily: STORY_TEXT_FONT_FAMILY,
+      fontWeight: 500,
       color: "#ffffff",
       backgroundColor: "rgba(0,0,0,0.6)",
       rotation: 0,
@@ -529,9 +537,25 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
               <div className="space-y-4 pt-2 border-t border-white/10">
                 {/* Font */}
                 <div>
-                  <label className="text-xs font-medium text-white/70 mb-2 block">{ar ? "الخط" : "Font"}</label>
-                  <div className="flex flex-wrap gap-1.5">{FONTS.map((f) => (
-                    <button key={f} type="button" onClick={() => setTextOverlays((p) => p.map((x) => x.id === activeText.id ? { ...x, fontFamily: f } : x))} className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${activeText.fontFamily === f ? "bg-white text-black" : "bg-white/10 text-white hover:bg-white/20"}`} style={{ fontFamily: f }}>{f.split("-")[0]}</button>
+                  <label className="text-xs font-medium text-white/70 mb-2 block">{ar ? "وزن الخط" : "Font Weight"}</label>
+                  <div className="flex flex-wrap gap-1.5">{FONT_WEIGHTS.map((fontOption) => (
+                    <button
+                      key={fontOption.weight}
+                      type="button"
+                      onClick={() =>
+                        setTextOverlays((p) =>
+                          p.map((x) =>
+                            x.id === activeText.id
+                              ? { ...x, fontFamily: STORY_TEXT_FONT_FAMILY, fontWeight: fontOption.weight }
+                              : x
+                          )
+                        )
+                      }
+                      className={`px-3 py-1.5 rounded-lg text-xs transition-colors ${activeText.fontWeight === fontOption.weight ? "bg-white text-black" : "bg-white/10 text-white hover:bg-white/20"}`}
+                      style={{ fontFamily: STORY_TEXT_FONT_FAMILY, fontWeight: fontOption.weight }}
+                    >
+                      {fontOption.label}
+                    </button>
                   ))}</div>
                 </div>
                 {/* Size */}
@@ -784,12 +808,12 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
                         onBlur={() => setEditingTextId(null)}
                         onKeyDown={(e) => { if (e.key === "Enter") setEditingTextId(null); }}
                         className="bg-transparent outline-none text-center border-b border-white/50 min-w-[60px]"
-                        style={{ fontSize: `${t.fontSize}px`, fontFamily: t.fontFamily, color: t.color }}
+                        style={{ fontSize: `${t.fontSize}px`, fontFamily: t.fontFamily, fontWeight: t.fontWeight, color: t.color }}
                         autoFocus
                         dir={ar ? "rtl" : "ltr"}
                       />
                     ) : (
-                      <span className="px-3 py-1.5 whitespace-nowrap select-none" style={{ fontSize: `${t.fontSize}px`, fontFamily: t.fontFamily, color: t.color, backgroundColor: t.backgroundColor, textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}>{t.text}</span>
+                      <span className="px-3 py-1.5 whitespace-nowrap select-none" style={{ fontSize: `${t.fontSize}px`, fontFamily: t.fontFamily, fontWeight: t.fontWeight, color: t.color, backgroundColor: t.backgroundColor, textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}>{t.text}</span>
                     )}
                   </div>
                 ))}

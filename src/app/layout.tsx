@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { cookies, headers } from "next/headers";
-import { Geist, Geist_Mono } from "next/font/google";
-import { Noto_Kufi_Arabic } from "next/font/google";
+import localFont from "next/font/local";
 import "overlayscrollbars/overlayscrollbars.css";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
@@ -11,23 +10,22 @@ import { OverlayScrollbarsInit } from "@/components/OverlayScrollbarsInit";
 import { LoyaltyPushSwInit } from "@/components/loyalty/LoyaltyPushSwInit";
 import { ToastProvider } from "@/components/ui/Toast";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+const sbcSans = localFont({
+  src: [
+    { path: "../../public/fonts/sbc-Light.otf", weight: "300", style: "normal" },
+    { path: "../../public/fonts/sbc-Regular.otf", weight: "400", style: "normal" },
+    { path: "../../public/fonts/sbc-Medium.otf", weight: "500", style: "normal" },
+    { path: "../../public/fonts/sbc-Bold.otf", weight: "700", style: "normal" },
+  ],
+  variable: "--font-sbc-sans",
   display: "swap",
   preload: true,
+  fallback: ["Segoe UI", "Tahoma", "Arial", "sans-serif"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-  display: "swap",
-  preload: true,
-});
-
-const notoKufiArabic = Noto_Kufi_Arabic({
-  variable: "--font-arabic",
-  subsets: ["arabic"],
+const sbcMono = localFont({
+  src: [{ path: "../../public/fonts/sbc-Regular.otf", weight: "400", style: "normal" }],
+  variable: "--font-sbc-mono",
   display: "swap",
   preload: true,
 });
@@ -132,7 +130,7 @@ export default async function RootLayout({
         <meta name="color-scheme" content="light dark" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${notoKufiArabic.variable} antialiased`}
+        className={`${sbcSans.className} ${sbcSans.variable} ${sbcMono.variable} font-sbc antialiased`}
       >
         <OverlayScrollbarsInit />
         <LoyaltyPushSwInit />

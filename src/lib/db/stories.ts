@@ -18,7 +18,7 @@ async function ensureStoriesSchema() {
 }
 
 export type StoryOverlays = {
-  textOverlays?: { text: string; x: number; y: number; fontSize: number; fontFamily: string; color: string; backgroundColor: string; rotation: number; scale: number }[];
+  textOverlays?: { text: string; x: number; y: number; fontSize: number; fontFamily: string; fontWeight?: 300 | 400 | 500 | 700; color: string; backgroundColor: string; rotation: number; scale: number }[];
   stickerOverlays?: { emoji: string; x: number; y: number; scale: number; rotation: number }[];
   filter?: string;
   brightness?: number;

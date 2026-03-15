@@ -472,7 +472,7 @@ export function StoryViewer({
                     <div className="absolute inset-0 pointer-events-none z-[25]">
                       {currentStory.overlays.textOverlays?.map((text, i) => (
                         <div key={`t-${i}`} className="absolute" style={{ left: `${text.x}%`, top: `${text.y}%`, transform: `translate(-50%, -50%) rotate(${text.rotation}deg) scale(${text.scale})` }}>
-                          <span className="px-3 py-1.5 whitespace-nowrap" style={{ fontSize: `${text.fontSize}px`, fontFamily: text.fontFamily, color: text.color, backgroundColor: text.backgroundColor, textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}>{text.text}</span>
+                          <span className="px-3 py-1.5 whitespace-nowrap" style={{ fontSize: `${text.fontSize}px`, fontFamily: text.fontFamily, fontWeight: text.fontWeight ?? 400, color: text.color, backgroundColor: text.backgroundColor, textShadow: "2px 2px 4px rgba(0,0,0,0.5)" }}>{text.text}</span>
                         </div>
                       ))}
                       {currentStory.overlays.stickerOverlays?.map((sticker, i) => (

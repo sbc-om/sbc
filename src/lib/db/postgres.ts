@@ -9,19 +9,84 @@ declare global {
   var __sbcDbInitialized: boolean | undefined;
 }
 
-const connectionString = process.env.DATABASE_URL;
+type ResolvedDbConfig = {
+  connectionString: string;
+  source: "database_url" | "postgres_parts";
+};
+
+function buildConnectionStringFromParts(): string | null {
+  const user = process.env.POSTGRES_USER;
+  const password = process.env.POSTGRES_PASSWORD;
+  const database = process.env.POSTGRES_DB;
+  const host = process.env.POSTGRES_HOST || "localhost";
+  const port = process.env.POSTGRES_PORT || "5432";
+
+  if (!user || !password || !database) {
+    return null;
+  }
+
+  const encodedUser = encodeURIComponent(user);
+  const encodedPassword = encodeURIComponent(password);
+  const encodedDatabase = encodeURIComponent(database);
+  return `postgresql://${encodedUser}:${encodedPassword}@${host}:${port}/${encodedDatabase}`;
+}
+
+function resolveDbConfig(): ResolvedDbConfig {
+  // If POSTGRES_* parts are fully provided, prefer them so changing password/user once
+  // does not leave a stale DATABASE_URL behind.
+  const partsConnectionString = buildConnectionStringFromParts();
+  if (partsConnectionString) {
+    return {
+      connectionString: partsConnectionString,
+      source: "postgres_parts",
+    };
+  }
+
+  const databaseUrl = process.env.DATABASE_URL;
+  if (databaseUrl) {
+    return {
+      connectionString: databaseUrl,
+      source: "database_url",
+    };
+  }
+
+  throw new Error(
+    "DATABASE_URL is required, or set POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB (optional POSTGRES_HOST/POSTGRES_PORT)."
+  );
+}
+
+function explainAuthError(error: unknown): never {
+  if (!error || typeof error !== "object") {
+    throw error;
+  }
+  const pgError = error as { code?: unknown; message?: unknown };
+  if (String(pgError.code ?? "") !== "28P01") {
+    throw error;
+  }
+
+  throw new Error(
+    [
+      "POSTGRES_AUTH_FAILED: Password authentication failed.",
+      "Verify that app credentials and DB credentials are identical.",
+      "If you use Docker and changed POSTGRES_PASSWORD after first boot, the existing postgres-data volume keeps old credentials.",
+      "Fix by updating DB user password inside the running container or recreating the postgres volume.",
+    ].join(" "),
+    { cause: error }
+  );
+}
 
 export function getPool(): pg.Pool {
   if (!globalThis.__sbcPgPool) {
-    if (!connectionString) {
-      throw new Error("DATABASE_URL environment variable is required");
-    }
+    const resolved = resolveDbConfig();
     globalThis.__sbcPgPool = new pg.Pool({
-      connectionString,
+      connectionString: resolved.connectionString,
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000, // Increased from 2s to 10s for cold starts
     });
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[DB] Connection config source: ${resolved.source}`);
+    }
   }
   return globalThis.__sbcPgPool;
 }
@@ -68,6 +133,7 @@ async function doEnsureSchema(): Promise<void> {
       await runSchemaInit(pool);
       break;
     } catch (error) {
+      explainAuthError(error);
       if (!isTransientDbInitError(error) || attempt === maxAttempts) {
         throw error;
       }
