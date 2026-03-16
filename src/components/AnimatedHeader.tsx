@@ -12,6 +12,7 @@ import type { Dictionary } from "@/lib/i18n/getDictionary";
 import { logoutAction } from "@/app/[locale]/auth/actions";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { buttonVariants } from "@/components/ui/Button";
+import { usePrefersReducedMotion } from "@/lib/hooks/usePerformance";
 
 interface AnimatedHeaderProps {
   locale: Locale;
@@ -24,22 +25,54 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuRootRef = useRef<HTMLDivElement | null>(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
   const pathname = usePathname();
   const servicesLabel = locale === "ar" ? "الخدمات" : "Services";
 
   useEffect(() => {
-    const handleScroll = () => {
+    if (prefersReducedMotion) {
+      setScrollProgress(0);
+      setScrolled(false);
+      return;
+    }
+
+    let rafId: number | null = null;
+    let lastProgress = -1;
+    let lastScrolled = false;
+
+    const updateScrollState = () => {
+      rafId = null;
       const scrollPosition = window.scrollY;
-      const maxScroll = 150; // Max scroll distance for full effect
+      const maxScroll = 150;
       const progress = Math.min(scrollPosition / maxScroll, 1);
-      
-      setScrollProgress(progress);
-      setScrolled(scrollPosition > 50);
+      const roundedProgress = Math.round(progress * 100) / 100;
+      const nextScrolled = scrollPosition > 50;
+
+      if (roundedProgress !== lastProgress) {
+        lastProgress = roundedProgress;
+        setScrollProgress(roundedProgress);
+      }
+
+      if (nextScrolled !== lastScrolled) {
+        lastScrolled = nextScrolled;
+        setScrolled(nextScrolled);
+      }
     };
 
+    const handleScroll = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(updateScrollState);
+    };
+
+    updateScrollState();
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [prefersReducedMotion]);
 
   // Close mobile menu on navigation
   useEffect(() => {
@@ -92,24 +125,25 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
         />
       ) : null}
       <div
-        className={`w-full transition-all duration-500 ease-out ${
+        className={`w-full transition-[padding] duration-300 ease-out ${
           scrolled ? "py-2" : "py-3"
         }`}
       >
         <Container size="lg">
           <div
             ref={mobileMenuRootRef}
-            className={`relative rounded-2xl overflow-visible backdrop-blur-xl border ${
+            className={`relative rounded-2xl overflow-visible backdrop-blur-md border ${
               scrolled ? "py-2 px-4" : "py-3 px-6"
             }`}
             style={{
               background: "rgba(var(--surface-rgb, 255, 255, 255), 0.9)",
               borderColor: "var(--surface-border)",
               boxShadow: "var(--shadow)",
-              transform: `translateY(${-scrollProgress * 2}px) scale(${1 - scrollProgress * 0.1})`,
+              transform: prefersReducedMotion
+                ? "none"
+                : `translateY(${-scrollProgress}px) scale(${1 - scrollProgress * 0.04})`,
               transformOrigin: "center top",
-              willChange: "transform",
-              transition: "transform 500ms cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: "transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
             }}
           >
             {/* Subtle gradient overlay */}
@@ -119,7 +153,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                 background:
                   "linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(6, 182, 212, 0.08) 50%, rgba(79, 70, 229, 0.05) 100%)",
                 opacity: 1 - scrollProgress,
-                transition: "opacity 500ms cubic-bezier(0.4, 0, 0.2, 1)",
+                transition: "opacity 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
               }}
             />
 
@@ -127,16 +161,13 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
               {/* Logo Section with SVG */}
               <Link
                 href={`/${locale}`}
-                className="flex items-center gap-2 group"
-                style={{
-                  transition: "all 500ms cubic-bezier(0.4, 0, 0.2, 1)",
-                }}
+                className="flex items-center gap-2"
               >
                 <div
                   style={{
                     width: `${44 - scrollProgress * 12}px`,
                     height: `${44 - scrollProgress * 12}px`,
-                    transition: "all 500ms cubic-bezier(0.4, 0, 0.2, 1)",
+                    transition: "width 320ms cubic-bezier(0.2, 0.8, 0.2, 1), height 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
                   }}
                 >
                   <Image
@@ -144,7 +175,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     alt="SBC Logo"
                     width={44}
                     height={44}
-                    className="transition-transform duration-300 group-hover:scale-110"
+                    className="select-none"
                     style={{ width: "100%", height: "100%" }}
                     priority
                   />
@@ -281,7 +312,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
             <div
               id="mobile-nav"
               className={
-                "md:hidden absolute inset-x-0 top-full mt-2 origin-top rounded-2xl border backdrop-blur-xl overflow-hidden transition-all duration-200 ease-out " +
+                "md:hidden absolute inset-x-0 top-full mt-2 origin-top rounded-2xl border backdrop-blur-md overflow-hidden transition-all duration-200 ease-out " +
                 (mobileOpen
                   ? "opacity-100 translate-y-0 scale-100"
                   : "pointer-events-none opacity-0 -translate-y-1 scale-[0.98]")

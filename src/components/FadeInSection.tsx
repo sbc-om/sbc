@@ -26,7 +26,7 @@ export function FadeInSection({
   className = "",
   delay = 0,
   duration = 600,
-  slideDistance = 20,
+  slideDistance = 14,
   slideFrom = "bottom",
   threshold = 0.1,
   rootMargin = "0px 0px -50px 0px",
@@ -93,7 +93,6 @@ export function FadeInSection({
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? "translate(0, 0)" : getTransform(),
         transition: `opacity ${duration}ms cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms, transform ${duration}ms cubic-bezier(0.4, 0, 0.2, 1) ${delay}ms`,
-        willChange: isVisible ? "auto" : "opacity, transform",
       }}
     >
       {children}
