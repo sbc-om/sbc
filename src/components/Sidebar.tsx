@@ -530,7 +530,9 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           <div
             role="menu"
             aria-label="Profile menu"
-            className="absolute bottom-full mb-2 w-64 rounded-xl border bg-(--background) shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150"
+            className={`absolute bottom-full mb-2 rounded-xl border bg-(--background) shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150 ${
+              iconOnly ? "w-64" : "w-full"
+            }`}
             style={{
               borderColor: "var(--surface-border)",
               ...(locale === "ar" ? { right: 0 } : { left: 0 }),
@@ -683,7 +685,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               <p className="mb-2 text-xs font-medium text-(--muted-foreground)">
                 {locale === "ar" ? "المظهر" : "Theme"}
               </p>
-              <div className="flex items-center gap-1 rounded-xl bg-(--chip-bg) p-1">
+              <div className="grid grid-cols-3 gap-1 rounded-xl bg-(--chip-bg) p-1">
                 {(
                   [
                     { mode: "light" as ThemeMode, icon: HiSun, label: locale === "ar" ? "فاتح" : "Light" },
@@ -698,14 +700,15 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                       type="button"
                       role="menuitem"
                       onClick={() => handleThemeChange(mode)}
-                      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-all ${
+                      aria-label={label}
+                      title={label}
+                      className={`flex h-8 items-center justify-center rounded-lg transition-all ${
                         isSelected
                           ? "bg-(--background) text-(--foreground) shadow-sm"
                           : "text-(--muted-foreground) hover:text-(--foreground)"
                       }`}
                     >
                       <Icon className="h-3.5 w-3.5 shrink-0" />
-                      <span>{label}</span>
                     </button>
                   );
                 })}
