@@ -59,7 +59,7 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
 }
 
 .dark {
-  --background: #121212;
+  --background: #0c0c10;
   --foreground: #e8eaed;
   --foreground-rgb: 232, 234, 237;
   --surface: rgba(38, 38, 38, 0.92);
@@ -147,10 +147,14 @@ select {
 
 .dark body {
   background:
-    radial-gradient(900px 500px at 10% 0%, rgba(99, 102, 241, 0.08), transparent 55%),
-    radial-gradient(900px 500px at 90% 0%, rgba(14, 165, 233, 0.06), transparent 55%),
-    linear-gradient(180deg, rgba(15, 17, 21, 0.50), rgba(15, 17, 21, 1));
+    radial-gradient(ellipse 120% 80% at 15% -10%, rgba(99, 102, 241, 0.12), transparent 60%),
+    radial-gradient(ellipse 100% 70% at 85% -5%, rgba(14, 165, 233, 0.10), transparent 55%),
+    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(139, 92, 246, 0.05), transparent 50%),
+    radial-gradient(ellipse 90% 50% at 70% 70%, rgba(6, 182, 212, 0.04), transparent 50%),
+    radial-gradient(ellipse 100% 60% at 20% 90%, rgba(99, 102, 241, 0.04), transparent 50%),
+    linear-gradient(180deg, rgba(18, 18, 24, 0.6) 0%, rgba(12, 12, 16, 0.95) 50%, rgba(10, 10, 14, 1) 100%);
   background-color: var(--background);
+  background-attachment: fixed;
 }
 
 /* Smoother feel without overdoing it */
