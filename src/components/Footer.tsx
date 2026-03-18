@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { HiChevronDown, HiOutlineQrcode } from "react-icons/hi";
+import { FaInstagram, FaFacebook, FaTwitter, FaThLarge, FaInfoCircle, FaEnvelope } from "react-icons/fa";
 import {
   HiOutlineBuildingOffice2,
   HiOutlineCpuChip,
@@ -12,8 +12,6 @@ import {
   HiOutlineSparkles,
   HiOutlineWrenchScrewdriver,
 } from "react-icons/hi2";
-import { FaInstagram, FaFacebook, FaTwitter } from "react-icons/fa";
-import { FiInfo, FiMail } from "react-icons/fi";
 import { Container } from "@/components/Container";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
@@ -25,13 +23,19 @@ interface FooterProps {
 }
 
 export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
-  const platformMenuRef = React.useRef<HTMLDetailsElement | null>(null);
+  const [platformOpen, setPlatformOpen] = React.useState(false);
+  const platformRef = React.useRef<HTMLDivElement>(null);
 
-  function closePlatformMenu() {
-    if (platformMenuRef.current) {
-      platformMenuRef.current.open = false;
+  React.useEffect(() => {
+    if (!platformOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (platformRef.current && !platformRef.current.contains(e.target as Node)) {
+        setPlatformOpen(false);
+      }
     }
-  }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [platformOpen]);
 
   const brand = locale === "ar" ? "مركز الأعمال الذكية" : "Smart Business Center";
   const instagramUrl = "https://www.instagram.com/sbc._.om";
@@ -42,7 +46,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
         key: "instagram",
         label: "Instagram",
         href: instagramUrl,
-        icon: <FaInstagram className="h-4 w-4" />,
+        icon: <FaInstagram className="h-4 w-4 text-[#E4405F]" />,
         external: true,
       },
     ]
@@ -51,21 +55,21 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
       key: "instagram",
       label: "Instagram",
       href: instagramUrl,
-      icon: <FaInstagram className="h-4 w-4" />,
+      icon: <FaInstagram className="h-4 w-4 text-[#E4405F]" />,
       external: true,
     },
     {
       key: "facebook",
       label: "Facebook",
       href: process.env.NEXT_PUBLIC_SOCIAL_FACEBOOK,
-      icon: <FaFacebook className="h-4 w-4" />,
+      icon: <FaFacebook className="h-4 w-4 text-[#1877F2]" />,
       external: true,
     },
     {
       key: "twitter",
       label: "Twitter",
       href: process.env.NEXT_PUBLIC_SOCIAL_TWITTER,
-      icon: <FaTwitter className="h-4 w-4" />,
+      icon: <FaTwitter className="h-4 w-4 text-[#1DA1F2]" />,
       external: true,
     },
   ].filter((s) => typeof s.href === "string" && s.href.trim().length > 0);
@@ -76,14 +80,14 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
       key: "about",
       label: locale === "ar" ? "عن المشروع" : "About",
       href: `/${locale}/about`,
-      icon: <FiInfo className="h-4 w-4" />,
+      icon: <FaInfoCircle className="h-4 w-4 text-[#3B82F6]" />,
       external: false,
     },
     {
       key: "contact",
       label: locale === "ar" ? "تواصل معنا" : "Contact",
       href: `/${locale}/contact`,
-      icon: <FiMail className="h-4 w-4" />,
+      icon: <FaEnvelope className="h-4 w-4 text-[#10B981]" />,
       external: false,
     },
   ];
@@ -91,10 +95,11 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
   const platformLinks = [
     {
       key: "directory",
-      label: locale === "ar" ? "دليل الأعمال" : "Business Directory",
+      label: locale === "ar" ? "دلیل الأعمال" : "Business Directory",
       description: locale === "ar" ? "اكتشفك عملاء أكثر" : "Get discovered by nearby customers",
       href: `/${locale}/directory`,
       Icon: HiOutlineBuildingOffice2,
+      color: "#F59E0B",
     },
     {
       key: "website",
@@ -102,6 +107,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
       description: locale === "ar" ? "موقع احترافي جاهز للنمو" : "Launch a professional business website",
       href: `/${locale}/dashboard/websites`,
       Icon: HiOutlineGlobeAlt,
+      color: "#3B82F6",
     },
     {
       key: "loyalty",
@@ -109,13 +115,15 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
       description: locale === "ar" ? "أعد العملاء للشراء بالنقاط" : "Bring customers back with rewards",
       href: `/${locale}/loyalty`,
       Icon: HiOutlineSparkles,
+      color: "#F472B6",
     },
     {
       key: "marketing",
-      label: locale === "ar" ? "أدوات التسويق" : "Marketing Tools",
+      label: locale === "ar" ? "أدوات التسویق" : "Marketing Tools",
       description: locale === "ar" ? "رسائل وحملات مؤتمتة" : "Run campaigns and messaging from one app",
       href: `/${locale}/services`,
       Icon: HiOutlineMegaphone,
+      color: "#EF4444",
     },
     {
       key: "tools",
@@ -123,22 +131,27 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
       description: locale === "ar" ? "أدوات مجانية احترافية لأعمالك" : "Free professional tools for your business",
       href: `/${locale}/tools`,
       Icon: HiOutlineWrenchScrewdriver,
+      color: "#10B981",
     },
     {
       key: "agent-builder",
-      label: locale === "ar" ? "منشئ وكيل AI" : "AI Agent Builder",
-      description: locale === "ar" ? "أتمتة ذكية بدون كود" : "Build no-code AI workflows",
+      label: locale === "ar" ? "منشئ وکیل AI" : "AI Agent Builder",
+      description: locale === "ar" ? "أتمتة ذکیة بدون کود" : "Build no-code AI workflows",
       href: `/${locale}/ai`,
       Icon: HiOutlineCpuChip,
+      color: "#8B5CF6",
     },
     {
       key: "ai-indexing",
       label: "AI Business Indexing",
-      description: locale === "ar" ? "حضور أقوى داخل محركات AI" : "Optimize visibility across AI search",
+      description: locale === "ar" ? "حضور أقوى داخل محرکات AI" : "Optimize visibility across AI search",
       href: `/${locale}/ai-business-indexing`,
       Icon: HiOutlineGlobeAlt,
+      color: "#06B6D4",
     },
   ];
+
+
 
   return (
     <footer className="mt-auto">
@@ -178,84 +191,95 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
                 </Link>
               </div>
 
-              <div className="flex flex-col md:flex-row items-center gap-4 md:gap-4 text-center">
-                <details ref={platformMenuRef} className="group relative w-full max-w-md">
-                  <summary className="cursor-pointer list-none p-2 text-sm font-semibold text-foreground">
-                    <span
-                      className="inline-flex w-full items-center justify-between rounded-xl border border-(--surface-border) px-4 py-2.5"
-                      style={{ background: "rgb(var(--surface-rgb, 255, 255, 255))" }}
+
+
+              {/* Right side: Icons */}
+              <div className="flex items-center gap-3">
+                {footerActionIcons.map((s) => (
+                  s.external ? (
+                    <a
+                      key={s.key}
+                      href={s.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={s.label}
+                      title={s.label}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-(--shadow) hover:scale-110 transition-all"
                     >
-                      <span>{locale === "ar" ? "المنصة" : "Platform"}</span>
-                      <HiChevronDown className="h-4 w-4 text-(--muted-foreground) transition-transform group-open:rotate-180" />
-                    </span>
-                  </summary>
-                  <div
-                    className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-3 w-[min(94vw,760px)] -translate-x-1/2 opacity-0 transition-all duration-200 group-open:pointer-events-auto group-open:opacity-100"
-                    style={{ transformOrigin: "bottom center" }}
+                      {s.icon}
+                    </a>
+                  ) : (
+                    <Link
+                      key={s.key}
+                      href={s.href}
+                      aria-label={s.label}
+                      title={s.label}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-(--shadow) hover:scale-110 transition-all"
+                    >
+                      {s.icon}
+                    </Link>
+                  )
+                ))}
+
+                {/* Platform icon + popup */}
+                <div ref={platformRef}>
+                  <button
+                    type="button"
+                    onClick={() => setPlatformOpen((v) => !v)}
+                    aria-label={locale === "ar" ? "المنصة" : "Platform"}
+                    title={locale === "ar" ? "المنصة" : "Platform"}
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-(--shadow) hover:scale-110 transition-all"
                   >
-                    <div
-                      className="rounded-2xl border border-(--surface-border) p-2 shadow-2xl"
-                      style={{ background: "rgb(var(--surface-rgb, 255, 255, 255))" }}
-                    >
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {platformLinks.map((item) => (
-                          <Link
-                            key={item.key}
-                            href={item.href}
-                            onClick={closePlatformMenu}
-                            className="group/item flex items-start gap-3 rounded-xl border border-transparent px-3 py-3 text-start transition hover:border-(--surface-border) hover:bg-(--chip-bg)"
-                            style={{ background: "rgb(var(--surface-rgb, 255, 255, 255))" }}
-                          >
-                            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/12 text-accent">
-                              <item.Icon className="h-5 w-5" />
-                            </span>
-                            <span className="min-w-0">
-                              <span className="block text-sm font-semibold text-foreground">{item.label}</span>
-                              <span className="mt-0.5 block text-xs text-(--muted-foreground)">{item.description}</span>
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                </details>
-              </div>
-
-              {/* Right side: Social Links */}
-              {footerActionIcons.length ? (
-                <div className="flex items-center gap-3">
-                  {footerActionIcons.map((s) => (
-                    s.external ? (
-                      <a
-                        key={s.key}
-                        href={s.href}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={s.label}
-                        title={s.label}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) text-(--muted-foreground) shadow-(--shadow) hover:text-foreground hover:scale-110 transition-all"
-                      >
-                        {s.icon}
-                      </a>
-                    ) : (
-                      <Link
-                        key={s.key}
-                        href={s.href}
-                        aria-label={s.label}
-                        title={s.label}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) text-(--muted-foreground) shadow-(--shadow) hover:text-foreground hover:scale-110 transition-all"
-                      >
-                        {s.icon}
-                      </Link>
-                    )
-                  ))}
+                    <FaThLarge className="h-4 w-4 text-[#8B5CF6]" />
+                  </button>
                 </div>
-              ) : null}
+              </div>
             </div>
           </div>
         </Container>
       </div>
+
+      {/* Platform popup — fixed centered overlay */}
+      {platformOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center pb-24 sm:items-center sm:pb-0"
+          onClick={() => setPlatformOpen(false)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+
+          {/* Panel */}
+          <div
+            ref={platformRef}
+            className="relative z-10 w-[min(94vw,760px)] rounded-2xl border border-(--surface-border) p-3 shadow-2xl"
+            style={{ background: "rgb(var(--surface-rgb, 255, 255, 255))" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {platformLinks.map((item) => (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  onClick={() => setPlatformOpen(false)}
+                  className="group/item flex items-start gap-3 rounded-xl border border-transparent px-3 py-3 text-start transition hover:border-(--surface-border) hover:bg-(--chip-bg)"
+                  style={{ background: "rgb(var(--surface-rgb, 255, 255, 255))" }}
+                >
+                  <span
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                    style={{ backgroundColor: `${item.color}1A`, color: item.color }}
+                  >
+                    <item.Icon className="h-5 w-5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-foreground">{item.label}</span>
+                    <span className="mt-0.5 block text-xs text-(--muted-foreground)">{item.description}</span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </footer>
   );
 }
