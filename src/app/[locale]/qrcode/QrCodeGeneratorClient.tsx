@@ -243,10 +243,10 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       if (!email) {
         return { value: "", reason: ar ? "آدرس ایمیل لازم است." : "Email address is required." };
       }
-      const params = new URLSearchParams();
-      if (emailSubject.trim()) params.set("subject", emailSubject.trim());
-      if (emailBody.trim()) params.set("body", emailBody.trim());
-      const query = params.toString();
+      const parts: string[] = [];
+      if (emailSubject.trim()) parts.push(`subject=${encodeURIComponent(emailSubject.trim())}`);
+      if (emailBody.trim()) parts.push(`body=${encodeURIComponent(emailBody.trim())}`);
+      const query = parts.join("&");
       return { value: query ? `mailto:${email}?${query}` : `mailto:${email}`, reason: null };
     }
 
@@ -797,8 +797,8 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
         <div className="sbc-card rounded-3xl p-4 sm:p-6">
-          <div className="-mx-1 overflow-x-auto pb-1 md:mx-0 md:overflow-visible">
-            <div className="flex min-w-max gap-2 px-1 md:grid md:min-w-0 md:grid-cols-3 md:px-0 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className="-mx-1 pb-1 md:mx-0">
+            <div className="flex flex-wrap gap-2 px-1 md:px-0">
               {TYPE_OPTIONS.map((option) => {
                 const Icon = option.icon;
                 const active = option.id === qrType;
@@ -808,14 +808,14 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
                     type="button"
                     onClick={() => setQrType(option.id)}
                     className={[
-                      "inline-flex min-w-[9.25rem] items-center gap-2 rounded-2xl border px-3 py-2 text-sm transition md:min-w-0",
+                      "inline-flex items-center gap-2 rounded-2xl border px-3 py-2.5 text-sm transition",
                       active
                         ? "border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)]"
                         : "border-(--surface-border) bg-(--background) text-foreground hover:bg-(--chip-bg)",
                     ].join(" ")}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{ar ? option.labelAr : option.labelEn}</span>
+                    <span className="whitespace-nowrap">{ar ? option.labelAr : option.labelEn}</span>
                   </button>
                 );
               })}
@@ -980,11 +980,9 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               <Download className="h-4 w-4" />
               {isDownloadingPng
                 ? ar
-                  ? "در حال آماده‌سازی..."
+                  ? "آماده‌سازی..."
                   : "Preparing..."
-                : ar
-                  ? "دانلود PNG"
-                  : "Download PNG"}
+                : "PNG"}
             </Button>
 
             <Button
@@ -995,7 +993,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               className="w-full justify-center"
             >
               <Globe className="h-4 w-4" />
-              {isDownloadingSvg ? (ar ? "در حال آماده‌سازی..." : "Preparing...") : "Download SVG"}
+              {isDownloadingSvg ? (ar ? "آماده‌سازی..." : "Preparing...") : "SVG"}
             </Button>
 
             <Button
@@ -1006,7 +1004,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               className="w-full justify-center"
             >
               <Copy className="h-4 w-4" />
-              {copied ? (ar ? "کپی شد" : "Copied") : ar ? "کپی محتوا" : "Copy payload"}
+              {copied ? (ar ? "کپی شد" : "Copied") : ar ? "کپی" : "Copy"}
             </Button>
           </div>
 
