@@ -446,8 +446,8 @@ export function PublicBusinessView({
         {/* Sidebar */}
         <aside className="min-w-0 space-y-6">
           {coverImage ? (
-            <div className="sbc-card overflow-hidden rounded-2xl p-3">
-              <div className="relative h-44 w-full overflow-hidden rounded-xl">
+            <div className="sbc-card overflow-hidden rounded-2xl">
+              <div className="relative h-44 w-full">
                 <Image
                   src={coverImage}
                   alt={locale === "ar" ? "صورة الغلاف" : "Cover image"}
