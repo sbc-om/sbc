@@ -358,7 +358,7 @@ export async function generateApplePassFromTemplate(input: {
   }
 
   // Resolve logo URL - ensure it's a full URL
-  let logoUrl = template.images?.logoUrl || profile?.logoUrl || "https://www.spirithubcafe.com/logo.png";
+  let logoUrl = template.images?.logoUrl || profile?.logoUrl || "https://sbc.om/sbc.png";
   if (logoUrl && !logoUrl.startsWith("http") && origin) {
     logoUrl = `${origin}${logoUrl.startsWith("/") ? "" : "/"}${logoUrl}`;
   }

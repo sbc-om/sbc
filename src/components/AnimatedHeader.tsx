@@ -5,6 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { HiX, HiMenu } from "react-icons/hi";
+import {
+  motion,
+  useScroll,
+  useTransform,
+  useSpring,
+  useMotionValueEvent,
+  AnimatePresence,
+} from "motion/react";
 import { Container } from "@/components/Container";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import type { Locale } from "@/lib/i18n/locales";
@@ -14,6 +22,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { buttonVariants } from "@/components/ui/Button";
 import { usePrefersReducedMotion } from "@/lib/hooks/usePerformance";
 
+const springConfig = { stiffness: 260, damping: 30, mass: 0.8 };
+
 interface AnimatedHeaderProps {
   locale: Locale;
   dict: Dictionary;
@@ -22,61 +32,43 @@ interface AnimatedHeaderProps {
 
 export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   const [scrolled, setScrolled] = useState(false);
-  const [scrollProgress, setScrollProgress] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuRootRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
   const pathname = usePathname();
   const servicesLabel = locale === "ar" ? "الخدمات" : "Services";
 
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      setScrollProgress(0);
-      setScrolled(false);
-      return;
-    }
+  /* ── scroll-linked motion values ── */
+  const { scrollY } = useScroll();
 
-    let rafId: number | null = null;
-    let lastProgress = -1;
-    let lastScrolled = false;
+  // Raw transforms driven by scroll position (0–150px)
+  const rawOuterPy = useTransform(scrollY, [0, 150], [12, 8]);
+  const rawCardPy = useTransform(scrollY, [0, 150], [12, 8]);
+  const rawCardPx = useTransform(scrollY, [0, 150], [24, 16]);
+  const rawLogoSize = useTransform(scrollY, [0, 150], [40, 30]);
+  const rawFontSize = useTransform(scrollY, [0, 150], [18, 15]);
+  const rawLogoRadius = useTransform(scrollY, [0, 150], [10, 8]);
+  const rawGap = useTransform(scrollY, [0, 150], [10, 6]);
+  const rawGradientOpacity = useTransform(scrollY, [0, 150], [1, 0]);
 
-    const updateScrollState = () => {
-      rafId = null;
-      const scrollPosition = window.scrollY;
-      const maxScroll = 150;
-      const progress = Math.min(scrollPosition / maxScroll, 1);
-      const roundedProgress = Math.round(progress * 100) / 100;
-      const nextScrolled = scrollPosition > 50;
+  // Smoothed with spring physics for buttery feel
+  const outerPy = useSpring(rawOuterPy, springConfig);
+  const cardPy = useSpring(rawCardPy, springConfig);
+  const cardPx = useSpring(rawCardPx, springConfig);
+  const logoSize = useSpring(rawLogoSize, springConfig);
+  const fontSize = useSpring(rawFontSize, springConfig);
+  const logoRadius = useSpring(rawLogoRadius, springConfig);
+  const logoGap = useSpring(rawGap, springConfig);
+  const gradientOpacity = useSpring(rawGradientOpacity, springConfig);
 
-      if (roundedProgress !== lastProgress) {
-        lastProgress = roundedProgress;
-        setScrollProgress(roundedProgress);
-      }
-
-      if (nextScrolled !== lastScrolled) {
-        lastScrolled = nextScrolled;
-        setScrolled(nextScrolled);
-      }
-    };
-
-    const handleScroll = () => {
-      if (rafId !== null) return;
-      rafId = window.requestAnimationFrame(updateScrollState);
-    };
-
-    updateScrollState();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (rafId !== null) {
-        window.cancelAnimationFrame(rafId);
-      }
-    };
-  }, [prefersReducedMotion]);
+  // Toggle scrolled state for shadow swap
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    if (prefersReducedMotion) return;
+    setScrolled(latest > 50);
+  });
 
   // Close mobile menu on navigation
   useEffect(() => {
-    // Defer to a microtask to satisfy react-hooks/set-state-in-effect.
     queueMicrotask(() => {
       setMobileOpen(false);
     });
@@ -117,43 +109,53 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
 
   return (
     <header className="fixed top-0 inset-x-0 z-50 w-full">
-      {mobileOpen ? (
-        <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-[2px] md:hidden"
-          aria-hidden="true"
-          onClick={() => setMobileOpen(false)}
-        />
-      ) : null}
-      <div
-        className={`w-full transition-[padding] duration-300 ease-out ${
-          scrolled ? "py-2" : "py-3"
-        }`}
+      <AnimatePresence>
+        {mobileOpen ? (
+          <motion.div
+            key="overlay"
+            className="fixed inset-0 bg-black/20 backdrop-blur-[2px] md:hidden"
+            aria-hidden="true"
+            onClick={() => setMobileOpen(false)}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          />
+        ) : null}
+      </AnimatePresence>
+      <motion.div
+        className="w-full"
+        style={{
+          paddingTop: outerPy,
+          paddingBottom: outerPy,
+        }}
       >
         <Container size="lg">
-          <div
+          <motion.div
             ref={mobileMenuRootRef}
-            className={`relative rounded-2xl overflow-visible backdrop-blur-md border ${
-              scrolled ? "py-2 px-4" : "py-3 px-6"
-            }`}
+            className="relative rounded-2xl overflow-visible backdrop-blur-md border"
             style={{
+              paddingTop: cardPy,
+              paddingBottom: cardPy,
+              paddingInlineStart: cardPx,
+              paddingInlineEnd: cardPx,
               background: "rgba(var(--surface-rgb, 255, 255, 255), 0.9)",
               borderColor: "var(--surface-border)",
-              boxShadow: "var(--shadow)",
-              transform: prefersReducedMotion
-                ? "none"
-                : `translateY(${-scrollProgress}px) scale(${1 - scrollProgress * 0.04})`,
-              transformOrigin: "center top",
-              transition: "transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
             }}
+            animate={{
+              boxShadow: scrolled
+                ? "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)"
+                : "var(--shadow)",
+            }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Subtle gradient overlay */}
-            <div
+            <motion.div
               className="absolute inset-0 -z-10 rounded-2xl pointer-events-none"
               style={{
                 background:
                   "linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(6, 182, 212, 0.08) 50%, rgba(79, 70, 229, 0.05) 100%)",
-                opacity: 1 - scrollProgress,
-                transition: "opacity 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+                opacity: gradientOpacity,
               }}
             />
 
@@ -161,34 +163,33 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
               {/* Logo Section with SVG */}
               <Link
                 href={`/${locale}`}
-                className="flex items-center gap-2"
+                className="flex items-center"
               >
-                <div
+                <motion.div
+                  className="relative shrink-0 overflow-hidden"
                   style={{
-                    width: `${44 - scrollProgress * 12}px`,
-                    height: `${44 - scrollProgress * 12}px`,
-                    transition: "width 320ms cubic-bezier(0.2, 0.8, 0.2, 1), height 320ms cubic-bezier(0.2, 0.8, 0.2, 1)",
+                    width: logoSize,
+                    height: logoSize,
+                    borderRadius: logoRadius,
+                    marginInlineEnd: logoGap,
                   }}
                 >
                   <Image
                     src="/images/sbc.svg"
                     alt="SBC Logo"
-                    width={44}
-                    height={44}
+                    width={40}
+                    height={40}
                     className="select-none"
-                    style={{ width: "100%", height: "100%" }}
+                    style={{ width: "100%", height: "100%", display: "block" }}
                     priority
                   />
-                </div>
-                <span
-                  className="font-bold tracking-tight bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent"
-                  style={{
-                    fontSize: `${18 - scrollProgress * 2}px`,
-                    transition: "font-size 500ms cubic-bezier(0.4, 0, 0.2, 1)",
-                  }}
+                </motion.div>
+                <motion.span
+                  className="font-bold tracking-tight bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent whitespace-nowrap"
+                  style={{ fontSize }}
                 >
                   SBC
-                </span>
+                </motion.span>
               </Link>
 
               {/* Desktop Navigation */}
@@ -309,146 +310,154 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
             </div>
 
             {/* Mobile dropdown */}
-            <div
-              id="mobile-nav"
-              className={
-                "md:hidden absolute inset-x-0 top-full mt-2 origin-top rounded-2xl border backdrop-blur-md overflow-hidden transition-all duration-200 ease-out " +
-                (mobileOpen
-                  ? "opacity-100 translate-y-0 scale-100"
-                  : "pointer-events-none opacity-0 -translate-y-1 scale-[0.98]")
-              }
-              style={{
-                background: "rgba(var(--surface-rgb, 255, 255, 255), 0.96)",
-                borderColor: "var(--surface-border)",
-                boxShadow: "var(--shadow)",
-              }}
-              role="dialog"
-              aria-label={locale === "ar" ? "قائمة التنقل" : "Navigation"}
-            >
-              <div className="p-2">
-                <div className="grid gap-1">
-                  <Link
-                    href={`/${locale}/services`}
-                    onClick={() => setMobileOpen(false)}
-                    className={buttonVariants({
-                      variant: "primary",
-                      size: "md",
-                      className: "w-full justify-start rounded-xl",
-                    })}
-                  >
-                    {servicesLabel}
-                  </Link>
-
-                  {user ? (
-                    <a
-                      href={`/${locale}/explorer`}
-                      onClick={() => setMobileOpen(false)}
-                      className={buttonVariants({
-                        variant: "ghost",
-                        size: "md",
-                        className: "w-full justify-start rounded-xl",
-                      })}
-                    >
-                      {dict.nav.businesses}
-                    </a>
-                  ) : (
-                    <Link
-                      href={`/${locale}/businesses`}
-                      onClick={() => setMobileOpen(false)}
-                      className={buttonVariants({
-                        variant: "ghost",
-                        size: "md",
-                        className: "w-full justify-start rounded-xl",
-                      })}
-                    >
-                      {dict.nav.businesses}
-                    </Link>
-                  )}
-
-                  <Link
-                    href={`/${locale}/map`}
-                    onClick={() => setMobileOpen(false)}
-                    className={buttonVariants({ variant: "ghost", size: "md", className: "w-full justify-start rounded-xl" })}
-                  >
-                    {locale === "ar" ? "الخريطة" : "Map"}
-                  </Link>
-
-                  {user ? (
-                    <a
-                      href={`/${locale}/dashboard`}
-                      onClick={() => setMobileOpen(false)}
-                      className={buttonVariants({
-                        variant: "ghost",
-                        size: "md",
-                        className: "w-full justify-start rounded-xl",
-                      })}
-                    >
-                      {dict.nav.dashboard}
-                    </a>
-                  ) : (
-                    <Link
-                      href={`/${locale}/login`}
-                      onClick={() => setMobileOpen(false)}
-                      className={buttonVariants({
-                        variant: "secondary",
-                        size: "md",
-                        className: "w-full justify-start rounded-xl",
-                      })}
-                    >
-                      {dict.nav.login}
-                    </Link>
-                  )}
-
-                  {user?.role === "admin" ? (
-                    <a
-                      href={`/${locale}/admin`}
-                      onClick={() => setMobileOpen(false)}
-                      className={buttonVariants({
-                        variant: "ghost",
-                        size: "md",
-                        className: "w-full justify-start rounded-xl",
-                      })}
-                    >
-                      {dict.nav.admin}
-                    </a>
-                  ) : null}
-
-                  {user ? (
-                    <form
-                      action={logoutAction.bind(null, locale)}
-                      onSubmit={() => { setMobileOpen(false); localStorage.removeItem("wa-login-state"); }}
-                    >
-                      <button
-                        type="submit"
+            <AnimatePresence>
+              {mobileOpen ? (
+                <motion.div
+                  id="mobile-nav"
+                  className="md:hidden absolute inset-x-0 top-full mt-2 rounded-2xl border backdrop-blur-md overflow-hidden"
+                  style={{
+                    background: "rgba(var(--surface-rgb, 255, 255, 255), 0.96)",
+                    borderColor: "var(--surface-border)",
+                    boxShadow: "var(--shadow)",
+                  }}
+                  role="dialog"
+                  aria-label={locale === "ar" ? "قائمة التنقل" : "Navigation"}
+                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 400,
+                    damping: 30,
+                    mass: 0.8,
+                  }}
+                >
+                  <div className="p-2">
+                    <div className="grid gap-1">
+                      <Link
+                        href={`/${locale}/services`}
+                        onClick={() => setMobileOpen(false)}
                         className={buttonVariants({
-                          variant: "ghost",
+                          variant: "primary",
                           size: "md",
                           className: "w-full justify-start rounded-xl",
                         })}
                       >
-                        {dict.nav.logout}
-                      </button>
-                    </form>
-                  ) : null}
-                </div>
+                        {servicesLabel}
+                      </Link>
 
-                <div
-                  className="mt-2 pt-2 flex items-center justify-between gap-2"
-                  style={{
-                    borderTop: "1px solid",
-                    borderColor: "rgba(var(--foreground-rgb, 0, 0, 0), 0.1)",
-                  }}
-                >
-                  <span className="text-xs text-(--muted-foreground)">
-                    {locale === "ar" ? "الإعدادات" : "Settings"}
-                  </span>
-                  <LanguageSwitcher locale={locale} />
-                </div>
-              </div>
-            </div>
-          </div>
+                      {user ? (
+                        <a
+                          href={`/${locale}/explorer`}
+                          onClick={() => setMobileOpen(false)}
+                          className={buttonVariants({
+                            variant: "ghost",
+                            size: "md",
+                            className: "w-full justify-start rounded-xl",
+                          })}
+                        >
+                          {dict.nav.businesses}
+                        </a>
+                      ) : (
+                        <Link
+                          href={`/${locale}/businesses`}
+                          onClick={() => setMobileOpen(false)}
+                          className={buttonVariants({
+                            variant: "ghost",
+                            size: "md",
+                            className: "w-full justify-start rounded-xl",
+                          })}
+                        >
+                          {dict.nav.businesses}
+                        </Link>
+                      )}
+
+                      <Link
+                        href={`/${locale}/map`}
+                        onClick={() => setMobileOpen(false)}
+                        className={buttonVariants({ variant: "ghost", size: "md", className: "w-full justify-start rounded-xl" })}
+                      >
+                        {locale === "ar" ? "الخريطة" : "Map"}
+                      </Link>
+
+                      {user ? (
+                        <a
+                          href={`/${locale}/dashboard`}
+                          onClick={() => setMobileOpen(false)}
+                          className={buttonVariants({
+                            variant: "ghost",
+                            size: "md",
+                            className: "w-full justify-start rounded-xl",
+                          })}
+                        >
+                          {dict.nav.dashboard}
+                        </a>
+                      ) : (
+                        <Link
+                          href={`/${locale}/login`}
+                          onClick={() => setMobileOpen(false)}
+                          className={buttonVariants({
+                            variant: "secondary",
+                            size: "md",
+                            className: "w-full justify-start rounded-xl",
+                          })}
+                        >
+                          {dict.nav.login}
+                        </Link>
+                      )}
+
+                      {user?.role === "admin" ? (
+                        <a
+                          href={`/${locale}/admin`}
+                          onClick={() => setMobileOpen(false)}
+                          className={buttonVariants({
+                            variant: "ghost",
+                            size: "md",
+                            className: "w-full justify-start rounded-xl",
+                          })}
+                        >
+                          {dict.nav.admin}
+                        </a>
+                      ) : null}
+
+                      {user ? (
+                        <form
+                          action={logoutAction.bind(null, locale)}
+                          onSubmit={() => { setMobileOpen(false); localStorage.removeItem("wa-login-state"); }}
+                        >
+                          <button
+                            type="submit"
+                            className={buttonVariants({
+                              variant: "ghost",
+                              size: "md",
+                              className: "w-full justify-start rounded-xl",
+                            })}
+                          >
+                            {dict.nav.logout}
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
+
+                    <div
+                      className="mt-2 pt-2 flex items-center justify-between gap-2"
+                      style={{
+                        borderTop: "1px solid",
+                        borderColor: "rgba(var(--foreground-rgb, 0, 0, 0), 0.1)",
+                      }}
+                    >
+                      <span className="text-xs text-(--muted-foreground)">
+                        {locale === "ar" ? "الإعدادات" : "Settings"}
+                      </span>
+                      <LanguageSwitcher locale={locale} />
+                    </div>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+          </motion.div>
         </Container>
-      </div>
+      </motion.div>
     </header>
   );
 }
