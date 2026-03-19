@@ -431,16 +431,14 @@ export function PublicBusinessView({
           ) : null}
 
           {latitude !== null && longitude !== null ? (
-            <section className="sbc-card mt-6 rounded-2xl p-6 overflow-hidden">
-              <div className="overflow-hidden rounded-xl">
-                <StaticLocationMap
-                  latitude={latitude}
-                  longitude={longitude}
-                  locale={locale}
-                  className="h-64"
-                  markerImageUrl={business.media?.logo}
-                />
-              </div>
+            <section className="sbc-card mt-6 rounded-2xl overflow-hidden">
+              <StaticLocationMap
+                latitude={latitude}
+                longitude={longitude}
+                locale={locale}
+                className="h-72 w-full"
+                markerImageUrl={business.media?.logo}
+              />
             </section>
           ) : null}
         </div>

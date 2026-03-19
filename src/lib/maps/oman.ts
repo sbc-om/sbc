@@ -24,6 +24,9 @@ export const OMAN_TILE_ATTRIBUTION =
 export const OMAN_TILE_TEMPLATE =
   "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
 
+export const OMAN_DARK_TILE_TEMPLATE =
+  "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png";
+
 export const OMAN_TILE_SUBDOMAINS = ["a", "b", "c", "d"];
 
 export const OMAN_TILE_LAYER_OPTIONS = {

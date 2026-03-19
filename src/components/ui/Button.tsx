@@ -6,17 +6,17 @@ type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive" | "link";
 type ButtonSize = "xs" | "sm" | "md" | "lg" | "icon";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-xl font-medium whitespace-nowrap select-none outline-none transition-all duration-300 ease-out disabled:pointer-events-none disabled:opacity-60 disabled:saturate-50 active:scale-[0.985]";
+  "inline-flex items-center justify-center gap-2 rounded-xl font-medium whitespace-nowrap select-none outline-none transition-all duration-300 ease-out disabled:pointer-events-none disabled:opacity-60 disabled:saturate-50";
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "border border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[0_10px_24px_rgba(0,121,244,0.26)] hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(0,121,244,0.34)]",
+    "border border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)] shadow-[0_10px_24px_rgba(0,121,244,0.26)] hover:shadow-[0_14px_32px_rgba(0,121,244,0.34)]",
   secondary:
-    "border border-(--surface-border) bg-(--surface) text-foreground shadow-[var(--shadow)] hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-[var(--shadow-hover)]",
+    "border border-(--surface-border) bg-(--surface) text-foreground shadow-[var(--shadow)] hover:border-accent/40 hover:shadow-[var(--shadow-hover)]",
   ghost:
-    "bg-transparent text-(--muted-foreground) hover:bg-(--chip-bg) hover:text-foreground hover:-translate-y-0.5",
+    "bg-transparent text-(--muted-foreground) hover:bg-(--chip-bg) hover:text-foreground",
   destructive:
-    "bg-red-600 text-white shadow-[var(--shadow)] hover:-translate-y-0.5 hover:bg-red-500 active:bg-red-600/90",
+    "bg-red-600 text-white shadow-[var(--shadow)] hover:bg-red-500 active:bg-red-600/90",
   link: "bg-transparent text-foreground underline-offset-4 hover:underline",
 };
 

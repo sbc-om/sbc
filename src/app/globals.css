@@ -137,9 +137,24 @@ select {
 }
 
 .sbc-card--interactive:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
   border-color: color-mix(in srgb, var(--accent) 26%, var(--surface-border));
+}
+
+/* Global anti-jump rule: no hover/active lift or scale anywhere in the UI. */
+@media (hover: hover) {
+  a:hover,
+  button:hover,
+  [role="button"]:hover,
+  .sbc-card--interactive:hover {
+    transform: none !important;
+  }
+
+  a:active,
+  button:active,
+  [role="button"]:active {
+    transform: none !important;
+  }
 }
 
 .sbc-chip {

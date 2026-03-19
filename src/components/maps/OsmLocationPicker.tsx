@@ -23,6 +23,7 @@ import {
   OMAN_BOUNDS,
   OMAN_BOUNDS_TUPLE,
   OMAN_CITY_ZOOM,
+  OMAN_DARK_TILE_TEMPLATE,
   OMAN_DEFAULT_CENTER,
   OMAN_DETAIL_ZOOM,
   OMAN_MAX_ZOOM,
@@ -168,6 +169,7 @@ export function OsmLocationPicker({
   const [searching, setSearching] = useState(false);
   const [geoBusy, setGeoBusy] = useState(false);
   const [omanBorder, setOmanBorder] = useState<OmanBorderFeatureCollection | null>(null);
+  const [isDark, setIsDark] = useState(false);
 
   const [localRadius, setLocalRadius] = useState(String(value?.radiusMeters ?? 250));
 
@@ -186,6 +188,27 @@ export function OsmLocationPicker({
 
     return () => {
       cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncTheme = () => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    };
+
+    syncTheme();
+
+    const observer = new MutationObserver(() => {
+      syncTheme();
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => {
+      observer.disconnect();
     };
   }, []);
 
@@ -307,6 +330,8 @@ export function OsmLocationPicker({
     });
   }, [markerImageUrl]);
 
+  const mapTileTemplate = isDark ? OMAN_DARK_TILE_TEMPLATE : OMAN_TILE_TEMPLATE;
+
   return (
     <div className={containerClassName}>
       {!viewOnly && (
@@ -394,7 +419,7 @@ export function OsmLocationPicker({
         >
           <TileLayer
             attribution={OMAN_TILE_ATTRIBUTION}
-            url={OMAN_TILE_TEMPLATE}
+            url={mapTileTemplate}
             subdomains={[...OMAN_TILE_SUBDOMAINS]}
             detectRetina
             keepBuffer={8}
@@ -403,13 +428,17 @@ export function OsmLocationPicker({
             crossOrigin
             noWrap
             bounds={OMAN_BOUNDS_TUPLE}
-            key={OMAN_TILE_TEMPLATE}
+            key={mapTileTemplate}
           />
           {omanMaskFeature ? (
             <GeoJSON
               data={omanMaskFeature as any}
               interactive={false}
-              pathOptions={{ stroke: false, fillColor: "#f5f7fa", fillOpacity: 1 }}
+              pathOptions={{
+                stroke: false,
+                fillColor: isDark ? "#0b0d12" : "#f5f7fa",
+                fillOpacity: isDark ? 0.95 : 1,
+              }}
             />
           ) : null}
           {omanBorder ? (
@@ -417,7 +446,7 @@ export function OsmLocationPicker({
               data={omanBorder as any}
               interactive={false}
               pathOptions={{
-                color: "#0ea5e9",
+                color: isDark ? "#38bdf8" : "#0ea5e9",
                 weight: 1.8,
                 opacity: 0.95,
                 fillOpacity: 0,
