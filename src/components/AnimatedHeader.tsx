@@ -10,6 +10,7 @@ import {
   useScroll,
   useTransform,
   useSpring,
+  useMotionTemplate,
   useMotionValueEvent,
   AnimatePresence,
 } from "motion/react";
@@ -45,6 +46,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   const rawOuterPy = useTransform(scrollY, [0, 150], [12, 8]);
   const rawCardPy = useTransform(scrollY, [0, 150], [12, 8]);
   const rawCardPx = useTransform(scrollY, [0, 150], [24, 16]);
+  const rawCardHorizontalTrim = useTransform(scrollY, [0, 150], [0, 28]);
   const rawLogoSize = useTransform(scrollY, [0, 150], [40, 30]);
   const rawFontSize = useTransform(scrollY, [0, 150], [18, 15]);
   const rawLogoRadius = useTransform(scrollY, [0, 150], [10, 8]);
@@ -55,11 +57,13 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   const outerPy = useSpring(rawOuterPy, springConfig);
   const cardPy = useSpring(rawCardPy, springConfig);
   const cardPx = useSpring(rawCardPx, springConfig);
+  const cardHorizontalTrim = useSpring(rawCardHorizontalTrim, springConfig);
   const logoSize = useSpring(rawLogoSize, springConfig);
   const fontSize = useSpring(rawFontSize, springConfig);
   const logoRadius = useSpring(rawLogoRadius, springConfig);
   const logoGap = useSpring(rawGap, springConfig);
   const gradientOpacity = useSpring(rawGradientOpacity, springConfig);
+  const cardWidth = useMotionTemplate`calc(100% - ${cardHorizontalTrim}px)`;
 
   // Toggle scrolled state for shadow swap
   useMotionValueEvent(scrollY, "change", (latest) => {
@@ -135,6 +139,8 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
             ref={mobileMenuRootRef}
             className="relative rounded-2xl overflow-visible backdrop-blur-md border"
             style={{
+              width: prefersReducedMotion ? "100%" : cardWidth,
+              marginInline: "auto",
               paddingTop: cardPy,
               paddingBottom: cardPy,
               paddingInlineStart: cardPx,
@@ -163,7 +169,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
               {/* Logo Section with SVG */}
               <Link
                 href={`/${locale}`}
-                className="flex items-center"
+                className="flex items-center min-w-0"
               >
                 <motion.div
                   className="relative shrink-0 overflow-hidden"
@@ -185,8 +191,8 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   />
                 </motion.div>
                 <motion.span
-                  className="font-bold tracking-tight bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent whitespace-nowrap"
-                  style={{ fontSize }}
+                  className="block font-bold leading-none tracking-tight bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent whitespace-nowrap"
+                  style={{ fontSize, transformOrigin: "left center" }}
                 >
                   SBC
                 </motion.span>

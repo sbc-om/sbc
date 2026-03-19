@@ -195,6 +195,23 @@ async function getGoogleAdapter() {
 }
 
 /**
+ * Resolve the business logo URL with proper priority and absolute URL conversion.
+ * Priority: template override > business profile logo.
+ * Returns undefined when no logo is available.
+ */
+function resolveLogoUrl(
+  template: LoyaltyCardTemplate,
+  profile: LoyaltyProfile | null | undefined,
+  origin?: string,
+): string | undefined {
+  const raw = template.images?.logoUrl || profile?.logoUrl;
+  if (!raw) return undefined;
+  if (raw.startsWith("http")) return raw;
+  if (!origin) return undefined;
+  return `${origin}${raw.startsWith("/") ? "" : "/"}${raw}`;
+}
+
+/**
  * Generate Google Wallet save URL for an issued card with template.
  */
 export async function generateGoogleWalletSaveUrl(input: {
@@ -235,8 +252,8 @@ export async function generateGoogleWalletSaveUrl(input: {
     links.push({ id: "phone", label: "Call", url: `tel:${template.support.phone}` });
   }
 
-  // Resolve logo URL
-  const logoUrl = template.images?.logoUrl || profile?.logoUrl;
+  // Resolve logo URL (business logo with absolute URL)
+  const logoUrl = resolveLogoUrl(template, profile, origin);
 
   const { getProfile } = await import("sbcwallet");
   const profileConfig = getProfile("loyalty");
@@ -255,7 +272,7 @@ export async function generateGoogleWalletSaveUrl(input: {
       googleWallet: {
         issuerName: businessName,
         programName: businessName,
-        logoUrl: logoUrl ? (logoUrl.startsWith("http") ? logoUrl : `${origin}${logoUrl}`) : undefined,
+        logoUrl,
         backgroundColor: normalizeHexColor(template.design.backgroundColor),
         homepageUrl: template.support?.websiteUrl || origin,
         locations: profile?.location 
@@ -288,7 +305,7 @@ export async function generateGoogleWalletSaveUrl(input: {
       googleWallet: {
         issuerName: businessName,
         programName: businessName,
-        logoUrl: logoUrl ? (logoUrl.startsWith("http") ? logoUrl : `${origin}${logoUrl}`) : undefined,
+        logoUrl,
         backgroundColor: normalizeHexColor(template.design.backgroundColor),
         links: links.length > 0 ? links : undefined,
         objectOverrides: {
@@ -357,11 +374,8 @@ export async function generateApplePassFromTemplate(input: {
     authToken = crypto.randomBytes(32).toString("hex");
   }
 
-  // Resolve logo URL - ensure it's a full URL
-  let logoUrl = template.images?.logoUrl || profile?.logoUrl || "https://sbc.om/sbc.png";
-  if (logoUrl && !logoUrl.startsWith("http") && origin) {
-    logoUrl = `${origin}${logoUrl.startsWith("/") ? "" : "/"}${logoUrl}`;
-  }
+  // Resolve logo URL (business logo with absolute URL)
+  const logoUrl = resolveLogoUrl(template, profile, origin);
 
   // Build Apple Wallet metadata following sbcwallet's expected format
   const appleWalletMeta: Record<string, unknown> = {
