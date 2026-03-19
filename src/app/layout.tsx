@@ -9,6 +9,7 @@ import { defaultLocale, isLocale, localeDir } from "@/lib/i18n/locales";
 import { OverlayScrollbarsInit } from "@/components/OverlayScrollbarsInit";
 import { LoyaltyPushSwInit } from "@/components/loyalty/LoyaltyPushSwInit";
 import { ToastProvider } from "@/components/ui/Toast";
+import { PWASplashScreen } from "@/components/PWASplashScreen";
 
 const sbcSans = localFont({
   src: [{ path: "../../public/fonts/sbc.otf", style: "normal" }],
@@ -127,6 +128,7 @@ export default async function RootLayout({
       <body
         className={`${sbcSans.className} ${sbcSans.variable} ${sbcMono.variable} font-sbc antialiased`}
       >
+        <PWASplashScreen locale={locale} />
         <OverlayScrollbarsInit />
         <LoyaltyPushSwInit />
         <ToastProvider>{children}</ToastProvider>
