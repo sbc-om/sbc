@@ -23,6 +23,7 @@
     "seed-agent-builder": "node scripts/seed-agent-builder-products.js",
     "generate-vapid": "node scripts/generate-vapid.js --write",
     "generate-icons": "node scripts/generate-icons.js",
+    "generate-startup-images": "node scripts/generate-startup-images.js",
     "generate-encryption-key": "node scripts/generate-encryption-key.js",
     "migrate": "node scripts/migrate-to-tables.js"
   },
