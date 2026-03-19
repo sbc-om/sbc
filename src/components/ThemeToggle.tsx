@@ -59,7 +59,11 @@ export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
         type="button"
         aria-label={label}
         title={label}
-        className={buttonVariants({ variant: "secondary", size: "icon", className: "rounded-xl" })}
+        className={buttonVariants({
+          variant: "secondary",
+          size: "icon",
+          className: "rounded-xl hover:translate-y-0 active:scale-100",
+        })}
         disabled
       >
         <svg
@@ -85,7 +89,11 @@ export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
         persistTheme(next);
         applyTheme(next);
       }}
-      className={buttonVariants({ variant: "secondary", size: "icon", className: "rounded-xl" })}
+      className={buttonVariants({
+        variant: "secondary",
+        size: "icon",
+        className: "rounded-xl hover:translate-y-0 active:scale-100",
+      })}
     >
       {theme === "dark" ? (
         // Sun icon

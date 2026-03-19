@@ -172,7 +172,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
               <div className="flex items-center gap-3">
                 <Link
                   href={`/${locale}`}
-                  className="transition-transform duration-300 hover:scale-105"
+                  className="hover:translate-y-0 active:scale-100"
                 >
                   <Image
                     src="/images/sbc.svg"

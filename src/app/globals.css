@@ -7,19 +7,20 @@
   --background: #ffffff;
   --foreground: #0f172a;
   --foreground-rgb: 15, 23, 42;
-  --surface: rgba(255, 255, 255, 0.72);
+  --surface: rgba(255, 255, 255, 0.78);
   --surface-rgb: 255, 255, 255;
-  --surface-border: rgba(15, 23, 42, 0.08);
+  --surface-border: rgba(15, 23, 42, 0.1);
   --surface-hover: rgba(15, 23, 42, 0.04);
-  --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-  --shadow-hover: 0 16px 45px rgba(15, 23, 42, 0.10);
+  --shadow: 0 12px 36px rgba(15, 23, 42, 0.1);
+  --shadow-hover: 0 20px 56px rgba(15, 23, 42, 0.16);
   --muted-foreground: rgba(15, 23, 42, 0.70);
 
   /* Brand / accents */
   --accent: #0079f4;
   --accent-2: #06b6d4; /* cyan-500-ish */
   --accent-foreground: #ffffff;
-  --ring: rgba(79, 70, 229, 0.35);
+  --ring: rgba(0, 121, 244, 0.32);
+  --accent-soft: rgba(0, 121, 244, 0.12);
 
   /* Chips / badges */
   --chip-bg: rgba(15, 23, 42, 0.05);
@@ -62,18 +63,19 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
   --background: #0c0c10;
   --foreground: #e8eaed;
   --foreground-rgb: 232, 234, 237;
-  --surface: rgba(38, 38, 38, 0.92);
+  --surface: rgba(34, 34, 42, 0.9);
   --surface-rgb: 38, 38, 38;
-  --surface-border: rgba(255, 255, 255, 0.14);
+  --surface-border: rgba(255, 255, 255, 0.18);
   --surface-hover: rgba(255, 255, 255, 0.10);
-  --shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
-  --shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.36);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.36);
+  --shadow-hover: 0 16px 44px rgba(0, 0, 0, 0.46);
   --muted-foreground: rgba(232, 234, 237, 0.72);
 
   --accent: #0079f4;
   --accent-2: #22d3ee;
   --accent-foreground: #ffffff;
-  --ring: rgba(129, 140, 248, 0.40);
+  --ring: rgba(0, 121, 244, 0.45);
+  --accent-soft: rgba(0, 121, 244, 0.2);
 
   --chip-bg: rgba(255, 255, 255, 0.10);
   --chip-border: rgba(255, 255, 255, 0.16);
@@ -96,9 +98,9 @@ body {
   font-family: var(--font-sans), "Segoe UI", Tahoma, Arial, sans-serif;
   font-weight: 400;
   background:
-    radial-gradient(900px 500px at 10% 0%, rgba(99, 102, 241, 0.10), transparent 55%),
-    radial-gradient(900px 500px at 90% 0%, rgba(14, 165, 233, 0.10), transparent 55%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 1));
+    radial-gradient(1100px 680px at 8% -10%, rgba(0, 121, 244, 0.2), transparent 58%),
+    radial-gradient(920px 560px at 92% -12%, rgba(6, 182, 212, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 1));
   background-color: var(--background);
   background-attachment: fixed;
   /* Prevent theme flash - no transition on body/html */
@@ -120,21 +122,24 @@ select {
 /* Shared UI building blocks (keeps cards/buttons in sync with theme) */
 .sbc-card {
   border: 1px solid var(--surface-border);
-  background: var(--surface);
+  background:
+    linear-gradient(180deg, rgba(var(--surface-rgb), 0.92), rgba(var(--surface-rgb), 0.84));
   box-shadow: var(--shadow);
   border-radius: 1rem; /* ~rounded-2xl */
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px) saturate(1.1);
 }
 
 .sbc-card--interactive {
-  transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1), 
-              transform 200ms cubic-bezier(0.4, 0, 0.2, 1), 
-              border-color 200ms cubic-bezier(0.4, 0, 0.2, 1),
-              background-color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1), 
+              transform 280ms cubic-bezier(0.22, 1, 0.36, 1), 
+              border-color 280ms cubic-bezier(0.22, 1, 0.36, 1),
+              background-color 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .sbc-card--interactive:hover {
+  transform: translateY(-2px);
   box-shadow: var(--shadow-hover);
+  border-color: color-mix(in srgb, var(--accent) 26%, var(--surface-border));
 }
 
 .sbc-chip {
@@ -147,14 +152,34 @@ select {
 
 .dark body {
   background:
-    radial-gradient(ellipse 120% 80% at 15% -10%, rgba(99, 102, 241, 0.12), transparent 60%),
-    radial-gradient(ellipse 100% 70% at 85% -5%, rgba(14, 165, 233, 0.10), transparent 55%),
-    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(139, 92, 246, 0.05), transparent 50%),
+    radial-gradient(ellipse 120% 80% at 15% -10%, rgba(0, 121, 244, 0.2), transparent 60%),
+    radial-gradient(ellipse 100% 70% at 85% -5%, rgba(14, 165, 233, 0.14), transparent 55%),
+    radial-gradient(ellipse 80% 60% at 50% 30%, rgba(56, 189, 248, 0.08), transparent 50%),
     radial-gradient(ellipse 90% 50% at 70% 70%, rgba(6, 182, 212, 0.04), transparent 50%),
-    radial-gradient(ellipse 100% 60% at 20% 90%, rgba(99, 102, 241, 0.04), transparent 50%),
+    radial-gradient(ellipse 100% 60% at 20% 90%, rgba(0, 121, 244, 0.07), transparent 50%),
     linear-gradient(180deg, rgba(18, 18, 24, 0.6) 0%, rgba(12, 12, 16, 0.95) 50%, rgba(10, 10, 14, 1) 100%);
   background-color: var(--background);
   background-attachment: fixed;
+}
+
+.sbc-instagram-ring {
+  position: relative;
+  isolation: isolate;
+}
+
+.sbc-instagram-ring::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(0, 121, 244, 0.55), rgba(6, 182, 212, 0.35), rgba(0, 121, 244, 0.45));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sbc-instagram-ring:hover::before {
+  opacity: 1;
 }
 
 /* Smoother feel without overdoing it */

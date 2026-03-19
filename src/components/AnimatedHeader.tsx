@@ -34,10 +34,13 @@ interface AnimatedHeaderProps {
 export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [desktopNavHovered, setDesktopNavHovered] = useState(false);
   const mobileMenuRootRef = useRef<HTMLDivElement | null>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
   const pathname = usePathname();
   const servicesLabel = locale === "ar" ? "الخدمات" : "Services";
+  const topNavStableClass = "hover:translate-y-0 active:scale-100";
+  const topNavBlueHoverClass = "hover:bg-accent hover:text-white hover:border-accent";
 
   /* ── scroll-linked motion values ── */
   const { scrollY } = useScroll();
@@ -137,7 +140,9 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
         <Container size="lg">
           <motion.div
             ref={mobileMenuRootRef}
-            className="relative rounded-2xl overflow-visible backdrop-blur-md border"
+            className="sbc-instagram-ring relative rounded-2xl overflow-visible backdrop-blur-md border"
+            onMouseEnter={() => setDesktopNavHovered(true)}
+            onMouseLeave={() => setDesktopNavHovered(false)}
             style={{
               width: prefersReducedMotion ? "100%" : cardWidth,
               marginInline: "auto",
@@ -145,12 +150,13 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
               paddingBottom: cardPy,
               paddingInlineStart: cardPx,
               paddingInlineEnd: cardPx,
-              background: "rgba(var(--surface-rgb, 255, 255, 255), 0.9)",
+              background:
+                "linear-gradient(165deg, rgba(var(--surface-rgb, 255, 255, 255), 0.94), rgba(var(--surface-rgb, 255, 255, 255), 0.84))",
               borderColor: "var(--surface-border)",
             }}
             animate={{
               boxShadow: scrolled
-                ? "0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08)"
+                ? "0 14px 44px rgba(0,0,0,0.16), 0 3px 12px rgba(0,0,0,0.10)"
                 : "var(--shadow)",
             }}
             transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
@@ -160,7 +166,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
               className="absolute inset-0 -z-10 rounded-2xl pointer-events-none"
               style={{
                 background:
-                  "linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(6, 182, 212, 0.08) 50%, rgba(79, 70, 229, 0.05) 100%)",
+                  "linear-gradient(135deg, rgba(0, 121, 244, 0.12) 0%, rgba(6, 182, 212, 0.14) 52%, rgba(0, 121, 244, 0.1) 100%)",
                 opacity: gradientOpacity,
               }}
             />
@@ -191,7 +197,11 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   />
                 </motion.div>
                 <motion.span
-                  className="block font-bold leading-none tracking-tight bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent whitespace-nowrap"
+                  className={`block font-bold leading-none tracking-tight whitespace-nowrap transition-colors duration-200 ${
+                    desktopNavHovered
+                      ? "text-white"
+                      : "bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent"
+                  }`}
                   style={{ fontSize, transformOrigin: "left center" }}
                 >
                   SBC
@@ -205,6 +215,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   className={buttonVariants({
                     variant: "primary",
                     size: "sm",
+                    className: `${topNavStableClass} hover:brightness-[1.02]`,
                   })}
                 >
                   {servicesLabel}
@@ -216,6 +227,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     className={buttonVariants({
                       variant: "secondary",
                       size: "sm",
+                      className: `${topNavStableClass} ${topNavBlueHoverClass}`,
                     })}
                   >
                     {dict.nav.businesses}
@@ -226,6 +238,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     className={buttonVariants({
                       variant: "secondary",
                       size: "sm",
+                      className: `${topNavStableClass} ${topNavBlueHoverClass}`,
                     })}
                   >
                     {dict.nav.businesses}
@@ -234,7 +247,11 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
 
                 <Link
                   href={`/${locale}/map`}
-                  className={buttonVariants({ variant: "secondary", size: "sm" })}
+                  className={buttonVariants({
+                    variant: "secondary",
+                    size: "sm",
+                    className: `${topNavStableClass} ${topNavBlueHoverClass}`,
+                  })}
                 >
                   {locale === "ar" ? "الخريطة" : "Map"}
                 </Link>
@@ -245,6 +262,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     className={buttonVariants({
                       variant: "ghost",
                       size: "sm",
+                      className: `${topNavStableClass} hover:bg-accent hover:text-white`,
                     })}
                   >
                     {dict.nav.dashboard}
@@ -255,6 +273,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     className={buttonVariants({
                       variant: "secondary",
                       size: "sm",
+                      className: `${topNavStableClass} ${topNavBlueHoverClass}`,
                     })}
                   >
                     {dict.nav.login}
@@ -267,6 +286,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     className={buttonVariants({
                       variant: "ghost",
                       size: "sm",
+                      className: `${topNavStableClass} hover:bg-accent hover:text-white`,
                     })}
                   >
                     {dict.nav.admin}
@@ -280,6 +300,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                       className={buttonVariants({
                         variant: "ghost",
                         size: "sm",
+                        className: `${topNavStableClass} hover:bg-accent hover:text-white`,
                       })}
                     >
                       {dict.nav.logout}
