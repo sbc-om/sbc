@@ -58,6 +58,10 @@ const defaultWalletContent: WalletContent = {
   walletNotificationBody: "Your loyalty points balance has been updated.",
 };
 
+function shouldBypassImageOptimization(src?: string | null) {
+  return typeof src === "string" && src.startsWith("/media/");
+}
+
 // Professional presets inspired by real wallet passes
 const PRESETS = {
   airline: {
@@ -952,6 +956,7 @@ function IOSWalletPreview({
                           src={logoUrl}
                           alt={businessName}
                           fill
+                          unoptimized={shouldBypassImageOptimization(logoUrl)}
                           className="object-cover"
                         />
                       </div>
@@ -1176,6 +1181,7 @@ function AndroidWalletPreview({
                           src={logoUrl}
                           alt={businessName}
                           fill
+                          unoptimized={shouldBypassImageOptimization(logoUrl)}
                           className="object-cover"
                         />
                       </div>
@@ -1361,7 +1367,13 @@ function NotificationPreview({
                   {/* App Icon */}
                   <div className="relative w-[44px] h-[44px] rounded-[10px] overflow-hidden bg-gray-100 flex-shrink-0 shadow-sm">
                     {logoUrl ? (
-                      <Image src={logoUrl} alt={businessName} fill className="object-cover" />
+                      <Image
+                        src={logoUrl}
+                        alt={businessName}
+                        fill
+                        unoptimized={shouldBypassImageOptimization(logoUrl)}
+                        className="object-cover"
+                      />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center bg-blue-500 text-white text-[18px] font-bold">
                         {businessName.slice(0, 1).toUpperCase()}

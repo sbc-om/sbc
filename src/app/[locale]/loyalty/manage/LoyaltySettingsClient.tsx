@@ -26,6 +26,10 @@ type LoyaltyProfileDTO = {
   joinCode: string;
 };
 
+function shouldBypassImageOptimization(src?: string) {
+  return typeof src === "string" && src.startsWith("/media/");
+}
+
 export function LoyaltySettingsClient({
   locale,
   initialSettings,
@@ -316,7 +320,13 @@ export function LoyaltySettingsClient({
           <div className={cn("flex items-center justify-center", rtl ? "sm:justify-end" : "sm:justify-start")}>
             <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface)">
               {effectiveIconUrl ? (
-                <Image src={effectiveIconUrl} alt="Icon" fill className="object-cover" />
+                <Image
+                  src={effectiveIconUrl}
+                  alt="Icon"
+                  fill
+                  unoptimized={shouldBypassImageOptimization(effectiveIconUrl)}
+                  className="object-cover"
+                />
               ) : (
                 <div
                   className="h-full w-full"

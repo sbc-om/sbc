@@ -6,7 +6,7 @@ import { buttonVariants } from "@/components/ui/Button";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { getLoyaltyProfileByUserId } from "@/lib/db/loyalty";
+import { getLoyaltyProfileByUserId, getLoyaltySettingsByUserId } from "@/lib/db/loyalty";
 import { isProgramSubscriptionActive } from "@/lib/db/subscriptions";
 import { getDefaultLoyaltyCardTemplate } from "@/lib/db/loyaltyTemplates";
 import { LoyaltyCardStudio } from "@/components/loyalty/LoyaltyCardStudio";
@@ -36,10 +36,16 @@ export default async function LoyaltyCardDesignPage({
     redirect(`/${locale}/loyalty/manage`);
   }
 
-  const [profile, template] = await Promise.all([
+  const [profile, settings, template] = await Promise.all([
     getLoyaltyProfileByUserId(user.id),
+    getLoyaltySettingsByUserId(user.id),
     getDefaultLoyaltyCardTemplate(user.id),
   ]);
+
+  const selectedIconUrl =
+    settings?.pointsIconMode === "custom"
+      ? settings.pointsIconUrl ?? null
+      : profile?.logoUrl ?? null;
 
   return (
     <AppPage>
@@ -78,6 +84,7 @@ export default async function LoyaltyCardDesignPage({
         <LoyaltyCardStudio
           locale={locale as Locale}
           profile={profile}
+          selectedIconUrl={selectedIconUrl}
           template={template}
         />
       </div>

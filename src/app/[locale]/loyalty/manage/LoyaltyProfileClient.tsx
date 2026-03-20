@@ -31,6 +31,10 @@ type LoyaltyProfileDTO = {
   updatedAt: string;
 };
 
+function shouldBypassImageOptimization(src?: string | null) {
+  return typeof src === "string" && src.startsWith("/media/");
+}
+
 export function LoyaltyProfileClient({
   locale,
   initialProfile,
@@ -318,6 +322,7 @@ export function LoyaltyProfileClient({
                     alt={businessName || "logo"}
                     width={56}
                     height={56}
+                    unoptimized={shouldBypassImageOptimization(logoUrl)}
                     className="h-14 w-14 shrink-0 rounded-xl border border-(--surface-border) bg-(--surface) object-cover"
                   />
                 </div>

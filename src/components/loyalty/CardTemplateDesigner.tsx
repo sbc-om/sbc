@@ -50,6 +50,10 @@ const defaultTemplate: Omit<LoyaltyCardTemplate, "id" | "userId" | "createdAt" |
   notificationBody: "Your loyalty points balance has been updated.",
 };
 
+function shouldBypassImageOptimization(src?: string | null) {
+  return typeof src === "string" && src.startsWith("/media/");
+}
+
 const PRESETS = {
   airline: {
     name: { en: "Airline Blue", ar: "أزرق طيران" },
@@ -902,6 +906,7 @@ function IOSPassPreview({
                 alt="Logo"
                 width={48}
                 height={48}
+                unoptimized={shouldBypassImageOptimization(logoUrl)}
                 className="object-contain"
               />
             </div>
@@ -1045,6 +1050,7 @@ function AndroidPassPreview({
                   alt="Logo"
                   width={40}
                   height={40}
+                  unoptimized={shouldBypassImageOptimization(logoUrl)}
                   className="object-contain"
                 />
               </div>

@@ -19,8 +19,13 @@ type Support = NonNullable<LoyaltyCardTemplate["support"]>;
 interface Props {
   locale: Locale;
   profile: LoyaltyProfile | null;
+  selectedIconUrl?: string | null;
   /** Existing default template to edit (null = create new) */
   template: LoyaltyCardTemplate | null;
+}
+
+function shouldBypassImageOptimization(src?: string | null) {
+  return typeof src === "string" && src.startsWith("/media/");
 }
 
 /* ------------------------------------------------------------------ */
@@ -101,11 +106,11 @@ const PRESETS = {
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
-export function LoyaltyCardStudio({ locale, profile, template }: Props) {
+export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }: Props) {
   const ar = locale === "ar";
   const isNew = !template;
   const businessName = profile?.businessName ?? (ar ? "نشاطك التجاري" : "Your Business");
-  const logoUrl = profile?.logoUrl;
+  const logoUrl = selectedIconUrl ?? profile?.logoUrl;
 
   /* ---- state ---- */
   const [design, setDesign] = useState<Design>(template?.design ?? DEFAULT_DESIGN);
@@ -631,7 +636,7 @@ function IOSPreview({ design, passContent, businessName, logoUrl, points, custom
                   <div className="flex items-center gap-3">
                     {logoUrl && (
                       <div className="relative w-[44px] h-[44px] rounded-[10px] overflow-hidden flex-shrink-0" style={{ background: `${design.textColor}15` }}>
-                        <Image src={logoUrl} alt={businessName} fill className="object-cover" />
+                        <Image src={logoUrl} alt={businessName} fill unoptimized={shouldBypassImageOptimization(logoUrl)} className="object-cover" />
                       </div>
                     )}
                     {design.showBusinessName && (
@@ -740,7 +745,7 @@ function AndroidPreview({ design, passContent, businessName, logoUrl, points, cu
                   <div className="flex items-center gap-3">
                     {logoUrl && (
                       <div className="relative w-[48px] h-[48px] rounded-[12px] overflow-hidden flex-shrink-0" style={{ background: `${design.textColor}15` }}>
-                        <Image src={logoUrl} alt={businessName} fill className="object-cover" />
+                        <Image src={logoUrl} alt={businessName} fill unoptimized={shouldBypassImageOptimization(logoUrl)} className="object-cover" />
                       </div>
                     )}
                     {design.showBusinessName && (
@@ -842,7 +847,7 @@ function NotificationPreview({ businessName, logoUrl, notifTitle, notifBody }: {
                 <div className="flex items-start gap-3">
                   <div className="relative w-[44px] h-[44px] rounded-[10px] overflow-hidden bg-gray-100 flex-shrink-0 shadow-sm">
                     {logoUrl ? (
-                      <Image src={logoUrl} alt={businessName} fill className="object-cover" />
+                      <Image src={logoUrl} alt={businessName} fill unoptimized={shouldBypassImageOptimization(logoUrl)} className="object-cover" />
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center bg-blue-500 text-white text-[18px] font-bold">
                         {businessName.slice(0, 1).toUpperCase()}

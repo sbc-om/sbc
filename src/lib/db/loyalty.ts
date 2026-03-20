@@ -230,6 +230,7 @@ export async function createOrUpdateLoyaltySettings(
   userId: string,
   settings: Partial<Omit<LoyaltySettings, "userId" | "createdAt" | "updatedAt">>
 ): Promise<LoyaltySettings> {
+  const hasPointsIconUrl = Object.prototype.hasOwnProperty.call(settings, "pointsIconUrl");
   const now = new Date();
   const result = await query<LoyaltySettingsRow>(`
     INSERT INTO loyalty_settings (
@@ -243,7 +244,7 @@ export async function createOrUpdateLoyaltySettings(
       points_required_per_redemption = COALESCE($2, loyalty_settings.points_required_per_redemption),
       points_deduct_per_redemption = COALESCE($3, loyalty_settings.points_deduct_per_redemption),
       points_icon_mode = COALESCE($4, loyalty_settings.points_icon_mode),
-      points_icon_url = $5,
+      points_icon_url = CASE WHEN $18 THEN $5 ELSE loyalty_settings.points_icon_url END,
       card_design = COALESCE($6, loyalty_settings.card_design),
       wallet_pass_description = $7,
       wallet_pass_terms = $8,
@@ -274,7 +275,8 @@ export async function createOrUpdateLoyaltySettings(
     settings.walletBarcodeMessage,
     settings.walletNotificationTitle,
     settings.walletNotificationBody,
-    now
+    now,
+    hasPointsIconUrl,
   ]);
   return rowToSettings(result.rows[0]);
 }
