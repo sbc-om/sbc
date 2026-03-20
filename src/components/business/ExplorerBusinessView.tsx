@@ -437,16 +437,14 @@ export function ExplorerBusinessView({
           ) : null}
 
           {latitude !== null && longitude !== null ? (
-            <section className="sbc-card mt-6 rounded-2xl p-6">
-              <div className="overflow-hidden rounded-xl">
-                <StaticLocationMap
-                  latitude={latitude}
-                  longitude={longitude}
-                  locale={locale}
-                  className="h-64"
-                  markerImageUrl={business.media?.logo}
-                />
-              </div>
+            <section className="sbc-card mt-6 rounded-2xl overflow-hidden">
+              <StaticLocationMap
+                latitude={latitude}
+                longitude={longitude}
+                locale={locale}
+                className="h-72 w-full"
+                markerImageUrl={business.media?.logo}
+              />
             </section>
           ) : null}
 
@@ -483,8 +481,8 @@ export function ExplorerBusinessView({
         {/* Sidebar */}
         <aside className="min-w-0 space-y-6">
           {coverImage ? (
-            <div className="sbc-card overflow-hidden rounded-2xl p-3">
-              <div className="relative h-44 w-full overflow-hidden rounded-xl">
+            <div className="sbc-card overflow-hidden rounded-2xl">
+              <div className="relative h-44 w-full">
                 <Image
                   src={coverImage}
                   alt={locale === "ar" ? "صورة الغلاف" : "Cover image"}

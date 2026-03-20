@@ -67,7 +67,7 @@ function generateManifest() {
   const manifest = {
     name: 'SBC',
     short_name: 'SBC',
-    description: 'SBC - Small Business Community',
+    description: 'Smart Business Center',
     icons: [
       {
         src: '/android-chrome-192x192.png',
