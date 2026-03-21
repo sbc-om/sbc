@@ -171,13 +171,6 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
       IconOutline: HiOutlineCollection,
     },
     {
-      key: "store",
-      label: (dict.nav as Record<string, string | undefined>).store ?? (locale === "ar" ? "المتجر" : "Store"),
-      path: "/store",
-      Icon: HiShoppingBag,
-      IconOutline: HiOutlineShoppingBag,
-    },
-    {
       key: "map",
       label: locale === "ar" ? "الخريطة" : "Map",
       path: "/map",
@@ -293,6 +286,21 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
                   return <DashboardIcon className="h-5 w-5 shrink-0" />;
                 })()}
                 <span className="min-w-0 truncate">{dict.nav.dashboard}</span>
+              </Link>
+
+              <Link
+                role="menuitem"
+                href={`/${locale}/store`}
+                onClick={() => setProfileMenuOpen(false)}
+                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              >
+                {(() => {
+                  const StoreIcon = isActive("/store") ? HiShoppingBag : HiOutlineShoppingBag;
+                  return <StoreIcon className="h-5 w-5 shrink-0" />;
+                })()}
+                <span className="min-w-0 truncate">
+                  {(dict.nav as Record<string, string | undefined>).store ?? (locale === "ar" ? "المتجر" : "Store")}
+                </span>
               </Link>
 
               {user.role === "agent" && (
