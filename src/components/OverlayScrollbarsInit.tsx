@@ -21,10 +21,14 @@ export function OverlayScrollbarsInit() {
     const el = document.body;
 
     const instance = OverlayScrollbars(el, {
+      overflow: {
+        x: "hidden",
+        y: "scroll",
+      },
       scrollbars: {
         theme: getScrollbarTheme(),
         autoHide: "leave",
-        autoHideDelay: 800,
+        autoHideDelay: 500,
         dragScroll: true,
         clickScroll: true,
       },

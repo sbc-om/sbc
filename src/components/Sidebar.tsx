@@ -5,6 +5,7 @@ import type { ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { OverlayScrollbars } from "overlayscrollbars";
 import { useSidebar } from "@/components/SidebarLayout";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
@@ -46,6 +47,12 @@ import {
   parseNotificationPreferences,
   type NotificationPreferences,
 } from "@/lib/notifications/preferences";
+
+function getOverlayScrollbarTheme() {
+  return document.documentElement.classList.contains("dark")
+    ? "os-theme-dark"
+    : "os-theme-light";
+}
 
 interface SidebarProps {
   locale: Locale;
@@ -98,7 +105,13 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>(
     DEFAULT_NOTIFICATION_PREFERENCES,
   );
+  const desktopNavScrollRef = useRef<HTMLElement | null>(null);
+  const mobileNavScrollRef = useRef<HTMLElement | null>(null);
+  const desktopNavScrollbarRef = useRef<ReturnType<typeof OverlayScrollbars> | null>(null);
+  const mobileNavScrollbarRef = useRef<ReturnType<typeof OverlayScrollbars> | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuScrollRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuScrollbarRef = useRef<ReturnType<typeof OverlayScrollbars> | null>(null);
 
   // ── Theme state ────────────────────────────────────────────────────
   type ThemeMode = "light" | "dark" | "system";
@@ -191,6 +204,82 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("touchstart", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isProfileMenuVisible]);
+
+  useEffect(() => {
+    if (!desktopNavScrollRef.current) return;
+
+    desktopNavScrollbarRef.current?.destroy();
+    desktopNavScrollbarRef.current = OverlayScrollbars(desktopNavScrollRef.current, {
+      overflow: {
+        x: "hidden",
+        y: "scroll",
+      },
+      scrollbars: {
+        theme: getOverlayScrollbarTheme(),
+        autoHide: "never",
+        clickScroll: true,
+        dragScroll: true,
+      },
+    });
+
+    return () => {
+      desktopNavScrollbarRef.current?.destroy();
+      desktopNavScrollbarRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile || !mobileNavScrollRef.current) {
+      mobileNavScrollbarRef.current?.destroy();
+      mobileNavScrollbarRef.current = null;
+      return;
+    }
+
+    mobileNavScrollbarRef.current?.destroy();
+    mobileNavScrollbarRef.current = OverlayScrollbars(mobileNavScrollRef.current, {
+      overflow: {
+        x: "hidden",
+        y: "scroll",
+      },
+      scrollbars: {
+        theme: getOverlayScrollbarTheme(),
+        autoHide: "never",
+        clickScroll: true,
+        dragScroll: true,
+      },
+    });
+
+    return () => {
+      mobileNavScrollbarRef.current?.destroy();
+      mobileNavScrollbarRef.current = null;
+    };
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (!isProfileMenuVisible || !profileMenuScrollRef.current) {
+      profileMenuScrollbarRef.current?.destroy();
+      profileMenuScrollbarRef.current = null;
+      return;
+    }
+
+    profileMenuScrollbarRef.current = OverlayScrollbars(profileMenuScrollRef.current, {
+      overflow: {
+        x: "hidden",
+        y: "scroll",
+      },
+      scrollbars: {
+        theme: getOverlayScrollbarTheme(),
+        autoHide: "never",
+        clickScroll: true,
+        dragScroll: true,
+      },
+    });
+
+    return () => {
+      profileMenuScrollbarRef.current?.destroy();
+      profileMenuScrollbarRef.current = null;
     };
   }, [isProfileMenuVisible]);
 
@@ -374,7 +463,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
         ]
       : baseNavItems;
 
-  const navContent = (
+  const renderNavContent = (navScrollRef: React.RefObject<HTMLElement | null>) => (
     <>
       {/* Logo */}
       <div className={`px-3 pt-4 transition-all duration-300 ${collapsed ? "mb-4" : "mb-8"}`}>
@@ -421,7 +510,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden px-2">
+      <nav ref={navScrollRef} className="flex-1 min-h-0 space-y-1 overflow-y-auto overflow-x-hidden px-2">
         {navItems.map((item) => {
           const active = isActive(item.path);
           const IconComponent = active ? item.Icon : item.IconOutline;
@@ -527,17 +616,20 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           <div
             role="menu"
             aria-label="Profile menu"
-            className={`absolute bottom-full mb-2 rounded-xl border bg-(--background) shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150 ${
+            className={`absolute bottom-full mb-2 rounded-xl border bg-(--background) shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col ${
               iconOnly ? "w-64" : "w-full"
             }`}
             style={{
               borderColor: "var(--surface-border)",
+              maxHeight: "calc(100dvh - 9rem)",
               ...(locale === "ar" ? { right: 0 } : { left: 0 }),
             }}
           >
-            <div className="px-2 py-2">
+            <div className="px-2 py-2 shrink-0">
               <p className="text-xs text-(--muted-foreground)">{dict.nav.profile}</p>
             </div>
+
+            <div ref={profileMenuScrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pe-1">
 
             <Link
               role="menuitem"
@@ -762,6 +854,8 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
 
             <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
 
+            </div>
+
             <form
               action={logoutAction.bind(null, locale)}
               onSubmit={() => {
@@ -796,8 +890,8 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           backgroundColor: "var(--background)",
         }}
       >
-        <div className="flex h-full flex-col px-3 py-4">
-          {navContent}
+        <div className="flex h-full min-h-0 flex-col px-3 py-4">
+          {renderNavContent(desktopNavScrollRef)}
         </div>
       </aside>
 
@@ -833,7 +927,9 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               >
                 <HiX className="h-6 w-6" />
               </button>
-              {navContent}
+              <div className="min-h-0 flex flex-1 flex-col">
+                {renderNavContent(mobileNavScrollRef)}
+              </div>
             </div>
           </aside>
         </>

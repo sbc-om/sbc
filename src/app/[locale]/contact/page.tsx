@@ -15,13 +15,15 @@ export default async function ContactPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams?: Promise<{ sent?: string; error?: string }>;
+  searchParams?: Promise<{ sent?: string; error?: string; subject?: string; message?: string }>;
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
 
-  const { sent, error } = (await searchParams) ?? {};
+  const { sent, error, subject, message } = (await searchParams) ?? {};
   const dict = await getDictionary(locale as Locale);
+  const prefilledSubject = (subject ?? "").trim();
+  const prefilledMessage = (message ?? "").trim();
 
   return (
     <PublicPage>
@@ -122,6 +124,7 @@ export default async function ContactPage({
                 <Input
                   id="subject"
                   name="subject"
+                  defaultValue={prefilledSubject}
                   placeholder={
                     locale === "ar"
                       ? "موضوع الرسالة"
@@ -143,6 +146,7 @@ export default async function ContactPage({
                   id="message"
                   name="message"
                   rows={6}
+                  defaultValue={prefilledMessage}
                   placeholder={
                     locale === "ar"
                       ? "اكتب رسالتك هنا..."

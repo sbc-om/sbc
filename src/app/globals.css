@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "overlayscrollbars/overlayscrollbars.css";
 
 /* Tailwind v4: make `dark:` respond to a `.dark` class (so we can toggle theme). */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -968,4 +969,23 @@ html[data-pwa-splash-active="true"] #sbc-app-root {
 }
 .dark .agent-mobile-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
+}
+
+/* OverlayScrollbars: make light-theme scrollbar clearly visible on bright pages */
+.os-theme-light {
+  --os-handle-bg: rgba(15, 23, 42, 0.38);
+  --os-handle-bg-hover: rgba(15, 23, 42, 0.52);
+  --os-handle-bg-active: rgba(15, 23, 42, 0.62);
+  --os-track-bg: transparent;
+  --os-track-bg-hover: transparent;
+  --os-track-bg-active: transparent;
+}
+
+.os-theme-dark {
+  --os-handle-bg: rgba(255, 255, 255, 0.32);
+  --os-handle-bg-hover: rgba(255, 255, 255, 0.46);
+  --os-handle-bg-active: rgba(255, 255, 255, 0.56);
+  --os-track-bg: transparent;
+  --os-track-bg-hover: transparent;
+  --os-track-bg-active: transparent;
 }

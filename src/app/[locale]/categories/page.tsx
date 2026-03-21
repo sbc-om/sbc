@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
-import { listCategories } from "@/lib/db/categories";
+import { getCategoriesWithCount } from "@/lib/db/categories";
 import { getUserFollowedCategoryIds } from "@/lib/db/follows";
+import { countExplorerBusinesses } from "@/lib/db/businesses";
 import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { CategoryFollowButton } from "@/components/categories/CategoryFollowButton";
@@ -56,8 +58,9 @@ export default async function CategoriesPage({
   const q = (sp.q ?? "").trim();
   const qLower = q.toLowerCase();
 
-  // Fetch all categories for correct parent grouping; apply search filter here.
-  const categories = await listCategories();
+  // Fetch categories with live business counts.
+  const categories = await getCategoriesWithCount();
+  const totalApprovedBusinesses = await countExplorerBusinesses();
   
   // Defensive: Filter out categories without id and remove duplicates
   const validCategories = categories.filter(c => c.id);
@@ -122,6 +125,15 @@ export default async function CategoriesPage({
 
   const hasAnyResults = groups.some((g) => matchesSearch(g.parent) || g.children.length > 0);
   const followed = new Set(await getUserFollowedCategoryIds(user.id));
+  const categorizedBusinessesCount = uniqueCategories.reduce((sum, c) => sum + (c.businessCount ?? 0), 0);
+  const uncategorizedBusinessesCount = Math.max(0, totalApprovedBusinesses - categorizedBusinessesCount);
+  const categoryRequestSubject =
+    locale === "ar" ? "طلب إضافة تصنيف جديد" : "Request to add a new category";
+  const categoryRequestMessage =
+    locale === "ar"
+      ? "مرحباً فريق SBC،\n\nأرغب بإضافة تصنيف جديد إلى المنصة.\n\nاسم التصنيف المقترح:\nوصف مختصر:\nأمثلة على الأنشطة ضمنه:\n\nشكراً لكم."
+      : "Hello SBC team,\n\nI would like to request adding a new category to the platform.\n\nProposed category name:\nShort description:\nExample businesses that fit this category:\n\nThank you.";
+  const categoryRequestHref = `/${locale}/contact?subject=${encodeURIComponent(categoryRequestSubject)}&message=${encodeURIComponent(categoryRequestMessage)}`;
 
   return (
     <AppPage>
@@ -182,6 +194,7 @@ export default async function CategoriesPage({
             const parentFollowed = followed.has(parent.id);
             const ParentIcon = getCategoryIconComponent(parent.iconId);
             const parentAccent = iconAccent(parent.iconId);
+            const groupBusinessCount = (parent.businessCount ?? 0) + children.reduce((sum, c) => sum + (c.businessCount ?? 0), 0);
 
             // When searching, show parent section if parent matches or it has matching children.
             if (qLower && !matchesSearch(parent) && children.length === 0) return null;
@@ -195,11 +208,11 @@ export default async function CategoriesPage({
                     </div>
                     <div className="min-w-0">
                       <h2 className="truncate text-base font-semibold text-foreground">{parentName}</h2>
-                      {children.length > 0 ? (
-                        <p className="mt-0.5 text-xs text-(--muted-foreground)">
-                          {locale === "ar" ? `${children.length} فروع` : `${children.length} subcategories`}
-                        </p>
-                      ) : null}
+                      <p className="mt-0.5 text-xs text-(--muted-foreground)">
+                        {locale === "ar"
+                          ? `${children.length} فروع • ${groupBusinessCount.toLocaleString(locale)} نشاط`
+                          : `${children.length} subcategories • ${groupBusinessCount.toLocaleString(locale)} businesses`}
+                      </p>
                     </div>
                   </div>
 
@@ -245,6 +258,11 @@ export default async function CategoriesPage({
 
                             <div className="min-w-0">
                               <div className="truncate text-sm font-semibold">{name}</div>
+                              <div className="mt-0.5 text-xs text-(--muted-foreground)">
+                                {locale === "ar"
+                                  ? `${(c.businessCount ?? 0).toLocaleString(locale)} نشاط`
+                                  : `${(c.businessCount ?? 0).toLocaleString(locale)} businesses`}
+                              </div>
                             </div>
                           </div>
 
@@ -272,6 +290,27 @@ export default async function CategoriesPage({
           </div>
         )}
       </div>
+
+      <section className="mt-10 sbc-card rounded-2xl p-6 sm:p-7">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold tracking-tight">
+              {locale === "ar" ? "طلب إضافة تصنيف" : "Request a New Category"}
+            </h2>
+            <p className="mt-1 text-sm text-(--muted-foreground)">
+              {locale === "ar"
+                ? "إذا لم تجد التصنيف المناسب لنشاطك، يمكنك إرسال طلب إضافة تصنيف جديد وسيراجعه فريقنا."
+                : "If you cannot find a suitable category for your business, send a request and our team will review it."}
+            </p>
+          </div>
+          <Link
+            href={categoryRequestHref}
+            className={buttonVariants({ variant: "primary", size: "sm" })}
+          >
+            {locale === "ar" ? "إرسال طلب إضافة" : "Send Category Request"}
+          </Link>
+        </div>
+      </section>
 
       <div className="mt-10 text-xs text-(--muted-foreground)">
         {locale === "ar"

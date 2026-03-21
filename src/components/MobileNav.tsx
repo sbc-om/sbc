@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { OverlayScrollbars } from "overlayscrollbars";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
 import { logoutAction } from "@/app/[locale]/auth/actions";
@@ -36,6 +37,12 @@ import {
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline } from "react-icons/io5";
 
+function getOverlayScrollbarTheme() {
+  return document.documentElement.classList.contains("dark")
+    ? "os-theme-dark"
+    : "os-theme-light";
+}
+
 interface MobileNavProps {
   locale: Locale;
   dict: Dictionary;
@@ -49,6 +56,8 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [profileMenuOpenedAtPath, setProfileMenuOpenedAtPath] = useState<string | null>(null);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuScrollRef = useRef<HTMLDivElement | null>(null);
+  const profileMenuScrollbarRef = useRef<ReturnType<typeof OverlayScrollbars> | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
 
   // ── Theme state ────────────────────────────────────────────────────
@@ -123,6 +132,32 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("touchstart", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isProfileMenuVisible]);
+
+  useEffect(() => {
+    if (!isProfileMenuVisible || !profileMenuScrollRef.current) {
+      profileMenuScrollbarRef.current?.destroy();
+      profileMenuScrollbarRef.current = null;
+      return;
+    }
+
+    profileMenuScrollbarRef.current = OverlayScrollbars(profileMenuScrollRef.current, {
+      overflow: {
+        x: "hidden",
+        y: "scroll",
+      },
+      scrollbars: {
+        theme: getOverlayScrollbarTheme(),
+        autoHide: "never",
+        clickScroll: true,
+        dragScroll: true,
+      },
+    });
+
+    return () => {
+      profileMenuScrollbarRef.current?.destroy();
+      profileMenuScrollbarRef.current = null;
     };
   }, [isProfileMenuVisible]);
 
@@ -259,12 +294,18 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
             <div
               role="menu"
               aria-label="Profile menu"
-              className="absolute bottom-full mb-2 w-56 max-w-[calc(100vw-16px)] rounded-xl border bg-(--surface) shadow-[var(--shadow)] p-2"
+              className="absolute bottom-full mb-2 w-56 max-w-[calc(100vw-16px)] rounded-xl border bg-(--surface) shadow-[var(--shadow)] p-2 flex flex-col"
               style={{
                 borderColor: "var(--surface-border)",
+                maxHeight: "calc(100dvh - 9rem)",
                 ...(locale === "ar" ? { left: 8 } : { right: 8 }),
               }}
             >
+              <div className="px-2 py-2 shrink-0">
+                <p className="text-xs text-(--muted-foreground)">{dict.nav.profile}</p>
+              </div>
+
+              <div ref={profileMenuScrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pe-1">
               <Link
                 role="menuitem"
                 href={`/${locale}/profile`}
@@ -463,6 +504,8 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
               </div>
 
               <div className="my-1 border-t" style={{ borderColor: "var(--surface-border)" }} />
+
+              </div>
 
               <form
                 action={logoutAction.bind(null, locale)}

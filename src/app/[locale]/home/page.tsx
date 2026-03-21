@@ -10,7 +10,6 @@ import {
   getUserFollowedCategoryIds,
   listUserHomeBusinessesPaginated,
 } from "@/lib/db/follows";
-import { getCategoryById } from "@/lib/db/categories";
 import {
   countFollowedBusinessesWithActiveStoriesWithCategory,
   listFollowedBusinessesWithActiveStoriesWithCategoryPaginated,
@@ -24,35 +23,6 @@ import { HomeInfiniteFeed } from "./HomeInfiniteFeed";
 
 const HOME_FEED_PER_PAGE = 12;
 const HOME_STORIES_PER_PAGE = 16;
-
-async function FollowedCategoriesDisplay({
-  categoryIds,
-  locale,
-}: {
-  categoryIds: string[];
-  locale: string;
-}) {
-  if (categoryIds.length === 0) return null;
-
-  const categories = await Promise.all(
-    categoryIds.map((id) => getCategoryById(id))
-  );
-
-  return (
-    <div className="mt-8 flex flex-wrap gap-2 text-xs text-(--muted-foreground)">
-      <span>{locale === "ar" ? "تتابع:" : "Following:"}</span>
-      {categories.map((c) => {
-        if (!c) return null;
-        const name = locale === "ar" ? c.name.ar : c.name.en;
-        return (
-          <span key={c.id} className="sbc-chip rounded-full px-2 py-0.5">
-            {name}
-          </span>
-        );
-      })}
-    </div>
-  );
-}
 
 export default async function HomeFollowedPage({
   params,
@@ -81,7 +51,7 @@ export default async function HomeFollowedPage({
     },
   };
 
-  const followedCategoryIds = new Set(await getUserFollowedCategoryIds(user.id));
+  const followedCategoryIds = new Set(followedCategories);
   const followedBusinessIds = new Set(await getUserFollowedBusinessIds(user.id));
 
   const [initialStories, totalStories, initialFeedBusinesses, totalFeedBusinesses] = await Promise.all([
@@ -140,11 +110,6 @@ export default async function HomeFollowedPage({
               : "No businesses yet in the categories or businesses you follow."}
           </div>
         ) : null}
-
-        <FollowedCategoriesDisplay
-          categoryIds={Array.from(followedCategoryIds).slice(0, 12)}
-          locale={locale}
-        />
     </AppPage>
   );
 }
