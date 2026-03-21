@@ -7,7 +7,7 @@ import { getProductById } from "@/lib/db/products";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { buttonVariants } from "@/components/ui/Button";
 import { EditProductForm } from "./EditProductForm";
-import type { StoreProduct } from "@/lib/store/types";
+import { toStoreAdminProduct } from "../../productMapper";
 
 export const runtime = "nodejs";
 
@@ -23,6 +23,7 @@ export default async function EditProductPage({
 
   const product = await getProductById(id);
   if (!product) notFound();
+  const storeProduct = toStoreAdminProduct(product);
 
   const ar = locale === "ar";
 
@@ -46,7 +47,7 @@ export default async function EditProductPage({
       </div>
 
       <div className="sbc-card p-6">
-        <EditProductForm product={product as unknown as StoreProduct} locale={locale as Locale} />
+        <EditProductForm product={storeProduct} locale={locale as Locale} />
       </div>
     </AppPage>
   );

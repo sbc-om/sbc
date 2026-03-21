@@ -7,7 +7,7 @@ import { listProducts } from "@/lib/db/products";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { buttonVariants } from "@/components/ui/Button";
 import { ProductCard } from "./ProductCard";
-import type { StoreProduct } from "@/lib/store/types";
+import { toStoreAdminProduct } from "./productMapper";
 
 export const runtime = "nodejs";
 
@@ -22,10 +22,11 @@ export default async function AdminProductsPage({
   await requireAdmin(locale as Locale);
 
   const products = await listProducts();
+  const storeProducts = products.map(toStoreAdminProduct);
   const ar = locale === "ar";
 
-  const activeProducts = products.filter((p) => p.isActive);
-  const inactiveProducts = products.filter((p) => !p.isActive);
+  const activeProducts = storeProducts.filter((p) => p.isActive);
+  const inactiveProducts = storeProducts.filter((p) => !p.isActive);
 
   return (
     <AppPage>
@@ -64,7 +65,7 @@ export default async function AdminProductsPage({
             {activeProducts.map((product) => (
               <ProductCard
                 key={product.id}
-                product={product as unknown as StoreProduct}
+                product={product}
                 locale={locale as Locale}
               />
             ))}
@@ -82,7 +83,7 @@ export default async function AdminProductsPage({
             {inactiveProducts.map((product) => (
               <ProductCard
                 key={product.id}
-                product={product as unknown as StoreProduct}
+                product={product}
                 locale={locale as Locale}
               />
             ))}

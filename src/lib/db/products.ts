@@ -63,13 +63,29 @@ type ProductRow = {
   program: string;
   plan: string | null;
   duration_days: number | null;
-  features: string[] | null;
-  badges: string[] | null;
+  features: unknown;
+  badges: unknown;
   is_active: boolean | null;
   sort_order: number | null;
   created_at: Date | null;
   updated_at: Date | null;
 };
+
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
+}
+
+function normalizeFeatures(value: unknown): string[] {
+  if (Array.isArray(value)) return toStringArray(value);
+  if (value && typeof value === "object") {
+    const maybeLocalized = value as { en?: unknown; ar?: unknown };
+    const en = toStringArray(maybeLocalized.en);
+    if (en.length > 0) return en;
+    return toStringArray(maybeLocalized.ar);
+  }
+  return [];
+}
 
 function rowToProduct(r: ProductRow): Product {
   return {
@@ -84,8 +100,8 @@ function rowToProduct(r: ProductRow): Product {
     program: r.program,
     plan: r.plan || "basic",
     durationDays: r.duration_days ?? undefined,
-    features: r.features || [],
-    badges: r.badges || [],
+    features: normalizeFeatures(r.features),
+    badges: toStringArray(r.badges),
     isActive: r.is_active ?? true,
     sortOrder: r.sort_order ?? 0,
     createdAt: r.created_at?.toISOString() || new Date().toISOString(),

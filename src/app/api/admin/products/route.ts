@@ -5,6 +5,22 @@ import { createProduct, listProducts, type ProductInput } from "@/lib/db/product
 
 export const runtime = "nodejs";
 
+function normalizeFeatures(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+  if (value && typeof value === "object") {
+    const maybeLocalized = value as { en?: unknown; ar?: unknown };
+    if (Array.isArray(maybeLocalized.en)) {
+      return maybeLocalized.en.filter((item): item is string => typeof item === "string");
+    }
+    if (Array.isArray(maybeLocalized.ar)) {
+      return maybeLocalized.ar.filter((item): item is string => typeof item === "string");
+    }
+  }
+  return [];
+}
+
 // GET /api/admin/products - لیست محصولات
 export async function GET(req: NextRequest) {
   try {
@@ -42,10 +58,10 @@ export async function POST(req: NextRequest) {
       name: body.name,
       description: body.description,
       price: Number(body.price?.amount ?? body.price),
-      currency: body.price?.currency ?? body.currency ?? "USD",
+      currency: body.price?.currency ?? body.currency ?? "OMR",
       badges: body.badges,
-      features: body.features,
-      isActive: body.isActive ?? true,
+      features: normalizeFeatures(body.features),
+      isActive: body.isActive ?? body.active ?? true,
       sortOrder: body.sortOrder ?? 0,
     };
     

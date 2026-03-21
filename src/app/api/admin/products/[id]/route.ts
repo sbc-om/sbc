@@ -11,6 +11,22 @@ import {
 
 export const runtime = "nodejs";
 
+function normalizeFeatures(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
+  if (value && typeof value === "object") {
+    const maybeLocalized = value as { en?: unknown; ar?: unknown };
+    if (Array.isArray(maybeLocalized.en)) {
+      return maybeLocalized.en.filter((item): item is string => typeof item === "string");
+    }
+    if (Array.isArray(maybeLocalized.ar)) {
+      return maybeLocalized.ar.filter((item): item is string => typeof item === "string");
+    }
+  }
+  return [];
+}
+
 // GET /api/admin/products/[id] - دریافت محصول
 export async function GET(
   req: NextRequest,
@@ -56,9 +72,10 @@ export async function PATCH(
     if (body.price !== undefined) {
       input.price = Number(body.price.amount ?? body.price);
     }
-    if (body.currency !== undefined) input.currency = body.currency;
+    if (body.price?.currency !== undefined) input.currency = body.price.currency;
+    else if (body.currency !== undefined) input.currency = body.currency;
     if (body.badges !== undefined) input.badges = body.badges;
-    if (body.features !== undefined) input.features = body.features;
+    if (body.features !== undefined) input.features = normalizeFeatures(body.features);
     if (body.isActive !== undefined) input.isActive = body.isActive;
     
     const product = await updateProduct(id, input);

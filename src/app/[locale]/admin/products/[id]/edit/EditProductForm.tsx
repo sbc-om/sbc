@@ -18,6 +18,9 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
   const ar = locale === "ar";
   const [loading, setLoading] = useState(false);
 
+  const featuresEn = Array.isArray(product.features?.en) ? product.features.en : [];
+  const featuresAr = Array.isArray(product.features?.ar) ? product.features.ar : featuresEn;
+
   const [formData, setFormData] = useState({
     slug: product.slug,
     program: product.program as ProductProgram,
@@ -25,13 +28,13 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
     durationDays: product.durationDays,
     nameEn: product.name.en,
     nameAr: product.name.ar,
-    descriptionEn: product.description.en,
-    descriptionAr: product.description.ar,
+    descriptionEn: product.description?.en ?? "",
+    descriptionAr: product.description?.ar ?? "",
     priceAmount: product.price.amount,
     priceCurrency: product.price.currency,
     priceInterval: (product.price.interval || "") as ProductInterval,
-    featuresEn: product.features.en.join("\n"),
-    featuresAr: product.features.ar.join("\n"),
+    featuresEn: featuresEn.join("\n"),
+    featuresAr: featuresAr.join("\n"),
     badges: product.badges?.join(", ") || "",
     active: product.isActive,
   });
