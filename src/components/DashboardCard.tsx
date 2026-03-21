@@ -1,52 +1,87 @@
 "use client";
 
-import { useRef, useState, useCallback, type ReactNode } from "react";
+import { useRef, useCallback, useEffect, type CSSProperties, type PointerEvent, type ReactNode } from "react";
+import { cn } from "@/lib/cn";
 
 interface DashboardCardProps {
   children: ReactNode;
   borderClassName: string;
   glowColor?: string;
+  className?: string;
+  style?: CSSProperties;
 }
 
-export function DashboardCard({ children, borderClassName, glowColor = "rgba(var(--accent-rgb, 99 102 241) / 0.15)" }: DashboardCardProps) {
+export function DashboardCard({
+  children,
+  borderClassName,
+  glowColor = "rgba(0, 121, 244, 0.16)",
+  className,
+  style,
+}: DashboardCardProps) {
   const ref = useRef<HTMLElement>(null);
-  const [glow, setGlow] = useState({ x: 0, y: 0, opacity: 0 });
+  const rafRef = useRef<number | null>(null);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLElement>) => {
+  const handlePointerMove = useCallback((e: PointerEvent<HTMLElement>) => {
+    if (e.pointerType === "touch") return;
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    setGlow({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-      opacity: 1,
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+    }
+
+    rafRef.current = requestAnimationFrame(() => {
+      el.style.setProperty("--dash-glow-x", `${x}px`);
+      el.style.setProperty("--dash-glow-y", `${y}px`);
+      el.style.setProperty("--dash-glow-opacity", "1");
     });
   }, []);
 
-  const handleMouseLeave = useCallback(() => {
-    setGlow((prev) => ({ ...prev, opacity: 0 }));
+  const handlePointerLeave = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.setProperty("--dash-glow-opacity", "0");
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
   }, []);
 
   return (
     <section
       ref={ref}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className={
-        "group relative overflow-hidden rounded-2xl border-2 bg-(--surface) p-6 backdrop-blur-sm shadow-sm transition-shadow duration-300 ease-out " +
-        borderClassName +
-        " hover:shadow-lg"
+      onPointerMove={handlePointerMove}
+      onPointerLeave={handlePointerLeave}
+      className={cn(
+        "group relative isolate overflow-hidden rounded-3xl border bg-(--surface) p-4 shadow-(--shadow) transition-[box-shadow,border-color,background-color] duration-300 ease-out sm:p-5 lg:p-6",
+        "hover:shadow-[var(--shadow-hover)]",
+        borderClassName,
+        className,
+      )}
+      style={
+        {
+          "--dash-glow-x": "50%",
+          "--dash-glow-y": "50%",
+          "--dash-glow-opacity": "0",
+          ...style,
+        } as CSSProperties
       }
     >
-      {/* Radial glow that follows the cursor */}
       <div
-        className="pointer-events-none absolute -inset-px rounded-2xl transition-opacity duration-300"
+        className="pointer-events-none absolute -inset-px rounded-3xl transition-opacity duration-300"
         style={{
-          opacity: glow.opacity,
-          background: `radial-gradient(600px circle at ${glow.x}px ${glow.y}px, ${glowColor}, transparent 40%)`,
+          opacity: "var(--dash-glow-opacity)",
+          background: `radial-gradient(420px circle at var(--dash-glow-x) var(--dash-glow-y), ${glowColor}, transparent 56%)`,
         }}
       />
-      {/* Content */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white/15 to-transparent dark:from-white/8" />
       <div className="relative">{children}</div>
     </section>
   );
