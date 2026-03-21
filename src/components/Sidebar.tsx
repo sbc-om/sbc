@@ -607,6 +607,54 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
 
             <Link
               role="menuitem"
+              href={`/${locale}/tools`}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                if (isMobile) setMobileOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+            >
+              {(() => {
+                const ToolsIcon = isActive("/tools") ? HiViewGrid : HiOutlineViewGrid;
+                return <ToolsIcon className="h-5 w-5 shrink-0" />;
+              })()}
+              <span className="min-w-0 truncate">{locale === "ar" ? "الأدوات" : "Tools"}</span>
+            </Link>
+
+            <Link
+              role="menuitem"
+              href={`/${locale}/about`}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                if (isMobile) setMobileOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+            >
+              {(() => {
+                const AboutIcon = isActive("/about") ? HiCollection : HiOutlineCollection;
+                return <AboutIcon className="h-5 w-5 shrink-0" />;
+              })()}
+              <span className="min-w-0 truncate">{locale === "ar" ? "عن المشروع" : "About"}</span>
+            </Link>
+
+            <Link
+              role="menuitem"
+              href={`/${locale}/contact`}
+              onClick={() => {
+                setProfileMenuOpen(false);
+                if (isMobile) setMobileOpen(false);
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+            >
+              {(() => {
+                const ContactIcon = isActive("/contact") ? HiChat : HiOutlineChat;
+                return <ContactIcon className="h-5 w-5 shrink-0" />;
+              })()}
+              <span className="min-w-0 truncate">{locale === "ar" ? "تواصل معنا" : "Contact"}</span>
+            </Link>
+
+            <Link
+              role="menuitem"
               href={`/${locale}/notifications`}
               onClick={() => {
                 setProfileMenuOpen(false);
