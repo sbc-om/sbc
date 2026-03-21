@@ -7,10 +7,12 @@ import type { Business } from "@/lib/db/types";
 import type {
   DivIcon as LeafletDivIcon,
   GeoJSON as LeafletGeoJSON,
+  GeoJSONOptions as LeafletGeoJSONOptions,
   Icon as LeafletIcon,
   Map as LeafletMap,
   Marker as LeafletMarker,
 } from "leaflet";
+import type { Feature } from "geojson";
 import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
 import {
   buildOmanTileWarmupUrls,
@@ -26,20 +28,18 @@ import {
   OMAN_TILE_TEMPLATE,
 } from "@/lib/maps/oman";
 
-// eslint-disable-next-line @typescript-eslint/no-namespace
-declare namespace L {
-  interface MarkerClusterGroupOptions {
-    maxClusterRadius?: number;
-    spiderfyOnMaxZoom?: boolean;
-    showCoverageOnHover?: boolean;
-    zoomToBoundsOnClick?: boolean;
-    disableClusteringAtZoom?: number;
-    animate?: boolean;
-    animateAddingMarkers?: boolean;
-    iconCreateFunction?: (cluster: { getChildCount(): number }) => LeafletDivIcon;
-  }
-  function markerClusterGroup(options?: MarkerClusterGroupOptions): import("leaflet").LayerGroup;
-}
+type MarkerClusterGroupOptions = {
+  maxClusterRadius?: number;
+  spiderfyOnMaxZoom?: boolean;
+  showCoverageOnHover?: boolean;
+  zoomToBoundsOnClick?: boolean;
+  disableClusteringAtZoom?: number;
+  animate?: boolean;
+  animateAddingMarkers?: boolean;
+  iconCreateFunction?: (cluster: { getChildCount(): number }) => LeafletDivIcon;
+};
+
+type MarkerClusterFactory = (options?: MarkerClusterGroupOptions) => import("leaflet").LayerGroup;
 
 type ClusterGroup = import("leaflet").LayerGroup & { addLayer(layer: LeafletMarker): unknown };
 
@@ -403,38 +403,37 @@ export default function MapPageClient({ locale }: Props) {
         omanMaskLayerRef.current?.remove();
         omanBorderLayerRef.current?.remove();
 
-        const maskLayer = leaflet.geoJSON(
-          toMaskGeometry(feature.geometry),
-          {
-            pane: "oman-mask-pane",
-            interactive: false,
-            smoothFactor: 0,
-            noClip: true,
-            style: {
-              stroke: false,
-              fillColor: "#f5f7fa",
-              fillOpacity: 1,
-            },
-          } as any
-        );
+        const maskOptions: LeafletGeoJSONOptions = {
+          pane: "oman-mask-pane",
+          interactive: false,
+          style: {
+            stroke: false,
+            fillColor: "#f5f7fa",
+            fillOpacity: 1,
+          },
+        };
 
-        const borderLayer = leaflet.geoJSON(
-          feature,
-          {
-            pane: "oman-border-pane",
-            interactive: false,
-            smoothFactor: 0,
-            noClip: true,
-            style: {
-              color: "#0ea5e9",
-              weight: 1.8,
-              opacity: 0.95,
-              fillOpacity: 0,
-              lineCap: "round",
-              lineJoin: "round",
-            },
-          } as any
-        );
+        const borderFeature: Feature = {
+          type: "Feature",
+          properties: feature.properties ?? {},
+          geometry: feature.geometry,
+        };
+
+        const borderOptions: LeafletGeoJSONOptions = {
+          pane: "oman-border-pane",
+          interactive: false,
+          style: {
+            color: "#0ea5e9",
+            weight: 1.8,
+            opacity: 0.95,
+            fillOpacity: 0,
+            lineCap: "round",
+            lineJoin: "round",
+          },
+        };
+
+        const maskLayer = leaflet.geoJSON(toMaskGeometry(feature.geometry), maskOptions);
+        const borderLayer = leaflet.geoJSON(borderFeature, borderOptions);
 
         maskLayer.addTo(map);
         borderLayer.addTo(map);
@@ -577,8 +576,7 @@ export default function MapPageClient({ locale }: Props) {
     markerIconsRef.current.clear();
 
     /* ── Try to create cluster group (graceful fallback) ── */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mcgFactory = (L as any).markerClusterGroup as typeof L.markerClusterGroup | undefined;
+    const mcgFactory = (L as unknown as { markerClusterGroup?: MarkerClusterFactory }).markerClusterGroup;
     let clusterGroup: ClusterGroup | null = null;
 
     if (clusterPluginReady && typeof mcgFactory === "function") {
@@ -621,8 +619,7 @@ export default function MapPageClient({ locale }: Props) {
       const markerSrc = (business.media?.logo || "").trim() || "/images/sbc.svg";
       const markerIcon = buildBusinessIcon(L, markerSrc, iconSize);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const marker = L.marker([latitude, longitude], { icon: markerIcon } as any);
+      const marker = L.marker([latitude, longitude], { icon: markerIcon });
       // store logo src for zoom rescaling
       (marker.options as Record<string, unknown>).__logoSrc = markerSrc;
 

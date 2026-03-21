@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import type L from "leaflet";
+import type { Feature } from "geojson";
 import {
   clampToOmanBounds,
   OMAN_BOUNDS_TUPLE,
@@ -120,35 +121,38 @@ export function LocationPickerModal({
       borderPane.style.pointerEvents = "none";
 
       if (omanGeometry) {
-        omanMaskLayerRef.current = L.geoJSON(toMaskGeometry(omanGeometry), {
+        const maskOptions: L.GeoJSONOptions = {
           pane: "oman-mask-pane",
           interactive: false,
-          smoothFactor: 0,
-          noClip: true,
           style: {
             stroke: false,
             fillColor: "#f5f7fa",
             fillOpacity: 1,
           },
-        } as any).addTo(map);
+        };
 
-        omanBorderLayerRef.current = L.geoJSON(
-          { type: "Feature", properties: {}, geometry: omanGeometry } as any,
-          {
-            pane: "oman-border-pane",
-            interactive: false,
-            smoothFactor: 0,
-            noClip: true,
-            style: {
-              color: "#0ea5e9",
-              weight: 1.8,
-              opacity: 0.95,
-              fillOpacity: 0,
-              lineCap: "round",
-              lineJoin: "round",
-            },
-          } as any
-        ).addTo(map);
+        const borderFeature: Feature = {
+          type: "Feature",
+          properties: {},
+          geometry: omanGeometry,
+        };
+
+        const borderOptions: L.GeoJSONOptions = {
+          pane: "oman-border-pane",
+          interactive: false,
+          style: {
+            color: "#0ea5e9",
+            weight: 1.8,
+            opacity: 0.95,
+            fillOpacity: 0,
+            lineCap: "round",
+            lineJoin: "round",
+          },
+        };
+
+        omanMaskLayerRef.current = L.geoJSON(toMaskGeometry(omanGeometry), maskOptions).addTo(map);
+
+        omanBorderLayerRef.current = L.geoJSON(borderFeature, borderOptions).addTo(map);
       }
 
       // Custom marker icon

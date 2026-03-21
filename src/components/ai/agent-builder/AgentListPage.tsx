@@ -23,7 +23,6 @@ export function AgentListPage({
   maxAgents,
   planKey,
   businessName,
-  businessId,
 }: {
   locale: string;
   agents: BusinessAiAgent[];
@@ -31,7 +30,6 @@ export function AgentListPage({
   maxAgents: number;
   planKey: string;
   businessName: string;
-  businessId: string;
 }) {
   const router = useRouter();
   const [deleting, setDeleting] = useState<string | null>(null);

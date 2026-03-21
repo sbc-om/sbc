@@ -56,9 +56,9 @@ export function BusinessEngagement({
   pendingForModeration: BusinessComment[];
   usersById: Record<string, { displayName?: string; email?: string } | undefined>;
 }) {
-  const [isLikePending, startLikeTransition] = useTransition();
-  const [isCommentPending, startCommentTransition] = useTransition();
-  const [isModeratePending, startModerateTransition] = useTransition();
+  const [, startLikeTransition] = useTransition();
+  const [, startCommentTransition] = useTransition();
+  const [, startModerateTransition] = useTransition();
 
   const [liked, setLiked] = useState(initialLiked);
   const [likeAnimating, setLikeAnimating] = useState(false);

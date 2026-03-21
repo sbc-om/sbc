@@ -102,14 +102,11 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
 
   // ── Theme state ────────────────────────────────────────────────────
   type ThemeMode = "light" | "dark" | "system";
-  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("theme") as ThemeMode | null;
-    if (saved === "light" || saved === "dark" || saved === "system") {
-      setThemeMode(saved);
-    }
-  }, []);
+  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
+    if (typeof window === "undefined") return "light";
+    const saved = localStorage.getItem("theme");
+    return saved === "light" || saved === "dark" || saved === "system" ? saved : "light";
+  });
 
   const applyTheme = useCallback((mode: ThemeMode) => {
     const root = document.documentElement;

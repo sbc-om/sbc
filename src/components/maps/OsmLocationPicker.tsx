@@ -12,6 +12,7 @@ import {
 } from "react-leaflet";
 import { divIcon } from "leaflet";
 import type { LeafletMouseEvent } from "leaflet";
+import type { GeoJsonObject } from "geojson";
 
 import { cn } from "@/lib/cn";
 import { Input } from "@/components/ui/Input";
@@ -432,7 +433,7 @@ export function OsmLocationPicker({
           />
           {omanMaskFeature ? (
             <GeoJSON
-              data={omanMaskFeature as any}
+              data={omanMaskFeature as unknown as GeoJsonObject}
               interactive={false}
               pathOptions={{
                 stroke: false,
@@ -443,15 +444,16 @@ export function OsmLocationPicker({
           ) : null}
           {omanBorder ? (
             <GeoJSON
-              data={omanBorder as any}
+              data={omanBorder as unknown as GeoJsonObject}
               interactive={false}
               pathOptions={{
                 color: isDark ? "#38bdf8" : "#0ea5e9",
                 weight: 1.8,
                 opacity: 0.95,
                 fillOpacity: 0,
-                smoothFactor: 0,
-              } as any}
+                lineCap: "round",
+                lineJoin: "round",
+              }}
             />
           ) : null}
           <InvalidateSizeOnVisible />

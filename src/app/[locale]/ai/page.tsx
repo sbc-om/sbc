@@ -131,7 +131,6 @@ export default async function AiPage({
       maxAgents={limits.maxAgents}
       planKey={planKey}
       businessName={businessName}
-      businessId={business.id}
     />
   );
 }
