@@ -12,7 +12,6 @@ import type {
   Map as LeafletMap,
   Marker as LeafletMarker,
 } from "leaflet";
-import type { Feature } from "geojson";
 import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
 import {
   buildOmanTileWarmupUrls,
@@ -55,6 +54,7 @@ type OmanBorderFeatureCollection = {
   type: "FeatureCollection";
   features: Array<{
     type: "Feature";
+    properties?: Record<string, unknown>;
     geometry: OmanBorderGeometry;
   }>;
 };
@@ -413,8 +413,8 @@ export default function MapPageClient({ locale }: Props) {
           },
         };
 
-        const borderFeature: Feature = {
-          type: "Feature",
+        const borderFeature = {
+          type: "Feature" as const,
           properties: feature.properties ?? {},
           geometry: feature.geometry,
         };
