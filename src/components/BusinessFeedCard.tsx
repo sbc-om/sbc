@@ -297,7 +297,7 @@ export function BusinessFeedCard({
 
           {menuOpen ? (
             <div
-                className={`absolute ${locale === "ar" ? "start-0" : "end-0"} z-20 mt-2 w-52 rounded-xl border border-(--surface-border) bg-(--surface) p-2 shadow-lg`}
+                className={`absolute ${locale === "ar" ? "start-0" : "end-0"} z-20 mt-2 w-52 rounded-xl border border-(--surface-border) bg-(--background) p-2 shadow-lg`}
               role="menu"
             >
               <Link
