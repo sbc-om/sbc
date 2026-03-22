@@ -16,12 +16,16 @@ import {
   HiOutlineCheck,
 } from "react-icons/hi";
 import {
+  HiOutlineBanknotes,
+  HiOutlineChatBubbleLeftRight,
   HiOutlineFolderOpen,
   HiOutlineGift,
   HiOutlineMegaphone,
   HiOutlineGlobeAlt,
   HiOutlineEnvelope,
   HiOutlineCube,
+  HiOutlineUserGroup,
+  HiOutlineWrenchScrewdriver,
 } from "react-icons/hi2";
 
 import { AppPage } from "@/components/AppPage";
@@ -66,6 +70,42 @@ const programConfig: Record<
     icon: <HiOutlineMegaphone className="h-5 w-5" />,
     iconBg: "bg-pink-100 text-pink-600 dark:bg-pink-950/50 dark:text-pink-400",
   },
+  crm: {
+    en: "CRM",
+    ar: "CRM",
+    dot: "bg-sky-500",
+    badge:
+      "border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-400",
+    icon: <HiOutlineUserGroup className="h-5 w-5" />,
+    iconBg: "bg-sky-100 text-sky-600 dark:bg-sky-950/50 dark:text-sky-400",
+  },
+  accounting: {
+    en: "Accounting",
+    ar: "المحاسبة",
+    dot: "bg-lime-500",
+    badge:
+      "border border-lime-200 bg-lime-50 text-lime-700 dark:border-lime-800 dark:bg-lime-950/40 dark:text-lime-400",
+    icon: <HiOutlineBanknotes className="h-5 w-5" />,
+    iconBg: "bg-lime-100 text-lime-600 dark:bg-lime-950/50 dark:text-lime-400",
+  },
+  "online-classes": {
+    en: "Online Classes",
+    ar: "الصفوف الافتراضية",
+    dot: "bg-teal-500",
+    badge:
+      "border border-teal-200 bg-teal-50 text-teal-700 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-400",
+    icon: <HiOutlineChatBubbleLeftRight className="h-5 w-5" />,
+    iconBg: "bg-teal-100 text-teal-600 dark:bg-teal-950/50 dark:text-teal-400",
+  },
+  sbcclaw: {
+    en: "SBCClaw",
+    ar: "SBCClaw",
+    dot: "bg-rose-500",
+    badge:
+      "border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-400",
+    icon: <HiOutlineWrenchScrewdriver className="h-5 w-5" />,
+    iconBg: "bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400",
+  },
   website: {
     en: "Website",
     ar: "الموقع",
@@ -83,6 +123,15 @@ const programConfig: Record<
       "border border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/40 dark:text-orange-400",
     icon: <HiOutlineEnvelope className="h-5 w-5" />,
     iconBg: "bg-orange-100 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400",
+  },
+  "agent-builder": {
+    en: "AI Agent Builder",
+    ar: "منشئ الوكيل الذكي",
+    dot: "bg-violet-500",
+    badge:
+      "border border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-400",
+    icon: <HiOutlineCube className="h-5 w-5" />,
+    iconBg: "bg-violet-100 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400",
   },
 };
 
@@ -138,7 +187,18 @@ export default async function AdminSubscriptionsPage({
 
   /* ── Data ── */
   const allSubscriptions = await listAllSubscriptionsWithUsers();
-  const programs = ["directory", "loyalty", "marketing", "website", "email"];
+  const programs = [
+    "directory",
+    "loyalty",
+    "marketing",
+    "crm",
+    "accounting",
+    "online-classes",
+    "sbcclaw",
+    "website",
+    "email",
+    "agent-builder",
+  ];
   const statsResults = await Promise.all(programs.map((p) => getProgramSubscriptionStats(p)));
   const stats = programs.reduce(
     (acc, p, i) => ({ ...acc, [p]: statsResults[i] }),

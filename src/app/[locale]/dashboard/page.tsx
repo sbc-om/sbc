@@ -3,13 +3,17 @@ import { notFound } from "next/navigation";
 import {
   HiArrowUpRight,
   HiCheckBadge,
+  HiOutlineBanknotes,
   HiOutlineBuildingOffice2,
+  HiOutlineChatBubbleLeftRight,
   HiOutlineCpuChip,
   HiOutlineEnvelope,
   HiOutlineGlobeAlt,
   HiOutlineMegaphone,
   HiOutlineShoppingBag,
   HiOutlineSparkles,
+  HiOutlineUserGroup,
+  HiOutlineWrenchScrewdriver,
 } from "react-icons/hi2";
 
 import { AppPage } from "@/components/AppPage";
@@ -88,6 +92,50 @@ export default async function DashboardPage({
       iconBgClassName: "bg-fuchsia-500/12 ring-1 ring-fuchsia-500/18",
       borderClassName: "border-fuchsia-500/25 dark:border-fuchsia-400/25",
       glowColor: "rgba(217,70,239,0.14)",
+    },
+    crm: {
+      title: ar ? "خدمات CRM" : "CRM Services",
+      href: `/${locale}/services/app`,
+      storeHref: `/${locale}/store?q=crm`,
+      subtitle: ar ? "إدارة عملائك للشركات الصغيرة بطريقة أبسط" : "Customer management for small businesses",
+      Icon: HiOutlineUserGroup,
+      iconClassName: "text-sky-600 dark:text-sky-300",
+      iconBgClassName: "bg-sky-500/12 ring-1 ring-sky-500/18",
+      borderClassName: "border-sky-500/25 dark:border-sky-400/25",
+      glowColor: "rgba(14,165,233,0.14)",
+    },
+    accounting: {
+      title: ar ? "خدمات المحاسبة" : "Accounting Services",
+      href: `/${locale}/services/app`,
+      storeHref: `/${locale}/store?q=accounting`,
+      subtitle: ar ? "فواتير ومصاريف وتقارير مالية للشركات الصغيرة" : "Billing and finance tools for small businesses",
+      Icon: HiOutlineBanknotes,
+      iconClassName: "text-lime-600 dark:text-lime-300",
+      iconBgClassName: "bg-lime-500/12 ring-1 ring-lime-500/18",
+      borderClassName: "border-lime-500/25 dark:border-lime-400/25",
+      glowColor: "rgba(132,204,22,0.15)",
+    },
+    "online-classes": {
+      title: ar ? "الاجتماعات والفصول الافتراضية" : "Online Meetings & Virtual Classes",
+      href: `/${locale}/services/app`,
+      storeHref: `/${locale}/store?q=online-classes`,
+      subtitle: ar ? "تشغيل الاجتماعات والدروس عبر الإنترنت من لوحة واحدة" : "Run online meetings and virtual classes from one hub",
+      Icon: HiOutlineChatBubbleLeftRight,
+      iconClassName: "text-teal-600 dark:text-teal-300",
+      iconBgClassName: "bg-teal-500/12 ring-1 ring-teal-500/18",
+      borderClassName: "border-teal-500/25 dark:border-teal-400/25",
+      glowColor: "rgba(20,184,166,0.15)",
+    },
+    sbcclaw: {
+      title: ar ? "شبكة SBCClaw الذكية" : "SBCClaw Smart Network",
+      href: `/${locale}/services/app`,
+      storeHref: `/${locale}/store?q=sbcclaw`,
+      subtitle: ar ? "خدمات الشبكة والأتمتة الذكية للأعمال" : "Smart business networking and automation services",
+      Icon: HiOutlineWrenchScrewdriver,
+      iconClassName: "text-rose-600 dark:text-rose-300",
+      iconBgClassName: "bg-rose-500/12 ring-1 ring-rose-500/18",
+      borderClassName: "border-rose-500/25 dark:border-rose-400/25",
+      glowColor: "rgba(244,63,94,0.14)",
     },
     website: {
       title: ar ? "منشئ المواقع" : "Website Builder",
@@ -179,8 +227,8 @@ export default async function DashboardPage({
               </p>
               <p className="mt-3 max-w-3xl text-sm text-(--muted-foreground) sm:text-base">
                 {ar
-                  ? "تحكم بكل خدمات نشاطك من شاشة واحدة: اكتشاف العملاء، الولاء، التسويق، الموقع الإلكتروني، البريد المؤسسي، والذكاء الاصطناعي."
-                  : "Manage your full business stack in one place: discovery, loyalty, marketing, website, business email, and AI automation."}
+                  ? "تحكم بكل خدمات نشاطك من شاشة واحدة: اكتشاف العملاء، الولاء، التسويق، CRM، المحاسبة، الاجتماعات الافتراضية، شبكة SBCClaw، الموقع الإلكتروني، البريد المؤسسي، والذكاء الاصطناعي."
+                  : "Manage your full business stack in one place: discovery, loyalty, marketing, CRM, accounting, online classes, SBCClaw smart networking, website, business email, and AI automation."}
               </p>
               <p className="mt-3 text-sm font-medium text-(--muted-foreground)">
                 {nextRenewal

@@ -428,7 +428,17 @@ export type AppleWalletRegistration = {
   updatedAt: string;
 };
 
-export type ProgramId = "directory" | "loyalty" | "marketing" | "website" | "email";
+export type ProgramId =
+  | "directory"
+  | "loyalty"
+  | "marketing"
+  | "crm"
+  | "accounting"
+  | "online-classes"
+  | "sbcclaw"
+  | "website"
+  | "email"
+  | "agent-builder";
 
 export type ProgramSubscription = {
   /** The owner user id. */

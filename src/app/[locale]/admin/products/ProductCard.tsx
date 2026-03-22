@@ -19,6 +19,13 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
     directory: { en: "Business Directory", ar: "دليل الأعمال" },
     loyalty: { en: "Loyalty System", ar: "نظام الولاء" },
     marketing: { en: "Marketing Platform", ar: "منصة التسويق" },
+    crm: { en: "CRM Services", ar: "خدمات CRM" },
+    accounting: { en: "Accounting Services", ar: "خدمات المحاسبة" },
+    "online-classes": { en: "Online Meetings & Virtual Classes", ar: "الاجتماعات والفصول الافتراضية" },
+    sbcclaw: { en: "SBCClaw Smart Network", ar: "شبكة SBCClaw الذكية" },
+    website: { en: "Website Builder", ar: "منشئ المواقع" },
+    email: { en: "Business Email", ar: "البريد المؤسسي" },
+    "agent-builder": { en: "AI Agent Builder", ar: "منشئ الوكيل الذكي" },
   };
 
   const handleToggleActive = async () => {

@@ -47,8 +47,16 @@ const programOptions = [
   { value: "directory", label: { en: "Directory", ar: "الدليل" } },
   { value: "loyalty", label: { en: "Loyalty", ar: "الولاء" } },
   { value: "marketing", label: { en: "Marketing", ar: "التسويق" } },
+  { value: "crm", label: { en: "CRM Services", ar: "خدمات CRM" } },
+  { value: "accounting", label: { en: "Accounting Services", ar: "خدمات المحاسبة" } },
+  {
+    value: "online-classes",
+    label: { en: "Online Meetings & Virtual Classes", ar: "الاجتماعات والفصول الافتراضية" },
+  },
+  { value: "sbcclaw", label: { en: "SBCClaw Smart Network", ar: "شبكة SBCClaw الذكية" } },
   { value: "website", label: { en: "Website", ar: "الموقع" } },
   { value: "email", label: { en: "Email", ar: "البريد" } },
+  { value: "agent-builder", label: { en: "AI Agent Builder", ar: "منشئ الوكيل الذكي" } },
 ];
 
 export default function SubscriptionEditForm({

@@ -8,7 +8,17 @@ import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 
-type ProductProgram = "directory" | "loyalty" | "marketing";
+type ProductProgram =
+  | "directory"
+  | "loyalty"
+  | "marketing"
+  | "crm"
+  | "accounting"
+  | "online-classes"
+  | "sbcclaw"
+  | "website"
+  | "email"
+  | "agent-builder";
 type ProductInterval = "" | "month" | "year" | "6mo";
 
 export function NewProductForm({ locale }: { locale: Locale }) {
@@ -121,6 +131,13 @@ export function NewProductForm({ locale }: { locale: Locale }) {
             <option value="directory">{ar ? "دليل الأعمال" : "Business Directory"}</option>
             <option value="loyalty">{ar ? "نظام الولاء" : "Loyalty System"}</option>
             <option value="marketing">{ar ? "منصة التسويق" : "Marketing Platform"}</option>
+            <option value="crm">{ar ? "خدمات CRM" : "CRM Services"}</option>
+            <option value="accounting">{ar ? "خدمات المحاسبة" : "Accounting Services"}</option>
+            <option value="online-classes">{ar ? "الاجتماعات والفصول الافتراضية" : "Online Meetings & Virtual Classes"}</option>
+            <option value="sbcclaw">{ar ? "شبكة SBCClaw الذكية" : "SBCClaw Smart Network"}</option>
+            <option value="website">{ar ? "منشئ المواقع" : "Website Builder"}</option>
+            <option value="email">{ar ? "البريد المؤسسي" : "Business Email"}</option>
+            <option value="agent-builder">{ar ? "منشئ الوكيل الذكي" : "AI Agent Builder"}</option>
           </select>
         </div>
 

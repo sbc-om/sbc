@@ -54,12 +54,12 @@ export default async function MarketingAppPage({
           </div>
           <p className="mt-2 text-sm text-(--muted-foreground)">
             {ar
-              ? "لاستخدام أدوات منصة التسويق، اشترِ باقة منصة التسويق من المتجر." 
-              : "To use marketing tools, purchase a Marketing package from the store."}
+              ? "لاستخدام خدمات المنصة، اشترِ الباقة المناسبة من المتجر."
+              : "To use platform services, purchase a suitable package from the store."}
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Link
-              href={`/${locale}/store?q=marketing`}
+              href={`/${locale}/store`}
               className={buttonVariants({ variant: "primary", size: "md" })}
             >
               {ar ? "اذهب للمتجر" : "Go to store"}
@@ -85,25 +85,40 @@ export default async function MarketingAppPage({
             ) : null}
           </div>
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-3">
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
             <div className="sbc-card rounded-2xl p-6">
-              <div className="font-semibold">{ar ? "القوالب" : "Templates"}</div>
+              <div className="font-semibold">{ar ? "خدمات CRM للشركات الصغيرة" : "CRM Services for Small Businesses"}</div>
               <p className="mt-2 text-sm text-(--muted-foreground)">
-                {ar ? "إدارة قوالب الرسائل (قريباً)." : "Manage message templates (coming soon)."}
+                {ar
+                  ? "إدارة العملاء، سجل التواصل، وتقسيم العملاء في مكان واحد."
+                  : "Manage customer records, touchpoints, and audience segments in one place."}
               </p>
             </div>
 
             <div className="sbc-card rounded-2xl p-6">
-              <div className="font-semibold">{ar ? "الحملات" : "Campaigns"}</div>
+              <div className="font-semibold">{ar ? "خدمات المحاسبة للشركات الصغيرة" : "Accounting Services for Small Businesses"}</div>
               <p className="mt-2 text-sm text-(--muted-foreground)">
-                {ar ? "إرسال حملات وبث جماعي (قريباً)." : "Run campaigns and broadcasts (coming soon)."}
+                {ar
+                  ? "فواتير، متابعة المصاريف، وتقارير مالية مبسطة."
+                  : "Invoicing, expense tracking, and simplified financial reporting."}
               </p>
             </div>
 
             <div className="sbc-card rounded-2xl p-6">
-              <div className="font-semibold">{ar ? "الواجهات" : "Integrations"}</div>
+              <div className="font-semibold">{ar ? "خدمات الاجتماعات والكلاسات الأونلاين" : "Online Meetings & Virtual Classes"}</div>
               <p className="mt-2 text-sm text-(--muted-foreground)">
-                {ar ? "Webhooks + API لإرسال الرسائل (قريباً)." : "Webhooks + API for messaging (coming soon)."}
+                {ar
+                  ? "إدارة الجلسات المباشرة والصفوف الافتراضية وجدولة المواعيد."
+                  : "Run live meetings and virtual classes with scheduling tools."}
+              </p>
+            </div>
+
+            <div className="sbc-card rounded-2xl p-6">
+              <div className="font-semibold">{ar ? "خدمات شبكة SBCClaw الذكية" : "SBCClaw Smart Business Network"}</div>
+              <p className="mt-2 text-sm text-(--muted-foreground)">
+                {ar
+                  ? "خدمات الشبكات والأتمتة لربط أدوات عملك بشكل ذكي."
+                  : "Smart networking and automation services to connect your business tools."}
               </p>
             </div>
           </div>

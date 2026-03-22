@@ -885,6 +885,25 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
         OR description_ar LIKE '%خدمات SBC%'
       );
 
+    -- Migration: Seed new platform services (safe: on conflict do nothing)
+    INSERT INTO products (
+      id, slug, name_en, name_ar, description_en, description_ar, price, currency,
+      program, plan, duration_days, features, badges, is_active, sort_order, created_at, updated_at
+    ) VALUES
+      ('prod-crm-monthly', 'crm-monthly', 'CRM Services - Monthly', 'خدمات CRM - شهري', 'CRM services for small businesses (monthly).', 'خدمات CRM للشركات الصغيرة (شهري).', 15, 'OMR', 'crm', 'monthly', 30, '["Leads & contacts","Pipeline management","Follow-up reminders"]'::jsonb, '[]'::jsonb, true, 40, NOW(), NOW()),
+      ('prod-crm-6mo', 'crm-6mo', 'CRM Services - 6 months', 'خدمات CRM - 6 أشهر', 'CRM services for small businesses (6 months).', 'خدمات CRM للشركات الصغيرة (6 أشهر).', 60, 'OMR', 'crm', '6mo', 180, '["Leads & contacts","Pipeline management","Follow-up reminders"]'::jsonb, '["Save"]'::jsonb, true, 41, NOW(), NOW()),
+      ('prod-crm-yearly', 'crm-yearly', 'CRM Services - Yearly', 'خدمات CRM - سنوي', 'CRM services for small businesses (annual).', 'خدمات CRM للشركات الصغيرة (سنوي).', 90, 'OMR', 'crm', 'yearly', 365, '["Leads & contacts","Pipeline management","Follow-up reminders"]'::jsonb, '["Best Value"]'::jsonb, true, 42, NOW(), NOW()),
+      ('prod-accounting-monthly', 'accounting-monthly', 'Accounting Services - Monthly', 'خدمات المحاسبة - شهري', 'Accounting services for small businesses (monthly).', 'خدمات المحاسبة للشركات الصغيرة (شهري).', 15, 'OMR', 'accounting', 'monthly', 30, '["Invoices","Expense tracking","Monthly reports"]'::jsonb, '[]'::jsonb, true, 43, NOW(), NOW()),
+      ('prod-accounting-6mo', 'accounting-6mo', 'Accounting Services - 6 months', 'خدمات المحاسبة - 6 أشهر', 'Accounting services for small businesses (6 months).', 'خدمات المحاسبة للشركات الصغيرة (6 أشهر).', 60, 'OMR', 'accounting', '6mo', 180, '["Invoices","Expense tracking","Monthly reports"]'::jsonb, '["Save"]'::jsonb, true, 44, NOW(), NOW()),
+      ('prod-accounting-yearly', 'accounting-yearly', 'Accounting Services - Yearly', 'خدمات المحاسبة - سنوي', 'Accounting services for small businesses (annual).', 'خدمات المحاسبة للشركات الصغيرة (سنوي).', 90, 'OMR', 'accounting', 'yearly', 365, '["Invoices","Expense tracking","Monthly reports"]'::jsonb, '["Best Value"]'::jsonb, true, 45, NOW(), NOW()),
+      ('prod-online-classes-monthly', 'online-classes-monthly', 'Online Meetings & Virtual Classes - Monthly', 'الاجتماعات والفصول الافتراضية - شهري', 'Online meeting and virtual class tools (monthly).', 'أدوات الاجتماعات والفصول الافتراضية (شهري).', 15, 'OMR', 'online-classes', 'monthly', 30, '["Live sessions","Class scheduling","Attendance tracking"]'::jsonb, '[]'::jsonb, true, 46, NOW(), NOW()),
+      ('prod-online-classes-6mo', 'online-classes-6mo', 'Online Meetings & Virtual Classes - 6 months', 'الاجتماعات والفصول الافتراضية - 6 أشهر', 'Online meeting and virtual class tools (6 months).', 'أدوات الاجتماعات والفصول الافتراضية (6 أشهر).', 60, 'OMR', 'online-classes', '6mo', 180, '["Live sessions","Class scheduling","Attendance tracking"]'::jsonb, '["Save"]'::jsonb, true, 47, NOW(), NOW()),
+      ('prod-online-classes-yearly', 'online-classes-yearly', 'Online Meetings & Virtual Classes - Yearly', 'الاجتماعات والفصول الافتراضية - سنوي', 'Online meeting and virtual class tools (annual).', 'أدوات الاجتماعات والفصول الافتراضية (سنوي).', 90, 'OMR', 'online-classes', 'yearly', 365, '["Live sessions","Class scheduling","Attendance tracking"]'::jsonb, '["Best Value"]'::jsonb, true, 48, NOW(), NOW()),
+      ('prod-sbcclaw-monthly', 'sbcclaw-monthly', 'SBCClaw Smart Network - Monthly', 'شبكة SBCClaw الذكية - شهري', 'Smart business network services (monthly).', 'خدمات شبكة الأعمال الذكية (شهري).', 15, 'OMR', 'sbcclaw', 'monthly', 30, '["Smart network setup","Automation workflows","Monitoring dashboard"]'::jsonb, '[]'::jsonb, true, 49, NOW(), NOW()),
+      ('prod-sbcclaw-6mo', 'sbcclaw-6mo', 'SBCClaw Smart Network - 6 months', 'شبكة SBCClaw الذكية - 6 أشهر', 'Smart business network services (6 months).', 'خدمات شبكة الأعمال الذكية (6 أشهر).', 60, 'OMR', 'sbcclaw', '6mo', 180, '["Smart network setup","Automation workflows","Monitoring dashboard"]'::jsonb, '["Save"]'::jsonb, true, 50, NOW(), NOW()),
+      ('prod-sbcclaw-yearly', 'sbcclaw-yearly', 'SBCClaw Smart Network - Yearly', 'شبكة SBCClaw الذكية - سنوي', 'Smart business network services (annual).', 'خدمات شبكة الأعمال الذكية (سنوي).', 90, 'OMR', 'sbcclaw', 'yearly', 365, '["Smart network setup","Automation workflows","Monitoring dashboard"]'::jsonb, '["Best Value"]'::jsonb, true, 51, NOW(), NOW())
+    ON CONFLICT DO NOTHING;
+
     -- OTP codes table for WhatsApp authentication
     CREATE TABLE IF NOT EXISTS otp_codes (
       id TEXT PRIMARY KEY,
