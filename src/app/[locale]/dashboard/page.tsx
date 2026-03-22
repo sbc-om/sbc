@@ -79,7 +79,7 @@ export default async function DashboardPage({
       glowColor: "rgba(16,185,129,0.14)",
     },
     marketing: {
-      title: ar ? "خدمات SBC" : "SBC Services",
+      title: ar ? "منصة التسويق" : "Marketing Platform",
       href: `/${locale}/services/app`,
       storeHref: `/${locale}/store?q=marketing`,
       subtitle: ar ? "تواصل مع العملاء وشغّل الحملات تلقائياً" : "Talk to customers, automate campaigns",

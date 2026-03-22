@@ -861,6 +861,30 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       END IF;
     END $$;
 
+    -- Migration: Normalize legacy marketing product names
+    UPDATE products
+    SET
+      name_en = REPLACE(REPLACE(name_en, 'SBC Services', 'Marketing Platform'), 'SBC Service', 'Marketing Platform'),
+      name_ar = REPLACE(name_ar, 'خدمات SBC', 'منصة التسويق'),
+      description_en = CASE
+        WHEN description_en IS NULL THEN NULL
+        ELSE REPLACE(REPLACE(description_en, 'SBC Services', 'Marketing Platform'), 'SBC Service', 'Marketing Platform')
+      END,
+      description_ar = CASE
+        WHEN description_ar IS NULL THEN NULL
+        ELSE REPLACE(description_ar, 'خدمات SBC', 'منصة التسويق')
+      END,
+      updated_at = NOW()
+    WHERE program = 'marketing'
+      AND (
+        name_en ILIKE '%SBC Services%'
+        OR name_en ILIKE '%SBC Service%'
+        OR name_ar LIKE '%خدمات SBC%'
+        OR description_en ILIKE '%SBC Services%'
+        OR description_en ILIKE '%SBC Service%'
+        OR description_ar LIKE '%خدمات SBC%'
+      );
+
     -- OTP codes table for WhatsApp authentication
     CREATE TABLE IF NOT EXISTS otp_codes (
       id TEXT PRIMARY KEY,
