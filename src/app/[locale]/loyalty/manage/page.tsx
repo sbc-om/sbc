@@ -42,10 +42,12 @@ export default async function LoyaltyManagePage({
 
   // Build an absolute origin for shareable URLs (used by a Client Component).
   // Doing this on the server avoids hydration mismatches from `window.location`.
+  // x-forwarded-* headers can be comma-separated when behind multiple proxies;
+  // take only the first (client-facing) value and strip any embedded scheme.
   const h = await headers();
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const baseUrl = host ? `${proto}://${host}` : null;
+  const rawProto = (h.get("x-forwarded-proto") ?? "http").split(",")[0].trim();
+  const rawHost = (h.get("x-forwarded-host") ?? h.get("host") ?? "").split(",")[0].trim().replace(/^https?:\/\//, "");
+  const baseUrl = rawHost ? `${rawProto}://${rawHost}` : null;
 
   const isActive = user ? await isProgramSubscriptionActive(user.id) : false;
   const customers = user && isActive ? await listLoyaltyCustomersByUser(user.id) : [];
