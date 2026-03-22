@@ -56,8 +56,11 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-collapse-text {
 html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
   justify-content: center !important;
   gap: 0 !important;
-  padding-left: 0.5rem !important;
-  padding-right: 0.5rem !important;
+  width: 3rem !important;
+  height: 3rem !important;
+  margin-inline: auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 .dark {

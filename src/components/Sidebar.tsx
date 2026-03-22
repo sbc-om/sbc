@@ -466,7 +466,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   const renderNavContent = (navScrollRef: React.RefObject<HTMLElement | null>) => (
     <>
       {/* Logo */}
-      <div className={`px-3 pt-4 transition-all duration-300 ${collapsed ? "mb-4" : "mb-8"}`}>
+      <div className={`${iconOnly ? "px-0" : "px-3"} pt-4 transition-all duration-300 ${collapsed ? "mb-4" : "mb-8"}`}>
         <div className={iconOnly ? "flex flex-col items-center gap-2" : "flex items-center justify-between gap-2"}>
           <Link
             href={`/${locale}`}
@@ -510,7 +510,10 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav ref={navScrollRef} className="flex-1 min-h-0 space-y-1 overflow-y-auto overflow-x-hidden px-2">
+      <nav
+        ref={navScrollRef}
+        className={`flex-1 min-h-0 space-y-1 overflow-y-auto overflow-x-hidden ${iconOnly ? "px-0" : "px-2"}`}
+      >
         {navItems.map((item) => {
           const active = isActive(item.path);
           const IconComponent = active ? item.Icon : item.IconOutline;
@@ -553,7 +556,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
 
       {/* Collapse (last menu option) - Desktop Only */}
       {!isMobile && (
-        <div className="mt-2 px-2 pt-2 mb-2" style={{ borderColor: "var(--surface-border)" }}>
+        <div className={`mt-2 pt-2 mb-2 ${iconOnly ? "px-0" : "px-2"}`} style={{ borderColor: "var(--surface-border)" }}>
           <button
             onClick={toggleCollapsed}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl hover:bg-(--surface) transition-all hover:scale-105"
@@ -574,7 +577,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       {/* User Profile (separate section) */}
       <div
         ref={profileMenuRef}
-        className="mt-auto border-t pt-4 px-2 relative"
+        className={`mt-auto border-t pt-4 relative ${iconOnly ? "px-0" : "px-2"}`}
         style={{ borderColor: "var(--surface-border)" }}
       >
         <button
@@ -616,13 +619,19 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           <div
             role="menu"
             aria-label="Profile menu"
-            className={`absolute bottom-full mb-2 rounded-xl border bg-(--background) shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col ${
+            className={`absolute z-50 rounded-xl border bg-(--background) shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col ${
               iconOnly ? "w-64" : "w-full"
             }`}
             style={{
               borderColor: "var(--surface-border)",
               maxHeight: "calc(100dvh - 9rem)",
-              ...(locale === "ar" ? { right: 0 } : { left: 0 }),
+              ...(iconOnly
+                ? locale === "ar"
+                  ? { right: "calc(100% + 0.5rem)", bottom: 0 }
+                  : { left: "calc(100% + 0.5rem)", bottom: 0 }
+                : locale === "ar"
+                ? { right: 0, bottom: "calc(100% + 0.5rem)" }
+                : { left: 0, bottom: "calc(100% + 0.5rem)" }),
             }}
           >
             <div className="px-2 py-2 shrink-0">
@@ -882,7 +891,9 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className="sbc-sidebar fixed top-0 bottom-0 z-40 hidden overflow-x-hidden border-e shadow-none lg:flex flex-col transition-[width] duration-300"
+        className={`sbc-sidebar fixed top-0 bottom-0 z-40 hidden border-e shadow-none lg:flex flex-col transition-[width] duration-300 ${
+          iconOnly ? "overflow-visible" : "overflow-x-hidden"
+        }`}
         style={{
           [locale === "ar" ? "right" : "left"]: 0,
           width: "var(--sidebar-width, 16rem)",
