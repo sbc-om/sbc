@@ -11,7 +11,6 @@ import {
   useTransform,
   useSpring,
   useMotionTemplate,
-  useMotionValueEvent,
   AnimatePresence,
 } from "motion/react";
 import { Container } from "@/components/Container";
@@ -32,7 +31,6 @@ interface AnimatedHeaderProps {
 }
 
 export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
-  const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopNavHovered, setDesktopNavHovered] = useState(false);
   const mobileMenuRootRef = useRef<HTMLDivElement | null>(null);
@@ -41,6 +39,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   const servicesLabel = locale === "ar" ? "الخدمات" : "Services";
   const topNavStableClass = "hover:translate-y-0 active:scale-100";
   const topNavBlueHoverClass = "hover:bg-accent hover:text-white hover:border-accent";
+  const topNavNoShadowClass = "!shadow-none hover:!shadow-none";
 
   /* ── scroll-linked motion values ── */
   const { scrollY } = useScroll();
@@ -67,12 +66,6 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   const logoGap = useSpring(rawGap, springConfig);
   const gradientOpacity = useSpring(rawGradientOpacity, springConfig);
   const cardWidth = useMotionTemplate`calc(100% - ${cardHorizontalTrim}px)`;
-
-  // Toggle scrolled state for shadow swap
-  useMotionValueEvent(scrollY, "change", (latest) => {
-    if (prefersReducedMotion) return;
-    setScrolled(latest > 50);
-  });
 
   // Close mobile menu on navigation
   useEffect(() => {
@@ -153,13 +146,8 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
               background:
                 "linear-gradient(165deg, rgba(var(--surface-rgb, 255, 255, 255), 0.94), rgba(var(--surface-rgb, 255, 255, 255), 0.84))",
               borderColor: "var(--surface-border)",
+              boxShadow: "none",
             }}
-            animate={{
-              boxShadow: scrolled
-                ? "0 14px 44px rgba(0,0,0,0.16), 0 3px 12px rgba(0,0,0,0.10)"
-                : "var(--shadow)",
-            }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           >
             {/* Subtle gradient overlay */}
             <motion.div
@@ -215,7 +203,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   className={buttonVariants({
                     variant: "primary",
                     size: "sm",
-                    className: `${topNavStableClass} hover:brightness-[1.02]`,
+                    className: `${topNavStableClass} ${topNavNoShadowClass} hover:brightness-[1.02]`,
                   })}
                 >
                   {servicesLabel}
@@ -227,7 +215,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     className={buttonVariants({
                       variant: "secondary",
                       size: "sm",
-                      className: `${topNavStableClass} ${topNavBlueHoverClass}`,
+                      className: `${topNavStableClass} ${topNavBlueHoverClass} ${topNavNoShadowClass}`,
                     })}
                   >
                     {dict.nav.businesses}
@@ -238,7 +226,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     className={buttonVariants({
                       variant: "secondary",
                       size: "sm",
-                      className: `${topNavStableClass} ${topNavBlueHoverClass}`,
+                      className: `${topNavStableClass} ${topNavBlueHoverClass} ${topNavNoShadowClass}`,
                     })}
                   >
                     {dict.nav.businesses}
@@ -250,7 +238,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   className={buttonVariants({
                     variant: "secondary",
                     size: "sm",
-                    className: `${topNavStableClass} ${topNavBlueHoverClass}`,
+                    className: `${topNavStableClass} ${topNavBlueHoverClass} ${topNavNoShadowClass}`,
                   })}
                 >
                   {locale === "ar" ? "الخريطة" : "Map"}
@@ -262,7 +250,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     className={buttonVariants({
                       variant: "ghost",
                       size: "sm",
-                      className: `${topNavStableClass} hover:bg-accent hover:text-white`,
+                      className: `${topNavStableClass} ${topNavNoShadowClass} hover:bg-accent hover:text-white`,
                     })}
                   >
                     {dict.nav.dashboard}
@@ -273,7 +261,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     className={buttonVariants({
                       variant: "secondary",
                       size: "sm",
-                      className: `${topNavStableClass} ${topNavBlueHoverClass}`,
+                      className: `${topNavStableClass} ${topNavBlueHoverClass} ${topNavNoShadowClass}`,
                     })}
                   >
                     {dict.nav.login}
@@ -286,7 +274,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     className={buttonVariants({
                       variant: "ghost",
                       size: "sm",
-                      className: `${topNavStableClass} hover:bg-accent hover:text-white`,
+                      className: `${topNavStableClass} ${topNavNoShadowClass} hover:bg-accent hover:text-white`,
                     })}
                   >
                     {dict.nav.admin}
@@ -300,7 +288,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                       className={buttonVariants({
                         variant: "ghost",
                         size: "sm",
-                        className: `${topNavStableClass} hover:bg-accent hover:text-white`,
+                        className: `${topNavStableClass} ${topNavNoShadowClass} hover:bg-accent hover:text-white`,
                       })}
                     >
                       {dict.nav.logout}
@@ -315,17 +303,17 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                     borderColor: "rgba(var(--foreground-rgb, 0, 0, 0), 0.1)" 
                   }}
                 >
-                  <ThemeToggle locale={locale} />
-                  <LanguageSwitcher locale={locale} />
+                  <ThemeToggle locale={locale} className={topNavNoShadowClass} />
+                  <LanguageSwitcher locale={locale} className={topNavNoShadowClass} />
                 </div>
               </nav>
 
               {/* Mobile menu button */}
               <div className="md:hidden flex items-center gap-2">
-                <ThemeToggle locale={locale} />
+                <ThemeToggle locale={locale} className={topNavNoShadowClass} />
                 <button
                   type="button"
-                  className={buttonVariants({ variant: "secondary", size: "icon", className: "rounded-xl" })}
+                  className={buttonVariants({ variant: "secondary", size: "icon", className: `rounded-xl ${topNavNoShadowClass}` })}
                   aria-label={locale === "ar" ? "القائمة" : "Menu"}
                   aria-expanded={mobileOpen}
                   aria-controls="mobile-nav"
@@ -345,7 +333,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   style={{
                     background: "rgba(var(--surface-rgb, 255, 255, 255), 0.96)",
                     borderColor: "var(--surface-border)",
-                    boxShadow: "var(--shadow)",
+                    boxShadow: "none",
                   }}
                   role="dialog"
                   aria-label={locale === "ar" ? "قائمة التنقل" : "Navigation"}
@@ -367,7 +355,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                         className={buttonVariants({
                           variant: "primary",
                           size: "md",
-                          className: "w-full justify-start rounded-xl",
+                          className: `w-full justify-start rounded-xl ${topNavNoShadowClass}`,
                         })}
                       >
                         {servicesLabel}
@@ -380,7 +368,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                           className={buttonVariants({
                             variant: "ghost",
                             size: "md",
-                            className: "w-full justify-start rounded-xl",
+                            className: `w-full justify-start rounded-xl ${topNavNoShadowClass}`,
                           })}
                         >
                           {dict.nav.businesses}
@@ -392,7 +380,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                           className={buttonVariants({
                             variant: "ghost",
                             size: "md",
-                            className: "w-full justify-start rounded-xl",
+                            className: `w-full justify-start rounded-xl ${topNavNoShadowClass}`,
                           })}
                         >
                           {dict.nav.businesses}
@@ -402,7 +390,11 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                       <Link
                         href={`/${locale}/map`}
                         onClick={() => setMobileOpen(false)}
-                        className={buttonVariants({ variant: "ghost", size: "md", className: "w-full justify-start rounded-xl" })}
+                        className={buttonVariants({
+                          variant: "ghost",
+                          size: "md",
+                          className: `w-full justify-start rounded-xl ${topNavNoShadowClass}`,
+                        })}
                       >
                         {locale === "ar" ? "الخريطة" : "Map"}
                       </Link>
@@ -414,7 +406,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                           className={buttonVariants({
                             variant: "ghost",
                             size: "md",
-                            className: "w-full justify-start rounded-xl",
+                            className: `w-full justify-start rounded-xl ${topNavNoShadowClass}`,
                           })}
                         >
                           {dict.nav.dashboard}
@@ -426,7 +418,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                           className={buttonVariants({
                             variant: "secondary",
                             size: "md",
-                            className: "w-full justify-start rounded-xl",
+                            className: `w-full justify-start rounded-xl ${topNavNoShadowClass}`,
                           })}
                         >
                           {dict.nav.login}
@@ -440,7 +432,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                           className={buttonVariants({
                             variant: "ghost",
                             size: "md",
-                            className: "w-full justify-start rounded-xl",
+                            className: `w-full justify-start rounded-xl ${topNavNoShadowClass}`,
                           })}
                         >
                           {dict.nav.admin}
@@ -457,7 +449,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                             className={buttonVariants({
                               variant: "ghost",
                               size: "md",
-                              className: "w-full justify-start rounded-xl",
+                              className: `w-full justify-start rounded-xl ${topNavNoShadowClass}`,
                             })}
                           >
                             {dict.nav.logout}
@@ -476,7 +468,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                       <span className="text-xs text-(--muted-foreground)">
                         {locale === "ar" ? "الإعدادات" : "Settings"}
                       </span>
-                      <LanguageSwitcher locale={locale} />
+                      <LanguageSwitcher locale={locale} className={topNavNoShadowClass} />
                     </div>
                   </div>
                 </motion.div>

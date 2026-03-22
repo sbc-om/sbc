@@ -7,6 +7,7 @@ interface DashboardCardProps {
   children: ReactNode;
   borderClassName: string;
   glowColor?: string;
+  noShadow?: boolean;
   className?: string;
   style?: CSSProperties;
 }
@@ -15,6 +16,7 @@ export function DashboardCard({
   children,
   borderClassName,
   glowColor = "rgba(0, 121, 244, 0.16)",
+  noShadow = false,
   className,
   style,
 }: DashboardCardProps) {
@@ -60,8 +62,8 @@ export function DashboardCard({
       onPointerMove={handlePointerMove}
       onPointerLeave={handlePointerLeave}
       className={cn(
-        "group relative isolate overflow-hidden rounded-3xl border bg-(--surface) p-4 shadow-(--shadow) transition-[box-shadow,border-color,background-color] duration-300 ease-out sm:p-5 lg:p-6",
-        "hover:shadow-[var(--shadow-hover)]",
+        "group relative isolate overflow-hidden rounded-3xl border bg-(--surface) p-4 transition-[box-shadow,border-color,background-color] duration-300 ease-out sm:p-5 lg:p-6",
+        noShadow ? "shadow-none hover:shadow-none" : "shadow-(--shadow) hover:shadow-[var(--shadow-hover)]",
         borderClassName,
         className,
       )}

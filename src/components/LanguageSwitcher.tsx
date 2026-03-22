@@ -9,7 +9,7 @@ function nextLocale(current: Locale): Locale {
   return current === "en" ? "ar" : "en";
 }
 
-export function LanguageSwitcher({ locale }: { locale: Locale }) {
+export function LanguageSwitcher({ locale, className }: { locale: Locale; className?: string }) {
   const pathname = usePathname();
 
   const segments = pathname.split("/").filter(Boolean);
@@ -27,7 +27,7 @@ export function LanguageSwitcher({ locale }: { locale: Locale }) {
       className={buttonVariants({
         variant: "secondary",
         size: "sm",
-        className: "h-9 rounded-xl hover:translate-y-0 active:scale-100",
+        className: `h-9 rounded-xl hover:translate-y-0 active:scale-100 ${className ?? ""}`,
       })}
     >
       {target === "ar" ? "العربية" : "English"}

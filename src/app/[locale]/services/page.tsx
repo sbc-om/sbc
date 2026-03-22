@@ -15,6 +15,7 @@ import {
 import { HiOutlineCpuChip } from "react-icons/hi2";
 
 import { PublicPage } from "@/components/PublicPage";
+import { DashboardCard } from "@/components/DashboardCard";
 import { buttonVariants } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
@@ -67,6 +68,8 @@ export default async function MarketingPlatformPage({
       href: `/${locale}/store?q=marketing`,
       hrefLabel: ar ? "باقات التسويق" : "Marketing Plans",
       tone: "bg-accent/15 text-accent",
+      borderClassName: "border-blue-400/30 hover:border-blue-500/45",
+      glowColor: "rgba(0,121,244,0.18)",
     },
     {
       icon: HiOutlineUserGroup,
@@ -77,6 +80,8 @@ export default async function MarketingPlatformPage({
       href: `/${locale}/store?q=crm`,
       hrefLabel: ar ? "باقات CRM" : "CRM Plans",
       tone: "bg-accent-2/15 text-accent-2",
+      borderClassName: "border-emerald-400/30 hover:border-emerald-500/45",
+      glowColor: "rgba(16,185,129,0.16)",
     },
     {
       icon: HiOutlineCurrencyDollar,
@@ -87,6 +92,8 @@ export default async function MarketingPlatformPage({
       href: `/${locale}/store?q=accounting`,
       hrefLabel: ar ? "باقات المحاسبة" : "Accounting Plans",
       tone: "bg-accent/15 text-accent",
+      borderClassName: "border-sky-400/30 hover:border-sky-500/45",
+      glowColor: "rgba(14,165,233,0.16)",
     },
     {
       icon: HiOutlineQrcode,
@@ -97,6 +104,8 @@ export default async function MarketingPlatformPage({
       href: `/${locale}/store?q=online-classes`,
       hrefLabel: ar ? "باقات الأونلاين" : "Online Plans",
       tone: "bg-accent-2/15 text-accent-2",
+      borderClassName: "border-fuchsia-400/30 hover:border-fuchsia-500/45",
+      glowColor: "rgba(217,70,239,0.16)",
     },
     {
       icon: HiOutlineLightningBolt,
@@ -107,16 +116,8 @@ export default async function MarketingPlatformPage({
       href: `/${locale}/store?q=sbcclaw`,
       hrefLabel: ar ? "باقات SBCClaw" : "SBCClaw Plans",
       tone: "bg-accent/15 text-accent",
-    },
-    {
-      icon: HiOutlineGift,
-      title: ar ? "SBC Smart Card" : "SBC Smart Card",
-      desc: ar
-        ? "بطاقة ولاء مشتركة بين الأنشطة المشاركة: استخدمها في أي مكان، اكسب نقاط، واصرف نقاط."
-        : "A shared loyalty card ecosystem: use anywhere, earn points, and spend points.",
-      href: `/${locale}/loyalty`,
-      hrefLabel: ar ? "استكشف Smart Card" : "Explore Smart Card",
-      tone: "bg-accent-2/15 text-accent-2",
+      borderClassName: "border-cyan-400/30 hover:border-cyan-500/45",
+      glowColor: "rgba(6,182,212,0.16)",
     },
     {
       icon: HiOutlineMail,
@@ -127,6 +128,8 @@ export default async function MarketingPlatformPage({
       href: `/${locale}/email/manage`,
       hrefLabel: ar ? "افتح البريد" : "Open Email",
       tone: "bg-accent/15 text-accent",
+      borderClassName: "border-amber-400/30 hover:border-amber-500/45",
+      glowColor: "rgba(245,158,11,0.16)",
     },
     {
       icon: HiOutlineCpuChip,
@@ -137,6 +140,37 @@ export default async function MarketingPlatformPage({
       href: `/${locale}/ai`,
       hrefLabel: ar ? "افتح AI Builder" : "Open AI Builder",
       tone: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+      borderClassName: "border-violet-400/30 hover:border-violet-500/45",
+      glowColor: "rgba(139,92,246,0.16)",
+    },
+  ];
+
+  const featuredCoreServices = [
+    {
+      icon: HiOutlineGift,
+      title: ar ? "الولاء" : "Loyalty",
+      desc: ar
+        ? "نظام بسيط للنقاط وبطاقات العملاء. استخدمه كل يوم بسهولة."
+        : "Simple points and customer cards in one place.",
+      href: `/${locale}/loyalty/staff`,
+      hrefLabel: ar ? "دخول الموظف" : "Staff Login",
+      iconWrap: "from-amber-300 via-rose-400 to-fuchsia-500",
+      iconTone: "text-white",
+      borderClassName: "border-rose-400/35 hover:border-fuchsia-500/50",
+      glowColor: "rgba(244,63,94,0.16)",
+    },
+    {
+      icon: HiOutlineGlobeAlt,
+      title: ar ? "دليل الأعمال (Business Directory)" : "Business Directory",
+      desc: ar
+        ? "استكشف الأنشطة التجارية بسرعة ومن مكان واحد."
+        : "Browse businesses quickly in one page.",
+      href: `/${locale}/businesses`,
+      hrefLabel: ar ? "صفحة الأنشطة" : "Open Businesses",
+      iconWrap: "from-sky-300 via-cyan-400 to-emerald-500",
+      iconTone: "text-white",
+      borderClassName: "border-cyan-400/35 hover:border-emerald-500/50",
+      glowColor: "rgba(6,182,212,0.16)",
     },
   ];
 
@@ -186,7 +220,7 @@ export default async function MarketingPlatformPage({
               className={buttonVariants({
                 variant: "primary",
                 size: "lg",
-                className: "min-w-[180px]",
+                className: "min-w-[180px] !shadow-none hover:!shadow-none",
               })}
             >
               {copy.ctaPrimary}
@@ -198,7 +232,7 @@ export default async function MarketingPlatformPage({
               className={buttonVariants({
                 variant: "primary",
                 size: "lg",
-                className: "min-w-[180px]",
+                className: "min-w-[180px] !shadow-none hover:!shadow-none",
               })}
             >
               {ar ? "ابدأ النمو الآن" : "Start Growing"}
@@ -210,7 +244,7 @@ export default async function MarketingPlatformPage({
             className={buttonVariants({
               variant: "secondary",
               size: "lg",
-              className: "min-w-[180px]",
+              className: "min-w-[180px] !shadow-none hover:!shadow-none",
             })}
           >
             <HiOutlineSparkles className="h-5 w-5" />
@@ -221,7 +255,7 @@ export default async function MarketingPlatformPage({
             className={buttonVariants({
               variant: "secondary",
               size: "lg",
-              className: "min-w-[180px]",
+              className: "min-w-[180px] !shadow-none hover:!shadow-none",
             })}
           >
             <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "" : "rotate-180")} />
@@ -232,29 +266,81 @@ export default async function MarketingPlatformPage({
 
       <section className="mt-10">
         <h2 className="text-xl font-semibold tracking-tight">{copy.sectionServices}</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-5 space-y-4">
+          {featuredCoreServices.map((service) => {
+            const Icon = service.icon;
+            return (
+              <DashboardCard
+                key={service.title}
+                borderClassName={service.borderClassName}
+                glowColor={service.glowColor}
+                noShadow
+                className="rounded-3xl p-6 sm:p-8"
+              >
+                <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="flex items-start gap-4 sm:gap-6">
+                    <div
+                      className={`flex h-28 w-28 shrink-0 items-center justify-center rounded-3xl bg-linear-to-br ${service.iconWrap}`}
+                    >
+                      <Icon className={`h-16 w-16 ${service.iconTone}`} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-semibold leading-tight">{service.title}</h3>
+                      <p className="mt-3 max-w-3xl text-base font-medium leading-8 text-(--muted-foreground)">
+                        {service.desc}
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href={service.href}
+                    className={buttonVariants({
+                      variant: "primary",
+                      size: "lg",
+                      className: "w-full lg:w-auto lg:min-w-[230px] !shadow-none hover:!shadow-none",
+                    })}
+                  >
+                    {service.hrefLabel}
+                    <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "rotate-180" : "")} />
+                  </Link>
+                </div>
+              </DashboardCard>
+            );
+          })}
+        </div>
+
+        <div className="mt-4 grid auto-rows-fr gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => {
             const Icon = service.icon;
             return (
-              <div key={service.title} className="sbc-card sbc-card--interactive flex flex-col rounded-2xl p-6">
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${service.tone}`}>
-                    <Icon className="h-9 w-9" />
+              <DashboardCard
+                key={service.title}
+                borderClassName={service.borderClassName}
+                glowColor={service.glowColor}
+                noShadow
+                className="h-full rounded-2xl p-6"
+              >
+                <div className="flex h-full flex-col">
+                  <div className="flex min-h-[4.5rem] items-start gap-3">
+                    <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${service.tone}`}>
+                      <Icon className="h-9 w-9" />
+                    </div>
+                    <h3 className="text-lg font-semibold leading-7">{service.title}</h3>
                   </div>
-                  <h3 className="text-lg font-semibold leading-7">{service.title}</h3>
+                  <p className="mt-4 min-h-[8rem] text-base font-medium leading-8 text-(--muted-foreground)">{service.desc}</p>
+                  <div className="mt-auto pt-4">
+                    <Link
+                      href={service.href}
+                      className={buttonVariants({
+                        variant: "secondary",
+                        size: "md",
+                        className: "w-full !shadow-none hover:!shadow-none",
+                      })}
+                    >
+                      {service.hrefLabel}
+                    </Link>
+                  </div>
                 </div>
-                <p className="mt-4 flex-1 text-base font-medium leading-8 text-(--muted-foreground)">{service.desc}</p>
-                <Link
-                  href={service.href}
-                  className={buttonVariants({
-                    variant: "secondary",
-                    size: "md",
-                    className: "mt-4 w-full",
-                  })}
-                >
-                  {service.hrefLabel}
-                </Link>
-              </div>
+              </DashboardCard>
             );
           })}
         </div>
@@ -266,7 +352,7 @@ export default async function MarketingPlatformPage({
           {highlights.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.title} className="sbc-card sbc-card--interactive rounded-2xl p-6">
+              <div key={item.title} className="sbc-card sbc-card--interactive rounded-2xl p-6 !shadow-none hover:!shadow-none">
                 <div className="flex items-center gap-3">
                   <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${item.tone}`}>
                     <Icon className="h-9 w-9" />
@@ -280,7 +366,7 @@ export default async function MarketingPlatformPage({
         </div>
       </section>
 
-      <section className="mt-8 sbc-card rounded-2xl p-6">
+      <section className="mt-8 sbc-card rounded-2xl p-6 !shadow-none hover:!shadow-none">
         <h3 className="text-lg font-semibold">{copy.sectionIncludes}</h3>
         <ul className="mt-3 grid gap-3 text-base font-medium leading-8 text-(--muted-foreground)">
           <li>
@@ -334,7 +420,7 @@ export default async function MarketingPlatformPage({
         </ul>
       </section>
 
-      <section className="mt-8 sbc-card rounded-2xl p-6">
+      <section className="mt-8 sbc-card rounded-2xl p-6 !shadow-none hover:!shadow-none">
         <h3 className="text-lg font-semibold">{copy.sectionPackages}</h3>
         <p className="mt-2 text-base font-medium text-(--muted-foreground)">
           {ar
@@ -342,7 +428,7 @@ export default async function MarketingPlatformPage({
             : "Each service offers monthly, 6-month, and yearly options. Use the guide below to choose what fits your current business stage."}
         </p>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div className="sbc-card rounded-2xl p-5">
+          <div className="sbc-card rounded-2xl p-5 !shadow-none hover:!shadow-none">
             <h4 className="font-semibold">{ar ? "منصة التسويق" : "Marketing Platform"}</h4>
             <p className="mt-2 text-base font-medium leading-8 text-(--muted-foreground)">
               {ar
@@ -350,7 +436,7 @@ export default async function MarketingPlatformPage({
                 : "Best for campaigns and messaging channels. Start monthly, then move to 6-month or yearly for better value."}
             </p>
           </div>
-          <div className="sbc-card rounded-2xl p-5">
+          <div className="sbc-card rounded-2xl p-5 !shadow-none hover:!shadow-none">
             <h4 className="font-semibold">{ar ? "خدمات CRM" : "CRM Services"}</h4>
             <p className="mt-2 text-base font-medium leading-8 text-(--muted-foreground)">
               {ar
@@ -358,7 +444,7 @@ export default async function MarketingPlatformPage({
                 : "Built for customer management and sales pipeline control. Ideal for small businesses needing structured follow-ups."}
             </p>
           </div>
-          <div className="sbc-card rounded-2xl p-5">
+          <div className="sbc-card rounded-2xl p-5 !shadow-none hover:!shadow-none">
             <h4 className="font-semibold">{ar ? "خدمات المحاسبة" : "Accounting Services"}</h4>
             <p className="mt-2 text-base font-medium leading-8 text-(--muted-foreground)">
               {ar
@@ -366,7 +452,7 @@ export default async function MarketingPlatformPage({
                 : "Designed for invoices, expenses, and financial summaries. Helps improve cash-flow visibility and decisions."}
             </p>
           </div>
-          <div className="sbc-card rounded-2xl p-5">
+          <div className="sbc-card rounded-2xl p-5 !shadow-none hover:!shadow-none">
             <h4 className="font-semibold">{ar ? "الاجتماعات والفصول الافتراضية" : "Online Meetings & Virtual Classes"}</h4>
             <p className="mt-2 text-base font-medium leading-8 text-(--muted-foreground)">
               {ar
@@ -374,7 +460,7 @@ export default async function MarketingPlatformPage({
                 : "Great for training teams, educators, and online consulting with session scheduling and attendance tracking."}
             </p>
           </div>
-          <div className="sbc-card rounded-2xl p-5 sm:col-span-2">
+          <div className="sbc-card rounded-2xl p-5 sm:col-span-2 !shadow-none hover:!shadow-none">
             <h4 className="font-semibold">{ar ? "شبكة SBCClaw الذكية" : "SBCClaw Smart Network"}</h4>
             <p className="mt-2 text-base font-medium leading-8 text-(--muted-foreground)">
               {ar

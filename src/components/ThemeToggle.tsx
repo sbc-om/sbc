@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { RiMoonClearLine, RiSunLine } from "react-icons/ri";
 import { buttonVariants } from "@/components/ui/Button";
 
 type Theme = "light" | "dark";
@@ -27,7 +28,7 @@ function getInitialTheme(): Theme {
   return "light";
 }
 
-export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
+export function ThemeToggle({ locale, className }: { locale: "en" | "ar"; className?: string }) {
   const [theme, setTheme] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
 
@@ -62,18 +63,11 @@ export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
         className={buttonVariants({
           variant: "secondary",
           size: "icon",
-          className: "rounded-xl hover:translate-y-0 active:scale-100",
+          className: `rounded-xl hover:translate-y-0 active:scale-100 ${className ?? ""}`,
         })}
         disabled
       >
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          fill="none"
-          className="h-4 w-4 opacity-50"
-        >
-          <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.8" />
-        </svg>
+        <RiSunLine className="h-4 w-4 opacity-50" aria-hidden="true" />
       </button>
     );
   }
@@ -92,44 +86,13 @@ export function ThemeToggle({ locale }: { locale: "en" | "ar" }) {
       className={buttonVariants({
         variant: "secondary",
         size: "icon",
-        className: "rounded-xl hover:translate-y-0 active:scale-100",
+        className: `rounded-xl hover:translate-y-0 active:scale-100 ${className ?? ""}`,
       })}
     >
       {theme === "dark" ? (
-        // Sun icon
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          fill="none"
-          className="h-4 w-4"
-        >
-          <path
-            d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"
-            stroke="currentColor"
-            strokeWidth="1.8"
-          />
-          <path
-            d="M12 2v2.5M12 19.5V22M4.22 4.22 6 6M18 18l1.78 1.78M2 12h2.5M19.5 12H22M4.22 19.78 6 18M18 6l1.78-1.78"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-          />
-        </svg>
+        <RiSunLine aria-hidden="true" className="h-4 w-4 text-amber-500" />
       ) : (
-        // Moon icon
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 24 24"
-          fill="none"
-          className="h-4 w-4"
-        >
-          <path
-            d="M21 13.2A8 8 0 1 1 10.8 3a6.5 6.5 0 0 0 10.2 10.2Z"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <RiMoonClearLine aria-hidden="true" className="h-4 w-4 text-indigo-500" />
       )}
     </button>
   );

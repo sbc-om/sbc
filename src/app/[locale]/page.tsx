@@ -163,6 +163,7 @@ export default async function LocaleHome({
                   <BusinessCard
                     business={business}
                     locale={locale as Locale}
+                    noShadow
                   />
                 </FadeInSection>
               ))}
@@ -193,6 +194,7 @@ export default async function LocaleHome({
                   <BusinessCard
                     business={business}
                     locale={locale as Locale}
+                    noShadow
                   />
                 </FadeInSection>
               ))}
@@ -223,6 +225,7 @@ export default async function LocaleHome({
                   <BusinessCard
                     business={business}
                     locale={locale as Locale}
+                    noShadow
                   />
                 </FadeInSection>
               ))}

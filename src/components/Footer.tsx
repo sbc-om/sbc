@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FaInstagram, FaFacebook, FaTwitter, FaThLarge, FaInfoCircle, FaEnvelope } from "react-icons/fa";
+import { FaInstagram, FaFacebook, FaTwitter, FaThLarge, FaInfoCircle, FaEnvelope, FaUser } from "react-icons/fa";
 import {
   HiOutlineBuildingOffice2,
   HiOutlineCpuChip,
@@ -76,6 +76,13 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
 
   const footerActionIcons = [
     ...socials.map((s) => ({ ...s, href: s.href as string })),
+    {
+      key: "loyalty-staff",
+      label: locale === "ar" ? "طاقم الولاء" : "Loyalty Staff",
+      href: `/${locale}/loyalty/staff`,
+      icon: <FaUser className="h-4 w-4 text-[#0EA5E9]" />,
+      external: false,
+    },
     {
       key: "about",
       label: locale === "ar" ? "عن المشروع" : "About",
@@ -163,7 +170,6 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
               background: "rgb(var(--surface-rgb, 255, 255, 255))",
               border: "1px solid",
               borderColor: "var(--surface-border)",
-              boxShadow: "var(--shadow)",
             }}
           >
             {/* Responsive layout: vertical on mobile, horizontal on desktop */}
@@ -204,7 +210,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
                       rel="noreferrer"
                       aria-label={s.label}
                       title={s.label}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-(--shadow) hover:scale-110 transition-all"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-none hover:scale-110 transition-all"
                     >
                       {s.icon}
                     </a>
@@ -214,7 +220,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
                       href={s.href}
                       aria-label={s.label}
                       title={s.label}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-(--shadow) hover:scale-110 transition-all"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-none hover:scale-110 transition-all"
                     >
                       {s.icon}
                     </Link>
@@ -228,7 +234,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
                     onClick={() => setPlatformOpen((v) => !v)}
                     aria-label={locale === "ar" ? "المنصة" : "Platform"}
                     title={locale === "ar" ? "المنصة" : "Platform"}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-(--shadow) hover:scale-110 transition-all"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-none hover:scale-110 transition-all"
                   >
                     <FaThLarge className="h-4 w-4 text-[#8B5CF6]" />
                   </button>
@@ -251,7 +257,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
           {/* Panel */}
           <div
             ref={platformRef}
-            className="relative z-10 w-[min(94vw,760px)] rounded-2xl border border-(--surface-border) p-3 shadow-2xl"
+            className="relative z-10 w-[min(94vw,760px)] rounded-2xl border border-(--surface-border) p-3 shadow-none"
             style={{ background: "rgb(var(--surface-rgb, 255, 255, 255))" }}
             onClick={(e) => e.stopPropagation()}
           >

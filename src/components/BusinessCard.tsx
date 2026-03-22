@@ -24,9 +24,10 @@ interface BusinessCardProps {
     };
   };
   locale: "en" | "ar";
+  noShadow?: boolean;
 }
 
-export async function BusinessCard({ business, locale }: BusinessCardProps) {
+export async function BusinessCard({ business, locale, noShadow = false }: BusinessCardProps) {
   const name = locale === "ar" ? business.name.ar : business.name.en;
   const description = business.description
     ? locale === "ar"
@@ -58,7 +59,9 @@ export async function BusinessCard({ business, locale }: BusinessCardProps) {
       className="group block h-full"
     >
       <article
-        className="relative rounded-2xl overflow-hidden backdrop-blur-xl shadow-lg transition-all duration-300 hover:shadow-xl h-full"
+        className={`relative h-full overflow-hidden rounded-2xl backdrop-blur-xl transition-all duration-300 ${
+          noShadow ? "shadow-none hover:shadow-none" : "shadow-lg hover:shadow-xl"
+        }`}
         style={{
           background: "rgba(var(--surface-rgb, 255, 255, 255), 0.8)",
           border: "1px solid",
@@ -91,7 +94,9 @@ export async function BusinessCard({ business, locale }: BusinessCardProps) {
         <div className="relative p-5">
           {/* Avatar (default category icon, or logo if selected) */}
           <div
-            className="absolute -top-8 left-5 w-16 h-16 rounded-xl overflow-hidden shadow-lg flex items-center justify-center"
+            className={`absolute -top-8 left-5 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl ${
+              noShadow ? "shadow-none" : "shadow-lg"
+            }`}
             style={{
               background: "var(--background)",
               border: "2px solid",

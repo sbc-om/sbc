@@ -38,7 +38,7 @@ import {
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline, IoWallet, IoWalletOutline } from "react-icons/io5";
 import { HiPlus, HiOutlinePlus, HiBriefcase, HiOutlineBriefcase, HiUserGroup, HiOutlineUserGroup } from "react-icons/hi";
-import { HiSun, HiMoon, HiDesktopComputer } from "react-icons/hi";
+import { RiComputerLine, RiMoonClearLine, RiSunLine } from "react-icons/ri";
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   normalizeNotificationPreferences,
@@ -842,11 +842,26 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               <div className="grid grid-cols-3 gap-1 rounded-xl bg-(--chip-bg) p-1">
                 {(
                   [
-                    { mode: "light" as ThemeMode, icon: HiSun, label: locale === "ar" ? "فاتح" : "Light" },
-                    { mode: "dark" as ThemeMode, icon: HiMoon, label: locale === "ar" ? "داكن" : "Dark" },
-                    { mode: "system" as ThemeMode, icon: HiDesktopComputer, label: locale === "ar" ? "النظام" : "System" },
+                    {
+                      mode: "light" as ThemeMode,
+                      icon: RiSunLine,
+                      label: locale === "ar" ? "فاتح" : "Light",
+                      activeClass: "text-amber-500",
+                    },
+                    {
+                      mode: "dark" as ThemeMode,
+                      icon: RiMoonClearLine,
+                      label: locale === "ar" ? "داكن" : "Dark",
+                      activeClass: "text-indigo-500",
+                    },
+                    {
+                      mode: "system" as ThemeMode,
+                      icon: RiComputerLine,
+                      label: locale === "ar" ? "النظام" : "System",
+                      activeClass: "text-sky-500",
+                    },
                   ] as const
-                ).map(({ mode, icon: Icon, label }) => {
+                ).map(({ mode, icon: Icon, label, activeClass }) => {
                   const isSelected = themeMode === mode;
                   return (
                     <button
@@ -858,11 +873,13 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                       title={label}
                       className={`flex h-8 items-center justify-center rounded-lg transition-all ${
                         isSelected
-                          ? "bg-(--background) text-(--foreground) shadow-sm"
+                          ? "bg-(--background) shadow-sm"
                           : "text-(--muted-foreground) hover:text-(--foreground)"
                       }`}
                     >
-                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      <Icon
+                        className={`h-4 w-4 shrink-0 ${isSelected ? activeClass : "text-(--muted-foreground)"}`}
+                      />
                     </button>
                   );
                 })}
