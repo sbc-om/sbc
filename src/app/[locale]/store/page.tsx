@@ -16,7 +16,6 @@ import {
 
 import { AppPage } from "@/components/AppPage";
 import { PublicPage } from "@/components/PublicPage";
-import { Input } from "@/components/ui/Input";
 import { buttonVariants } from "@/components/ui/Button";
 import { AddToCartButton } from "@/components/store/AddToCartButton";
 import { getCurrentUser } from "@/lib/auth/currentUser";
@@ -71,6 +70,10 @@ export default async function StorePage({
 
   const ar = locale === "ar";
   const Wrapper = user ? AppPage : PublicPage;
+  const detailsCtaClass =
+    "h-10 w-full rounded-xl border border-(--surface-border) bg-(--background)/55 px-3 text-sm font-semibold text-foreground transition-colors hover:border-(--accent)/45 hover:bg-(--chip-bg)";
+  const primaryCtaClass =
+    "h-10 w-full rounded-xl border border-transparent bg-linear-to-r from-accent to-accent-2 px-3 text-sm font-semibold text-(--accent-foreground) transition-[filter,opacity] hover:brightness-105";
 
   return (
     <Wrapper>
@@ -113,28 +116,40 @@ export default async function StorePage({
         </div>
       </div>
 
-      <div className="mt-8 sbc-card rounded-2xl p-5">
-        <form className="flex flex-col gap-3 sm:flex-row sm:items-center" action={`/${locale}/store`}>
-          <Input
-            name="q"
-            defaultValue={sp.q ?? ""}
-            placeholder={ar ? "ابحث عن منتج…" : "Search products…"}
-            className="flex-1"
-          />
-          <button
-            type="submit"
-            className={buttonVariants({ variant: "secondary", size: "md" })}
-          >
-            {ar ? "بحث" : "Search"}
-          </button>
-          {q ? (
-            <Link
-              href={`/${locale}/store`}
-              className={buttonVariants({ variant: "ghost", size: "md" })}
-            >
-              {ar ? "مسح" : "Clear"}
-            </Link>
-          ) : null}
+      <div className="mt-6">
+        <form method="GET" action={`/${locale}/store`}>
+          <div className="sbc-card rounded-2xl p-6">
+            <div className="flex items-center gap-3">
+              <svg
+                className="h-5 w-5 text-(--muted-foreground)"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              <input
+                type="search"
+                name="q"
+                defaultValue={sp.q ?? ""}
+                placeholder={ar ? "ابحث عن منتج..." : "Search products..."}
+                className="flex-1 bg-transparent outline-none"
+              />
+              {q ? (
+                <Link
+                  href={`/${locale}/store`}
+                  className={buttonVariants({ variant: "ghost", size: "xs" })}
+                >
+                  {ar ? "مسح" : "Clear"}
+                </Link>
+              ) : null}
+            </div>
+          </div>
         </form>
       </div>
 
@@ -259,14 +274,14 @@ export default async function StorePage({
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-5 grid auto-rows-fr gap-5 md:grid-cols-2 lg:grid-cols-3">
                   {items.map((p) => {
                     const t = getStoreProductText(p, locale as Locale);
                     return (
                       <article
                         key={p.slug}
                         className={
-                          "relative flex flex-col overflow-hidden rounded-2xl border-2 bg-(--surface) p-6 backdrop-blur-sm shadow-sm transition-all duration-200 hover:shadow-md " +
+                          "relative flex h-full flex-col overflow-hidden rounded-2xl border-2 bg-(--surface) p-6 backdrop-blur-sm transition-all duration-200 " +
                           section.borderClassName
                         }
                       >
@@ -292,42 +307,50 @@ export default async function StorePage({
                           ) : null}
                         </div>
 
-                        <p className="mt-3 text-sm leading-relaxed text-(--muted-foreground)">
-                          {t.description}
-                        </p>
+                        <div className="mt-3 flex-1">
+                          <p className="text-sm leading-relaxed text-(--muted-foreground)">
+                            {t.description}
+                          </p>
 
-                        <ul className="mt-4 grid gap-2 text-sm">
-                          {t.features.slice(0, 4).map((f) => (
-                            <li key={f} className="flex items-start gap-2">
-                              <HiCheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
-                              <span className="text-(--muted-foreground)">{f}</span>
-                            </li>
-                          ))}
-                        </ul>
-
-                        <div className="mt-6 flex flex-wrap items-center gap-3">
-                          <Link
-                            href={`/${locale}/store/${p.slug}`}
-                            className={buttonVariants({ variant: "secondary", size: "sm" })}
-                          >
-                            {ar ? "التفاصيل" : "Details"}
-                          </Link>
-                          {user ? (
-                            <AddToCartButton productSlug={p.slug} locale={locale as Locale} />
-                          ) : (
-                            <Link
-                              href={`/${locale}/login?next=${encodeURIComponent(`/${locale}/store`)}`}
-                              className={buttonVariants({ variant: "primary", size: "sm" })}
-                            >
-                              {ar ? dict.nav.login : "Login to add"}
-                            </Link>
-                          )}
+                          <ul className="mt-4 grid gap-2 text-sm">
+                            {t.features.slice(0, 4).map((f) => (
+                              <li key={f} className="flex items-start gap-2">
+                                <HiCheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-300" />
+                                <span className="text-(--muted-foreground)">{f}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
 
-                        <div className="mt-4 text-xs text-(--muted-foreground)">
-                          {ar
-                            ? "ملاحظة: الدفع الحقيقي سيتم ربطه لاحقاً."
-                            : "Note: real payments will be integrated later."}
+                        <div className="mt-auto pt-6">
+                          <div className="grid grid-cols-2 gap-2">
+                            <Link
+                              href={`/${locale}/store/${p.slug}`}
+                              className={buttonVariants({ variant: "secondary", size: "sm", className: detailsCtaClass })}
+                            >
+                              {ar ? "التفاصيل" : "Details"}
+                            </Link>
+                            {user ? (
+                              <AddToCartButton
+                                productSlug={p.slug}
+                                locale={locale as Locale}
+                                className={primaryCtaClass}
+                              />
+                            ) : (
+                              <Link
+                                href={`/${locale}/login?next=${encodeURIComponent(`/${locale}/store`)}`}
+                                className={buttonVariants({ variant: "primary", size: "sm", className: primaryCtaClass })}
+                              >
+                                {ar ? dict.nav.login : "Login to add"}
+                              </Link>
+                            )}
+                          </div>
+
+                          <div className="mt-3 text-xs text-(--muted-foreground)">
+                            {ar
+                              ? "ملاحظة: الدفع الحقيقي سيتم ربطه لاحقاً."
+                              : "Note: real payments will be integrated later."}
+                          </div>
                         </div>
                       </article>
                     );

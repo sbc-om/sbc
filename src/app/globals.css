@@ -12,8 +12,8 @@
   --surface-rgb: 255, 255, 255;
   --surface-border: rgba(15, 23, 42, 0.1);
   --surface-hover: rgba(15, 23, 42, 0.04);
-  --shadow: 0 12px 36px rgba(15, 23, 42, 0.1);
-  --shadow-hover: 0 20px 56px rgba(15, 23, 42, 0.16);
+  --shadow: none;
+  --shadow-hover: none;
   --muted-foreground: rgba(15, 23, 42, 0.70);
 
   /* Brand / accents */
@@ -168,8 +168,8 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-profile-btn {
   --surface-rgb: 38, 38, 38;
   --surface-border: rgba(255, 255, 255, 0.18);
   --surface-hover: rgba(255, 255, 255, 0.10);
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.36);
-  --shadow-hover: 0 16px 44px rgba(0, 0, 0, 0.46);
+  --shadow: none;
+  --shadow-hover: none;
   --muted-foreground: rgba(232, 234, 237, 0.72);
 
   --accent: #0079f4;
@@ -218,6 +218,13 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+/* Global flat style: disable box shadows across the UI. */
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
 }
 
 /* Shared UI building blocks (keeps cards/buttons in sync with theme) */

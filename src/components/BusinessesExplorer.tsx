@@ -3,13 +3,13 @@
 import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { FiSearch, FiUpload, FiX, FiFilter, FiZap, FiMessageCircle, FiSend, FiTrash2, FiArrowRight } from "react-icons/fi";
+import { FiUpload, FiX, FiFilter, FiZap, FiMessageCircle, FiSend, FiTrash2, FiArrowRight } from "react-icons/fi";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { Dictionary } from "@/lib/i18n/getDictionary";
 import type { Business, Category } from "@/lib/db/types";
 import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { BusinessFeedCard } from "@/components/BusinessFeedCard";
 import { MarkdownRenderer } from "@/components/ui/MarkdownEditor";
@@ -670,35 +670,47 @@ export function BusinessesExplorer({
         <div className="space-y-4 p-4 sm:space-y-5 sm:p-5">
           {/* Main Search Bar with AI */}
           <div className="space-y-3 sm:space-y-4">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto] sm:gap-3">
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter" && !isAiSearching) {
-                    e.preventDefault();
-                    handleSearch();
-                  }
-                }}
-                placeholder={locale === "ar" ? "ابحث عن نشاط تجاري... (بحث ذكي)" : "Search businesses... (Smart search)"}
-                disabled={isAiSearching}
-                className="h-12 rounded-xl text-sm sm:h-11"
-              />
-              <Button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleSearch();
-                }}
-                disabled={!searchQuery.trim() || isAiSearching}
-                className="h-12 w-full rounded-xl px-4 shadow-none sm:h-11 sm:w-12 sm:min-w-12 sm:px-0"
-              >
-                {isAiSearching ? (
-                  <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <FiSearch className="h-4 w-4" />
-                )}
-              </Button>
+            <div className="sbc-card rounded-2xl p-6">
+              <div className="flex items-center gap-3">
+                <svg
+                  className="h-5 w-5 text-(--muted-foreground)"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !isAiSearching) {
+                      e.preventDefault();
+                      handleSearch();
+                    }
+                  }}
+                  placeholder={locale === "ar" ? "ابحث عن نشاط..." : "Search businesses..."}
+                  className="flex-1 bg-transparent outline-none"
+                />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setAiResults(null);
+                    }}
+                    className={buttonVariants({ variant: "ghost", size: "xs" })}
+                  >
+                    {locale === "ar" ? "مسح" : "Clear"}
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             {/* Quick Action Buttons - Toggle Group */}
