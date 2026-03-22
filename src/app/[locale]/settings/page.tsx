@@ -23,7 +23,7 @@ export default async function SettingsPage({
 
   return (
     <AppPage>
-      <div>
+      <div className="[&_.sbc-card]:!border-0 [&_.border]:!border-0">
         <h1 className="text-2xl font-semibold tracking-tight">
           {dict.settings?.title ?? dict.nav.settings}
         </h1>

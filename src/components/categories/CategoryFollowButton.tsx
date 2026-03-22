@@ -61,7 +61,7 @@ export function CategoryFollowButton({
       variant={isFollowing ? "secondary" : "primary"}
       onClick={onToggle}
       disabled={isPending}
-      className="min-w-[110px] rounded-full"
+      className="min-w-[110px] rounded-lg"
       aria-live="polite"
     >
       {isPending ? (

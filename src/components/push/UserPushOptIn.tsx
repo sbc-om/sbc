@@ -178,7 +178,7 @@ export function UserPushOptIn({ dir = "ltr" }: { dir?: "ltr" | "rtl" }) {
   const containerDirClass = dir === "rtl" ? "text-right" : "text-left";
 
   return (
-    <div className={cn("rounded-2xl border border-(--surface-border) bg-(--surface) p-5", containerDirClass)} dir={dir}>
+    <div className={cn("rounded-2xl bg-slate-200/65 p-5 dark:bg-slate-700/35", containerDirClass)} dir={dir}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="text-sm font-semibold">{t.title}</div>

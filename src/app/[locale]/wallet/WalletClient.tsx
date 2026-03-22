@@ -591,7 +591,7 @@ export function WalletClient({
       </div>
 
       {/* Transactions / Withdrawal Requests Tabs */}
-      <div className="rounded-2xl border p-4" style={{ borderColor: "var(--surface-border)" }}>
+      <div className="rounded-2xl bg-white p-4 dark:bg-(--surface)">
         {/* Tab Headers */}
         <div className="flex gap-4 border-b pb-2 mb-4" style={{ borderColor: "var(--surface-border)" }}>
           <button

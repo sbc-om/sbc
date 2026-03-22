@@ -31,7 +31,7 @@ function ToggleRow({
   disabled?: boolean;
 }) {
   return (
-    <label className="flex items-start justify-between gap-4 rounded-2xl border border-(--surface-border) bg-(--surface) px-4 py-3">
+    <label className="flex items-start justify-between gap-4 rounded-2xl bg-slate-200/65 px-4 py-3 dark:bg-slate-700/35">
       <span className="min-w-0">
         <span className="block text-sm font-medium">{label}</span>
         {description ? (
@@ -213,34 +213,40 @@ export function SettingsClient({
   return (
     <div className="mt-6 grid gap-6">
       <div className="sbc-card rounded-2xl p-6">
-        <h2 className="text-base font-semibold">{sectionHint.language}</h2>
-        <p className="mt-1 text-sm text-(--muted-foreground)">
-          {locale === "ar"
-            ? "اختر لغة واجهة الموقع."
-            : "Choose your interface language."}
-        </p>
-        <div className="mt-4">
+        <div className="rounded-xl bg-slate-200/55 p-3 dark:bg-slate-700/28">
+          <h2 className="text-base font-semibold">{sectionHint.language}</h2>
+          <p className="mt-1 text-sm text-(--muted-foreground)">
+            {locale === "ar"
+              ? "اختر لغة واجهة الموقع."
+              : "Choose your interface language."}
+          </p>
+        </div>
+        <div className="mt-4 rounded-xl bg-(--field-bg) p-3">
           <LanguageSwitcher locale={locale} />
         </div>
       </div>
 
       <div className="sbc-card rounded-2xl p-6">
-        <h2 className="text-base font-semibold">{sectionHint.theme}</h2>
-        <p className="mt-1 text-sm text-(--muted-foreground)">
-          {locale === "ar" ? "تبديل الوضع الفاتح/الداكن." : "Toggle light/dark mode."}
-        </p>
-        <div className="mt-4">
+        <div className="rounded-xl bg-slate-200/55 p-3 dark:bg-slate-700/28">
+          <h2 className="text-base font-semibold">{sectionHint.theme}</h2>
+          <p className="mt-1 text-sm text-(--muted-foreground)">
+            {locale === "ar" ? "تبديل الوضع الفاتح/الداكن." : "Toggle light/dark mode."}
+          </p>
+        </div>
+        <div className="mt-4 rounded-xl bg-(--field-bg) p-3">
           <ThemeToggle locale={locale} />
         </div>
       </div>
 
       <div className="sbc-card rounded-2xl p-6">
-        <h2 className="text-base font-semibold">{sectionHint.notifications}</h2>
-        <p className="mt-1 text-sm text-(--muted-foreground)">
-          {locale === "ar"
-            ? "تتم مزامنة هذه التفضيلات مع حسابك وتطبيقها عبر التطبيق بالكامل."
-            : "These preferences are synced to your account and applied across the app."}
-        </p>
+        <div className="rounded-xl bg-slate-200/55 p-3 dark:bg-slate-700/28">
+          <h2 className="text-base font-semibold">{sectionHint.notifications}</h2>
+          <p className="mt-1 text-sm text-(--muted-foreground)">
+            {locale === "ar"
+              ? "تتم مزامنة هذه التفضيلات مع حسابك وتطبيقها عبر التطبيق بالكامل."
+              : "These preferences are synced to your account and applied across the app."}
+          </p>
+        </div>
 
         <div className="mt-4 grid gap-3">
           <ToggleRow
@@ -318,7 +324,7 @@ export function SettingsClient({
             ) : null}
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 rounded-xl bg-(--field-bg) p-3">
             <UserPushOptIn dir={dir} />
           </div>
         </div>
