@@ -414,16 +414,35 @@ export function LoyaltyProfileClient({
 
               <div className="mt-4 flex items-center justify-center">
                 {qrDataUrl ? (
-                  <div className="h-56 w-56 max-w-full rounded-2xl border border-(--surface-border) bg-white p-2 sm:h-64 sm:w-64">
-                    <Image
-                      src={qrDataUrl}
-                      alt="QR"
-                      width={224}
-                      height={224}
-                      unoptimized
-                      className="h-full w-full"
-                    />
-                  </div>
+                  joinUrl ? (
+                    <a
+                      href={joinUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block h-56 w-56 max-w-full rounded-2xl border border-(--surface-border) bg-white p-2 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:h-64 sm:w-64"
+                      title={joinUrl}
+                    >
+                      <Image
+                        src={qrDataUrl}
+                        alt="QR"
+                        width={224}
+                        height={224}
+                        unoptimized
+                        className="h-full w-full"
+                      />
+                    </a>
+                  ) : (
+                    <div className="h-56 w-56 max-w-full rounded-2xl border border-(--surface-border) bg-white p-2 sm:h-64 sm:w-64">
+                      <Image
+                        src={qrDataUrl}
+                        alt="QR"
+                        width={224}
+                        height={224}
+                        unoptimized
+                        className="h-full w-full"
+                      />
+                    </div>
+                  )
                 ) : (
                   <div className="flex h-56 w-56 max-w-full items-center justify-center rounded-2xl border border-(--surface-border) bg-(--surface) text-sm text-(--muted-foreground) sm:h-64 sm:w-64">
                     {t.noQr}

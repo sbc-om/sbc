@@ -16,7 +16,7 @@ const patchSchema = z.object({
     .object({
       lat: z.number().finite().min(-90).max(90),
       lng: z.number().finite().min(-180).max(180),
-      radiusMeters: z.number().int().min(25).max(20000),
+      radiusMeters: z.number().int().min(25).max(500),
       label: z.string().trim().min(1).max(200).optional(),
     })
     .optional(),

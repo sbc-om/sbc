@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 
 function buildCoinLogoUrl(asset: string): string {
-  return `https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${asset.toLowerCase()}.png`;
+  return `/images/crypto/${asset.toLowerCase()}.png`;
 }
 
 export function CoinLogo({
@@ -38,7 +38,6 @@ export function CoinLogo({
       height={size}
       className="shrink-0 rounded-full border border-(--surface-border) bg-(--surface)"
       onError={() => setFailed(true)}
-      unoptimized
     />
   );
 }

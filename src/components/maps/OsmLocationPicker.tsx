@@ -49,6 +49,15 @@ export type OsmLocationValue = {
   label?: string;
 };
 
+const MIN_RADIUS_METERS = 25;
+const MAX_RADIUS_METERS = 500;
+
+function clampRadiusMeters(value: unknown): number {
+  const n = Math.trunc(Number(value));
+  if (!Number.isFinite(n)) return 250;
+  return Math.min(MAX_RADIUS_METERS, Math.max(MIN_RADIUS_METERS, n));
+}
+
 function isValidLatLng(lat: unknown, lng: unknown): boolean {
   const nLat = Number(lat);
   const nLng = Number(lng);
@@ -172,10 +181,10 @@ export function OsmLocationPicker({
   const [omanBorder, setOmanBorder] = useState<OmanBorderFeatureCollection | null>(null);
   const [isDark, setIsDark] = useState(false);
 
-  const [localRadius, setLocalRadius] = useState(String(value?.radiusMeters ?? 250));
+  const [localRadius, setLocalRadius] = useState(String(clampRadiusMeters(value?.radiusMeters)));
 
   useEffect(() => {
-    setLocalRadius(String(value?.radiusMeters ?? 250));
+    setLocalRadius(String(clampRadiusMeters(value?.radiusMeters)));
   }, [value?.radiusMeters]);
 
   useEffect(() => {
@@ -217,7 +226,7 @@ export function OsmLocationPicker({
     if (!value) return null;
     const safeCoords = toSafeLatLng(value.lat, value.lng);
     if (!safeCoords) return null;
-    const safeRadius = Number.isFinite(value.radiusMeters) ? Math.min(20000, Math.max(25, Math.trunc(value.radiusMeters))) : 250;
+    const safeRadius = clampRadiusMeters(value.radiusMeters);
     return {
       ...value,
       lat: safeCoords.lat,
@@ -238,9 +247,7 @@ export function OsmLocationPicker({
   );
 
   const radiusMeters = useMemo(() => {
-    const n = Math.trunc(Number(localRadius));
-    if (!Number.isFinite(n)) return 250;
-    return Math.min(20000, Math.max(25, n));
+    return clampRadiusMeters(localRadius);
   }, [localRadius]);
 
   const debounceRef = useRef<number | null>(null);
@@ -482,26 +489,26 @@ export function OsmLocationPicker({
         <>
           {!hideRadius ? (
             <div className="mt-4 space-y-2">
-              <div className={cn("flex items-center gap-2 flex-wrap", rtl ? "flex-row-reverse" : "")}>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <label className="text-xs font-medium text-(--muted-foreground) shrink-0">
+              <div className="grid gap-2">
+                <div className={cn("flex w-full items-center gap-2", rtl ? "flex-row-reverse" : "")}>
+                  <label className="text-xs font-medium text-(--muted-foreground)">
                     {ar ? "المنطقة (متر)" : "Range (meters)"}
                   </label>
-                  <div className="flex h-10 flex-1 sm:flex-initial">
+                  <div className={cn("flex h-10 flex-1", rtl ? "flex-row-reverse" : "")}>
                     <Input
                       type="number"
                       inputMode="numeric"
-                      min={25}
-                      max={20000}
+                      min={MIN_RADIUS_METERS}
+                      max={MAX_RADIUS_METERS}
                       value={localRadius}
                       onChange={(e) => setLocalRadius(e.target.value)}
                       disabled={disabled || !safeValue}
-                      className={cn("w-20 sm:w-20 flex-1 sm:flex-initial h-full", rtl ? "rounded-l-none border-l-0" : "rounded-r-none border-r-0")}
+                      className={cn("h-full flex-1", rtl ? "rounded-l-none border-l-0" : "rounded-r-none border-r-0")}
                     />
-                    <Button 
-                      type="button" 
-                      variant="secondary" 
-                      disabled={disabled || !safeValue} 
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      disabled={disabled || !safeValue}
                       onClick={applyRadius}
                       className={cn("h-full px-3 shrink-0", rtl ? "rounded-r-none" : "rounded-l-none")}
                     >
@@ -510,7 +517,7 @@ export function OsmLocationPicker({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                <div className={cn("flex items-center gap-2 w-full", rtl ? "flex-row-reverse" : "")}>
                   <label className="text-xs text-(--muted-foreground) shrink-0">
                     {ar ? "الإحداثيات" : "Coordinates"}
                   </label>
