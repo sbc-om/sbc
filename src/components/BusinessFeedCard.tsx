@@ -41,6 +41,48 @@ function renderInlineMarkdownToHtml(text: string): string {
   return html;
 }
 
+function formatRelativeTime(dateInput: string | undefined, locale: Locale): string {
+  if (!dateInput) return locale === "ar" ? "الآن" : "now";
+  const target = new Date(dateInput);
+  if (Number.isNaN(target.getTime())) return locale === "ar" ? "الآن" : "now";
+
+  const diffMs = target.getTime() - Date.now();
+  const absMs = Math.abs(diffMs);
+  const minuteMs = 60 * 1000;
+  const hourMs = 60 * minuteMs;
+  const dayMs = 24 * hourMs;
+  const weekMs = 7 * dayMs;
+  const monthMs = 30 * dayMs;
+  const yearMs = 365 * dayMs;
+
+  if (absMs < minuteMs) return locale === "ar" ? "الآن" : "now";
+
+  let value: number;
+  let unit: Intl.RelativeTimeFormatUnit;
+  if (absMs < hourMs) {
+    value = Math.round(diffMs / minuteMs);
+    unit = "minute";
+  } else if (absMs < dayMs) {
+    value = Math.round(diffMs / hourMs);
+    unit = "hour";
+  } else if (absMs < weekMs) {
+    value = Math.round(diffMs / dayMs);
+    unit = "day";
+  } else if (absMs < monthMs) {
+    value = Math.round(diffMs / weekMs);
+    unit = "week";
+  } else if (absMs < yearMs) {
+    value = Math.round(diffMs / monthMs);
+    unit = "month";
+  } else {
+    value = Math.round(diffMs / yearMs);
+    unit = "year";
+  }
+
+  const rtf = new Intl.RelativeTimeFormat(locale === "ar" ? "ar" : "en", { numeric: "auto" });
+  return rtf.format(value, unit);
+}
+
 interface BusinessFeedCardProps {
   business: {
     id: string;
@@ -64,6 +106,8 @@ interface BusinessFeedCardProps {
       phone?: string;
       website?: string;
     };
+    createdAt?: string;
+    updatedAt?: string;
   };
   locale: Locale;
   categoryName?: string;
@@ -122,6 +166,7 @@ export function BusinessFeedCard({
   const logo = business.media?.logo;
   const avatarMode = business.avatarMode ?? "icon";
   const showLogo = avatarMode === "logo" && !!logo;
+  const publishedAgo = formatRelativeTime(business.createdAt, locale);
 
   const handleLikeClick = () => {
     startTransition(async () => {
@@ -225,7 +270,7 @@ export function BusinessFeedCard({
 
   return (
     <article
-      className="mb-6 rounded-lg border overflow-visible"
+      className="mb-6 rounded-lg border overflow-visible h-full flex flex-col"
       style={{
         backgroundColor: "var(--business-card-bg)",
         borderColor: "var(--surface-border)",
@@ -368,7 +413,7 @@ export function BusinessFeedCard({
       )}
 
       {/* Actions */}
-      <div className="px-4 py-3">
+      <div className="px-4 py-3 flex flex-1 flex-col">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
             <button
@@ -432,35 +477,32 @@ export function BusinessFeedCard({
           )}
         </div>
 
-        {/* Caption - Single line with ellipsis */}
-        <div className="text-sm line-clamp-1">
+        {/* Caption - Single line with inline markdown support */}
+        <div className="text-sm min-w-0 overflow-hidden whitespace-nowrap text-ellipsis">
           <Link
             href={detailPath}
-            className="font-semibold hover:opacity-80 transition-opacity"
+            className="font-semibold hover:opacity-80 transition-opacity inline"
           >
             {name}
           </Link>
           {description && (
             <span
-              className={`${locale === "ar" ? "mr-2" : "ml-2"} text-foreground [&_a]:text-(--accent) [&_a]:underline [&_a]:underline-offset-2 [&_code]:rounded [&_code]:bg-(--chip-bg) [&_code]:px-1`}
+              className={`${locale === "ar" ? "mr-2" : "ml-2"} text-foreground inline [&_a]:text-(--accent) [&_a]:underline [&_a]:underline-offset-2 [&_code]:rounded [&_code]:bg-(--chip-bg) [&_code]:px-1`}
               dangerouslySetInnerHTML={{ __html: renderInlineMarkdownToHtml(description) }}
             />
           )}
         </div>
 
         {/* Meta Info with Timestamp */}
-        <div className="flex items-center gap-1.5 mt-2.5 text-[11px] text-(--muted-foreground)">
-          {business.city && (
-            <>
-              <span className="flex items-center gap-0.5">
-                <IoLocationSharp className="w-3 h-3" />
-                {business.city}
-              </span>
-              <span className="text-[9px]">•</span>
-            </>
-          )}
-          <time className="text-[10px] uppercase opacity-70">
-            {locale === "ar" ? "منذ يومين" : "2d ago"}
+        <div className="mt-auto pt-2.5 flex items-center justify-between gap-2 text-[11px] text-(--muted-foreground)">
+          <span className="min-w-0 flex items-center gap-0.5">
+            <IoLocationSharp className="w-3 h-3 shrink-0" />
+            <span className="truncate">
+              {business.city || (locale === "ar" ? "غير محدد" : "No city")}
+            </span>
+          </span>
+          <time className="shrink-0 text-[10px] opacity-70">
+            {publishedAgo}
           </time>
         </div>
       </div>

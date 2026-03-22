@@ -25,9 +25,10 @@ interface BusinessCardProps {
   };
   locale: "en" | "ar";
   noShadow?: boolean;
+  noBorder?: boolean;
 }
 
-export async function BusinessCard({ business, locale, noShadow = false }: BusinessCardProps) {
+export async function BusinessCard({ business, locale, noShadow = false, noBorder = false }: BusinessCardProps) {
   const name = locale === "ar" ? business.name.ar : business.name.en;
   const description = business.description
     ? locale === "ar"
@@ -64,8 +65,8 @@ export async function BusinessCard({ business, locale, noShadow = false }: Busin
         }`}
         style={{
           background: "var(--business-card-bg)",
-          border: "1px solid",
-          borderColor: "var(--surface-border)",
+          border: noBorder ? "none" : "1px solid",
+          borderColor: noBorder ? "transparent" : "var(--surface-border)",
         }}
       >
         {/* Cover Image */}

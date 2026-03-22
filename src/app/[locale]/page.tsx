@@ -164,6 +164,7 @@ export default async function LocaleHome({
                     business={business}
                     locale={locale as Locale}
                     noShadow
+                    noBorder
                   />
                 </FadeInSection>
               ))}
@@ -195,6 +196,7 @@ export default async function LocaleHome({
                     business={business}
                     locale={locale as Locale}
                     noShadow
+                    noBorder
                   />
                 </FadeInSection>
               ))}
@@ -226,6 +228,7 @@ export default async function LocaleHome({
                     business={business}
                     locale={locale as Locale}
                     noShadow
+                    noBorder
                   />
                 </FadeInSection>
               ))}
