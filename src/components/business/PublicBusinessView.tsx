@@ -244,7 +244,7 @@ export function PublicBusinessView({
   }, [activeGalleryIndex, galleryImages]);
 
   return (
-    <>
+    <div className="[&_.sbc-card]:!border-0">
       {/* Hero */}
       <div className="mt-6 sbc-card overflow-hidden rounded-2xl">
         <div className="relative">
@@ -783,6 +783,6 @@ export function PublicBusinessView({
           </div>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }

@@ -259,7 +259,7 @@ export function ExplorerBusinessView({
   }, [activeGalleryIndex, galleryImages]);
 
   return (
-    <>
+    <div className="[&_.sbc-card]:!border-0">
       <div className="mt-6 sbc-card overflow-hidden rounded-2xl">
         <div className="relative">
           <div className="relative h-56 w-full sm:h-72">
@@ -818,6 +818,6 @@ export function ExplorerBusinessView({
           </div>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }

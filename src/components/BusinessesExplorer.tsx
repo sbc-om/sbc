@@ -670,7 +670,7 @@ export function BusinessesExplorer({
         <div className="space-y-4 p-4 sm:space-y-5 sm:p-5">
           {/* Main Search Bar with AI */}
           <div className="space-y-3 sm:space-y-4">
-            <div className="sbc-card rounded-2xl p-6">
+            <div className="sbc-card explorer-search-box rounded-2xl p-6">
               <div className="flex items-center gap-3">
                 <svg
                   className="h-5 w-5 text-(--muted-foreground)"

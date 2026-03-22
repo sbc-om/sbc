@@ -479,7 +479,7 @@ export function WalletClient({
       </div>
 
       {/* Balance Card */}
-      <div className="rounded-2xl border p-6 bg-gradient-to-br from-accent/10 to-accent-2/10" style={{ borderColor: "var(--surface-border)" }}>
+      <div className="rounded-2xl p-6 bg-gradient-to-br from-accent/10 to-accent-2/10">
         {/* Main Balance */}
         <div className="flex items-center justify-between mb-1">
           <div className="text-sm text-(--muted-foreground)">{walletDict.balance}</div>
