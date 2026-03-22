@@ -37,8 +37,10 @@ describe("SidebarLayout", () => {
       </SidebarLayout>,
     );
 
-    expect(screen.getByTestId("collapsed")).toHaveTextContent("true");
-    expect(screen.getByTestId("mobile")).toHaveTextContent("true");
+    await waitFor(() => {
+      expect(screen.getByTestId("collapsed")).toHaveTextContent("true");
+      expect(screen.getByTestId("mobile")).toHaveTextContent("true");
+    });
   });
 
   it("updates css variables and persists collapsed state on desktop", async () => {
@@ -52,6 +54,10 @@ describe("SidebarLayout", () => {
         <SidebarProbe />
       </SidebarLayout>,
     );
+
+    await waitFor(() => {
+      expect(document.documentElement.style.getPropertyValue("--sidebar-width")).toBe("16rem");
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "toggle" }));
 
@@ -84,6 +90,29 @@ describe("SidebarLayout", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("mobile")).toHaveTextContent("true");
+    });
+  });
+
+  it("repairs pre-hydration sidebar mismatch on first mount", async () => {
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 1400,
+    });
+    localStorage.setItem("sidebarCollapsed", "true");
+
+    // Simulate stale pre-hydration values (expanded width while collapsed flag should be true).
+    document.documentElement.style.setProperty("--sidebar-width", "16rem");
+    document.documentElement.dataset.sidebarCollapsed = "false";
+
+    render(
+      <SidebarLayout>
+        <SidebarProbe />
+      </SidebarLayout>,
+    );
+
+    await waitFor(() => {
+      expect(document.documentElement.style.getPropertyValue("--sidebar-width")).toBe("5rem");
+      expect(document.documentElement.dataset.sidebarCollapsed).toBe("true");
     });
   });
 });

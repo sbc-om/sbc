@@ -43,6 +43,35 @@
 }
 
 /*
+  Base sidebar layout rules – lock in the flex structure so the first paint
+  has stable item heights / spacing even before Tailwind utilities apply.
+*/
+.sbc-sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.sbc-sidebar .sbc-sidebar-nav {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sbc-sidebar .sbc-sidebar-navlink {
+  display: flex;
+  align-items: center;
+  height: 3rem;
+  box-sizing: border-box;
+}
+
+.sbc-sidebar .sbc-sidebar-navlink + .sbc-sidebar-navlink {
+  margin-top: 0.25rem;
+}
+
+/*
   Pre-hydration sidebar collapse (prevents expand->collapse flash on refresh).
   We set html[data-sidebar-collapsed] and --sidebar-width via an early head script.
   These rules ensure the *visual* collapsed state applies immediately.
@@ -53,14 +82,80 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-collapse-text {
   display: none !important;
 }
 
+html[data-sidebar-collapsed="true"] .sbc-sidebar {
+  width: 5rem !important;
+}
+
 html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink {
+  display: flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
   justify-content: center !important;
   gap: 0 !important;
   width: 3rem !important;
   height: 3rem !important;
+  min-height: 3rem !important;
   margin-inline: auto !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
+  line-height: 1 !important;
+}
+
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-nav {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-navlink + .sbc-sidebar-navlink {
+  margin-top: 0.25rem !important;
+}
+
+/* Pre-hydration collapsed layout fixes for header + profile blocks */
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-head {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-bottom: 1rem !important;
+}
+
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-head-row {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-logo-link {
+  justify-content: center !important;
+}
+
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-notif-btn {
+  margin-inline: auto !important;
+}
+
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-collapse-wrap {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-profile-wrap {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-profile-btn {
+  width: 3rem !important;
+  height: 3rem !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin-inline: auto !important;
+}
+
+@media (max-width: 1023px) {
+  html[data-sidebar-collapsed="true"] .sbc-sidebar {
+    width: 0 !important;
+  }
 }
 
 .dark {

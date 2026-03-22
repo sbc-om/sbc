@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, createContext, useContext } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, createContext, useContext } from "react";
 
 type SidebarContextType = {
   collapsed: boolean;
@@ -18,37 +18,56 @@ export function useSidebar() {
   return context;
 }
 
-export function SidebarLayout({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("sidebarCollapsed") === "true";
-  });
-  const [isMobile, setIsMobile] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.innerWidth < 1024;
-  });
-  const isFirstSidebarRun = useRef(true);
+export function SidebarLayout({
+  children,
+  initialCollapsed = false,
+}: {
+  children: React.ReactNode;
+  initialCollapsed?: boolean;
+}) {
+  // Keep the first client render identical to SSR to avoid hydration mismatches.
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
+  const [isMobile, setIsMobile] = useState(false);
+  const initializedRef = useRef(false);
 
-  // Check if mobile on mount and window resize
-  useEffect(() => {
+  // Sync viewport/localStorage state before paint to avoid visible refresh jumps.
+  useLayoutEffect(() => {
+    const mobile = window.innerWidth < 1024;
+    let nextCollapsed = initialCollapsed;
+
+    try {
+      const storedCollapsed = window.localStorage.getItem("sidebarCollapsed");
+      if (storedCollapsed === "true" || storedCollapsed === "false") {
+        nextCollapsed = storedCollapsed === "true";
+      } else {
+        window.localStorage.setItem("sidebarCollapsed", String(initialCollapsed));
+      }
+    } catch {
+      // Ignore localStorage read/write failures and keep SSR value.
+    }
+
+    const root = document.documentElement;
+    const nextWidth = mobile ? "0rem" : nextCollapsed ? "5rem" : "16rem";
+    root.style.setProperty("--sidebar-width", nextWidth);
+    root.dataset.sidebarCollapsed = nextCollapsed ? "true" : "false";
+
+    setIsMobile(mobile);
+    setCollapsed(nextCollapsed);
+    initializedRef.current = true;
+
     const onResize = () => {
       setIsMobile(window.innerWidth < 1024);
     };
 
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, []);
+  }, [initialCollapsed]);
 
-  // Update CSS variable for sidebar width.
-  // On initial mount, skip: the blocking <script> in <head> already set
-  // --sidebar-width correctly. Running with the default React state
-  // (collapsed=false) would briefly widen the sidebar and cause a flash.
+  // Update CSS variable for sidebar width and a dataset flag used by CSS.
   useEffect(() => {
-    if (isFirstSidebarRun.current) {
-      isFirstSidebarRun.current = false;
-      return;
-    }
+    if (!initializedRef.current) return;
 
+    const root = document.documentElement;
     let width: string;
     if (isMobile) {
       width = "0rem"; // Mobile: no margin
@@ -57,17 +76,20 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
     } else {
       width = "16rem"; // Desktop expanded
     }
-    
-    const root = document.documentElement;
     root.style.setProperty("--sidebar-width", width);
-    // Keep a dataset flag so CSS can match the collapsed state (useful for avoiding flashes).
     root.dataset.sidebarCollapsed = collapsed ? "true" : "false";
   }, [collapsed, isMobile]);
 
   // Save to localStorage when changed (only for desktop)
   useEffect(() => {
+    if (!initializedRef.current) return;
     if (!isMobile) {
-      localStorage.setItem("sidebarCollapsed", String(collapsed));
+      try {
+        localStorage.setItem("sidebarCollapsed", String(collapsed));
+      } catch {
+        // ignore storage failures
+      }
+      document.cookie = `sidebarCollapsed=${collapsed ? "1" : "0"}; Path=/; Max-Age=31536000; SameSite=Lax`;
     }
   }, [collapsed, isMobile]);
 

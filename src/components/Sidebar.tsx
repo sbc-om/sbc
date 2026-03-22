@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -207,7 +207,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     };
   }, [isProfileMenuVisible]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!desktopNavScrollRef.current) return;
 
     desktopNavScrollbarRef.current?.destroy();
@@ -230,7 +230,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     };
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isMobile || !mobileNavScrollRef.current) {
       mobileNavScrollbarRef.current?.destroy();
       mobileNavScrollbarRef.current = null;
@@ -257,7 +257,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     };
   }, [isMobile]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isProfileMenuVisible || !profileMenuScrollRef.current) {
       profileMenuScrollbarRef.current?.destroy();
       profileMenuScrollbarRef.current = null;
@@ -466,11 +466,11 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   const renderNavContent = (navScrollRef: React.RefObject<HTMLElement | null>) => (
     <>
       {/* Logo */}
-      <div className={`${iconOnly ? "px-0" : "px-3"} pt-4 transition-all duration-300 ${collapsed ? "mb-4" : "mb-8"}`}>
-        <div className={iconOnly ? "flex flex-col items-center gap-2" : "flex items-center justify-between gap-2"}>
+      <div className={`sbc-sidebar-head ${iconOnly ? "px-0" : "px-3"} pt-4 ${collapsed ? "mb-4" : "mb-8"}`}>
+        <div className={`sbc-sidebar-head-row ${iconOnly ? "flex flex-col items-center gap-2" : "flex items-center justify-between gap-2"}`}>
           <Link
             href={`/${locale}`}
-            className={`flex items-center gap-3 group min-w-0 ${iconOnly ? "justify-center" : "justify-start"}`}
+            className={`sbc-sidebar-logo-link flex items-center gap-3 group min-w-0 ${iconOnly ? "justify-center" : "justify-start"}`}
             title={iconOnly ? "SBC" : undefined}
           >
             <Image
@@ -491,7 +491,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           <Link
             href={`/${locale}/notifications`}
             onClick={() => isMobile && setMobileOpen(false)}
-            className={`relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
+            className={`sbc-sidebar-notif-btn relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
               isActive("/notifications")
                 ? "border-accent/40 bg-linear-to-r from-accent/10 to-accent-2/10 text-accent"
                 : "border-(--surface-border) bg-(--chip-bg) text-(--muted-foreground) hover:text-foreground"
@@ -512,17 +512,17 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       {/* Navigation */}
       <nav
         ref={navScrollRef}
-        className={`flex-1 min-h-0 space-y-1 overflow-y-auto overflow-x-hidden ${iconOnly ? "px-0" : "px-2"}`}
+        className={`sbc-sidebar-nav flex-1 min-h-0 space-y-1 overflow-y-auto overflow-x-hidden ${iconOnly ? "px-0" : "px-2"}`}
       >
         {navItems.map((item) => {
           const active = isActive(item.path);
           const IconComponent = active ? item.Icon : item.IconOutline;
           const href = `/${locale}${item.path}`;
-          const className = `sbc-sidebar-navlink flex items-center rounded-xl text-base transition-all ${
+          const className = `sbc-sidebar-navlink flex min-w-0 items-center rounded-xl text-base transition-colors ${
             active
               ? "bg-linear-to-r from-accent/10 to-accent-2/10 font-bold text-accent"
               : "hover:bg-(--surface) font-normal"
-          } ${iconOnly ? "mx-auto h-12 w-12 justify-center px-0" : "w-full justify-start gap-4 px-3 py-3"}`;
+          } ${iconOnly ? "mx-auto h-12 w-12 justify-center px-0" : "w-full h-12 justify-start gap-4 px-3"}`;
 
           if (item.hardNavigate) {
             return (
@@ -534,7 +534,11 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 title={collapsed && !isMobile ? item.label : undefined}
               >
                 <IconComponent className="h-7 w-7 shrink-0" />
-                {(!collapsed || isMobile) && <span className="sbc-sidebar-label">{item.label}</span>}
+                {(!collapsed || isMobile) && (
+                  <span className="sbc-sidebar-label min-w-0 truncate whitespace-nowrap">
+                    {item.label}
+                  </span>
+                )}
               </a>
             );
           }
@@ -548,7 +552,11 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               title={collapsed && !isMobile ? item.label : undefined}
             >
               <IconComponent className="h-7 w-7 shrink-0" />
-              {(!collapsed || isMobile) && <span className="sbc-sidebar-label">{item.label}</span>}
+              {(!collapsed || isMobile) && (
+                <span className="sbc-sidebar-label min-w-0 truncate whitespace-nowrap">
+                  {item.label}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -556,7 +564,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
 
       {/* Collapse (last menu option) - Desktop Only */}
       {!isMobile && (
-        <div className={`mt-2 pt-2 mb-2 ${iconOnly ? "px-0" : "px-2"}`} style={{ borderColor: "var(--surface-border)" }}>
+        <div className={`sbc-sidebar-collapse-wrap mt-2 pt-2 mb-2 ${iconOnly ? "px-0" : "px-2"}`} style={{ borderColor: "var(--surface-border)" }}>
           <button
             onClick={toggleCollapsed}
             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl hover:bg-(--surface) transition-all hover:scale-105"
@@ -577,7 +585,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       {/* User Profile (separate section) */}
       <div
         ref={profileMenuRef}
-        className={`mt-auto border-t pt-4 relative ${iconOnly ? "px-0" : "px-2"}`}
+        className={`sbc-sidebar-profile-wrap mt-auto border-t pt-4 relative ${iconOnly ? "px-0" : "px-2"}`}
         style={{ borderColor: "var(--surface-border)" }}
       >
         <button
@@ -589,7 +597,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               return next;
             });
           }}
-          className={`flex items-center gap-3 rounded-xl hover:bg-(--surface) transition-colors ${
+          className={`sbc-sidebar-profile-btn flex items-center gap-3 rounded-xl hover:bg-(--surface) transition-colors ${
             isProfileMenuVisible ? "bg-(--surface)" : ""
           } ${iconOnly ? "mx-auto h-12 w-12 justify-center p-0" : "w-full justify-start p-3"}`}
           aria-haspopup="menu"
@@ -891,7 +899,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`sbc-sidebar fixed top-0 bottom-0 z-40 hidden border-e shadow-none lg:flex flex-col transition-[width] duration-300 ${
+        className={`sbc-sidebar fixed top-0 bottom-0 z-40 hidden border-e shadow-none lg:flex flex-col ${
           iconOnly ? "overflow-visible" : "overflow-x-hidden"
         }`}
         style={{
@@ -901,7 +909,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           backgroundColor: "var(--background)",
         }}
       >
-        <div className="flex h-full min-h-0 flex-col px-3 py-4">
+        <div className="sbc-sidebar-inner flex h-full min-h-0 flex-col px-3 py-4">
           {renderNavContent(desktopNavScrollRef)}
         </div>
       </aside>

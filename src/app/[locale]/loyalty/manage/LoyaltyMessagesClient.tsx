@@ -30,15 +30,18 @@ export function LoyaltyMessagesClient({ locale }: { locale: Locale }) {
         : "Send a message to all customers or a specific customer (shown on the card page; can be wired to Wallet notifications later).",
       modeAll: ar ? "إرسال للجميع" : "Send to all",
       modeOne: ar ? "إرسال لعميل" : "Send to one customer",
-      customerId: ar ? "معرّف العميل (Customer ID)" : "Customer ID",
+      customerId: ar ? "معرّف العميل أو Member ID" : "Customer ID or Member ID",
       customerIdHint: ar
-        ? "يمكن نسخه من صفحة إدارة العملاء."
-        : "You can copy it from the Customers admin page.",
+        ? "يمكن نسخه من صفحة إدارة العملاء (Customer ID) أو استخدام Member ID مثل SPH01."
+        : "Use internal Customer ID from Customers page, or a Member ID like SPH01.",
       titleLabel: ar ? "العنوان" : "Title",
       bodyLabel: ar ? "النص" : "Message",
       send: ar ? "إرسال" : "Send",
       sending: ar ? "جارٍ الإرسال…" : "Sending…",
       sent: ar ? "تم الإرسال" : "Sent",
+      customerRequired: ar ? "أدخل Customer ID أو Member ID." : "Enter Customer ID or Member ID.",
+      titleRequired: ar ? "العنوان يجب أن يكون حرفين على الأقل." : "Title must be at least 2 characters.",
+      bodyRequired: ar ? "نص الرسالة يجب أن يكون حرفين على الأقل." : "Message body must be at least 2 characters.",
     };
   }, [ar]);
 
@@ -52,26 +55,47 @@ export function LoyaltyMessagesClient({ locale }: { locale: Locale }) {
   const [success, setSuccess] = useState<string | null>(null);
 
   async function send() {
-    setBusy(true);
     setError(null);
     setSuccess(null);
+
+    const target = customerId.trim();
+    const trimmedTitle = title.trim();
+    const trimmedBody = body.trim();
+
+    if (mode === "one" && !target) {
+      setError(t.customerRequired);
+      return;
+    }
+    if (trimmedTitle.length < 2) {
+      setError(t.titleRequired);
+      return;
+    }
+    if (trimmedBody.length < 2) {
+      setError(t.bodyRequired);
+      return;
+    }
+
+    setBusy(true);
 
     try {
       const res = await fetch("/api/loyalty/messages", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customerId: mode === "one" ? customerId.trim() || undefined : undefined,
-          title: title.trim(),
-          body: body.trim(),
+          customerId: mode === "one" ? target : undefined,
+          title: trimmedTitle,
+          body: trimmedBody,
         }),
       });
 
-      const json = (await res.json()) as
+      const json = (await res.json().catch(() => null)) as
         | { ok: true; message: MessageDTO }
         | { ok: false; error: string };
 
-      if (!res.ok) throw new Error(`HTTP_${res.status}`);
+      if (!res.ok) {
+        const apiError = json && !json.ok ? json.error : null;
+        throw new Error(apiError || `HTTP_${res.status}`);
+      }
       if (!json.ok) throw new Error(json.error);
 
       setSuccess(t.sent);

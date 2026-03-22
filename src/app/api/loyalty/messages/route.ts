@@ -6,6 +6,7 @@ import {
   createLoyaltyMessage,
   defaultLoyaltySettings,
   getLoyaltyCustomerById,
+  getLoyaltyCustomerByMemberId,
   getLoyaltyProfileByUserId,
   getLoyaltySettingsByUserId,
   listLoyaltyCustomersByUser,
@@ -35,9 +36,30 @@ export async function POST(req: Request) {
     const json = await req.json();
     const data = postSchema.parse(json);
 
+    let targetCustomerId: string | undefined;
+    if (data.customerId) {
+      const rawTarget = data.customerId.trim();
+
+      // Accept both internal customer id and public member id (e.g. SPH01),
+      // while enforcing ownership under the authenticated business.
+      const byId = await getLoyaltyCustomerById(rawTarget);
+      if (byId && byId.userId === auth.id) {
+        targetCustomerId = byId.id;
+      } else {
+        const upperTarget = rawTarget.toUpperCase();
+        const byMemberId =
+          (await getLoyaltyCustomerByMemberId(auth.id, rawTarget)) ??
+          (upperTarget !== rawTarget
+            ? await getLoyaltyCustomerByMemberId(auth.id, upperTarget)
+            : null);
+        if (!byMemberId) throw new Error("CUSTOMER_NOT_FOUND");
+        targetCustomerId = byMemberId.id;
+      }
+    }
+
     const message = await createLoyaltyMessage({
       userId: auth.id,
-      customerId: data.customerId,
+      customerId: targetCustomerId,
       title: data.title,
       body: data.body,
     });

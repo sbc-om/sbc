@@ -227,7 +227,12 @@ export default async function LocaleLayout({
     typeof segments[3] === "string" &&
     segments[3].length > 0;
 
-  const staffAppModeCookie = (await cookies()).get("sbc_staff_app_mode")?.value === "1";
+  const cookieStore = await cookies();
+  const staffAppModeCookie = cookieStore.get("sbc_staff_app_mode")?.value === "1";
+  const initialSidebarCollapsed = (() => {
+    const value = cookieStore.get("sidebarCollapsed")?.value;
+    return value === "1" || value === "true";
+  })();
   let hidePublicChromeForStaffApp = false;
   if (isLoyaltyStaffWorkspaceRoute && staffAppModeCookie) {
     const staffSession = await getCurrentLoyaltyStaffSession();
@@ -356,7 +361,7 @@ export default async function LocaleLayout({
           <DirectionSync locale={locale as Locale} />
           <CartProvider userKey={user.id}>
             <CartFloating locale={locale as Locale} products={products} />
-            <SidebarLayout>
+            <SidebarLayout initialCollapsed={initialSidebarCollapsed}>
               <DynamicShell
                 sidebar={sidebarNode}
                 header={headerNode}

@@ -92,7 +92,7 @@ export function DynamicShell({
         {sidebar}
         <RealtimeEngagementHealthIndicator />
         <div
-          className="min-h-dvh transition-[margin] duration-300 ease-in-out"
+          className="min-h-dvh"
           style={{ marginInlineStart: "var(--sidebar-width, 0)" }}
         >
           <main className="w-full">{children}</main>
