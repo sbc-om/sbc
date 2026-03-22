@@ -533,9 +533,9 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 className={className}
                 title={collapsed && !isMobile ? item.label : undefined}
               >
-                <IconComponent className="h-7 w-7 shrink-0" />
+                <IconComponent className="h-7 w-7 shrink-0 -translate-y-[1px]" />
                 {(!collapsed || isMobile) && (
-                  <span className="sbc-sidebar-label min-w-0 truncate whitespace-nowrap">
+                  <span className="sbc-sidebar-label min-w-0 truncate whitespace-nowrap leading-tight">
                     {item.label}
                   </span>
                 )}
@@ -551,9 +551,9 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               className={className}
               title={collapsed && !isMobile ? item.label : undefined}
             >
-              <IconComponent className="h-7 w-7 shrink-0" />
+              <IconComponent className="h-7 w-7 shrink-0 -translate-y-[1px]" />
               {(!collapsed || isMobile) && (
-                <span className="sbc-sidebar-label min-w-0 truncate whitespace-nowrap">
+                <span className="sbc-sidebar-label min-w-0 truncate whitespace-nowrap leading-tight">
                   {item.label}
                 </span>
               )}
