@@ -3,18 +3,18 @@ import { notFound } from "next/navigation";
 import {
   HiOutlineArrowRight,
   HiOutlineChat,
+  HiOutlineCurrencyDollar,
   HiOutlineGlobeAlt,
   HiOutlineGift,
   HiOutlineLightningBolt,
   HiOutlineMail,
   HiOutlineQrcode,
   HiOutlineSparkles,
-  HiOutlineViewGrid,
+  HiOutlineUserGroup,
 } from "react-icons/hi";
 import { HiOutlineCpuChip } from "react-icons/hi2";
 
 import { PublicPage } from "@/components/PublicPage";
-import { AddToCartButton } from "@/components/store/AddToCartButton";
 import { buttonVariants } from "@/components/ui/Button";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import {
@@ -23,11 +23,6 @@ import {
 } from "@/lib/db/subscriptions";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
-import {
-  formatStorePrice,
-  getStoreProductText,
-  listStoreProducts,
-} from "@/lib/store/products";
 
 export const runtime = "nodejs";
 
@@ -48,90 +43,86 @@ export default async function MarketingPlatformPage({
   }
   const isActive = user ? await isProgramSubscriptionActive(user.id) : false;
 
-  const marketingProducts = (await listStoreProducts()).filter(
-    (product) => product.program === "marketing",
-  );
-
   const copy = {
-    title: ar ? "منصة نمو SBC" : "SBC Growth Platform",
+    title: ar ? "منصة خدمات SBC للأعمال" : "SBC Business Services Platform",
     subtitle: ar
-      ? "منصة متكاملة لزيادة المبيعات: اكتشاف عملاء جدد، التواصل السريع، رفع تكرار الشراء، وأتمتة التسويق."
-      : "A complete growth system to get discovered, talk to customers, increase repeat sales, and automate marketing.",
+      ? "خدمات متكاملة للأعمال تشمل منصة التسويق، CRM، المحاسبة، الاجتماعات والكلاسات الأونلاين، وشبكة SBCClaw الذكية."
+      : "An all-in-one business stack including Marketing Platform, CRM, Accounting, Online Meetings & Virtual Classes, and SBCClaw Smart Network.",
     ctaPrimary: ar ? "افتح منصة النمو" : "Open Growth App",
     ctaDemo: ar ? "تحدث مع المبيعات" : "Talk to Sales",
     ctaHome: ar ? "الرئيسية" : "Back Home",
-    sectionServices: ar ? "أعمدة النمو" : "Growth Pillars",
-    sectionWhy: ar ? "مصممة لزيادة المبيعات" : "Built for Sales",
-    sectionIncludes: ar ? "SBC يساعد نشاطك على:" : "SBC helps your business:",
-    sectionPackages: ar ? "الباقات" : "Packages",
+    sectionServices: ar ? "الخدمات الأساسية" : "Core Services",
+    sectionWhy: ar ? "مصممة لنمو الأعمال" : "Built for Business Growth",
+    sectionIncludes: ar ? "الخدمات المتوفرة الآن:" : "Services available now:",
+    sectionPackages: ar ? "باقات الخدمات" : "Service Packages",
   };
 
   const services = [
     {
-      icon: HiOutlineViewGrid,
-      title: ar ? "اكتشفك عملاء أكثر" : "Get discovered",
+      icon: HiOutlineChat,
+      title: ar ? "منصة التسويق" : "Marketing Platform",
       desc: ar
-        ? "خلّي نشاطك يظهر في الدليل والموقع حتى يجدك العملاء القريبون بسرعة."
-        : "Show up in SBC Directory and your website so nearby customers can find you fast.",
-      href: `/${locale}/businesses`,
-      hrefLabel: ar ? "زِد الظهور" : "Boost Visibility",
+        ? "إدارة حملات واتساب وتلغرام، قوالب الرسائل، وأتمتة المتابعة من لوحة واحدة."
+        : "Manage WhatsApp and Telegram campaigns, message templates, and automated follow-ups from one dashboard.",
+      href: `/${locale}/store?q=marketing`,
+      hrefLabel: ar ? "باقات التسويق" : "Marketing Plans",
       tone: "bg-accent/15 text-accent",
     },
     {
-      icon: HiOutlineChat,
-      title: ar ? "تواصل مع العملاء" : "Talk to customers",
+      icon: HiOutlineUserGroup,
+      title: ar ? "خدمات CRM للشركات الصغيرة" : "CRM Services for Small Businesses",
       desc: ar
-        ? "شغّل واتساب وتلغرام من مكان واحد للرد السريع، إدارة المحادثات، وتنفيذ الحملات."
-        : "Run WhatsApp and Telegram from one place for replies, conversations, and campaigns.",
-      href: `/${locale}/services/app`,
-      hrefLabel: ar ? "افتح الرسائل" : "Open Messaging",
+        ? "إدارة بيانات العملاء، المراحل البيعية، وتذكيرات المتابعة لفِرق المبيعات الصغيرة."
+        : "Manage customer records, sales pipelines, and follow-up reminders for lean sales teams.",
+      href: `/${locale}/store?q=crm`,
+      hrefLabel: ar ? "باقات CRM" : "CRM Plans",
       tone: "bg-accent-2/15 text-accent-2",
+    },
+    {
+      icon: HiOutlineCurrencyDollar,
+      title: ar ? "خدمات المحاسبة للشركات الصغيرة" : "Accounting Services for Small Businesses",
+      desc: ar
+        ? "فواتير، تتبع المصروفات، وتقارير مالية مبسطة تساعدك على متابعة الأداء المالي بسهولة."
+        : "Invoicing, expense tracking, and simplified financial reports to keep your cash flow under control.",
+      href: `/${locale}/store?q=accounting`,
+      hrefLabel: ar ? "باقات المحاسبة" : "Accounting Plans",
+      tone: "bg-accent/15 text-accent",
     },
     {
       icon: HiOutlineQrcode,
-      title: ar ? "أعدهم للشراء" : "Bring them back",
+      title: ar ? "الاجتماعات والكلاسات الأونلاين" : "Online Meetings & Virtual Classes",
       desc: ar
-        ? "فعّل الولاء والمكافآت ليعود العملاء للشراء أكثر."
-        : "Launch loyalty rewards so customers return more often and spend more.",
-      href: `/${locale}/loyalty`,
-      hrefLabel: ar ? "افتح الولاء" : "Open Loyalty",
-      tone: "bg-accent/15 text-accent",
-    },
-    {
-      icon: HiOutlineLightningBolt,
-      title: ar ? "أتمتة التسويق" : "Automate marketing",
-      desc: ar
-        ? "ابنِ حملات وتسلسلات متابعة مرة واحدة ودع SBC يديرها تلقائياً."
-        : "Set campaigns once, then let SBC run follow-ups and reminders automatically.",
-      href: `/${locale}/services/app`,
-      hrefLabel: ar ? "ابدأ الأتمتة" : "Start Automation",
+        ? "تشغيل الجلسات المباشرة، إدارة مواعيد الحصص، ومتابعة حضور المشاركين."
+        : "Run live sessions, manage class schedules, and track attendance in one place.",
+      href: `/${locale}/store?q=online-classes`,
+      hrefLabel: ar ? "باقات الأونلاين" : "Online Plans",
       tone: "bg-accent-2/15 text-accent-2",
     },
     {
-      icon: HiOutlineSparkles,
-      title: ar ? "SBC Smart Card" : "SBC Smart Card",
+      icon: HiOutlineLightningBolt,
+      title: ar ? "شبكة SBCClaw الذكية" : "SBCClaw Smart Network",
       desc: ar
-        ? "بطاقة ولاء مشتركة بين الأنشطة المشاركة: استخدمها في أي مكان، اكسب نقاط، واصرف نقاط."
-        : "A shared loyalty card ecosystem: use anywhere, earn points, spend points.",
-      href: `/${locale}/loyalty`,
-      hrefLabel: ar ? "استكشف Smart Card" : "Explore Smart Card",
+        ? "خدمات الشبكات الذكية وربط أدوات العمل بالأتمتة لتحسين الكفاءة التشغيلية."
+        : "Smart networking services and workflow automation to connect your business tools and improve operations.",
+      href: `/${locale}/store?q=sbcclaw`,
+      hrefLabel: ar ? "باقات SBCClaw" : "SBCClaw Plans",
       tone: "bg-accent/15 text-accent",
     },
     {
-      icon: HiOutlineGlobeAlt,
-      title: ar ? "موقع أعمالك" : "Website Builder",
+      icon: HiOutlineGift,
+      title: ar ? "SBC Smart Card" : "SBC Smart Card",
       desc: ar
-        ? "أنشئ موقعاً احترافياً بسرعة وحوّل الزيارات إلى فرص بيع."
-        : "Launch a professional website fast and turn traffic into leads.",
-      href: `/${locale}/dashboard/websites`,
-      hrefLabel: ar ? "افتح منشئ المواقع" : "Open Website Builder",
+        ? "بطاقة ولاء مشتركة بين الأنشطة المشاركة: استخدمها في أي مكان، اكسب نقاط، واصرف نقاط."
+        : "A shared loyalty card ecosystem: use anywhere, earn points, and spend points.",
+      href: `/${locale}/loyalty`,
+      hrefLabel: ar ? "استكشف Smart Card" : "Explore Smart Card",
       tone: "bg-accent-2/15 text-accent-2",
     },
     {
       icon: HiOutlineMail,
       title: ar ? "Business Email" : "Business Email",
       desc: ar
-        ? "إيميل رسمي باسم نشاطك لثقة أعلى وتواصل احترافي."
+        ? "إيميل رسمي باسم نشاطك لثقة أعلى وتواصل أكثر احترافية."
         : "Branded business email to build trust and look professional.",
       href: `/${locale}/email/manage`,
       hrefLabel: ar ? "افتح البريد" : "Open Email",
@@ -152,26 +143,26 @@ export default async function MarketingPlatformPage({
   const highlights = [
     {
       icon: HiOutlineGlobeAlt,
-      title: ar ? "عملاء جدد أكثر" : "More new customers",
+      title: ar ? "تشغيل موحد لكل الخدمات" : "One Hub for All Services",
       desc: ar
-        ? "الظهور في القنوات الصحيحة يجلب طلباً مستمراً لنشاطك."
-        : "Discovery channels bring you steady, qualified local demand.",
+        ? "منصة واحدة لإدارة التسويق، CRM، المحاسبة، والجلسات الأونلاين."
+        : "Use a single workspace for marketing, CRM, accounting, and online sessions.",
       tone: "bg-accent/15 text-accent",
     },
     {
       icon: HiOutlineGift,
-      title: ar ? "مبيعات تكرارية أعلى" : "Higher repeat sales",
+      title: ar ? "مناسبة للشركات الصغيرة" : "Built for Small Businesses",
       desc: ar
-        ? "الولاء والحملات يرفعان احتمالية رجوع العميل والشراء مرة أخرى."
-        : "Loyalty and campaigns increase customer return rate and basket size.",
+        ? "خدمات عملية وسهلة الإطلاق بدون تعقيد تقني أو فريق كبير."
+        : "Practical services that are easy to launch without heavy technical overhead.",
       tone: "bg-accent-2/15 text-accent-2",
     },
     {
       icon: HiOutlineMail,
-      title: ar ? "ماركتينغ أبسط" : "Simpler marketing ops",
+      title: ar ? "قابل للتوسع مع نمو نشاطك" : "Scales as You Grow",
       desc: ar
-        ? "بدل أدوات متفرقة، فريقك يدير كل شيء من منصة واحدة."
-        : "Your team runs discovery, messaging, and retention from one platform.",
+        ? "ابدأ شهرياً ثم وسّع إلى خطط 6 أشهر أو سنوية حسب نمو أعمالك."
+        : "Start monthly, then upgrade to 6-month or yearly plans as your business grows.",
       tone: "bg-accent/15 text-accent",
     },
   ];
@@ -203,7 +194,7 @@ export default async function MarketingPlatformPage({
             </Link>
           ) : (
             <Link
-              href={`/${locale}/store?q=marketing`}
+              href={`/${locale}/store`}
               className={buttonVariants({
                 variant: "primary",
                 size: "lg",
@@ -294,23 +285,28 @@ export default async function MarketingPlatformPage({
         <ul className="mt-3 grid gap-3 text-base font-medium leading-8 text-(--muted-foreground)">
           <li>
             {ar
-              ? "• اكتشفك عملاء جدد"
-              : "• Get discovered"}
+              ? "• منصة التسويق: حملات واتساب وتلغرام وأتمتة الرسائل."
+              : "• Marketing Platform: WhatsApp/Telegram campaigns and message automation."}
           </li>
           <li>
             {ar
-              ? "• تواصل مع العملاء"
-              : "• Talk to customers"}
+              ? "• خدمات CRM: إدارة العملاء والمراحل البيعية للفرق الصغيرة."
+              : "• CRM Services: customer and pipeline management for small teams."}
           </li>
           <li>
             {ar
-              ? "• أعدهم للشراء"
-              : "• Bring them back"}
+              ? "• خدمات المحاسبة: فواتير، مصروفات، وتقارير مالية مبسطة."
+              : "• Accounting Services: invoices, expenses, and simple financial reports."}
           </li>
           <li>
             {ar
-              ? "• أتمتة التسويق"
-              : "• Automate marketing"}
+              ? "• الاجتماعات والكلاسات الأونلاين: جلسات مباشرة وجدولة ومتابعة حضور."
+              : "• Online Meetings & Virtual Classes: live sessions, scheduling, and attendance tracking."}
+          </li>
+          <li>
+            {ar
+              ? "• شبكة SBCClaw الذكية: ربط أدوات العمل بالأتمتة لتحسين الكفاءة."
+              : "• SBCClaw Smart Network: connect tools with automation for better operations."}
           </li>
           <li>
             {ar
@@ -342,58 +338,57 @@ export default async function MarketingPlatformPage({
         <h3 className="text-lg font-semibold">{copy.sectionPackages}</h3>
         <p className="mt-2 text-base font-medium text-(--muted-foreground)">
           {ar
-            ? "اختر باقة شهرية أو 6 أشهر أو سنوية، وتقدر تمدد أو تغيّر الباقة بأي وقت."
-            : "Choose monthly, 6-month, or yearly plans. You can switch or renew anytime."}
+            ? "كل خدمة لها باقات شهرية و6 أشهر وسنوية. الهدف من كل باقة موضح أدناه لتختار الأنسب حسب مرحلة نشاطك."
+            : "Each service offers monthly, 6-month, and yearly options. Use the guide below to choose what fits your current business stage."}
         </p>
-
-        {!user ? (
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <Link
-              href={`/${locale}/login?next=${encodeURIComponent(`/${locale}/services`)}`}
-              className={buttonVariants({
-                variant: "primary",
-                size: "lg",
-                className: "min-w-[180px]",
-              })}
-            >
-              {ar ? "سجّل الدخول للشراء" : "Login to Buy"}
-            </Link>
-            <Link
-              href={`/${locale}/register?next=${encodeURIComponent(`/${locale}/services`)}`}
-              className={buttonVariants({
-                variant: "secondary",
-                size: "lg",
-                className: "min-w-[180px]",
-              })}
-            >
-              {ar ? "إنشاء حساب" : "Create Account"}
-            </Link>
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="sbc-card rounded-2xl p-5">
+            <h4 className="font-semibold">{ar ? "منصة التسويق" : "Marketing Platform"}</h4>
+            <p className="mt-2 text-base font-medium leading-8 text-(--muted-foreground)">
+              {ar
+                ? "مناسبة للحملات التسويقية وقنوات الرسائل. ابدأ بالخطة الشهرية للتجربة ثم انتقل إلى 6 أشهر أو سنوي لتكلفة أقل."
+                : "Best for campaigns and messaging channels. Start monthly, then move to 6-month or yearly for better value."}
+            </p>
           </div>
-        ) : (
-          <div className="mt-5 grid gap-4 md:grid-cols-3">
-            {marketingProducts.map((product) => {
-              const productText = getStoreProductText(product, locale as Locale);
-              return (
-                <div key={product.slug} className="sbc-card rounded-2xl p-5">
-                  <div className="font-semibold">{productText.name}</div>
-                  <div className="mt-1 text-base font-medium text-(--muted-foreground)">
-                    {formatStorePrice(product.price, locale as Locale)}
-                  </div>
-                  <p className="mt-3 text-base font-medium leading-8 text-(--muted-foreground)">{productText.description}</p>
-                  <div className="mt-4">
-                    <AddToCartButton productSlug={product.slug} locale={locale as Locale} />
-                  </div>
-                </div>
-              );
-            })}
+          <div className="sbc-card rounded-2xl p-5">
+            <h4 className="font-semibold">{ar ? "خدمات CRM" : "CRM Services"}</h4>
+            <p className="mt-2 text-base font-medium leading-8 text-(--muted-foreground)">
+              {ar
+                ? "مناسبة لإدارة العملاء والمراحل البيعية. مفيدة للشركات الصغيرة التي تريد تنظيم المتابعات اليومية."
+                : "Built for customer management and sales pipeline control. Ideal for small businesses needing structured follow-ups."}
+            </p>
           </div>
-        )}
+          <div className="sbc-card rounded-2xl p-5">
+            <h4 className="font-semibold">{ar ? "خدمات المحاسبة" : "Accounting Services"}</h4>
+            <p className="mt-2 text-base font-medium leading-8 text-(--muted-foreground)">
+              {ar
+                ? "مناسبة للفواتير والمصروفات والتقارير المالية. تساعدك على وضوح التدفق النقدي واتخاذ قرارات أدق."
+                : "Designed for invoices, expenses, and financial summaries. Helps improve cash-flow visibility and decisions."}
+            </p>
+          </div>
+          <div className="sbc-card rounded-2xl p-5">
+            <h4 className="font-semibold">{ar ? "الاجتماعات والفصول الافتراضية" : "Online Meetings & Virtual Classes"}</h4>
+            <p className="mt-2 text-base font-medium leading-8 text-(--muted-foreground)">
+              {ar
+                ? "مناسبة للمدربين والفرق التعليمية والاستشارات عبر الإنترنت، مع إدارة جلسات وحضور ومواعيد."
+                : "Great for training teams, educators, and online consulting with session scheduling and attendance tracking."}
+            </p>
+          </div>
+          <div className="sbc-card rounded-2xl p-5 sm:col-span-2">
+            <h4 className="font-semibold">{ar ? "شبكة SBCClaw الذكية" : "SBCClaw Smart Network"}</h4>
+            <p className="mt-2 text-base font-medium leading-8 text-(--muted-foreground)">
+              {ar
+                ? "مناسبة لربط الأنظمة والأدوات داخل نشاطك بالأتمتة الذكية لرفع الكفاءة وتقليل العمل اليدوي."
+                : "Focused on smart integrations and automation across your internal tools to improve operations and reduce manual work."}
+            </p>
+          </div>
+        </div>
       </section>
 
       <div className="mt-8 text-sm font-medium text-(--muted-foreground)">
         {ar
-          ? "SBC Smart Card فعّال الآن: استخدم البطاقة، اكسب نقاط، واصرف نقاط عبر الأنشطة المشاركة."
-          : "SBC Smart Card is live now: use the card, earn points, and spend points across participating businesses."}
+          ? "الخدمات الجديدة فعّالة الآن في المتجر: CRM، المحاسبة، الاجتماعات والكلاسات الأونلاين، وشبكة SBCClaw الذكية."
+          : "New services are now live in the store: CRM, Accounting, Online Meetings & Virtual Classes, and SBCClaw Smart Network."}
       </div>
     </PublicPage>
   );
