@@ -383,41 +383,43 @@ export default async function AdminPage({
 
   return (
     <AppPage>
-      <div className="mb-10 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">
-          {ar ? "لوحة التحكم" : "Admin Dashboard"}
-        </h1>
-      </div>
+      <div className="[&_.sbc-card]:!border-0 [&_.border]:!border-0">
+        <div className="mb-10 text-center">
+          <h1 className="text-3xl font-bold tracking-tight">
+            {ar ? "لوحة التحكم" : "Admin Dashboard"}
+          </h1>
+        </div>
 
-      <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-        {sections.map((section) => {
-          const colors = colorClasses[section.color] || colorClasses.slate;
-          const badgeClasses = section.badgeType === "warning"
-            ? "bg-amber-500 text-white"
-            : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300";
+        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          {sections.map((section) => {
+            const colors = colorClasses[section.color] || colorClasses.slate;
+            const badgeClasses = section.badgeType === "warning"
+              ? "bg-amber-500 text-white"
+              : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300";
 
-          return (
-            <Link
-              key={section.href}
-              href={section.href}
-              className="group sbc-card sbc-card--interactive relative flex flex-col items-center justify-center p-6 text-center rounded-2xl"
-            >
-              {section.badge !== undefined && (
-                <span className={`absolute -top-2 -end-2 flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold ${badgeClasses}`}>
-                  {section.badge}
+            return (
+              <Link
+                key={section.href}
+                href={section.href}
+                className="group sbc-card sbc-card--interactive relative flex flex-col items-center justify-center p-6 text-center rounded-2xl"
+              >
+                {section.badge !== undefined && (
+                  <span className={`absolute -top-2 -end-2 flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold ${badgeClasses}`}>
+                    {section.badge}
+                  </span>
+                )}
+
+                <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${colors.bg} ${colors.hover} transition-colors`}>
+                  <span className={colors.text}>{section.icon}</span>
+                </div>
+
+                <span className="mt-4 text-sm font-semibold text-foreground">
+                  {section.label}
                 </span>
-              )}
-
-              <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${colors.bg} ${colors.hover} transition-colors`}>
-                <span className={colors.text}>{section.icon}</span>
-              </div>
-
-              <span className="mt-4 text-sm font-semibold text-foreground">
-                {section.label}
-              </span>
-            </Link>
-          );
-        })}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </AppPage>
   );

@@ -1128,6 +1128,7 @@ export function BusinessesExplorer({
                 key={b.id}
                 href={href}
                 className="group sbc-card sbc-card--interactive overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface) shadow-(--shadow) transition-colors hover:border-(--accent)/30"
+                style={{ background: "var(--business-card-bg)" }}
               >
                 <div className="relative aspect-square w-full overflow-hidden bg-linear-to-br from-accent/12 via-accent-2/10 to-transparent">
                   {img ? (

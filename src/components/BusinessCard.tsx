@@ -63,7 +63,7 @@ export async function BusinessCard({ business, locale, noShadow = false }: Busin
           noShadow ? "shadow-none hover:shadow-none" : "shadow-lg hover:shadow-xl"
         }`}
         style={{
-          background: "rgba(var(--surface-rgb, 255, 255, 255), 0.8)",
+          background: "var(--business-card-bg)",
           border: "1px solid",
           borderColor: "var(--surface-border)",
         }}

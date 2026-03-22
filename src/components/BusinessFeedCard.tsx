@@ -227,7 +227,7 @@ export function BusinessFeedCard({
     <article
       className="mb-6 rounded-lg border overflow-visible"
       style={{
-        backgroundColor: "var(--background)",
+        backgroundColor: "var(--business-card-bg)",
         borderColor: "var(--surface-border)",
       }}
     >

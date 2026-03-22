@@ -65,51 +65,53 @@ export default async function HomeFollowedPage({
 
   return (
     <AppPage>
-      <FeedProfileHeader user={viewUser} locale={locale as Locale} />
+      <div className="[&_.sbc-card]:!border-0 [&_.border]:!border-0 [&_article]:!border-0">
+        <FeedProfileHeader user={viewUser} locale={locale as Locale} />
 
-      {/* Stories Section - Only from followed businesses/categories */}
-      {initialStories.length > 0 && (
-        <div className="my-6 -mx-4 sm:-mx-6">
-          <StoriesContainer
-            initialBusinesses={initialStories}
-            locale={locale as Locale}
-            currentUserId={user.id}
-            ownedBusinessIds={ownedBusinesses.map(b => b.id)}
-            isAdmin={user.role === "admin"}
-            initialTotal={totalStories}
-            fetchScope="followed"
-          />
-        </div>
-      )}
+        {/* Stories Section - Only from followed businesses/categories */}
+        {initialStories.length > 0 && (
+          <div className="my-6 -mx-4 sm:-mx-6">
+            <StoriesContainer
+              initialBusinesses={initialStories}
+              locale={locale as Locale}
+              currentUserId={user.id}
+              ownedBusinessIds={ownedBusinesses.map(b => b.id)}
+              isAdmin={user.role === "admin"}
+              initialTotal={totalStories}
+              fetchScope="followed"
+            />
+          </div>
+        )}
 
-        {followedCategoryIds.size === 0 && followedBusinessIds.size === 0 ? (
-          <div className="mt-8 sbc-card rounded-2xl p-6">
-            <div className="font-semibold">
-              {locale === "ar" ? "ابدأ بمتابعة التصنيفات أو الأنشطة التجارية" : "Start by following categories or businesses"}
+          {followedCategoryIds.size === 0 && followedBusinessIds.size === 0 ? (
+            <div className="mt-8 sbc-card rounded-2xl p-6">
+              <div className="font-semibold">
+                {locale === "ar" ? "ابدأ بمتابعة التصنيفات أو الأنشطة التجارية" : "Start by following categories or businesses"}
+              </div>
+              <p className="mt-2 text-sm text-(--muted-foreground)">
+                {locale === "ar"
+                  ? "اذهب إلى صفحة التصنيفات واختر ما يناسبك، أو تابع أنشطة تجارية محددة."
+                  : "Go to Categories and follow what you like, or follow specific businesses."}
+              </p>
             </div>
-            <p className="mt-2 text-sm text-(--muted-foreground)">
+          ) : null}
+
+          <HomeInfiniteFeed
+            locale={locale as Locale}
+            initialItems={initialFeedItems}
+            initialTotal={totalFeedBusinesses}
+            onToggleLike={toggleBusinessLikeAction.bind(null, locale)}
+            onToggleSave={toggleBusinessSaveAction.bind(null, locale)}
+          />
+
+          {(followedCategoryIds.size > 0 || followedBusinessIds.size > 0) && totalFeedBusinesses === 0 ? (
+            <div className="mt-10 text-center text-(--muted-foreground)">
               {locale === "ar"
-                ? "اذهب إلى صفحة التصنيفات واختر ما يناسبك، أو تابع أنشطة تجارية محددة."
-                : "Go to Categories and follow what you like, or follow specific businesses."}
-            </p>
-          </div>
-        ) : null}
-
-        <HomeInfiniteFeed
-          locale={locale as Locale}
-          initialItems={initialFeedItems}
-          initialTotal={totalFeedBusinesses}
-          onToggleLike={toggleBusinessLikeAction.bind(null, locale)}
-          onToggleSave={toggleBusinessSaveAction.bind(null, locale)}
-        />
-
-        {(followedCategoryIds.size > 0 || followedBusinessIds.size > 0) && totalFeedBusinesses === 0 ? (
-          <div className="mt-10 text-center text-(--muted-foreground)">
-            {locale === "ar"
-              ? "لا توجد أعمال في التصنيفات أو الأنشطة التي تتابعها حالياً."
-              : "No businesses yet in the categories or businesses you follow."}
-          </div>
-        ) : null}
+                ? "لا توجد أعمال في التصنيفات أو الأنشطة التي تتابعها حالياً."
+                : "No businesses yet in the categories or businesses you follow."}
+            </div>
+          ) : null}
+      </div>
     </AppPage>
   );
 }
