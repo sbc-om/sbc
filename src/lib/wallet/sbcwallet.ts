@@ -123,8 +123,10 @@ type SharpFactory = (input: Buffer) => {
     resize: (options: {
       width: number;
       height: number;
-      fit: "contain" | "cover";
-      background: { r: number; g: number; b: number; alpha: number };
+      fit: "contain" | "cover" | "inside";
+      background?: { r: number; g: number; b: number; alpha: number };
+      position?: "left" | "center";
+      withoutEnlargement?: boolean;
     }) => {
       png: () => { toBuffer: () => Promise<Buffer> };
     };
@@ -204,8 +206,10 @@ async function resizeToPng(
   options: {
     width: number;
     height: number;
-    fit: "contain" | "cover";
-    background: { r: number; g: number; b: number; alpha: number };
+    fit: "contain" | "cover" | "inside";
+    background?: { r: number; g: number; b: number; alpha: number };
+    position?: "left" | "center";
+    withoutEnlargement?: boolean;
   },
 ): Promise<Buffer | null> {
   const sharp = await getSharp();
@@ -217,7 +221,9 @@ async function resizeToPng(
         width: options.width,
         height: options.height,
         fit: options.fit,
-        background: options.background,
+        ...(options.background ? { background: options.background } : {}),
+        ...(options.position ? { position: options.position } : {}),
+        ...(options.withoutEnlargement ? { withoutEnlargement: true } : {}),
       })
       .png()
       .toBuffer();
@@ -361,8 +367,9 @@ async function buildApplePassAssetBuffers(input: {
       const resized = await resizeToPng(rawLogo, {
         width: spec.width,
         height: spec.height,
-        fit: "contain",
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
+        fit: "inside",
+        position: "left",
+        withoutEnlargement: true,
       });
       if (resized) buffers[spec.name] = resized;
     }
