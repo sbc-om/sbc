@@ -23,6 +23,7 @@ import {
 import { getBusinessById } from "@/lib/db/businesses";
 import { getBusinessCardById } from "@/lib/db/businessCards";
 import type { LoyaltySettings } from "@/lib/db/types";
+import { diskPathFromMediaUrl } from "@/lib/uploads/storage";
 
 type SbcwalletRuntime = {
   GoogleWalletAdapter: new (input: { issuerId: string; serviceAccountPath: string }) => {
@@ -115,6 +116,272 @@ function hexToRgb(hex: string): string {
   const g = Number.parseInt(h.substring(2, 4), 16);
   const b = Number.parseInt(h.substring(4, 6), 16);
   return `rgb(${r}, ${g}, ${b})`;
+}
+
+type SharpFactory = (input: Buffer) => {
+  rotate: () => {
+    resize: (options: {
+      width: number;
+      height: number;
+      fit: "contain" | "cover";
+      background: { r: number; g: number; b: number; alpha: number };
+    }) => {
+      png: () => { toBuffer: () => Promise<Buffer> };
+    };
+  };
+  png: () => { toBuffer: () => Promise<Buffer> };
+};
+
+let sharpPromise: Promise<SharpFactory | null> | null = null;
+
+async function getSharp() {
+  if (!sharpPromise) {
+    sharpPromise = import("sharp")
+      .then((m) => {
+        const candidate = (m as { default?: unknown }).default ?? m;
+        return typeof candidate === "function" ? (candidate as SharpFactory) : null;
+      })
+      .catch(() => null);
+  }
+  return sharpPromise;
+}
+
+function readFileIfExists(p: string): Buffer | null {
+  try {
+    if (!fs.existsSync(p)) return null;
+    return fs.readFileSync(p);
+  } catch {
+    return null;
+  }
+}
+
+async function loadImageFromSource(source?: string): Promise<Buffer | null> {
+  if (!source) return null;
+  const raw = source.trim();
+  if (!raw) return null;
+
+  if (raw.startsWith("/media/")) {
+    try {
+      const diskPath = diskPathFromMediaUrl(raw);
+      return readFileIfExists(diskPath);
+    } catch {
+      return null;
+    }
+  }
+
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    const safeUrl = sanitizeUrl(raw, ["http:", "https:"], true);
+    if (!safeUrl) return null;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch(safeUrl, { signal: controller.signal, redirect: "follow" });
+      if (!res.ok) return null;
+      const data = await res.arrayBuffer();
+      if (data.byteLength === 0 || data.byteLength > 8 * 1024 * 1024) return null;
+      return Buffer.from(data);
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  if (raw.startsWith("/")) {
+    const candidate = path.resolve(process.cwd(), `.${raw}`);
+    const cwd = path.resolve(process.cwd());
+    if (candidate.startsWith(`${cwd}${path.sep}`) || candidate === cwd) {
+      return readFileIfExists(candidate);
+    }
+  }
+
+  return null;
+}
+
+async function resizeToPng(
+  input: Buffer,
+  options: {
+    width: number;
+    height: number;
+    fit: "contain" | "cover";
+    background: { r: number; g: number; b: number; alpha: number };
+  },
+): Promise<Buffer | null> {
+  const sharp = await getSharp();
+  if (!sharp) return null;
+  try {
+    return await sharp(input)
+      .rotate()
+      .resize({
+        width: options.width,
+        height: options.height,
+        fit: options.fit,
+        background: options.background,
+      })
+      .png()
+      .toBuffer();
+  } catch {
+    return null;
+  }
+}
+
+async function svgToPng(svg: string): Promise<Buffer | null> {
+  const sharp = await getSharp();
+  if (!sharp) return null;
+  try {
+    return await sharp(Buffer.from(svg, "utf8")).png().toBuffer();
+  } catch {
+    return null;
+  }
+}
+
+function pickHexColor(input: string | undefined, fallback: string): string {
+  return normalizeHexColor(input) ?? fallback;
+}
+
+function buildDesignSvg(input: {
+  width: number;
+  height: number;
+  design?: LoyaltySettings["cardDesign"];
+}): string {
+  const style = input.design?.backgroundStyle ?? "solid";
+  const background = pickHexColor(input.design?.backgroundColor, "#4B5563");
+  const primary = pickHexColor(input.design?.primaryColor, background);
+  const secondary = pickHexColor(input.design?.secondaryColor, background);
+  const text = pickHexColor(input.design?.textColor, "#FFFFFF");
+
+  const baseRect = `<rect width="${input.width}" height="${input.height}" fill="${background}" />`;
+
+  if (style === "gradient") {
+    return [
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${input.width}" height="${input.height}" viewBox="0 0 ${input.width} ${input.height}">`,
+      "<defs>",
+      `<linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">`,
+      `<stop offset="0%" stop-color="${primary}" />`,
+      `<stop offset="100%" stop-color="${secondary}" />`,
+      "</linearGradient>",
+      `<linearGradient id="shine" x1="0%" y1="0%" x2="0%" y2="100%">`,
+      `<stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.22" />`,
+      `<stop offset="65%" stop-color="#FFFFFF" stop-opacity="0.05" />`,
+      `<stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />`,
+      "</linearGradient>",
+      "</defs>",
+      `<rect width="${input.width}" height="${input.height}" fill="url(#bg)" />`,
+      `<rect width="${input.width}" height="${input.height}" fill="url(#shine)" />`,
+      "</svg>",
+    ].join("");
+  }
+
+  if (style === "pattern") {
+    return [
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${input.width}" height="${input.height}" viewBox="0 0 ${input.width} ${input.height}">`,
+      "<defs>",
+      `<pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">`,
+      `<circle cx="4" cy="4" r="2" fill="${text}" fill-opacity="0.14" />`,
+      `<circle cx="18" cy="18" r="2" fill="${text}" fill-opacity="0.1" />`,
+      "</pattern>",
+      "</defs>",
+      baseRect,
+      `<rect width="${input.width}" height="${input.height}" fill="url(#dots)" />`,
+      `<rect width="${input.width}" height="${input.height}" fill="#FFFFFF" fill-opacity="0.06" />`,
+      "</svg>",
+    ].join("");
+  }
+
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${input.width}" height="${input.height}" viewBox="0 0 ${input.width} ${input.height}">`,
+    baseRect,
+    `<rect width="${input.width}" height="${input.height}" fill="#FFFFFF" fill-opacity="0.04" />`,
+    "</svg>",
+  ].join("");
+}
+
+async function buildBackgroundAssets(design?: LoyaltySettings["cardDesign"]): Promise<Record<string, Buffer>> {
+  if (!design) return {};
+
+  const assets: Record<string, Buffer> = {};
+  const backgroundSizes = [
+    { name: "background.png", width: 180, height: 220 },
+    { name: "background@2x.png", width: 360, height: 440 },
+    { name: "background@3x.png", width: 540, height: 660 },
+  ] as const;
+
+  const stripSizes = [
+    { name: "strip.png", width: 375, height: 123 },
+    { name: "strip@2x.png", width: 750, height: 246 },
+    { name: "strip@3x.png", width: 1125, height: 369 },
+  ] as const;
+
+  for (const spec of backgroundSizes) {
+    const svg = buildDesignSvg({ width: spec.width, height: spec.height, design });
+    const png = await svgToPng(svg);
+    if (png) assets[spec.name] = png;
+  }
+
+  for (const spec of stripSizes) {
+    const svg = buildDesignSvg({ width: spec.width, height: spec.height, design });
+    const png = await svgToPng(svg);
+    if (png) assets[spec.name] = png;
+  }
+
+  return assets;
+}
+
+async function buildApplePassAssetBuffers(input: {
+  logoSource?: string;
+  design?: LoyaltySettings["cardDesign"];
+}): Promise<Record<string, Buffer>> {
+  const buffers: Record<string, Buffer> = {};
+  const publicImagesDir = path.join(process.cwd(), "public", "images");
+
+  const icon = readFileIfExists(path.join(publicImagesDir, "icon.png"));
+  if (icon) buffers["icon.png"] = icon;
+
+  const icon2x = readFileIfExists(path.join(publicImagesDir, "icon@2x.png"));
+  if (icon2x) buffers["icon@2x.png"] = icon2x;
+
+  const rawLogo = await loadImageFromSource(input.logoSource)
+    ?? readFileIfExists(path.join(publicImagesDir, "sbc.png"));
+
+  if (rawLogo) {
+    const logoSizes = [
+      { name: "logo.png", width: 160, height: 50 },
+      { name: "logo@2x.png", width: 320, height: 100 },
+      { name: "logo@3x.png", width: 480, height: 150 },
+    ] as const;
+
+    const thumbnailSizes = [
+      { name: "thumbnail.png", width: 90, height: 90 },
+      { name: "thumbnail@2x.png", width: 180, height: 180 },
+      { name: "thumbnail@3x.png", width: 270, height: 270 },
+    ] as const;
+
+    for (const spec of logoSizes) {
+      const resized = await resizeToPng(rawLogo, {
+        width: spec.width,
+        height: spec.height,
+        fit: "contain",
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      });
+      if (resized) buffers[spec.name] = resized;
+    }
+
+    for (const spec of thumbnailSizes) {
+      const resized = await resizeToPng(rawLogo, {
+        width: spec.width,
+        height: spec.height,
+        fit: "cover",
+        background: { r: 255, g: 255, b: 255, alpha: 0 },
+      });
+      if (resized) buffers[spec.name] = resized;
+    }
+  }
+
+  const backgroundAssets = await buildBackgroundAssets(input.design);
+  Object.assign(buffers, backgroundAssets);
+
+  return buffers;
 }
 
 async function prepareLoyaltyCardData(input: {
@@ -401,9 +668,12 @@ async function generateApplePkpass(options: {
   description: string;
   organizationName: string;
   logoText?: string;
+  logoSource?: string;
+  cardDesign?: LoyaltySettings["cardDesign"];
   backgroundColor?: string;
   foregroundColor?: string;
   labelColor?: string;
+  passStyle?: "generic" | "storeCard";
   barcodes?: Array<{
     format: string;
     message: string;
@@ -429,18 +699,10 @@ async function generateApplePkpass(options: {
   const signerCert = fs.readFileSync(config.certPemPath);
   const signerKey = fs.readFileSync(config.keyPemPath);
 
-  // Read icon files (required by Apple)
-  const iconPath = path.join(process.cwd(), "public", "images", "icon.png");
-  const icon2xPath = path.join(process.cwd(), "public", "images", "icon@2x.png");
-  
-  // Build buffers object for icons
-  const buffers: Record<string, Buffer> = {};
-  if (fs.existsSync(iconPath)) {
-    buffers["icon.png"] = fs.readFileSync(iconPath);
-  }
-  if (fs.existsSync(icon2xPath)) {
-    buffers["icon@2x.png"] = fs.readFileSync(icon2xPath);
-  }
+  const buffers = await buildApplePassAssetBuffers({
+    logoSource: options.logoSource,
+    design: options.cardDesign,
+  });
 
   // Create the pass with icon buffers
   const pass = new PKPass(
@@ -459,7 +721,7 @@ async function generateApplePkpass(options: {
       ...(options.backgroundColor && { backgroundColor: options.backgroundColor }),
       ...(options.foregroundColor && { foregroundColor: options.foregroundColor }),
       ...(options.labelColor && { labelColor: options.labelColor }),
-      ...(options.logoText && { logoText: options.logoText }),
+      ...(options.logoText !== undefined && { logoText: options.logoText }),
       ...(options.webServiceURL && options.authenticationToken && {
         webServiceURL: options.webServiceURL,
         authenticationToken: options.authenticationToken,
@@ -468,8 +730,7 @@ async function generateApplePkpass(options: {
     }
   );
 
-  // Set the pass type to generic (loyalty cards use generic type)
-  pass.type = "generic";
+  pass.type = options.passStyle ?? "generic";
 
   // Set barcodes
   if (options.barcodes && options.barcodes.length > 0) {
@@ -664,6 +925,8 @@ export async function getSbcwalletApplePkpassForLoyaltyCard(input: {
   const programId = `loyalty-${card.userId}`;
   const businessName = profile?.businessName ?? "SBC";
   const design = settings.cardDesign;
+  const logoSource = profile?.logoUrl
+    || (settings.pointsIconMode === "custom" ? settings.pointsIconUrl : undefined);
 
   const appleBackground = design?.backgroundColor ? hexToRgbCss(design.backgroundColor) : null;
   const appleForeground = design?.textColor ? hexToRgbCss(design.textColor) : null;
@@ -691,6 +954,9 @@ export async function getSbcwalletApplePkpassForLoyaltyCard(input: {
     description: settings.walletPassDescription || `${businessName} Loyalty Card`,
     organizationName: businessName,
     logoText: design?.showBusinessName === false ? "" : businessName,
+    logoSource,
+    cardDesign: design,
+    passStyle: "storeCard",
     backgroundColor: appleBackground || undefined,
     foregroundColor: appleForeground || undefined,
     labelColor: appleLabel || undefined,
@@ -739,6 +1005,8 @@ export async function getSbcwalletApplePkpassForBusinessCard(input: {
   });
 
   const design = data.design;
+  const logoSource = data.business.media?.logo
+    || (data.settings.pointsIconMode === "custom" ? data.settings.pointsIconUrl : undefined);
   const appleBackground = design?.backgroundColor ? hexToRgbCss(design.backgroundColor) : null;
   const appleForeground = design?.textColor ? hexToRgbCss(design.textColor) : null;
   const appleLabel = design?.secondaryColor ? hexToRgbCss(design.secondaryColor) : null;
@@ -750,6 +1018,9 @@ export async function getSbcwalletApplePkpassForBusinessCard(input: {
     description: data.settings.walletPassDescription || `${data.businessName} Business Card`,
     organizationName: data.businessName,
     logoText: design?.showBusinessName === false ? "" : data.businessName,
+    logoSource,
+    cardDesign: design,
+    passStyle: "storeCard",
     backgroundColor: appleBackground || undefined,
     foregroundColor: appleForeground || undefined,
     labelColor: appleLabel || undefined,
