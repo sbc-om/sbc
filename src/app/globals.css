@@ -10,7 +10,7 @@
   --foreground-rgb: 15, 23, 42;
   --surface: rgba(244, 246, 249, 0.88);
   --surface-rgb: 244, 246, 249;
-  --business-card-bg: #eceff3;
+  --business-card-bg: var(--background);
   --surface-border: rgba(15, 23, 42, 0.1);
   --surface-hover: rgba(15, 23, 42, 0.04);
   --shadow: none;
@@ -167,7 +167,7 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-profile-btn {
   --foreground-rgb: 232, 234, 237;
   --surface: rgba(34, 34, 42, 0.9);
   --surface-rgb: 38, 38, 38;
-  --business-card-bg: rgba(34, 34, 42, 0.9);
+  --business-card-bg: var(--background);
   --surface-border: rgba(255, 255, 255, 0.18);
   --surface-hover: rgba(255, 255, 255, 0.10);
   --shadow: none;

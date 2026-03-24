@@ -24,7 +24,7 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
     .toUpperCase();
 
   return (
-    <div className="sbc-card rounded-2xl p-6 mb-6">
+    <div className="sbc-card rounded-2xl p-6 mb-6" style={{ background: 'var(--background)' }}>
       <div className="flex items-center gap-4">
         {/* Avatar */}
         <Link href={`/${locale}/profile`} className="shrink-0">
@@ -118,7 +118,7 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
           href={`/${locale}/businesses`}
           className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-center bg-(--muted-foreground)/10 hover:bg-(--muted-foreground)/20 transition-colors"
         >
-          {locale === "ar" ? "تصفح الأعمال" : "Browse Businesses"}
+          {locale === "ar" ? "الأعمال" : "Businesses"}
         </Link>
       </div>
     </div>

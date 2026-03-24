@@ -145,7 +145,8 @@ export function BusinessFeedCard({
   hasStories = false,
 }: BusinessFeedCardProps) {
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [likePending, startLikeTransition] = useTransition();
+  const [savePending, startSaveTransition] = useTransition();
   const [liked, setLiked] = useState(initialLiked);
   const [saved, setSaved] = useState(initialSaved);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -169,7 +170,7 @@ export function BusinessFeedCard({
   const publishedAgo = formatRelativeTime(business.createdAt, locale);
 
   const handleLikeClick = () => {
-    startTransition(async () => {
+    startLikeTransition(async () => {
       try {
         const result = await onToggleLike(business.id);
         setLiked(result.liked);
@@ -180,7 +181,7 @@ export function BusinessFeedCard({
   };
 
   const handleSaveClick = () => {
-    startTransition(async () => {
+    startSaveTransition(async () => {
       try {
         const result = await onToggleSave(business.id);
         setSaved(result.saved);
@@ -270,7 +271,7 @@ export function BusinessFeedCard({
 
   return (
     <article
-      className="mb-6 rounded-lg border overflow-visible h-full flex flex-col"
+      className="rounded-lg border overflow-x-hidden overflow-y-visible min-w-0 h-full flex flex-col"
       style={{
         backgroundColor: "var(--business-card-bg)",
         borderColor: "var(--surface-border)",
@@ -418,7 +419,7 @@ export function BusinessFeedCard({
           <div className="flex items-center gap-4">
             <button
               onClick={handleLikeClick}
-              disabled={isPending}
+              disabled={likePending}
               className="transition-all hover:scale-110 active:scale-95 disabled:opacity-50"
               aria-label={liked ? "Unlike" : "Like"}
             >
@@ -445,7 +446,7 @@ export function BusinessFeedCard({
           </div>
           <button
             onClick={handleSaveClick}
-            disabled={isPending}
+            disabled={savePending}
             className="transition-all hover:scale-110 active:scale-95 disabled:opacity-50"
             aria-label={saved ? "Unsave" : "Save"}
           >
