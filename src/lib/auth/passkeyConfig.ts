@@ -11,10 +11,20 @@
 export function resolvePasskeyOrigin(req: Request): string {
   if (process.env.PASSKEY_ORIGIN) return process.env.PASSKEY_ORIGIN;
 
+  const urlProtocol = (() => {
+    try {
+      return new URL(req.url).protocol.replace(":", "");
+    } catch {
+      return undefined;
+    }
+  })();
+
   // Derive from forwarded headers so the origin matches
   // what the browser actually reports in clientDataJSON.
   const proto =
-    req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+    req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
+    urlProtocol ||
+    "https";
   const host =
     req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
     req.headers.get("host")?.split(",")[0]?.trim();
@@ -44,19 +54,50 @@ export function resolvePasskeyOrigin(req: Request): string {
 export function resolvePasskeyRpId(req: Request): string {
   if (process.env.PASSKEY_RP_ID) return process.env.PASSKEY_RP_ID;
 
+  const requestHostname = (() => {
+    const host =
+      req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+      req.headers.get("host")?.split(",")[0]?.trim();
+    if (host) return host.split(":")[0];
+
+    try {
+      return new URL(req.url).hostname;
+    } catch {
+      return undefined;
+    }
+  })();
+
+  const isLocalLike = (hostname: string) =>
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1" ||
+    hostname.endsWith(".localhost");
+
+  // In local/dev contexts, always use the request hostname.
+  // This avoids forcing a production RP ID when NEXT_PUBLIC_SITE_URL points
+  // to a live domain but the app is running on localhost.
+  if (requestHostname && isLocalLike(requestHostname)) {
+    return requestHostname;
+  }
+
   // Prefer the main-site URL so RP ID stays the top-level domain even when
   // the request arrives via a subdomain.
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
   if (envUrl) {
     try {
-      return new URL(envUrl).hostname;
+      const envHostname = new URL(envUrl).hostname;
+
+      if (!requestHostname) return envHostname;
+      if (requestHostname === envHostname) return envHostname;
+      if (requestHostname.endsWith(`.${envHostname}`)) return envHostname;
+
+      // If request host is unrelated to NEXT_PUBLIC_SITE_URL (preview domain,
+      // staging host, etc), prefer request hostname so passkeys still work.
+      return requestHostname;
     } catch { /* fall through */ }
   }
 
-  const host =
-    req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
-    req.headers.get("host")?.split(",")[0]?.trim();
-  if (host) return host.split(":")[0];
+  if (requestHostname) return requestHostname;
 
   try {
     return new URL(req.url).hostname;

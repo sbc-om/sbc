@@ -11,7 +11,7 @@ export const runtime = "nodejs";
 const bodySchema = z.object({
   requestId: z.string().min(1),
   response: z.any(),
-  label: z.string().trim().max(120).optional(),
+  label: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -22,7 +22,8 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { requestId, response, label } = bodySchema.parse(body);
+    const { requestId, response, label: rawLabel } = bodySchema.parse(body);
+    const label = typeof rawLabel === "string" ? rawLabel.trim().slice(0, 120) || undefined : undefined;
 
     const challenge = await consumePasskeyChallenge(requestId);
     if (!challenge || challenge.userId !== user.id) {

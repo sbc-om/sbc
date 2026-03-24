@@ -411,10 +411,15 @@ export function ProfileClient({
 
     setPasskeyBusy(true);
     try {
+      const passkeyLabel =
+        typeof navigator !== "undefined"
+          ? navigator.userAgent.trim().slice(0, 120) || undefined
+          : undefined;
+
       const optionsRes = await fetch("/api/auth/passkey/registration/options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label: navigator.userAgent }),
+        body: JSON.stringify({ label: passkeyLabel }),
       });
 
       const optionsJson = (await optionsRes.json()) as
@@ -432,7 +437,7 @@ export function ProfileClient({
       const verifyRes = await fetch("/api/auth/passkey/registration/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ requestId: optionsJson.requestId, response: attestation }),
+        body: JSON.stringify({ requestId: optionsJson.requestId, response: attestation, label: passkeyLabel }),
       });
 
       const verifyJson = (await verifyRes.json()) as

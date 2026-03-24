@@ -9,7 +9,7 @@ import { createPasskeyChallenge, listUserPasskeys } from "@/lib/db/passkeys";
 export const runtime = "nodejs";
 
 const bodySchema = z.object({
-  label: z.string().trim().max(120).optional(),
+  label: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -23,7 +23,8 @@ export async function POST(req: Request) {
     const rpName = resolvePasskeyRpName();
 
     const body = await req.json().catch(() => ({}));
-    const { label } = bodySchema.parse(body);
+    const { label: rawLabel } = bodySchema.parse(body);
+    const label = typeof rawLabel === "string" ? rawLabel.trim().slice(0, 120) || undefined : undefined;
 
     const existing = await listUserPasskeys(user.id);
     const options = await generateRegistrationOptions({
