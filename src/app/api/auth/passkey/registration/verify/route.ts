@@ -3,7 +3,11 @@ import { z } from "zod";
 import { verifyRegistrationResponse } from "@simplewebauthn/server";
 
 import { getCurrentUser } from "@/lib/auth/currentUser";
-import { bufferToBase64Url, resolvePasskeyOrigin, resolvePasskeyRpId } from "@/lib/auth/passkeyConfig";
+import {
+  bufferToBase64Url,
+  resolvePasskeyExpectedOrigins,
+  resolvePasskeyExpectedRpIds,
+} from "@/lib/auth/passkeyConfig";
 import { addPasskeyCredential, consumePasskeyChallenge, listUserPasskeys } from "@/lib/db/passkeys";
 
 export const runtime = "nodejs";
@@ -30,9 +34,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "CHALLENGE_INVALID" }, { status: 400 });
     }
 
-    // Resolve expected origin and RP ID from request
-    const expectedOrigin = resolvePasskeyOrigin(req);
-    const expectedRPID = resolvePasskeyRpId(req);
+    // Resolve expected origin(s) and RP ID(s) from request/env.
+    const expectedOrigin = resolvePasskeyExpectedOrigins(req);
+    const expectedRPID = resolvePasskeyExpectedRpIds(req);
 
     const verification = await verifyRegistrationResponse({
       response,
@@ -67,7 +71,15 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[passkey/reg/verify]", err);
+    console.error("[passkey/reg/verify]", {
+      error: err instanceof Error ? err.message : String(err),
+      origin: req.headers.get("origin"),
+      forwardedProto: req.headers.get("x-forwarded-proto"),
+      forwardedHost: req.headers.get("x-forwarded-host"),
+      host: req.headers.get("host"),
+      expectedOrigins: resolvePasskeyExpectedOrigins(req),
+      expectedRpIds: resolvePasskeyExpectedRpIds(req),
+    });
     return NextResponse.json({ ok: false, error: "VERIFICATION_FAILED" }, { status: 400 });
   }
 }

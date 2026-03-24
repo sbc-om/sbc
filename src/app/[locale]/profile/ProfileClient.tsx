@@ -450,8 +450,12 @@ export function ProfileClient({
 
       setPasskeySuccess(t.passkeysSuccess);
       router.refresh();
-    } catch {
-      setPasskeyError(t.passkeysFailed);
+    } catch (e: unknown) {
+      const detail =
+        e instanceof Error
+          ? (e.name && e.name !== "Error" ? e.name : e.message)
+          : "";
+      setPasskeyError(detail ? `${t.passkeysFailed} (${detail})` : t.passkeysFailed);
     } finally {
       setPasskeyBusy(false);
     }

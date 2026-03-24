@@ -64,7 +64,14 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, options, requestId: challenge.id });
   } catch (err) {
-    console.error("[passkey/auth/options]", err);
+    console.error("[passkey/auth/options]", {
+      error: err instanceof Error ? err.message : String(err),
+      origin: req.headers.get("origin"),
+      forwardedProto: req.headers.get("x-forwarded-proto"),
+      forwardedHost: req.headers.get("x-forwarded-host"),
+      host: req.headers.get("host"),
+      rpID: resolvePasskeyRpId(req),
+    });
     return NextResponse.json({ ok: false, error: "OPTIONS_FAILED" }, { status: 500 });
   }
 }

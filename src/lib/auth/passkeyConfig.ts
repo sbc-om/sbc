@@ -1,109 +1,193 @@
 /**
- * Resolve the WebAuthn expected origin from the request.
+ * Resolve WebAuthn expected origins from the request.
  *
  * Priority:
- *  1. PASSKEY_ORIGIN env override
- *  2. Forwarded headers (X-Forwarded-Proto + X-Forwarded-Host / Host)
- *     – this correctly handles reverse-proxied and subdomain requests
- *  3. NEXT_PUBLIC_SITE_URL env fallback
- *  4. req.url (last resort, mainly for local dev without a proxy)
+ *  1. PASSKEY_ORIGIN env override (single or comma-separated list)
+ *  2. Request Origin header
+ *  3. Forwarded headers (X-Forwarded-Proto + X-Forwarded-Host / Host)
+ *  4. NEXT_PUBLIC_SITE_URL env fallback
+ *  5. req.url origin
  */
-export function resolvePasskeyOrigin(req: Request): string {
-  if (process.env.PASSKEY_ORIGIN) return process.env.PASSKEY_ORIGIN;
+function unique(values: Array<string | undefined | null>) {
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const value of values) {
+    if (!value) continue;
+    if (seen.has(value)) continue;
+    seen.add(value);
+    out.push(value);
+  }
+  return out;
+}
 
-  const urlProtocol = (() => {
-    try {
-      return new URL(req.url).protocol.replace(":", "");
-    } catch {
-      return undefined;
-    }
-  })();
+function parseOrigin(value: string | undefined | null) {
+  if (!value) return undefined;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return undefined;
+  }
+}
 
-  // Derive from forwarded headers so the origin matches
-  // what the browser actually reports in clientDataJSON.
-  const proto =
-    req.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
-    urlProtocol ||
-    "https";
-  const host =
-    req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
-    req.headers.get("host")?.split(",")[0]?.trim();
+function parseHostnameFromUrl(value: string | undefined | null) {
+  if (!value) return undefined;
+  try {
+    return new URL(value).hostname.toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
 
-  if (host) {
-    // Strip default ports – origins never include :443 / :80
-    const cleanHost = host.replace(/:443$/, "").replace(/:80$/, "");
-    return `${proto}://${cleanHost}`;
+function headerValue(req: Request, key: string) {
+  return req.headers.get(key)?.split(",")[0]?.trim() || undefined;
+}
+
+function reqUrlProtocol(req: Request) {
+  try {
+    return new URL(req.url).protocol.replace(":", "");
+  } catch {
+    return undefined;
+  }
+}
+
+function reqUrlOrigin(req: Request) {
+  try {
+    return new URL(req.url).origin;
+  } catch {
+    return undefined;
+  }
+}
+
+function reqUrlHostname(req: Request) {
+  try {
+    return new URL(req.url).hostname.toLowerCase();
+  } catch {
+    return undefined;
+  }
+}
+
+function forwardedOrigin(req: Request) {
+  const proto = headerValue(req, "x-forwarded-proto") || reqUrlProtocol(req) || "https";
+  const rawHost = headerValue(req, "x-forwarded-host") || headerValue(req, "host");
+  if (!rawHost) return undefined;
+
+  const host = rawHost.replace(/^https?:\/\//, "");
+  const cleanHost =
+    proto === "https"
+      ? host.replace(/:443$/, "")
+      : proto === "http"
+      ? host.replace(/:80$/, "")
+      : host.replace(/:443$/, "").replace(/:80$/, "");
+  return `${proto}://${cleanHost}`;
+}
+
+function requestHostname(req: Request) {
+  const rawHost = headerValue(req, "x-forwarded-host") || headerValue(req, "host");
+  if (rawHost) {
+    return rawHost.replace(/^https?:\/\//, "").split(":")[0]?.toLowerCase();
+  }
+  return reqUrlHostname(req);
+}
+
+function envSiteOrigin() {
+  return parseOrigin(process.env.NEXT_PUBLIC_SITE_URL);
+}
+
+function envSiteHostname() {
+  return parseHostnameFromUrl(process.env.NEXT_PUBLIC_SITE_URL);
+}
+
+function isSubdomainOrSame(hostname: string, domain: string) {
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
+export function resolvePasskeyExpectedOrigins(req: Request): string[] {
+  const explicit = process.env.PASSKEY_ORIGIN;
+  if (explicit) {
+    const list = unique(
+      explicit
+        .split(",")
+        .map((value) => parseOrigin(value.trim()))
+    );
+    if (list.length > 0) return list;
   }
 
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
-  return new URL(req.url).origin;
+  return unique([
+    parseOrigin(headerValue(req, "origin")),
+    forwardedOrigin(req),
+    envSiteOrigin(),
+    reqUrlOrigin(req),
+  ]);
+}
+
+export function resolvePasskeyOrigin(req: Request): string {
+  const expected = resolvePasskeyExpectedOrigins(req);
+  if (expected.length > 0) return expected[0];
+
+  const fallback = reqUrlOrigin(req);
+  if (fallback) return fallback;
+
+  return "http://localhost:3000";
 }
 
 /**
- * Resolve the WebAuthn Relying-Party ID.
- *
- * The RP ID should be the *registrable domain* so that passkeys registered on
- * the main domain (e.g. sbc.om) also work on subdomains (e.g. shop.sbc.om).
+ * Resolve WebAuthn expected RP IDs from request/env.
  *
  * Priority:
- *  1. PASSKEY_RP_ID env override
- *  2. Hostname derived from NEXT_PUBLIC_SITE_URL (always the main domain)
- *  3. Hostname from request headers
- *  4. req.url hostname (last resort)
+ *  1. PASSKEY_RP_ID env override (single or comma-separated list)
+ *  2. Origin/header-derived hostname (or env apex if origin is env subdomain)
+ *  3. Request host / NEXT_PUBLIC_SITE_URL / req.url hostname fallbacks
+ */
+export function resolvePasskeyExpectedRpIds(req: Request): string[] {
+  const explicit = process.env.PASSKEY_RP_ID;
+  if (explicit) {
+    const list = unique(
+      explicit
+        .split(",")
+        .map((value) => {
+          const trimmed = value.trim().toLowerCase();
+          if (!trimmed) return undefined;
+          if (trimmed.includes("://")) return parseHostnameFromUrl(trimmed);
+          return trimmed.replace(/^https?:\/\//, "").split(":")[0] || undefined;
+        })
+    );
+    if (list.length > 0) return list;
+  }
+
+  const originHostname = parseHostnameFromUrl(headerValue(req, "origin"));
+  const hostFromReq = requestHostname(req);
+  const envHostname = envSiteHostname();
+  const urlHostname = reqUrlHostname(req);
+
+  let primary: string | undefined;
+
+  if (originHostname && envHostname && isSubdomainOrSame(originHostname, envHostname)) {
+    primary = envHostname;
+  } else if (originHostname) {
+    primary = originHostname;
+  } else if (hostFromReq && envHostname && isSubdomainOrSame(hostFromReq, envHostname)) {
+    primary = envHostname;
+  } else if (hostFromReq) {
+    primary = hostFromReq;
+  } else if (envHostname) {
+    primary = envHostname;
+  } else if (urlHostname) {
+    primary = urlHostname;
+  }
+
+  return unique([primary, envHostname, originHostname, hostFromReq, urlHostname]);
+}
+
+/**
+ * Resolve the WebAuthn primary RP ID used in options generation.
+ * For verification, prefer `resolvePasskeyExpectedRpIds()` which returns all accepted IDs.
  */
 export function resolvePasskeyRpId(req: Request): string {
-  if (process.env.PASSKEY_RP_ID) return process.env.PASSKEY_RP_ID;
+  const expected = resolvePasskeyExpectedRpIds(req);
+  if (expected.length > 0) return expected[0];
 
-  const requestHostname = (() => {
-    const host =
-      req.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
-      req.headers.get("host")?.split(",")[0]?.trim();
-    if (host) return host.split(":")[0];
-
-    try {
-      return new URL(req.url).hostname;
-    } catch {
-      return undefined;
-    }
-  })();
-
-  const isLocalLike = (hostname: string) =>
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "::1" ||
-    hostname.endsWith(".localhost");
-
-  // In local/dev contexts, always use the request hostname.
-  // This avoids forcing a production RP ID when NEXT_PUBLIC_SITE_URL points
-  // to a live domain but the app is running on localhost.
-  if (requestHostname && isLocalLike(requestHostname)) {
-    return requestHostname;
-  }
-
-  // Prefer the main-site URL so RP ID stays the top-level domain even when
-  // the request arrives via a subdomain.
-  const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (envUrl) {
-    try {
-      const envHostname = new URL(envUrl).hostname;
-
-      if (!requestHostname) return envHostname;
-      if (requestHostname === envHostname) return envHostname;
-      if (requestHostname.endsWith(`.${envHostname}`)) return envHostname;
-
-      // If request host is unrelated to NEXT_PUBLIC_SITE_URL (preview domain,
-      // staging host, etc), prefer request hostname so passkeys still work.
-      return requestHostname;
-    } catch { /* fall through */ }
-  }
-
-  if (requestHostname) return requestHostname;
-
-  try {
-    return new URL(req.url).hostname;
-  } catch {
-    return "localhost";
-  }
+  const fallback = reqUrlHostname(req);
+  return fallback || "localhost";
 }
 
 export function resolvePasskeyRpName() {

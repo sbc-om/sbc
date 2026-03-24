@@ -3,7 +3,11 @@ import { z } from "zod";
 import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 
 import { consumePasskeyChallenge, getPasskeyById, updatePasskeyCounter } from "@/lib/db/passkeys";
-import { base64UrlToBuffer, resolvePasskeyOrigin, resolvePasskeyRpId } from "@/lib/auth/passkeyConfig";
+import {
+  base64UrlToBuffer,
+  resolvePasskeyExpectedOrigins,
+  resolvePasskeyExpectedRpIds,
+} from "@/lib/auth/passkeyConfig";
 import { getUserById } from "@/lib/db/users";
 import { getAuthCookieName, signAuthToken } from "@/lib/auth/jwt";
 import { sendLoginNotification, isWAHAEnabled } from "@/lib/waha/client";
@@ -39,9 +43,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: "CREDENTIAL_MISMATCH" }, { status: 400 });
     }
 
-    // Resolve expected origin and RP ID from request
-    const expectedOrigin = resolvePasskeyOrigin(req);
-    const expectedRPID = resolvePasskeyRpId(req);
+    // Resolve expected origin(s) and RP ID(s) from request/env.
+    const expectedOrigin = resolvePasskeyExpectedOrigins(req);
+    const expectedRPID = resolvePasskeyExpectedRpIds(req);
 
     const verification = await verifyAuthenticationResponse({
       response: authResponse,
@@ -101,7 +105,15 @@ export async function POST(req: Request) {
 
     return authRes;
   } catch (err) {
-    console.error("[passkey/auth/verify]", err);
+    console.error("[passkey/auth/verify]", {
+      error: err instanceof Error ? err.message : String(err),
+      origin: req.headers.get("origin"),
+      forwardedProto: req.headers.get("x-forwarded-proto"),
+      forwardedHost: req.headers.get("x-forwarded-host"),
+      host: req.headers.get("host"),
+      expectedOrigins: resolvePasskeyExpectedOrigins(req),
+      expectedRpIds: resolvePasskeyExpectedRpIds(req),
+    });
     return NextResponse.json({ ok: false, error: "VERIFICATION_FAILED" }, { status: 400 });
   }
 }

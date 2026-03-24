@@ -197,19 +197,34 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
     setPasskeyBusy(true);
 
     try {
+      const requestOptions = async (id?: string) => {
+        const response = await fetch("/api/auth/passkey/authentication/options", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: id }),
+        });
+
+        const json = (await response.json()) as
+          | { ok: true; options: PublicKeyCredentialRequestOptionsJSON; requestId: string }
+          | { ok: false; error: string };
+
+        return { response, json };
+      };
+
       // Send identifier (if filled in the password tab) so the server can
       // include allowCredentials – this helps when the passkey is not a
       // discoverable credential.
       const id = identifier.trim() || undefined;
-      const optionsRes = await fetch("/api/auth/passkey/authentication/options", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: id }),
-      });
+      let { response: optionsRes, json: optionsJson } = await requestOptions(id);
 
-      const optionsJson = (await optionsRes.json()) as
-        | { ok: true; options: PublicKeyCredentialRequestOptionsJSON; requestId: string }
-        | { ok: false; error: string };
+      // If user-entered identifier is wrong/inconsistent, retry without it
+      // so discoverable credentials can still be used.
+      if ((!optionsRes.ok || !optionsJson.ok) && id) {
+        const firstErr = !optionsJson.ok ? optionsJson.error : "OPTIONS_FAILED";
+        if (firstErr === "NO_PASSKEYS" || firstErr === "NOT_FOUND") {
+          ({ response: optionsRes, json: optionsJson } = await requestOptions(undefined));
+        }
+      }
 
       if (!optionsRes.ok || !optionsJson.ok) {
         const errCode = !optionsJson.ok ? optionsJson.error : "OPTIONS_FAILED";
@@ -218,7 +233,6 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
         } else {
           setPasskeyError(t.passkey.failed);
         }
-        setPasskeyBusy(false);
         return;
       }
 
