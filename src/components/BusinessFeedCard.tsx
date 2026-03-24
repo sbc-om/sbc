@@ -389,7 +389,7 @@ export function BusinessFeedCard({
                 }}
               >
                 {saved ? <IoBookmark className="h-4 w-4" /> : <IoBookmarkOutline className="h-4 w-4" />}
-                {saved ? (locale === "ar" ? "إزالة من المحفوظات" : "Remove from saved") : (locale === "ar" ? "حفظ النشاط" : "Save business")}
+                {saved ? (locale === "ar" ? "إزالة" : "Remove") : (locale === "ar" ? "حفظ النشاط" : "Save business")}
               </button>
             </div>
           ) : null}

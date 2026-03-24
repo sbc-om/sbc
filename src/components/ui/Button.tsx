@@ -10,9 +10,9 @@ const base =
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "border border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)]",
+    "bg-[color:var(--accent)] text-[color:var(--accent-foreground)]",
   secondary:
-    "border border-(--surface-border) bg-(--surface) text-foreground hover:border-accent/40",
+    "bg-(--surface) text-foreground",
   ghost:
     "bg-transparent text-(--muted-foreground) hover:bg-(--chip-bg) hover:text-foreground",
   destructive: "bg-red-600 text-white hover:bg-red-500 active:bg-red-600/90",

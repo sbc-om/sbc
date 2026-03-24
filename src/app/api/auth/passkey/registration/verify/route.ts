@@ -43,6 +43,7 @@ export async function POST(req: Request) {
       expectedChallenge: challenge.challenge,
       expectedOrigin,
       expectedRPID,
+      requireUserVerification: false,
     });
 
     if (!verification.verified || !verification.registrationInfo) {

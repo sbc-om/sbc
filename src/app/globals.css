@@ -234,11 +234,9 @@ select {
 /* Shared UI building blocks (keeps cards/buttons in sync with theme) */
 .sbc-card {
   border: 1px solid var(--surface-border);
-  background:
-    linear-gradient(180deg, rgba(var(--surface-rgb), 0.92), rgba(var(--surface-rgb), 0.84));
+  background: var(--background);
   box-shadow: var(--shadow);
   border-radius: 1rem; /* ~rounded-2xl */
-  backdrop-filter: blur(14px) saturate(1.1);
 }
 
 .sbc-card--interactive {

@@ -794,7 +794,7 @@ export default function MapPageClient({ locale }: Props) {
           <button
             type="button"
             onClick={() => setIsListOpen((value) => !value)}
-            className="rounded-xl border border-(--surface-border) bg-(--surface)/95 px-4 py-2 text-sm font-medium shadow-(--shadow) backdrop-blur-md"
+            className="rounded-xl bg-(--surface)/95 px-4 py-2 text-sm font-medium shadow-(--shadow) backdrop-blur-md"
           >
             {isListOpen
               ? locale === "ar"
@@ -807,11 +807,11 @@ export default function MapPageClient({ locale }: Props) {
         </div>
 
         <aside
-          className={`pointer-events-auto h-[calc(100dvh-9rem)] min-h-[30rem] w-full max-w-[18rem] flex-col overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface)/95 shadow-(--shadow) backdrop-blur-md ${
+          className={`pointer-events-auto h-[calc(100dvh-9rem)] min-h-[30rem] w-full max-w-[18rem] flex-col overflow-hidden rounded-2xl bg-(--surface)/95 shadow-(--shadow) backdrop-blur-md ${
             isListOpen ? "flex" : "hidden md:flex"
           }`}
         >
-          <div className="border-b border-(--surface-border) px-4 py-3">
+          <div className="px-4 py-3">
             <h2 className="text-lg font-semibold">{locale === "ar" ? "الأنشطة التجارية" : "Businesses"}</h2>
             <p className="text-xs text-(--muted-foreground)">
               {searchQuery.trim().length > 0
@@ -828,7 +828,7 @@ export default function MapPageClient({ locale }: Props) {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder={locale === "ar" ? "ابحث عن نشاط أو مدينة..." : "Search business or city..."}
-                className="w-full rounded-xl border border-(--surface-border) bg-background/90 px-10 py-2.5 text-sm outline-none transition focus:border-(--accent) focus:ring-2 focus:ring-(--accent)/20"
+                className="w-full rounded-xl bg-background/90 px-10 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-(--accent)/20"
                 aria-label={locale === "ar" ? "بحث في الأنشطة" : "Search businesses"}
               />
               <span
@@ -864,7 +864,7 @@ export default function MapPageClient({ locale }: Props) {
                         listItemRefs.current.delete(business.id);
                       }
                     }}
-                    className={`cursor-pointer rounded-lg border border-(--surface-border) bg-(--surface)/90 p-3 transition-colors hover:bg-(--chip-bg) ${
+                    className={`cursor-pointer rounded-lg bg-(--surface)/90 p-3 transition-colors hover:bg-(--chip-bg) ${
                       activeId === business.id ? "ring-2 ring-(--accent)" : ""
                     }`}
                     onClick={() => {

@@ -491,10 +491,10 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           <Link
             href={`/${locale}/notifications`}
             onClick={() => isMobile && setMobileOpen(false)}
-            className={`sbc-sidebar-notif-btn relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all ${
+            className={`sbc-sidebar-notif-btn relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all ${
               isActive("/notifications")
-                ? "border-accent/40 bg-linear-to-r from-accent/10 to-accent-2/10 text-accent"
-                : "border-(--surface-border) bg-(--chip-bg) text-(--muted-foreground) hover:text-foreground"
+                ? "bg-linear-to-r from-accent/10 to-accent-2/10 text-accent"
+                : "bg-(--chip-bg) text-(--muted-foreground) hover:text-foreground"
             } ${displayNotificationPulse ? "motion-safe:animate-pulse" : ""}`}
             aria-label={locale === "ar" ? "الإشعارات" : "Notifications"}
             title={locale === "ar" ? "الإشعارات" : "Notifications"}
@@ -521,7 +521,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           const className = `sbc-sidebar-navlink flex min-w-0 items-center rounded-xl text-base transition-colors ${
             active
               ? "bg-linear-to-r from-accent/10 to-accent-2/10 font-bold text-accent"
-              : "hover:bg-(--surface) font-normal"
+              : "hover:bg-(--chip-bg) font-normal"
           } ${iconOnly ? "mx-auto h-12 w-12 justify-center px-0" : "w-full h-12 justify-start gap-4 px-3"}`;
 
           if (item.hardNavigate) {
@@ -567,7 +567,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
         <div className={`sbc-sidebar-collapse-wrap mt-2 pt-2 mb-2 ${iconOnly ? "px-0" : "px-2"}`} style={{ borderColor: "var(--surface-border)" }}>
           <button
             onClick={toggleCollapsed}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl hover:bg-(--surface) transition-all hover:scale-105"
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-(--chip-bg) transition-all ${iconOnly ? "justify-center" : "justify-start"}`}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {locale === "ar" ? (
@@ -585,8 +585,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       {/* User Profile (separate section) */}
       <div
         ref={profileMenuRef}
-        className={`sbc-sidebar-profile-wrap mt-auto border-t pt-4 relative ${iconOnly ? "px-0" : "px-2"}`}
-        style={{ borderColor: "var(--surface-border)" }}
+        className={`sbc-sidebar-profile-wrap mt-auto pt-4 relative ${iconOnly ? "px-0" : "px-2"}`}
       >
         <button
           type="button"
@@ -597,8 +596,8 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               return next;
             });
           }}
-          className={`sbc-sidebar-profile-btn flex items-center gap-3 rounded-xl hover:bg-(--surface) transition-colors ${
-            isProfileMenuVisible ? "bg-(--surface)" : ""
+          className={`sbc-sidebar-profile-btn flex items-center gap-3 rounded-xl hover:bg-(--chip-bg) transition-colors ${
+            isProfileMenuVisible ? "bg-(--chip-bg)" : ""
           } ${iconOnly ? "mx-auto h-12 w-12 justify-center p-0" : "w-full justify-start p-3"}`}
           aria-haspopup="menu"
           aria-expanded={isProfileMenuVisible}
@@ -616,7 +615,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
             )}
           </div>
           {(!collapsed || isMobile) && (
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-start">
               <p className="text-sm font-semibold truncate">{user.displayName}</p>
               <p className="text-xs text-(--muted-foreground) truncate">{user.email}</p>
             </div>
@@ -627,11 +626,11 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           <div
             role="menu"
             aria-label="Profile menu"
-            className={`absolute z-50 rounded-xl border bg-(--background) shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col ${
+            className={`absolute z-50 rounded-xl shadow-xl p-2 animate-in fade-in zoom-in-95 duration-150 flex flex-col ${
               iconOnly ? "w-64" : "w-full"
             }`}
             style={{
-              borderColor: "var(--surface-border)",
+              backgroundColor: "color-mix(in srgb, var(--background) 92%, var(--foreground))",
               maxHeight: "calc(100dvh - 9rem)",
               ...(iconOnly
                 ? locale === "ar"
@@ -655,7 +654,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
             >
               {(() => {
                 const ProfileIcon = isActive("/profile") ? HiUser : HiOutlineUser;
@@ -671,7 +670,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
             >
               {(() => {
                 const DashboardIcon = isActive("/dashboard") ? HiChartSquareBar : HiOutlineChartSquareBar;
@@ -688,7 +687,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                   setProfileMenuOpen(false);
                   if (isMobile) setMobileOpen(false);
                 }}
-                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
               >
                 {(() => {
                   const AgentIcon = isActive("/agent") ? HiBriefcase : HiOutlineBriefcase;
@@ -705,7 +704,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
             >
               {(() => {
                 const ChatIcon = isActive("/chat") ? HiChat : HiOutlineChat;
@@ -721,7 +720,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
             >
               {(() => {
                 const ToolsIcon = isActive("/tools") ? HiViewGrid : HiOutlineViewGrid;
@@ -737,7 +736,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
             >
               {(() => {
                 const AboutIcon = isActive("/about") ? HiCollection : HiOutlineCollection;
@@ -753,7 +752,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
             >
               {(() => {
                 const ContactIcon = isActive("/contact") ? HiChat : HiOutlineChat;
@@ -769,7 +768,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
             >
               {(() => {
                 const NotificationIcon = isActive("/notifications") ? HiBell : HiOutlineBell;
@@ -787,7 +786,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
             >
               {(() => {
                 const SettingsIcon = isActive("/settings") ? HiCog : HiOutlineCog;
@@ -803,7 +802,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
             >
               {(() => {
                 const SavedIcon = isActive("/saved") ? IoBookmark : IoBookmarkOutline;
@@ -821,7 +820,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
                 setProfileMenuOpen(false);
                 if (isMobile) setMobileOpen(false);
               }}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--surface) transition-colors text-sm"
+              className="flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-(--chip-bg) transition-colors text-sm"
             >
               {(() => {
                 const WalletIcon = isActive("/wallet") ? IoWallet : IoWalletOutline;
@@ -916,13 +915,12 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
     <>
       {/* Desktop Sidebar */}
       <aside
-        className={`sbc-sidebar fixed top-0 bottom-0 z-40 hidden border-e shadow-none lg:flex flex-col ${
+        className={`sbc-sidebar fixed top-0 bottom-0 z-40 hidden shadow-none lg:flex flex-col ${
           iconOnly ? "overflow-visible" : "overflow-x-hidden"
         }`}
         style={{
           [locale === "ar" ? "right" : "left"]: 0,
           width: "var(--sidebar-width, 16rem)",
-          borderColor: "var(--surface-border)",
           backgroundColor: "var(--background)",
         }}
       >
@@ -945,12 +943,11 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
           
           {/* Mobile sidebar */}
           <aside
-            className={`fixed top-0 bottom-0 z-50 w-72 overflow-x-hidden border-e shadow-none lg:hidden flex flex-col transition-transform duration-300 ease-in-out ${
+            className={`fixed top-0 bottom-0 z-50 w-72 overflow-x-hidden shadow-none lg:hidden flex flex-col transition-transform duration-300 ease-in-out ${
               mobileOpen ? "translate-x-0" : (locale === "ar" ? "translate-x-full" : "-translate-x-full")
             }`}
             style={{
               [locale === "ar" ? "right" : "left"]: 0,
-              borderColor: "var(--surface-border)",
               backgroundColor: "var(--background)",
             }}
           >
@@ -958,7 +955,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               {/* Close button for mobile */}
               <button
                 onClick={() => setMobileOpen(false)}
-                className="self-end mb-2 p-2 rounded-lg hover:bg-(--surface) transition-colors"
+                className="self-end mb-2 p-2 rounded-lg hover:bg-(--chip-bg) transition-colors"
                 aria-label="Close menu"
               >
                 <HiX className="h-6 w-6" />

@@ -214,27 +214,35 @@ export function SettingsClient({
     <div className="mt-6 grid gap-6">
       <div className="sbc-card rounded-2xl p-6">
         <div className="rounded-xl bg-slate-200/55 p-3 dark:bg-slate-700/28">
-          <h2 className="text-base font-semibold">{sectionHint.language}</h2>
-          <p className="mt-1 text-sm text-(--muted-foreground)">
-            {locale === "ar"
-              ? "اختر لغة واجهة الموقع."
-              : "Choose your interface language."}
-          </p>
-        </div>
-        <div className="mt-4 rounded-xl bg-(--field-bg) p-3">
-          <LanguageSwitcher locale={locale} />
+          <div className="grid items-center gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+            <div>
+              <h2 className="text-base font-semibold">{sectionHint.language}</h2>
+              <p className="mt-1 text-sm text-(--muted-foreground)">
+                {locale === "ar"
+                  ? "اختر لغة واجهة الموقع."
+                  : "Choose your interface language."}
+              </p>
+            </div>
+            <div className="rounded-xl bg-(--field-bg) p-3 justify-self-start md:justify-self-end">
+              <LanguageSwitcher locale={locale} />
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="sbc-card rounded-2xl p-6">
         <div className="rounded-xl bg-slate-200/55 p-3 dark:bg-slate-700/28">
-          <h2 className="text-base font-semibold">{sectionHint.theme}</h2>
-          <p className="mt-1 text-sm text-(--muted-foreground)">
-            {locale === "ar" ? "تبديل الوضع الفاتح/الداكن." : "Toggle light/dark mode."}
-          </p>
-        </div>
-        <div className="mt-4 rounded-xl bg-(--field-bg) p-3">
-          <ThemeToggle locale={locale} />
+          <div className="grid items-center gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+            <div>
+              <h2 className="text-base font-semibold">{sectionHint.theme}</h2>
+              <p className="mt-1 text-sm text-(--muted-foreground)">
+                {locale === "ar" ? "تبديل الوضع الفاتح/الداكن." : "Toggle light/dark mode."}
+              </p>
+            </div>
+            <div className="rounded-xl bg-(--field-bg) p-3 justify-self-start md:justify-self-end">
+              <ThemeToggle locale={locale} />
+            </div>
+          </div>
         </div>
       </div>
 

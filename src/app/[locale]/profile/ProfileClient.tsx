@@ -486,7 +486,7 @@ export function ProfileClient({
   return (
     <div className="mt-6">
       {/* Profile Header Card */}
-      <div className="sbc-card rounded-2xl p-6 mb-6">
+      <div className="sbc-card rounded-2xl p-6 mb-6 !border-0">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
           {/* Avatar */}
           <div className="shrink-0">
@@ -528,36 +528,38 @@ export function ProfileClient({
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-(--surface) border border-(--surface-border) mb-6">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                isActive
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-(--muted-foreground) hover:text-foreground hover:bg-(--chip-bg)"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+      {/* Tabs + Content Card */}
+      <div className="sbc-card rounded-2xl p-6 !border-0">
+        {/* Tab Headers */}
+        <div className="flex gap-4 pb-2 mb-6" style={{ borderColor: "var(--surface-border)" }}>
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-2 pb-2 text-sm font-semibold transition-colors ${
+                  isActive
+                    ? "text-accent border-b-2 border-accent"
+                    : "text-(--muted-foreground) hover:text-foreground"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
-      {/* Tab Content */}
-      {activeTab === "profile" && (
-        <div className="grid gap-6">
-          {/* Edit Profile Card */}
-          <div className="sbc-card rounded-2xl p-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <HiUser className="h-5 w-5 text-accent" />
-              {ar ? "تحرير الملف الشخصي" : "Edit Profile"}
+        {/* Tab Content */}
+        {activeTab === "profile" && (
+          <div className="grid gap-6">
+            {/* Edit Profile */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <HiUser className="h-5 w-5 text-accent" />
+                {ar ? "تحرير الملف الشخصي" : "Edit Profile"}
             </h3>
             
             <div className="flex items-center gap-4 mb-6">
@@ -661,8 +663,8 @@ export function ProfileClient({
             </div>
           </div>
 
-          {/* Username Card */}
-          <div className="sbc-card rounded-2xl p-6">
+          {/* Username */}
+          <div className="mt-6">
             <h3 className="text-base font-semibold">{t.username}</h3>
             <p className="mt-1 text-sm text-(--muted-foreground)">{t.usernameDesc}</p>
             <div className="mt-4 space-y-3">
@@ -715,7 +717,7 @@ export function ProfileClient({
       )}
 
       {activeTab === "orders" && (
-        <div className="sbc-card rounded-2xl p-6">
+        <div>
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <HiShoppingBag className="h-5 w-5 text-accent" />
             {t.tabOrders}
@@ -747,7 +749,7 @@ export function ProfileClient({
                 return (
                   <div
                     key={order.id}
-                    className="rounded-xl border border-(--surface-border) bg-(--surface) p-4 hover:border-accent/30 transition-colors"
+                    className="rounded-xl bg-(--surface) p-4 transition-colors"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-start gap-3">
@@ -780,7 +782,7 @@ export function ProfileClient({
                     </div>
 
                     {/* Order Items */}
-                    <div className="mt-4 pt-4 border-t border-(--surface-border)">
+                    <div className="mt-4 pt-4">
                       <div className="space-y-2">
                         {order.items.map((item) => (
                           <div key={item.id} className="flex items-center justify-between text-sm">
@@ -804,12 +806,12 @@ export function ProfileClient({
       {activeTab === "settings" && (
         <div className="grid gap-6">
           {/* Push Notifications */}
-          <div className="sbc-card rounded-2xl p-6">
+          <div>
             <UserPushOptIn dir={ar ? "rtl" : "ltr"} />
           </div>
 
           {/* Passkeys */}
-          <div className="sbc-card rounded-2xl p-6">
+          <div>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
@@ -837,6 +839,7 @@ export function ProfileClient({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

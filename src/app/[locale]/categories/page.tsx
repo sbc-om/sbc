@@ -152,7 +152,7 @@ export default async function CategoriesPage({
 
       <div className="mt-6">
         <form method="GET">
-          <div className="sbc-card rounded-2xl p-6">
+          <div className="sbc-card rounded-2xl p-6 !border-0">
             <div className="flex items-center gap-3">
               <svg
                 className="h-5 w-5 text-(--muted-foreground)"
@@ -201,9 +201,9 @@ export default async function CategoriesPage({
 
             return (
               <section key={`group:${parent.id}`} className="grid gap-3">
-                <div className="sbc-card rounded-2xl p-5 flex items-center justify-between gap-3">
+                <div className="sbc-card rounded-2xl p-5 !border-0 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`h-11 w-11 shrink-0 rounded-xl border border-(--surface-border) flex items-center justify-center ${parentAccent.bg}`}>
+                    <div className={`h-11 w-11 shrink-0 rounded-xl flex items-center justify-center ${parentAccent.bg}`}>
                       <ParentIcon className={`h-6 w-6 ${parentAccent.fg}`} />
                     </div>
                     <div className="min-w-0">
@@ -237,10 +237,10 @@ export default async function CategoriesPage({
                       return (
                         <div
                           key={c.id}
-                          className="sbc-card rounded-2xl p-5 flex items-center justify-between gap-3"
+                          className="sbc-card rounded-2xl p-5 !border-0 flex items-center justify-between gap-3"
                         >
                           <div className="flex items-center gap-4 min-w-0 flex-1">
-                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-(--surface-border) bg-(--surface)">
+                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-(--surface)">
                               {c.image ? (
                                 <Image
                                   src={c.image}
@@ -291,7 +291,7 @@ export default async function CategoriesPage({
         )}
       </div>
 
-      <section className="mt-10 sbc-card rounded-2xl p-6 sm:p-7">
+      <section className="mt-10 sbc-card rounded-2xl p-6 sm:p-7 !border-0">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold tracking-tight">
