@@ -61,7 +61,7 @@ export function CategoryFollowButton({
       variant={isFollowing ? "secondary" : "primary"}
       onClick={onToggle}
       disabled={isPending}
-      className="min-w-[110px] rounded-lg"
+      className="sm:min-w-[100px] min-w-0 rounded-lg"
       aria-live="polite"
     >
       {isPending ? (
@@ -76,7 +76,7 @@ export function CategoryFollowButton({
         </span>
       )}
 
-      <span>{isPending ? labels.pending : isFollowing ? labels.following : labels.follow}</span>
+      <span className="hidden sm:inline">{isPending ? labels.pending : isFollowing ? labels.following : labels.follow}</span>
     </Button>
   );
 }

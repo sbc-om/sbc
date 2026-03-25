@@ -152,7 +152,7 @@ export default async function CategoriesPage({
 
       <div className="mt-6">
         <form method="GET">
-          <div className="sbc-card rounded-2xl p-6 !border-0">
+          <div className="sbc-card rounded-2xl p-4 !border-0">
             <div className="flex items-center gap-3">
               <svg
                 className="h-5 w-5 text-(--muted-foreground)"
@@ -187,7 +187,7 @@ export default async function CategoriesPage({
         </form>
       </div>
 
-      <div className="mt-8 grid gap-7">
+      <div className="mt-6 grid gap-5">
         {hasAnyResults ? (
           groups.map(({ parent, children }) => {
             const parentName = locale === "ar" ? parent.name.ar : parent.name.en;
@@ -200,15 +200,15 @@ export default async function CategoriesPage({
             if (qLower && !matchesSearch(parent) && children.length === 0) return null;
 
             return (
-              <section key={`group:${parent.id}`} className="grid gap-3">
-                <div className="sbc-card rounded-2xl p-5 !border-0 flex items-center justify-between gap-3">
+              <section key={`group:${parent.id}`} className="grid gap-2">
+                <div className="sbc-card rounded-xl p-3 !border-0 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className={`h-11 w-11 shrink-0 rounded-xl flex items-center justify-center ${parentAccent.bg}`}>
-                      <ParentIcon className={`h-6 w-6 ${parentAccent.fg}`} />
+                    <div className={`h-9 w-9 shrink-0 rounded-lg flex items-center justify-center ${parentAccent.bg}`}>
+                      <ParentIcon className={`h-5 w-5 ${parentAccent.fg}`} />
                     </div>
                     <div className="min-w-0">
-                      <h2 className="truncate text-base font-semibold text-foreground">{parentName}</h2>
-                      <p className="mt-0.5 text-xs text-(--muted-foreground)">
+                      <h2 className="truncate text-sm font-semibold text-foreground">{parentName}</h2>
+                      <p className="text-xs text-(--muted-foreground)">
                         {locale === "ar"
                           ? `${children.length} فروع • ${groupBusinessCount.toLocaleString(locale)} نشاط`
                           : `${children.length} subcategories • ${groupBusinessCount.toLocaleString(locale)} businesses`}
@@ -227,7 +227,7 @@ export default async function CategoriesPage({
                 </div>
 
                 {children.length > 0 ? (
-                  <div className="grid gap-3 ps-4 sm:ps-8">
+                  <div className="grid gap-2 ps-3 sm:ps-6">
                     {children.map((c) => {
                       const name = locale === "ar" ? c.name.ar : c.name.en;
                       const isFollowed = followed.has(c.id);
@@ -237,28 +237,28 @@ export default async function CategoriesPage({
                       return (
                         <div
                           key={c.id}
-                          className="sbc-card rounded-2xl p-5 !border-0 flex items-center justify-between gap-3"
+                          className="sbc-card rounded-xl p-3 !border-0 flex items-center justify-between gap-3"
                         >
-                          <div className="flex items-center gap-4 min-w-0 flex-1">
-                            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-(--surface)">
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-(--surface)">
                               {c.image ? (
                                 <Image
                                   src={c.image}
                                   alt={name}
                                   fill
-                                  sizes="48px"
+                                  sizes="36px"
                                   className="object-cover"
                                 />
                               ) : (
                                 <div className={`flex h-full w-full items-center justify-center ${accent.bg}`}>
-                                  <Icon className={`h-7 w-7 ${accent.fg}`} />
+                                  <Icon className={`h-5 w-5 ${accent.fg}`} />
                                 </div>
                               )}
                             </div>
 
                             <div className="min-w-0">
                               <div className="truncate text-sm font-semibold">{name}</div>
-                              <div className="mt-0.5 text-xs text-(--muted-foreground)">
+                              <div className="text-xs text-(--muted-foreground)">
                                 {locale === "ar"
                                   ? `${(c.businessCount ?? 0).toLocaleString(locale)} نشاط`
                                   : `${(c.businessCount ?? 0).toLocaleString(locale)} businesses`}
@@ -291,7 +291,7 @@ export default async function CategoriesPage({
         )}
       </div>
 
-      <section className="mt-10 sbc-card rounded-2xl p-6 sm:p-7 !border-0">
+      <section className="mt-8 sbc-card rounded-2xl p-5 sm:p-6 !border-0">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold tracking-tight">
@@ -312,7 +312,7 @@ export default async function CategoriesPage({
         </div>
       </section>
 
-      <div className="mt-10 text-xs text-(--muted-foreground)">
+      <div className="mt-6 text-xs text-(--muted-foreground)">
         {locale === "ar"
           ? "ملاحظة: سيتم عرض الأعمال في صفحة Home بحسب التصنيفات التي تتابعها."
           : "Note: Your Home feed shows businesses from the categories you follow."}

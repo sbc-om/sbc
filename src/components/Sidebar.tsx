@@ -630,7 +630,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               iconOnly ? "w-64" : "w-full"
             }`}
             style={{
-              backgroundColor: "color-mix(in srgb, var(--background) 92%, var(--foreground))",
+              backgroundColor: "color-mix(in srgb, var(--background) 94%, var(--foreground))",
               maxHeight: "calc(100dvh - 9rem)",
               ...(iconOnly
                 ? locale === "ar"

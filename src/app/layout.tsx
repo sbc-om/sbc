@@ -92,7 +92,7 @@ async function getRequestTheme() {
   const c = await cookies();
   const raw = c.get("theme")?.value;
   if (raw === "dark" || raw === "light" || raw === "system") return raw;
-  return "light" as const;
+  return "dark" as const;
 }
 
 async function getRequestSidebarCollapsed() {

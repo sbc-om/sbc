@@ -398,25 +398,25 @@ export default async function AdminPage({
               : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300";
 
             return (
-              <Link
-                key={section.href}
-                href={section.href}
-                className="group sbc-card sbc-card--interactive relative flex flex-col items-center justify-center p-6 text-center rounded-2xl"
-              >
+              <div key={section.href} className="relative">
                 {section.badge !== undefined && (
-                  <span className={`absolute -top-2 -end-2 flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold ${badgeClasses}`}>
+                  <span className={`absolute -top-2 -end-2 z-20 flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold shadow-md ${badgeClasses}`}>
                     {section.badge}
                   </span>
                 )}
+                <Link
+                  href={section.href}
+                  className="group sbc-card sbc-card--interactive flex flex-col items-center justify-center p-6 text-center rounded-2xl h-full"
+                >
+                  <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${colors.bg} ${colors.hover} transition-colors`}>
+                    <span className={colors.text}>{section.icon}</span>
+                  </div>
 
-                <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${colors.bg} ${colors.hover} transition-colors`}>
-                  <span className={colors.text}>{section.icon}</span>
-                </div>
-
-                <span className="mt-4 text-sm font-semibold text-foreground">
-                  {section.label}
-                </span>
-              </Link>
+                  <span className="mt-4 text-sm font-semibold text-foreground">
+                    {section.label}
+                  </span>
+                </Link>
+              </div>
             );
           })}
         </div>

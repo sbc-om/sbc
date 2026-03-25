@@ -667,13 +667,13 @@ export function BusinessesExplorer({
     <div>
       {/* Unified Search Interface */}
       <div className="sbc-card overflow-hidden rounded-2xl sm:rounded-3xl" style={{ background: 'var(--background)' }}>
-        <div className="space-y-4 p-4 sm:space-y-5 sm:p-5">
+        <div className="space-y-3 p-3 sm:space-y-4 sm:p-4">
           {/* Main Search Bar with AI */}
-          <div className="space-y-3 sm:space-y-4">
-            <div className="sbc-card explorer-search-box rounded-2xl p-6" style={{ background: 'var(--background)' }}>
-              <div className="flex items-center gap-3">
+          <div className="space-y-2 sm:space-y-3">
+            <div className="sbc-card explorer-search-box rounded-xl p-3 sm:p-4" style={{ background: 'var(--background)' }}>
+              <div className="flex items-center gap-2.5">
                 <svg
-                  className="h-5 w-5 text-(--muted-foreground)"
+                  className="h-4 w-4 text-(--muted-foreground)"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -715,28 +715,26 @@ export function BusinessesExplorer({
 
             {/* Quick Action Buttons - Toggle Group */}
             <div
-              className={`grid grid-cols-2 gap-2 sm:grid-cols-2 ${
-                hasSearchState ? "lg:grid-cols-4" : "lg:grid-cols-3"
-              }`}
+              className={`flex flex-wrap gap-1.5 sm:gap-2`}
             >
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
+                size="xs"
                 onClick={() => toggleMode("advanced")}
                 className={
-                  "h-10 w-full justify-center rounded-xl px-3 text-xs shadow-none sm:text-sm " +
-                  (activeMode === "advanced" ? "border-(--accent) bg-(--accent)/10 text-(--accent)" : "")
+                  "h-8 justify-center rounded-lg px-2 sm:px-3 text-xs shadow-none " +
+                  (activeMode === "advanced" ? "bg-(--accent)/10 text-(--accent)" : "")
                 }
               >
                 <FiFilter className="h-3.5 w-3.5" />
-                {locale === "ar" ? "فلاتر متقدمة" : "Advanced Filters"}
+                <span className="hidden sm:inline">{locale === "ar" ? "فلاتر متقدمة" : "Filters"}</span>
               </Button>
               
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
+                size="xs"
                 onClick={() => {
                   if (activeMode === "image") {
                     toggleMode("image");
@@ -746,12 +744,12 @@ export function BusinessesExplorer({
                 }}
                 disabled={isAiSearching}
                 className={
-                  "h-10 w-full justify-center rounded-xl px-3 text-xs shadow-none sm:text-sm " +
-                  (activeMode === "image" ? "border-(--accent) bg-(--accent)/10 text-(--accent)" : "")
+                  "h-8 justify-center rounded-lg px-2 sm:px-3 text-xs shadow-none " +
+                  (activeMode === "image" ? "bg-(--accent)/10 text-(--accent)" : "")
                 }
               >
                 <FiUpload className="h-3.5 w-3.5" />
-                {locale === "ar" ? "بحث بالصورة" : "Search by Image"}
+                <span className="hidden sm:inline">{locale === "ar" ? "بحث بالصورة" : "Image"}</span>
               </Button>
               
               <input
@@ -766,27 +764,27 @@ export function BusinessesExplorer({
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
+                size="xs"
                 onClick={() => toggleMode("chat")}
                 className={
-                  "h-10 w-full justify-center rounded-xl px-3 text-xs shadow-none sm:text-sm " +
-                  (activeMode === "chat" ? "border-(--accent) bg-(--accent)/10 text-(--accent)" : "")
+                  "h-8 justify-center rounded-lg px-2 sm:px-3 text-xs shadow-none " +
+                  (activeMode === "chat" ? "bg-(--accent)/10 text-(--accent)" : "")
                 }
               >
                 <FiMessageCircle className="h-3.5 w-3.5" />
-                {locale === "ar" ? "محادثة ذكية" : "AI Chat"}
+                <span className="hidden sm:inline">{locale === "ar" ? "محادثة ذكية" : "AI Chat"}</span>
               </Button>
 
               {hasSearchState && (
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
+                  size="xs"
                   onClick={clearSearch}
-                  className="h-10 w-full justify-center rounded-xl px-3 text-xs shadow-none sm:text-sm"
+                  className="h-8 justify-center rounded-lg px-2 sm:px-3 text-xs shadow-none"
                 >
                   <FiX className="h-3.5 w-3.5" />
-                  {locale === "ar" ? "مسح الكل" : "Clear All"}
+                  <span className="hidden sm:inline">{locale === "ar" ? "مسح الكل" : "Clear All"}</span>
                 </Button>
               )}
             </div>
@@ -794,7 +792,7 @@ export function BusinessesExplorer({
 
           {/* Image Preview */}
           {uploadedImage && (
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-(--surface-border) bg-(--muted)">
+            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-(--chip-bg)">
               <div className="relative h-16 w-16 shrink-0 rounded-lg overflow-hidden">
                 <Image
                   src={URL.createObjectURL(uploadedImage)}
@@ -827,12 +825,12 @@ export function BusinessesExplorer({
 
           {/* Advanced Filters */}
           {activeMode === "advanced" && (
-            <div className="space-y-3 p-4 rounded-xl border border-(--surface-border) bg-(--background) animate-in slide-in-from-top duration-200">
-              <h3 className="text-sm font-semibold flex items-center gap-2">
-                <FiFilter className="h-4 w-4" />
+            <div className="space-y-2 p-3 rounded-xl bg-(--chip-bg) animate-in slide-in-from-top duration-200">
+              <h3 className="text-xs font-semibold flex items-center gap-1.5 text-(--muted-foreground)">
+                <FiFilter className="h-3.5 w-3.5" />
                 {locale === "ar" ? "الفلاتر المتقدمة" : "Advanced Filters"}
               </h3>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <Input
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
@@ -854,7 +852,7 @@ export function BusinessesExplorer({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="h-11 w-full rounded-xl border border-(--surface-border) bg-(--surface) px-3 text-sm text-foreground shadow-(--shadow) outline-none backdrop-blur transition focus:border-(--accent)"
+                  className="h-10 w-full rounded-xl bg-(--chip-bg) px-3 text-sm text-foreground outline-none transition focus:ring-2 focus:ring-accent/30"
                 >
                   <option value="relevance">
                     {locale === "ar" ? "الترتيب: حسب الصلة" : "Sort: Relevance"}
@@ -893,7 +891,7 @@ export function BusinessesExplorer({
 
           {/* AI Chat Interface */}
           {activeMode === "chat" && (
-            <div className="space-y-3 p-4 rounded-xl border border-(--surface-border) bg-(--background) animate-in slide-in-from-top duration-200">
+            <div className="space-y-2 p-3 rounded-xl bg-(--chip-bg) animate-in slide-in-from-top duration-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold flex items-center gap-2">
                   <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
@@ -919,7 +917,7 @@ export function BusinessesExplorer({
                 )}
               </div>
               
-              <div className="h-[350px] overflow-y-auto rounded-xl border border-(--surface-border) bg-(--surface) p-4 scroll-smooth">
+              <div className="h-[300px] overflow-y-auto rounded-xl bg-(--background) p-3 scroll-smooth">
                 <div className="space-y-3">
                   {chatMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-8">
@@ -951,7 +949,7 @@ export function BusinessesExplorer({
                             key={suggestion}
                             type="button"
                             onClick={() => handleChatSearch(suggestion)}
-                            className="text-xs px-3 py-1.5 rounded-full border border-(--surface-border) bg-(--background) hover:bg-(--accent) hover:text-(--accent-foreground) transition-colors flex items-center gap-1"
+                            className="text-xs px-3 py-1.5 rounded-full bg-(--chip-bg) hover:bg-(--accent) hover:text-(--accent-foreground) transition-colors flex items-center gap-1"
                           >
                             <FiArrowRight className="h-3 w-3" />
                             {suggestion}
@@ -975,7 +973,7 @@ export function BusinessesExplorer({
                             className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm shadow-sm ${
                               msg.role === "user"
                                 ? "bg-(--accent) text-(--accent-foreground)"
-                                : "bg-(--muted) text-(--foreground) border border-(--surface-border)"
+                                : "bg-(--muted) text-(--foreground)"
                             }`}
                           >
                             {msg.role === "assistant" ? (
@@ -1004,7 +1002,7 @@ export function BusinessesExplorer({
                           <div className="h-6 w-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-1 me-2">
                             <FiMessageCircle className="h-3 w-3 text-white" />
                           </div>
-                          <div className="bg-(--muted) text-(--foreground) rounded-2xl px-4 py-3 border border-(--surface-border) shadow-sm">
+                          <div className="bg-(--muted) text-(--foreground) rounded-2xl px-4 py-3">
                             <div className="flex gap-1.5 items-center">
                               <span className="text-xs text-(--muted-foreground) me-1">
                                 {locale === "ar" ? "جاري البحث" : "Searching"}
@@ -1056,7 +1054,7 @@ export function BusinessesExplorer({
           )}
 
           {/* Results Summary */}
-          <div className="flex flex-col gap-2 border-t border-(--surface-border) pt-2 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <div className="flex flex-col gap-2 pt-1 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-3">
             <div className="flex flex-wrap items-center gap-2">
               {aiResults && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 text-accent text-xs font-medium">

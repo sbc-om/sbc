@@ -294,9 +294,9 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
             <div
               role="menu"
               aria-label="Profile menu"
-              className="absolute bottom-full mb-2 w-56 max-w-[calc(100vw-16px)] rounded-xl border bg-(--surface) shadow-[var(--shadow)] p-2 flex flex-col"
+            className="absolute bottom-full mb-2 w-56 max-w-[calc(100vw-16px)] rounded-xl shadow-[var(--shadow)] p-2 flex flex-col"
               style={{
-                borderColor: "var(--surface-border)",
+                backgroundColor: "color-mix(in srgb, var(--background) 94%, var(--foreground))",
                 maxHeight: "calc(100dvh - 9rem)",
                 ...(locale === "ar" ? { left: 8 } : { right: 8 }),
               }}
