@@ -237,7 +237,7 @@ select {
   --card-glow-y: 50%;
   --card-glow-opacity: 0;
   border: 1px solid var(--surface-border);
-  background: color-mix(in srgb, var(--background) 92%, var(--foreground));
+  background: var(--background);
   box-shadow: var(--shadow);
   border-radius: 1rem; /* ~rounded-2xl */
   position: relative;

@@ -97,7 +97,7 @@ export function RequestCard({
   };
 
   return (
-    <div className="sbc-card p-6">
+    <div className="sbc-card !border-0 p-6">
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
@@ -109,7 +109,7 @@ export function RequestCard({
           {request.description && (
             <p className="text-sm text-(--muted-foreground) mb-3">{request.description}</p>
           )}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
             {user && (
               <div>
                 <span className="text-(--muted-foreground)">{ar ? "المستخدم:" : "User:"}</span>{" "}
@@ -176,7 +176,7 @@ export function RequestCard({
 
       {/* Response Form */}
       {showResponse && request.status === "pending" && (
-        <div className="mb-4 p-4 border-2 border-dashed rounded-lg">
+        <div className="mb-4 p-4 rounded-lg bg-(--chip-bg)">
           <label className="block text-sm font-medium mb-2">
             {ar ? "رد على الطلب" : "Response to Request"}
           </label>

@@ -24,9 +24,9 @@ function moderationLabel(status: "pending" | "approved" | "rejected", ar: boolea
 }
 
 function moderationClass(status: "pending" | "approved" | "rejected"): string {
-  if (status === "approved") return "border-emerald-300/40 bg-emerald-500/5 text-emerald-700";
-  if (status === "rejected") return "border-rose-300/40 bg-rose-500/5 text-rose-700";
-  return "border-amber-300/40 bg-amber-500/5 text-amber-700";
+  if (status === "approved") return "bg-emerald-500/10 text-emerald-700";
+  if (status === "rejected") return "bg-rose-500/10 text-rose-700";
+  return "bg-amber-500/10 text-amber-700";
 }
 
 export default async function AdminModerationInstagramPage({
@@ -63,7 +63,7 @@ export default async function AdminModerationInstagramPage({
 
   return (
     <AppPage>
-      <div className="mb-6 flex items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{ar ? "مراجعة صفحات إنستاغرام" : "Moderate Instagram Pages"}</h1>
         <Link href={`/${locale}/admin`} className="text-sm text-(--muted-foreground) hover:underline">
           {ar ? "العودة للوحة التحكم" : "Back to admin dashboard"}
@@ -81,10 +81,10 @@ export default async function AdminModerationInstagramPage({
             <Link
               key={filter.value}
               href={href}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
                 active
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-(--surface-border) text-(--muted-foreground) hover:bg-(--chip-bg)"
+                  ? "bg-accent/10 text-accent"
+                  : "text-(--muted-foreground) hover:bg-(--chip-bg)"
               }`}
             >
               <span>{filter.label}</span>
@@ -99,7 +99,7 @@ export default async function AdminModerationInstagramPage({
       </div>
 
       {filteredItems.length === 0 ? (
-        <div className="sbc-card rounded-2xl p-6 text-sm text-(--muted-foreground)">
+        <div className="sbc-card !border-0 rounded-2xl p-6 text-sm text-(--muted-foreground)">
           {ar ? "لا توجد عناصر في هذا الفلتر." : "No submissions for this filter."}
         </div>
       ) : (
@@ -110,7 +110,7 @@ export default async function AdminModerationInstagramPage({
             const businessName = ar ? item.name.ar : item.name.en;
 
             return (
-              <article key={item.id} className="sbc-card rounded-2xl p-5">
+              <article key={item.id} className="sbc-card !border-0 rounded-2xl p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs text-(--muted-foreground)">
@@ -141,7 +141,7 @@ export default async function AdminModerationInstagramPage({
                   {ar ? "فتح حساب إنستاغرام" : "Open Instagram profile"}
                 </a>
 
-                <div className={`mt-3 rounded-xl border px-3 py-2 text-xs ${moderationClass(item.instagramModerationStatus || "pending")}`}>
+                <div className={`mt-3 rounded-xl px-3 py-2 text-xs ${moderationClass(item.instagramModerationStatus || "pending")}`}>
                   {ar ? "الحالة الحالية:" : "Current status:"} {moderationLabel((item.instagramModerationStatus || "pending") as "pending" | "approved" | "rejected", ar)}
                 </div>
               </article>

@@ -37,7 +37,7 @@ export default async function AdminRequestsPage({
 
   return (
     <AppPage>
-      <div className="flex items-end justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {ar ? "طلبات تسجيل الأنشطة" : "Business Registration Requests"}
@@ -58,13 +58,13 @@ export default async function AdminRequestsPage({
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-3 mb-8">
-        <div className="sbc-card p-4">
+        <div className="sbc-card !border-0 p-4">
           <div className="text-sm font-medium text-(--muted-foreground)">
             {ar ? "معلقة" : "Pending"}
           </div>
           <div className="mt-2 text-2xl font-bold">{pendingRequests.length}</div>
         </div>
-        <div className="sbc-card p-4">
+        <div className="sbc-card !border-0 p-4">
           <div className="text-sm font-medium text-(--muted-foreground)">
             {ar ? "موافق عليها" : "Approved"}
           </div>
@@ -72,7 +72,7 @@ export default async function AdminRequestsPage({
             {approvedRequests.length}
           </div>
         </div>
-        <div className="sbc-card p-4">
+        <div className="sbc-card !border-0 p-4">
           <div className="text-sm font-medium text-(--muted-foreground)">
             {ar ? "مرفوضة" : "Rejected"}
           </div>
@@ -161,7 +161,7 @@ export default async function AdminRequestsPage({
       )}
 
       {requests.length === 0 && (
-        <div className="sbc-card p-8 text-center">
+        <div className="sbc-card !border-0 p-8 text-center">
           <div className="text-(--muted-foreground)">
             {ar ? "لا توجد طلبات حتى الآن" : "No requests yet"}
           </div>
