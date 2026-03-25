@@ -8,19 +8,29 @@ import { useEffect, useState } from "react";
 export function usePrefersReducedMotion(): boolean {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(() =>
     typeof window !== "undefined"
-      ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ? (typeof window.matchMedia === "function"
+          ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          : false)
       : false
   );
 
   useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
-    const handleChange = (event: MediaQueryListEvent) => {
+    const handleChange = (event: MediaQueryListEvent | MediaQueryList) => {
       setPrefersReducedMotion(event.matches);
     };
 
-    mediaQuery.addEventListener("change", handleChange);
-    return () => mediaQuery.removeEventListener("change", handleChange);
+    // Safari < 14 only supports addListener/removeListener.
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange as EventListener);
+      return () => mediaQuery.removeEventListener("change", handleChange as EventListener);
+    }
+
+    mediaQuery.addListener(handleChange as (this: MediaQueryList, ev: MediaQueryListEvent) => void);
+    return () => mediaQuery.removeListener(handleChange as (this: MediaQueryList, ev: MediaQueryListEvent) => void);
   }, []);
 
   return prefersReducedMotion;
