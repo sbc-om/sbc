@@ -157,11 +157,11 @@ export function BusinessEngagement({
   };
 
   return (
-    <section className="sbc-card rounded-2xl p-6 md:p-7">
-      <div className="flex items-center justify-between gap-3 border-b border-(--surface-border) pb-4">
+    <section className="sbc-card !border-0 rounded-2xl p-6 md:p-7">
+      <div className="flex items-center justify-between gap-3 pb-4">
         <div className="min-w-0">
           <h2 className="text-base font-semibold tracking-tight flex items-center gap-2">
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-(--chip-bg) border border-(--surface-border)">
+            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-(--chip-bg)">
               <IoChatbubbleEllipsesOutline className="h-3.5 w-3.5" />
             </span>
             {t.comments}: {Math.max(liveCounts.comments, localApproved.length)}
@@ -204,7 +204,7 @@ export function BusinessEngagement({
           value={commentText}
           onChange={(e) => setCommentText(e.target.value)}
           placeholder={t.write}
-          className="min-h-28 rounded-2xl border-(--surface-border) bg-(--background) focus:border-(--accent)"
+          className="min-h-28 rounded-2xl !border-0 bg-(--chip-bg) focus:ring-2 focus:ring-(--accent)/30"
         />
         <div className="flex items-center justify-between gap-3 rounded-xl bg-(--chip-bg) px-3 py-2.5">
           <div className="text-xs text-(--muted-foreground)">{t.pendingHint}</div>
@@ -219,7 +219,7 @@ export function BusinessEngagement({
           <div className="text-sm font-semibold">{t.pendingTitle}</div>
           <div className="mt-3 grid gap-3">
             {localMyPending.map((c) => (
-              <div key={c.id} className="rounded-xl border border-(--surface-border) bg-(--chip-bg) p-4 shadow-[var(--shadow)]">
+              <div key={c.id} className="rounded-xl bg-(--chip-bg) p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-xs text-(--muted-foreground)">
                     {fmtTime(c.createdAt, locale)}
@@ -242,7 +242,7 @@ export function BusinessEngagement({
         ) : (
           <div className="mt-3 grid gap-3">
             {localApproved.map((c) => (
-              <div key={c.id} className="rounded-xl border border-(--surface-border) bg-(--surface) p-4 shadow-[var(--shadow)]">
+              <div key={c.id} className="rounded-xl bg-(--surface) p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="text-sm font-semibold truncate">{userLabel(c.userId)}</div>
                   <div className="text-xs text-(--muted-foreground)">{fmtTime(c.createdAt, locale)}</div>
@@ -268,7 +268,7 @@ export function BusinessEngagement({
           ) : (
             <div className="mt-3 grid gap-3">
               {localModerationQueue.map((c) => (
-                <div key={c.id} className="rounded-xl border border-(--surface-border) bg-(--surface) p-4 shadow-[var(--shadow)]">
+                <div key={c.id} className="rounded-xl bg-(--surface) p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-sm font-semibold truncate">{userLabel(c.userId)}</div>

@@ -833,8 +833,8 @@ export function BusinessPublishingPanel({
       ) : null}
 
       {showContentSections && (hasNews || !hideEmptySections) ? (
-      <section className="sbc-card rounded-2xl p-4 sm:p-6">
-        <div className="mb-5 flex items-start justify-between gap-3 border-b border-(--surface-border) pb-5">
+      <section className="sbc-card !border-0 rounded-2xl p-4 sm:p-6">
+        <div className="mb-5 flex items-start justify-between gap-3 pb-5">
           <div>
             <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
               {ar ? "أخبار النشاط" : "Business News"}
@@ -843,13 +843,13 @@ export function BusinessPublishingPanel({
               {ar ? "آخر التحديثات والإعلانات الخاصة بالنشاط." : "Latest updates and announcements from this business."}
             </p>
           </div>
-          <span className="rounded-xl border border-(--surface-border) bg-(--background) px-3 py-1.5 text-[11px] font-semibold text-(--muted-foreground) sm:text-xs">
+          <span className="rounded-xl bg-(--background) px-3 py-1.5 text-[11px] font-semibold text-(--muted-foreground) sm:text-xs">
             {newsItems.length}
           </span>
         </div>
 
         {!hasNews ? (
-          <div className="mt-2 rounded-2xl border border-dashed border-(--surface-border) bg-(--chip-bg) px-4 py-6 text-center">
+          <div className="mt-2 rounded-2xl bg-(--chip-bg) px-4 py-6 text-center">
             <p className="text-sm text-(--muted-foreground)">
               {ar ? "لا توجد أخبار منشورة حالياً." : "No news published yet."}
             </p>
@@ -865,10 +865,10 @@ export function BusinessPublishingPanel({
               return (
                 <article
                   key={item.id}
-                  className="group min-w-0 shrink-0 basis-[76%] overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) sm:basis-[52%] lg:basis-[34%]"
+                  className="group min-w-0 shrink-0 basis-[76%] overflow-hidden rounded-3xl bg-(--chip-bg) sm:basis-[52%] lg:basis-[34%]"
                 >
                   {item.imageUrl ? (
-                    <div className="relative h-40 w-full overflow-hidden border-b border-(--surface-border) sm:h-44">
+                    <div className="relative h-40 w-full overflow-hidden sm:h-44">
                       <Image src={item.imageUrl} alt={title} fill className="object-cover" />
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
                       <div className="absolute bottom-3 left-3 rounded-full bg-black/50 px-2.5 py-1 text-[11px] text-white backdrop-blur-sm">
@@ -1022,8 +1022,8 @@ export function BusinessPublishingPanel({
       ) : null}
 
       {showContentSections && (hasProducts || !hideEmptySections) ? (
-      <section className="sbc-card rounded-2xl p-4 sm:p-6">
-        <div className="mb-5 flex items-start justify-between gap-3 border-b border-(--surface-border) pb-5">
+      <section className="sbc-card !border-0 rounded-2xl p-4 sm:p-6">
+        <div className="mb-5 flex items-start justify-between gap-3 pb-5">
           <div>
             <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
               {ar ? "المنتجات" : "Products"}
@@ -1032,13 +1032,13 @@ export function BusinessPublishingPanel({
               {ar ? "منتجات النشاط المتاحة حالياً." : "Available products from this business."}
             </p>
           </div>
-          <span className="rounded-xl border border-(--surface-border) bg-(--background) px-3 py-1.5 text-[11px] font-semibold text-(--muted-foreground) sm:text-xs">
+          <span className="rounded-xl bg-(--background) px-3 py-1.5 text-[11px] font-semibold text-(--muted-foreground) sm:text-xs">
             {productItems.length}
           </span>
         </div>
 
         {!hasProducts ? (
-          <div className="mt-2 rounded-2xl border border-dashed border-(--surface-border) bg-(--chip-bg) px-4 py-6 text-center">
+          <div className="mt-2 rounded-2xl bg-(--chip-bg) px-4 py-6 text-center">
             <p className="text-sm text-(--muted-foreground)">
               {ar ? "لا توجد منتجات منشورة حالياً." : "No products published yet."}
             </p>
@@ -1054,10 +1054,10 @@ export function BusinessPublishingPanel({
               return (
                 <article
                   key={item.id}
-                  className="group min-w-0 shrink-0 basis-[72%] overflow-hidden rounded-3xl border border-(--surface-border) bg-(--chip-bg) sm:basis-[48%] lg:basis-[30%]"
+                  className="group min-w-0 shrink-0 basis-[72%] overflow-hidden rounded-3xl bg-(--chip-bg) sm:basis-[48%] lg:basis-[30%]"
                 >
                   {item.imageUrl ? (
-                    <div className="relative h-40 w-full overflow-hidden border-b border-(--surface-border) sm:h-44">
+                    <div className="relative h-40 w-full overflow-hidden sm:h-44">
                       <Image src={item.imageUrl} alt={name} fill className="object-cover" />
                       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
                     </div>
