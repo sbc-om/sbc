@@ -24,6 +24,7 @@ import { getBusinessByOwnerId } from "@/lib/db/businesses";
 import { getBusinessBySlug, getBusinessByUsername } from "@/lib/db/businesses";
 import { getBusinessByDomain } from "@/lib/db/businesses";
 import { DynamicShell } from "@/components/DynamicShell";
+import { PageTransition } from "@/components/PageTransition";
 import { buttonVariants } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -244,7 +245,7 @@ export default async function LocaleLayout({
       <DictionaryProvider locale={locale as Locale} dict={dict}>
         <AISearchProvider>
           <DirectionSync locale={locale as Locale} />
-          {children}
+          <PageTransition>{children}</PageTransition>
         </AISearchProvider>
       </DictionaryProvider>
     );
@@ -296,7 +297,7 @@ export default async function LocaleLayout({
                 </div>
               </div>
             </div>
-            <main className="flex-1">{children}</main>
+            <main className="flex-1"><PageTransition>{children}</PageTransition></main>
 
             <footer className="border-t border-(--surface-border) bg-(--surface)/95 backdrop-blur">
               <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
@@ -368,7 +369,7 @@ export default async function LocaleLayout({
                 footer={footerNode}
                 mobileNav={mobileNavNode}
               >
-                {children}
+                <PageTransition>{children}</PageTransition>
               </DynamicShell>
             </SidebarLayout>
           </CartProvider>
@@ -384,7 +385,7 @@ export default async function LocaleLayout({
         <DirectionSync locale={locale as Locale} />
         <div className="min-h-dvh bg-transparent text-foreground flex flex-col">
           <Header locale={locale as Locale} dict={dict} />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1"><PageTransition>{children}</PageTransition></main>
           <Footer locale={locale as Locale} dict={dict} homepageOnlyInstagram={isLocaleHomePage} />
         </div>
       </AISearchProvider>
