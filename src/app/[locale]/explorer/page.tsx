@@ -101,7 +101,7 @@ export default async function ExplorerPage({
         </div>
       )}
 
-      <div className="mt-6 [&_.sbc-card:not(.explorer-search-box)]:!border-0 [&_article]:!border-0 [&_a.sbc-card]:!border-0">
+      <div className="[&_.sbc-card:not(.explorer-search-box)]:!border-0 [&_article]:!border-0 [&_a.sbc-card]:!border-0">
         <BusinessesExplorer
           locale={locale as Locale}
           dict={dict}
