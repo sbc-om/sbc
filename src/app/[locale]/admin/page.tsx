@@ -125,7 +125,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
       ),
-      label: ar ? "الأنشطة التجارية" : "Businesses",
+      label: ar ? "الأنشطة" : "Businesses",
       color: "blue",
       badge: businesses.length,
     },
@@ -148,7 +148,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 7.5h7.5M8.25 11.25h7.5M8.25 15h4.5" />
         </svg>
       ),
-      label: ar ? "مراجعة الأخبار" : "Moderate News",
+      label: ar ? "الأخبار" : "News",
       color: "yellow",
       badge: pendingNews.length > 0 ? pendingNews.length : undefined,
       badgeType: pendingNews.length > 0 ? "warning" : undefined,
@@ -160,7 +160,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-8.954 4.477a.75.75 0 01-.592 0L1.75 7.5m18.5 0L11.296 3.023a.75.75 0 00-.592 0L1.75 7.5m18.5 0v9.75a.75.75 0 01-.411.668l-8.25 4.125a.75.75 0 01-.678 0l-8.25-4.125a.75.75 0 01-.411-.668V7.5" />
         </svg>
       ),
-      label: ar ? "مراجعة المنتجات" : "Moderate Products",
+      label: ar ? "منتجات" : "Products",
       color: "yellow",
       badge: pendingProducts.length > 0 ? pendingProducts.length : undefined,
       badgeType: pendingProducts.length > 0 ? "warning" : undefined,
@@ -173,7 +173,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75v5.25l3.75 2.25" />
         </svg>
       ),
-      label: ar ? "مراجعة الستوري" : "Moderate Stories",
+      label: ar ? "الستوري" : "Stories",
       color: "yellow",
       badge: pendingStories.length > 0 ? pendingStories.length : undefined,
       badgeType: pendingStories.length > 0 ? "warning" : undefined,
@@ -187,7 +187,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75h.008v.008h-.008V6.75Z" />
         </svg>
       ),
-      label: ar ? "مراجعة إنستاغرام" : "Moderate Instagram",
+      label: ar ? "إنستاغرام" : "Instagram",
       color: "yellow",
       badge: pendingInstagramPages.length > 0 ? pendingInstagramPages.length : undefined,
       badgeType: pendingInstagramPages.length > 0 ? "warning" : undefined,
@@ -211,7 +211,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
         </svg>
       ),
-      label: ar ? "برامج الولاء" : "Loyalty",
+      label: ar ? "الولاء" : "Loyalty",
       color: "purple",
       badge: loyaltyProfiles.length,
     },
@@ -232,7 +232,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       ),
-      label: ar ? "طلبات السحب" : "Withdrawals",
+      label: ar ? "السحب" : "Withdrawals",
       color: "rose",
       badge: pendingWithdrawals.length > 0 ? pendingWithdrawals.length : undefined,
       badgeType: "warning" as const,
@@ -244,7 +244,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm-2-7h8m-8 3h5" />
         </svg>
       ),
-      label: ar ? "سحب أرباح الوكلاء" : "Agent Withdrawals",
+      label: ar ? "سحب الوكلاء" : "Agent Pay",
       color: "teal",
       badge: pendingAgentWithdrawals > 0 ? pendingAgentWithdrawals : undefined,
       badgeType: "warning" as const,
@@ -267,7 +267,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       ),
-      label: ar ? "بطاقات الأعمال" : "Business Cards",
+      label: ar ? "البطاقات" : "Cards",
       color: "orange",
       badge: pendingCards.length > 0 ? pendingCards.length : undefined,
       badgeType: "warning" as const,
@@ -291,7 +291,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
       ),
-      label: ar ? "الإشعارات" : "Notifications",
+      label: ar ? "الإشعارات" : "Push",
       color: "pink",
     },
     {
@@ -311,7 +311,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
       ),
-      label: ar ? "المنتجات" : "Products",
+      label: ar ? "المتجر" : "Store",
       color: "teal",
     },
     {
@@ -321,7 +321,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
         </svg>
       ),
-      label: ar ? "الاشتراكات" : "Subscriptions",
+      label: ar ? "الاشتراكات" : "Subs",
       color: "cyan",
       badge: activeSubscriptions.length > 0 ? activeSubscriptions.length : undefined,
     },
@@ -343,7 +343,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h9a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0015.75 4.5h-9A2.25 2.25 0 004.5 6.75v10.5A2.25 2.25 0 006.75 19.5z" />
         </svg>
       ),
-      label: ar ? "منشئ الوكيل الذكي" : "AI Agent Builder",
+      label: ar ? "وكيل AI" : "AI Builder",
       color: "purple",
     },
     {
@@ -353,7 +353,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
         </svg>
       ),
-      label: ar ? "النسخ الاحتياطي" : "Backup",
+      label: ar ? "النسخ" : "Backup",
       color: "cyan",
     },
     {
@@ -376,7 +376,7 @@ export default async function AdminPage({
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 20h18" />
         </svg>
       ),
-      label: ar ? "مراقبة الاتصال الفوري" : "Realtime Health",
+      label: ar ? "الحالة" : "Health",
       color: "rose",
     },
   ];
@@ -390,7 +390,7 @@ export default async function AdminPage({
           </h1>
         </div>
 
-        <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid gap-2.5 grid-cols-4 sm:gap-4 md:grid-cols-5 lg:grid-cols-6">
           {sections.map((section) => {
             const colors = colorClasses[section.color] || colorClasses.slate;
             const badgeClasses = section.badgeType === "warning"
@@ -400,19 +400,19 @@ export default async function AdminPage({
             return (
               <div key={section.href} className="relative">
                 {section.badge !== undefined && (
-                  <span className={`absolute -top-2 -end-2 z-20 flex h-6 min-w-6 items-center justify-center rounded-full px-1.5 text-xs font-bold shadow-md ${badgeClasses}`}>
+                  <span className={`absolute -top-1.5 -end-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold shadow-md sm:-top-2 sm:-end-2 sm:h-6 sm:min-w-6 sm:px-1.5 sm:text-xs ${badgeClasses}`}>
                     {section.badge}
                   </span>
                 )}
                 <Link
                   href={section.href}
-                  className="group sbc-card sbc-card--interactive flex flex-col items-center justify-center p-6 text-center rounded-2xl h-full"
+                  className="group sbc-card sbc-card--interactive flex flex-col items-center justify-center p-3 sm:p-5 text-center rounded-xl sm:rounded-2xl h-full"
                 >
-                  <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${colors.bg} ${colors.hover} transition-colors`}>
-                    <span className={colors.text}>{section.icon}</span>
+                  <div className={`flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl ${colors.bg} ${colors.hover} transition-colors`}>
+                    <span className={`${colors.text} [&_svg]:h-5 [&_svg]:w-5 sm:[&_svg]:h-6 sm:[&_svg]:w-6`}>{section.icon}</span>
                   </div>
 
-                  <span className="mt-4 text-sm font-semibold text-foreground">
+                  <span className="mt-2 sm:mt-3 text-[11px] sm:text-sm font-semibold text-foreground leading-tight whitespace-nowrap truncate max-w-full">
                     {section.label}
                   </span>
                 </Link>

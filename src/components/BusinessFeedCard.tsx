@@ -468,7 +468,7 @@ export function BusinessFeedCard({
           )}
           {liveCounts.comments > 0 && (
             <Link
-              href={business.username ? `/${locale}/businesses/@${business.username}` : `/${locale}/businesses/${business.slug}`}
+              href={detailPath}
               className="text-sm text-(--muted-foreground) hover:text-foreground transition-colors block"
             >
               {locale === "ar"
