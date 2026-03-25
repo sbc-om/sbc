@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/cn";
 
 const base =
-  "min-h-28 w-full rounded-xl border border-(--surface-border) bg-(--surface) px-4 py-3 text-sm text-foreground shadow-[var(--shadow)] outline-none placeholder:text-(--muted-foreground) backdrop-blur transition focus:border-[color:var(--accent)]";
+  "min-h-28 w-full rounded-xl bg-(--chip-bg) px-4 py-3 text-sm text-foreground outline-none placeholder:text-(--muted-foreground) backdrop-blur transition focus:ring-2 focus:ring-(--accent)/30";
 
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 

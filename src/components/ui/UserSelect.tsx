@@ -125,10 +125,11 @@ export function UserSelect({
             onClick={(e) => e.stopPropagation()}
             className={cn(
               "relative w-full sm:w-[28rem] sm:max-w-[calc(100vw-2rem)]",
-              "bg-[var(--background)] sm:rounded-2xl rounded-t-2xl",
+              "sm:rounded-2xl rounded-t-2xl",
               "shadow-2xl max-h-[70vh] sm:max-h-[60vh]",
               "flex flex-col overflow-hidden"
             )}
+            style={{ backgroundColor: "color-mix(in srgb, var(--background) 92%, var(--foreground))" }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-[var(--surface-border)]">
