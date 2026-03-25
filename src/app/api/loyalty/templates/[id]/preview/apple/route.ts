@@ -13,6 +13,10 @@ function getBaseUrl(req: NextRequest): string {
   return `${protocol}://${host}`;
 }
 
+function isEnabled() {
+  return String(process.env.APPLE_WALLET_ENABLED || "").toLowerCase() === "true";
+}
+
 /**
  * @swagger
  * /api/loyalty/templates/{id}/preview/apple:
@@ -38,10 +42,15 @@ function getBaseUrl(req: NextRequest): string {
 export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     // Check Apple Wallet configuration
-    if (!isSbcwalletAppleConfigured()) {
+    if (!isEnabled() || !isSbcwalletAppleConfigured()) {
       return NextResponse.json(
-        { error: "Apple Wallet not configured" },
-        { status: 503 }
+        {
+          ok: false,
+          error: "APPLE_WALLET_NOT_CONFIGURED",
+          hint:
+            "Set APPLE_WALLET_ENABLED=true and provide APPLE_TEAM_ID/APPLE_PASS_TYPE_ID/APPLE_CERT_PATH/APPLE_WWDR_PATH (and APPLE_CERT_PASSWORD if needed)",
+        },
+        { status: 501 }
       );
     }
 
@@ -90,7 +99,9 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         "Content-Type": "application/vnd.apple.pkpass",
         "Content-Disposition": `attachment; filename="preview-${template.name.replace(/[^a-zA-Z0-9]/g, "_")}.pkpass"`,
         "Content-Length": String(passBuffer.length),
-        "Cache-Control": "no-store",
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
       },
     });
   } catch (error) {

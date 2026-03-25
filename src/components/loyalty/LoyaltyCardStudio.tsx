@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import Barcode from "react-barcode";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import type { Locale } from "@/lib/i18n/locales";
 import type { LoyaltyCardTemplate, LoyaltyProfile } from "@/lib/db/types";
 
@@ -111,6 +112,7 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
   const isNew = !template;
   const businessName = profile?.businessName ?? (ar ? "نشاطك التجاري" : "Your Business");
   const logoUrl = selectedIconUrl ?? profile?.logoUrl;
+  const { toast } = useToast();
 
   /* ---- state ---- */
   const [design, setDesign] = useState<Design>(template?.design ?? DEFAULT_DESIGN);
@@ -125,6 +127,7 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
   const [activePreview, setActivePreview] = useState<"ios" | "android" | "notification">("ios");
   const [expandedSection, setExpandedSection] = useState<string | null>("presets");
   const [saving, setSaving] = useState(false);
+  const [preparingApplePass, setPreparingApplePass] = useState(false);
   const [msg, setMsg] = useState<{ t: "ok" | "err"; text: string } | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
@@ -151,6 +154,73 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
   };
 
   const toggle = (s: string) => setExpandedSection((prev) => (prev === s ? null : s));
+
+  const handleApplePreview = async () => {
+    if (!template?.id) {
+      toast({
+        message: ar ? "ابتدا طراحی را ذخیره کنید" : "Save the design first",
+        description: ar ? "بعد از اولین ذخیره، پیش‌نمایش Apple Wallet ساخته می‌شود." : "Apple Wallet preview becomes available after the first save.",
+        variant: "error",
+      });
+      return;
+    }
+
+    const requestUrl = `/api/loyalty/templates/${template.id}/preview/apple?ts=${Date.now()}`;
+    setPreparingApplePass(true);
+
+    try {
+      const response = await fetch(requestUrl, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+
+      const contentType = response.headers.get("content-type") || "";
+
+      if (!response.ok || contentType.includes("application/json")) {
+        const error = await response.json().catch(() => ({} as { error?: string; hint?: string; details?: string }));
+        throw new Error(error.hint || error.details || error.error || "Failed to generate Apple Wallet preview");
+      }
+
+      const isIos = /iPad|iPhone|iPod/.test(window.navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(window.navigator.userAgent);
+
+      if (isIos && isSafari) {
+        window.location.href = requestUrl;
+        return;
+      }
+
+      const blob = await response.blob();
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = `preview-${template.id}.pkpass`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 250);
+
+      toast({
+        message: ar ? "فایل Apple Wallet آماده شد" : "Apple Wallet pass is ready",
+        description: ar ? "برای افزودن مستقیم به Wallet، این دکمه را روی Safari در آیفون یا آیپد باز کنید." : "For direct Wallet import, open this button on Safari on iPhone or iPad.",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Apple Wallet preview failed:", error);
+      toast({
+        message: ar ? "ساخت Apple Wallet انجام نشد" : "Apple Wallet preview failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : ar
+              ? "لطفاً تنظیمات Apple Wallet را بررسی کنید."
+              : "Please check the Apple Wallet configuration.",
+        variant: "error",
+      });
+    } finally {
+      setPreparingApplePass(false);
+    }
+  };
 
   /* ---- save ---- */
   const handleSave = async () => {
@@ -217,20 +287,25 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
   const samplePoints = 12;
   const sampleCustomer = ar ? "محمد أحمد" : "John Smith";
   const sampleMemberId = barcode.messageTemplate?.includes("{{") ? "96891234567" : (barcode.messageTemplate || "96891234567");
+  const fieldClassName = "w-full rounded-xl bg-(--background) px-3 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_10px_30px_rgba(15,23,42,0.06)] outline-none transition placeholder:text-(--muted-foreground)/70 focus:bg-white focus:shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_16px_35px_rgba(15,23,42,0.09)] dark:focus:bg-(--surface)";
+  const inputClassName = `${fieldClassName} h-10`;
+  const textareaClassName = `${fieldClassName} px-3 py-2.5`;
+  const toggleButtonClassName = (active: boolean) =>
+    `h-9 rounded-xl text-xs font-medium transition ${active ? "bg-accent/12 text-accent shadow-sm" : "bg-(--background) text-(--muted-foreground) hover:bg-white hover:text-foreground dark:hover:bg-(--surface)"}`;
 
   /* ---- section renderer ---- */
   const Section = ({ id, icon, label, children }: { id: string; icon: React.ReactNode; label: string; children: React.ReactNode }) => {
     const open = expandedSection === id;
     return (
-      <div className="rounded-xl border border-(--surface-border) bg-(--surface) overflow-hidden transition-shadow hover:shadow-sm">
-        <button onClick={() => toggle(id)} className="w-full flex items-center gap-3 px-5 py-4 text-start">
+      <div className="overflow-hidden rounded-[1.4rem] bg-(--surface) shadow-[0_18px_45px_rgba(15,23,42,0.06)] transition-transform duration-200 hover:-translate-y-0.5">
+        <button onClick={() => toggle(id)} className="flex w-full items-center gap-3 px-5 py-4 text-start transition hover:bg-black/[0.02] dark:hover:bg-white/[0.03]">
           <span className="text-(--muted-foreground)">{icon}</span>
           <span className="flex-1 text-sm font-semibold">{label}</span>
           <svg className={`w-4 h-4 text-(--muted-foreground) transition-transform ${open ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </button>
-        {open && <div className="px-5 pb-5 space-y-4 border-t border-(--surface-border) pt-4">{children}</div>}
+        {open && <div className="space-y-4 px-5 pb-5 pt-1">{children}</div>}
       </div>
     );
   };
@@ -240,8 +315,8 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
     <div>
       <label className="block text-xs text-(--muted-foreground) mb-1.5">{label}</label>
       <div className="flex items-center gap-2">
-        <input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="h-9 w-14 rounded-lg border border-(--surface-border) cursor-pointer" />
-        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className="flex-1 h-9 px-2 rounded-lg border border-(--surface-border) bg-(--surface) text-xs font-mono" />
+        <input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="h-10 w-14 cursor-pointer rounded-xl bg-(--background) p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.4),0_10px_30px_rgba(15,23,42,0.06)]" />
+        <input type="text" value={value} onChange={(e) => onChange(e.target.value)} className={`${inputClassName} flex-1 px-3 font-mono text-xs`} />
       </div>
     </div>
   );
@@ -250,21 +325,21 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
      RENDER
      ================================================================== */
   return (
-    <div className="grid gap-8 xl:grid-cols-[1fr_420px]">
+    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] xl:gap-8">
       {/* ============================================================
           CONTROLS
           ============================================================ */}
-      <div className="space-y-3 order-2 xl:order-1">
+      <div className="order-2 space-y-3 xl:order-1">
         {/* Quick Presets */}
         <Section id="presets" icon={<PaletteIcon />} label={ar ? "قوالب جاهزة" : "Quick Presets"}>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {(Object.entries(PRESETS) as [keyof typeof PRESETS, (typeof PRESETS)[keyof typeof PRESETS]][]).map(([key, preset]) => {
               const active = design.primaryColor === preset.design.primaryColor && design.backgroundColor === preset.design.backgroundColor;
               return (
                 <button
                   key={key}
                   onClick={() => applyPreset(key)}
-                  className={`relative h-16 rounded-xl overflow-hidden border-2 transition-all ${active ? "border-accent ring-2 ring-accent/30 scale-105" : "border-transparent hover:border-accent/50 hover:scale-[1.02]"}`}
+                  className={`relative h-16 overflow-hidden rounded-2xl transition-all ${active ? "scale-[1.03] shadow-[0_16px_35px_rgba(59,130,246,0.2)] ring-2 ring-white/70" : "shadow-[0_12px_28px_rgba(15,23,42,0.08)] hover:-translate-y-0.5 hover:shadow-[0_18px_36px_rgba(15,23,42,0.12)]"}`}
                   style={{
                     background: preset.design.backgroundStyle === "gradient"
                       ? `linear-gradient(135deg, ${preset.design.primaryColor}, ${preset.design.secondaryColor})`
@@ -305,7 +380,7 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
             <label className="block text-xs text-(--muted-foreground) mb-2">{ar ? "نمط الخلفية" : "Background Style"}</label>
             <div className="grid grid-cols-3 gap-2">
               {(["solid", "gradient", "pattern"] as const).map((s) => (
-                <button key={s} onClick={() => ud({ backgroundStyle: s })} className={`h-9 rounded-lg border text-xs font-medium transition ${design.backgroundStyle === s ? "border-accent bg-accent/10 text-accent" : "border-(--surface-border) hover:border-accent/50"}`}>
+                <button key={s} onClick={() => ud({ backgroundStyle: s })} className={toggleButtonClassName(design.backgroundStyle === s)}>
                   {s === "solid" ? (ar ? "سادة" : "Solid") : s === "gradient" ? (ar ? "متدرج" : "Gradient") : (ar ? "نمط" : "Pattern")}
                 </button>
               ))}
@@ -317,7 +392,7 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
             <label className="block text-xs text-(--muted-foreground) mb-2">{ar ? "موضع الشعار" : "Logo Position"}</label>
             <div className="grid grid-cols-3 gap-2">
               {(["top", "center", "corner"] as const).map((p) => (
-                <button key={p} onClick={() => ud({ logoPosition: p })} className={`h-9 rounded-lg border text-xs font-medium transition ${design.logoPosition === p ? "border-accent bg-accent/10 text-accent" : "border-(--surface-border) hover:border-accent/50"}`}>
+                <button key={p} onClick={() => ud({ logoPosition: p })} className={toggleButtonClassName(design.logoPosition === p)}>
                   {p === "top" ? (ar ? "أعلى" : "Top") : p === "center" ? (ar ? "وسط" : "Center") : (ar ? "زاوية" : "Corner")}
                 </button>
               ))}
@@ -349,24 +424,24 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
 
         {/* Pass Content */}
         <Section id="content" icon={<CardIcon />} label={ar ? "محتوى البطاقة" : "Card Content"}>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "اسم البرنامج" : "Program Name"}</label>
-              <input type="text" value={passContent.programName} onChange={(e) => setPassContent((p) => ({ ...p, programName: e.target.value }))} className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm" />
+              <input type="text" value={passContent.programName} onChange={(e) => setPassContent((p) => ({ ...p, programName: e.target.value }))} className={inputClassName} />
             </div>
             <div>
               <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "تسمية النقاط" : "Points Label"}</label>
-              <input type="text" value={passContent.pointsLabel} onChange={(e) => setPassContent((p) => ({ ...p, pointsLabel: e.target.value }))} className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm" />
+              <input type="text" value={passContent.pointsLabel} onChange={(e) => setPassContent((p) => ({ ...p, pointsLabel: e.target.value }))} className={inputClassName} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "الحقل الثانوي" : "Secondary Label"}</label>
-              <input type="text" value={passContent.secondaryLabel ?? ""} onChange={(e) => setPassContent((p) => ({ ...p, secondaryLabel: e.target.value }))} placeholder={ar ? "مثال: المستوى" : "e.g., Level"} className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm" />
+              <input type="text" value={passContent.secondaryLabel ?? ""} onChange={(e) => setPassContent((p) => ({ ...p, secondaryLabel: e.target.value }))} placeholder={ar ? "مثال: المستوى" : "e.g., Level"} className={inputClassName} />
             </div>
             <div>
               <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "قيمة الحقل الثانوي" : "Secondary Value"}</label>
-              <input type="text" value={passContent.secondaryValue ?? ""} onChange={(e) => setPassContent((p) => ({ ...p, secondaryValue: e.target.value }))} placeholder={ar ? "مثال: ذهبي" : "e.g., Gold"} className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm" />
+              <input type="text" value={passContent.secondaryValue ?? ""} onChange={(e) => setPassContent((p) => ({ ...p, secondaryValue: e.target.value }))} placeholder={ar ? "مثال: ذهبي" : "e.g., Gold"} className={inputClassName} />
             </div>
           </div>
         </Section>
@@ -375,18 +450,18 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
         <Section id="barcode" icon={<BarcodeIcon />} label={ar ? "الباركود / QR" : "Barcode / QR"}>
           <div className="grid grid-cols-4 gap-2">
             {(["qr", "code128", "pdf417", "aztec"] as const).map((f) => (
-              <button key={f} onClick={() => setBarcode((b) => ({ ...b, format: f }))} className={`h-9 rounded-lg border text-xs font-medium uppercase transition ${barcode.format === f ? "border-accent bg-accent/10 text-accent" : "border-(--surface-border) hover:border-accent/50"}`}>
+              <button key={f} onClick={() => setBarcode((b) => ({ ...b, format: f }))} className={toggleButtonClassName(barcode.format === f)}>
                 {f === "qr" ? "QR" : f === "code128" ? "CODE128" : f === "pdf417" ? "PDF417" : "AZTEC"}
               </button>
             ))}
           </div>
           <div>
             <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "قالب الرسالة" : "Message Template"}</label>
-            <input type="text" value={barcode.messageTemplate ?? ""} onChange={(e) => setBarcode((b) => ({ ...b, messageTemplate: e.target.value }))} placeholder="{{phone}}" className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm font-mono" />
+            <input type="text" value={barcode.messageTemplate ?? ""} onChange={(e) => setBarcode((b) => ({ ...b, messageTemplate: e.target.value }))} placeholder="{{phone}}" className={`${inputClassName} font-mono`} />
             <p className="text-xs text-(--muted-foreground) mt-1">{ar ? "متغيرات: {{phone}}, {{memberId}}, {{customerId}}, {{cardId}}" : "Variables: {{phone}}, {{memberId}}, {{customerId}}, {{cardId}}"}</p>
           </div>
           {/* Live barcode preview */}
-          <div className="rounded-xl border border-(--surface-border) bg-white p-3 flex items-center justify-center overflow-hidden">
+          <div className="flex items-center justify-center overflow-hidden rounded-[1.35rem] bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
             {barcode.format === "qr" ? (
               qrDataUrl ? <Image src={qrDataUrl} alt="QR" width={140} height={140} unoptimized /> : <div className="w-[140px] h-[140px] bg-gray-100 rounded flex items-center justify-center text-xs text-gray-400">{ar ? "جارٍ إنشاء..." : "Generating..."}</div>
             ) : (
@@ -397,22 +472,22 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
 
         {/* Support Info */}
         <Section id="support" icon={<SupportIcon />} label={ar ? "معلومات الدعم" : "Support Info"}>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "الموقع" : "Website"}</label>
-              <input type="url" value={support.websiteUrl ?? ""} onChange={(e) => setSupport((s) => ({ ...s, websiteUrl: e.target.value }))} placeholder="https://..." className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm" />
+              <input type="url" value={support.websiteUrl ?? ""} onChange={(e) => setSupport((s) => ({ ...s, websiteUrl: e.target.value }))} placeholder="https://..." className={inputClassName} />
             </div>
             <div>
               <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "البريد الإلكتروني" : "Email"}</label>
-              <input type="email" value={support.email ?? ""} onChange={(e) => setSupport((s) => ({ ...s, email: e.target.value }))} placeholder="support@..." className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm" />
+              <input type="email" value={support.email ?? ""} onChange={(e) => setSupport((s) => ({ ...s, email: e.target.value }))} placeholder="support@..." className={inputClassName} />
             </div>
             <div>
               <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "الهاتف" : "Phone"}</label>
-              <input type="tel" value={support.phone ?? ""} onChange={(e) => setSupport((s) => ({ ...s, phone: e.target.value }))} placeholder="+968..." className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm" />
+              <input type="tel" value={support.phone ?? ""} onChange={(e) => setSupport((s) => ({ ...s, phone: e.target.value }))} placeholder="+968..." className={inputClassName} />
             </div>
             <div>
               <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "العنوان" : "Address"}</label>
-              <input type="text" value={support.address ?? ""} onChange={(e) => setSupport((s) => ({ ...s, address: e.target.value }))} className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm" />
+              <input type="text" value={support.address ?? ""} onChange={(e) => setSupport((s) => ({ ...s, address: e.target.value }))} className={inputClassName} />
             </div>
           </div>
         </Section>
@@ -421,11 +496,11 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
         <Section id="terms" icon={<DocIcon />} label={ar ? "الوصف والشروط" : "Description & Terms"}>
           <div>
             <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "الوصف" : "Description"}</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder={ar ? "اعرض هذه البطاقة عند الدفع لكسب النقاط." : "Show this card at checkout to earn points."} className="w-full rounded-lg border border-(--surface-border) bg-(--surface) px-3 py-2 text-sm" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} placeholder={ar ? "اعرض هذه البطاقة عند الدفع لكسب النقاط." : "Show this card at checkout to earn points."} className={textareaClassName} />
           </div>
           <div>
             <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "الشروط والأحكام" : "Terms & Conditions"}</label>
-            <textarea value={terms} onChange={(e) => setTerms(e.target.value)} rows={3} placeholder={ar ? "النقاط غير قابلة للتحويل وقابلة للتغيير." : "Points are non-transferable and subject to change."} className="w-full rounded-lg border border-(--surface-border) bg-(--surface) px-3 py-2 text-sm" />
+            <textarea value={terms} onChange={(e) => setTerms(e.target.value)} rows={3} placeholder={ar ? "النقاط غير قابلة للتحويل وقابلة للتغيير." : "Points are non-transferable and subject to change."} className={textareaClassName} />
           </div>
         </Section>
 
@@ -433,11 +508,11 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
         <Section id="notif" icon={<BellIcon />} label={ar ? "الإشعارات" : "Notifications"}>
           <div>
             <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "عنوان الإشعار" : "Notification Title"}</label>
-            <input type="text" value={notifTitle} onChange={(e) => setNotifTitle(e.target.value)} className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm" />
+            <input type="text" value={notifTitle} onChange={(e) => setNotifTitle(e.target.value)} className={inputClassName} />
           </div>
           <div>
             <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "نص الإشعار" : "Notification Body"}</label>
-            <textarea value={notifBody} onChange={(e) => setNotifBody(e.target.value)} rows={2} className="w-full rounded-lg border border-(--surface-border) bg-(--surface) px-3 py-2 text-sm" />
+            <textarea value={notifBody} onChange={(e) => setNotifBody(e.target.value)} rows={2} className={textareaClassName} />
           </div>
           <p className="text-xs text-(--muted-foreground)">{ar ? "شاهد المعاينة في تبويب الإشعار ←" : "Preview it in the Notification tab →"}</p>
         </Section>
@@ -448,19 +523,21 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
             {saving ? (ar ? "جاري الحفظ..." : "Saving...") : (ar ? "حفظ تصميم البطاقة" : "Save Card Design")}
           </Button>
 
-          {template?.id && (
-            <a
-              href={`/api/loyalty/templates/${template.id}/preview/apple`}
-              download
-              className="w-full h-11 rounded-xl bg-(--surface) border border-(--surface-border) text-foreground font-medium text-sm hover:bg-(--surface-border) transition flex items-center justify-center gap-2"
-            >
-              <AppleIcon className="w-4 h-4" />
-              {ar ? "تحميل معاينة iOS Pass" : "Download iOS Preview Pass"}
-            </a>
-          )}
+          <Button
+            onClick={handleApplePreview}
+            disabled={preparingApplePass || !template?.id}
+            variant="secondary"
+            size="md"
+            className="h-11 w-full justify-center rounded-xl bg-(--surface) text-sm font-medium text-foreground shadow-[0_16px_35px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 hover:bg-white dark:hover:bg-(--surface)"
+          >
+            <AppleIcon className="h-4 w-4" />
+            {preparingApplePass
+              ? (ar ? "جاري إنشاء البطاقة..." : "Preparing Apple Wallet pass...")
+              : (ar ? "فتح بطاقة Apple Wallet" : "Open Apple Wallet Pass")}
+          </Button>
 
           {msg && (
-            <div className={`rounded-xl p-4 text-sm font-medium ${msg.t === "ok" ? "bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20" : "bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20"}`}>
+            <div className={`rounded-xl p-4 text-sm font-medium shadow-[0_16px_35px_rgba(15,23,42,0.06)] ${msg.t === "ok" ? "bg-green-500/10 text-green-700 dark:text-green-400" : "bg-red-500/10 text-red-700 dark:text-red-400"}`}>
               {msg.text}
             </div>
           )}
@@ -470,9 +547,9 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
       {/* ============================================================
           PREVIEW PANEL
           ============================================================ */}
-      <div className="space-y-4 order-1 xl:order-2 xl:sticky xl:top-20 xl:self-start">
+      <div className="order-1 space-y-4 xl:order-2 xl:sticky xl:top-20 xl:self-start">
         {/* Platform switcher */}
-        <div className="flex items-center gap-1 p-1 bg-(--surface) rounded-xl border border-(--surface-border)">
+        <div className="flex items-center gap-1 rounded-2xl bg-(--surface) p-1.5 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
           {([
             { key: "ios" as const, icon: <AppleIcon className="w-4 h-4" />, label: ar ? "آيفون" : "iOS" },
             { key: "android" as const, icon: <AndroidIcon className="w-4 h-4" />, label: ar ? "أندرويد" : "Android" },
@@ -481,7 +558,7 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
             <button
               key={key}
               onClick={() => setActivePreview(key)}
-              className={`flex-1 h-10 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1.5 ${activePreview === key ? "bg-accent text-accent-foreground shadow-sm" : "text-(--muted-foreground) hover:text-foreground"}`}
+              className={`flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl text-sm font-medium transition ${activePreview === key ? "bg-accent text-accent-foreground shadow-sm" : "text-(--muted-foreground) hover:bg-white/70 hover:text-foreground dark:hover:bg-white/5"}`}
             >
               {icon}
               {label}
@@ -490,7 +567,7 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
         </div>
 
         {/* Preview container */}
-        <div className="relative rounded-2xl border border-(--surface-border) bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 p-4 min-h-[640px] flex items-center justify-center overflow-hidden">
+        <div className="relative flex min-h-[540px] items-center justify-center overflow-hidden rounded-[2rem] bg-gradient-to-br from-gray-100 via-white to-gray-200 p-4 shadow-[0_28px_80px_rgba(15,23,42,0.14)] dark:from-gray-800 dark:via-gray-900 dark:to-gray-950 sm:min-h-[640px] sm:p-5">
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: `radial-gradient(circle at 25% 25%, rgba(120,120,120,0.15) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(120,120,120,0.1) 0%, transparent 50%)` }} />
           {activePreview === "ios" ? (
             <IOSPreview design={design} passContent={passContent} businessName={businessName} logoUrl={logoUrl} points={samplePoints} customerName={design.showCustomerName ? sampleCustomer : undefined} memberId={sampleMemberId} barcode={barcode} qrDataUrl={qrDataUrl} ar={ar} />

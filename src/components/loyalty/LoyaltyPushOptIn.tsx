@@ -222,7 +222,7 @@ export function LoyaltyPushOptIn({
   const containerDirClass = dir === "rtl" ? "text-right" : "text-left";
 
   return (
-    <div className={cn("mt-6 rounded-2xl border border-(--surface-border) bg-(--surface) p-5", containerDirClass)} dir={dir}>
+    <div className={cn("mt-6 rounded-2xl bg-(--surface) p-5", containerDirClass)} dir={dir}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="text-sm font-semibold">{t.title}</div>

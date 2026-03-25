@@ -310,6 +310,52 @@ select {
   color: var(--chip-foreground);
 }
 
+.sbc-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 22px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sbc-range::-webkit-slider-runnable-track {
+  height: 22px;
+  background: transparent;
+}
+
+.sbc-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: 1px;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 0 4px rgba(0, 121, 244, 0.16);
+}
+
+.sbc-range::-moz-range-track {
+  height: 22px;
+  background: transparent;
+  border: 0;
+}
+
+.sbc-range::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 0 4px rgba(0, 121, 244, 0.16);
+}
+
+.sbc-range:disabled::-webkit-slider-thumb,
+.sbc-range:disabled::-moz-range-thumb {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
 .dark body {
   background:
     radial-gradient(ellipse 120% 80% at 15% -10%, rgba(0, 121, 244, 0.2), transparent 60%),

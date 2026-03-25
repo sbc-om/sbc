@@ -28,11 +28,11 @@ export function AddCustomerPanel({
   }, [open]);
 
   return (
-    <div className="mt-8 sbc-card rounded-2xl p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+    <section className="rounded-[1.7rem] bg-(--surface) p-5 shadow-[0_24px_60px_rgba(15,23,42,0.08)] sm:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="max-w-2xl">
           <div className="text-lg font-semibold">{ar ? "إضافة عميل" : "Add customer"}</div>
-          <div className="mt-1 text-sm text-(--muted-foreground)">
+          <div className="mt-1 text-sm leading-6 text-(--muted-foreground)">
             {ar
               ? "يمكنك إضافة عميل جديد يدوياً عند الحاجة."
               : "Add a new customer manually when needed."}
@@ -58,38 +58,46 @@ export function AddCustomerPanel({
         )}
       >
         <div className="min-h-0 overflow-hidden">
-          <form action={action} className="grid gap-4 p-1">
+          <form action={action} className="mt-1 grid gap-4">
             <input type="hidden" name="returnTo" value={returnTo} />
-            <div className="grid gap-4 sm:grid-cols-2 p-1">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Input
                 ref={nameRef}
                 name="fullName"
                 placeholder={ar ? "اسم العميل" : "Customer full name"}
                 required
               />
-              <PhoneInput name="phone" value={phone} onChange={setPhone} placeholder="91234567" required />
+              <PhoneInput
+                name="phone"
+                value={phone}
+                onChange={setPhone}
+                placeholder="91234567"
+                required
+                selectClassName=""
+                inputClassName=""
+              />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 p-1">
+            <div className="grid gap-4 sm:grid-cols-2">
               <Input name="email" placeholder={ar ? "البريد (اختياري)" : "Email (optional)"} />
-              <Input name="tags" placeholder={ar ? "وسوم (قريباً)" : "Tags (soon)"} disabled />
+              <Input name="tags" placeholder={ar ? "وسوم (قريباً)" : "Tags (soon)"} disabled className="opacity-70" />
             </div>
-            <div className="p-1">
+            <div>
               <Input name="notes" placeholder={ar ? "ملاحظات (اختياري)" : "Notes (optional)"} />
             </div>
-            <div className="flex justify-end">
+            <div className="flex justify-end pt-1">
               <button className={buttonVariants({ variant: "primary", size: "md" })} type="submit">
                 {ar ? "حفظ العميل" : "Save customer"}
               </button>
             </div>
           </form>
 
-          <div className="mt-3 text-xs text-(--muted-foreground)">
+          <div className="mt-4 rounded-2xl bg-(--chip-bg) px-4 py-3 text-xs leading-6 text-(--muted-foreground)">
             {ar
               ? "ملاحظة: رقم الهاتف مطلوب لسهولة البحث لاحقاً."
               : "Note: Phone is required for fast lookup later."}
           </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

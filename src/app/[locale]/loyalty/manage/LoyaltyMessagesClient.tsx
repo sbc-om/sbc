@@ -110,8 +110,8 @@ export function LoyaltyMessagesClient({ locale }: { locale: Locale }) {
   }
 
   return (
-    <div className="mt-8 sbc-card rounded-2xl p-6">
-      <div className={cn("flex items-start justify-between gap-4", rtl ? "flex-row-reverse" : "")}>
+    <div className="mt-5 sm:mt-8 sbc-card rounded-2xl p-4 sm:p-6">
+      <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4", rtl ? "sm:flex-row-reverse" : "")}>
         <div className={cn(rtl ? "text-right" : "text-left")}>
           <h3 className="text-lg font-semibold">{t.title}</h3>
           <p className="mt-1 text-sm text-(--muted-foreground)">{t.subtitle}</p>

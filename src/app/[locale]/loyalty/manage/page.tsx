@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 
+import { AppPage } from "@/components/AppPage";
 import { PublicPage } from "@/components/PublicPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -57,9 +58,12 @@ export default async function LoyaltyManagePage({
     : null;
   const staff = user && isActive ? await listLoyaltyStaffByUser(user.id) : [];
 
+  const Wrapper = user ? AppPage : PublicPage;
+
   return (
-    <PublicPage>
-      <div className="relative overflow-hidden rounded-3xl border border-(--surface-border) bg-(--surface) p-7 sm:p-8">
+    <Wrapper>
+      <div className="[&_.sbc-card]:!border-0">
+      <div className="relative overflow-hidden rounded-3xl bg-(--background) p-5 shadow-(--shadow) sm:p-7 md:p-8">
         <div
           className="absolute inset-0 -z-10 opacity-80"
           style={{
@@ -68,7 +72,7 @@ export default async function LoyaltyManagePage({
           }}
         />
 
-        <div className="flex items-start justify-between gap-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
           <div>
             <h1 className="text-3xl font-semibold leading-tight tracking-tight">
               {ar ? "بطاقة الولاء" : "Loyalty Card"}
@@ -94,7 +98,7 @@ export default async function LoyaltyManagePage({
       </div>
 
       {success ? (
-        <div className="mt-6 sbc-card rounded-2xl p-5">
+        <div className="mt-5 sm:mt-6 sbc-card rounded-2xl p-4 sm:p-5">
           <div className="font-semibold">{ar ? "تم تفعيل الاشتراك" : "Subscription activated"}</div>
           <p className="mt-1 text-sm text-(--muted-foreground)">
             {ar
@@ -105,7 +109,7 @@ export default async function LoyaltyManagePage({
       ) : null}
 
       {!user ? (
-        <div className="mt-8 sbc-card rounded-2xl p-6">
+        <div className="mt-5 sm:mt-8 sbc-card rounded-2xl p-4 sm:p-6">
           <div className="font-semibold">{ar ? "إدارة الولاء" : "Manage loyalty"}</div>
           <p className="mt-2 text-sm text-(--muted-foreground)">
             {ar ? "سجّل الدخول لإدارة العملاء والنقاط." : "Login to manage customers and points."}
@@ -150,7 +154,7 @@ export default async function LoyaltyManagePage({
             />
           ) : null}
 
-          <div className="mt-8 sbc-card rounded-2xl p-6">
+          <div className="mt-5 sm:mt-8 sbc-card rounded-2xl p-4 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-lg font-semibold">{ar ? "تصميم بطاقة الولاء" : "Card Design"}</h3>
@@ -170,7 +174,7 @@ export default async function LoyaltyManagePage({
             </div>
           </div>
 
-          <div className="mt-8 sbc-card rounded-2xl p-6">
+          <div className="mt-5 sm:mt-8 sbc-card rounded-2xl p-4 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-lg font-semibold">{ar ? "العملاء" : "Customers"}</h3>
@@ -189,23 +193,23 @@ export default async function LoyaltyManagePage({
               </Link>
             </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-(--surface) p-4">
                 <div className="text-xs text-(--muted-foreground)">{ar ? "الإجمالي" : "Total"}</div>
                 <div className="mt-1 text-2xl font-semibold">{customers.length}</div>
               </div>
-              <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+              <div className="rounded-2xl bg-(--surface) p-4">
                 <div className="text-xs text-(--muted-foreground)">{ar ? "الاسم" : "Business name"}</div>
                 <div className="mt-1 truncate text-sm font-semibold">{profile?.businessName ?? (ar ? "—" : "—")}</div>
               </div>
-              <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+              <div className="col-span-2 sm:col-span-1 rounded-2xl bg-(--surface) p-4">
                 <div className="text-xs text-(--muted-foreground)">{ar ? "الكود" : "Join code"}</div>
                 <div className="mt-1 font-mono text-sm">{profile?.joinCode ?? (ar ? "—" : "—")}</div>
               </div>
             </div>
 
             {profile?.joinCode && (
-              <div className="mt-4 rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+              <div className="mt-4 rounded-xl bg-(--surface) p-4">
                 <div className="text-sm font-semibold mb-2">
                   {ar ? "صفحة البحث العامة" : "Public Lookup Page"}
                 </div>
@@ -229,7 +233,7 @@ export default async function LoyaltyManagePage({
       ) : null}
 
       {user && !isActive ? (
-        <div className="mt-8 sbc-card rounded-2xl p-6">
+        <div className="mt-5 sm:mt-8 sbc-card rounded-2xl p-4 sm:p-6">
           <div className="font-semibold">{ar ? "الاشتراك غير مفعل" : "Subscription not active"}</div>
           <p className="mt-2 text-sm text-(--muted-foreground)">
             {ar
@@ -243,6 +247,7 @@ export default async function LoyaltyManagePage({
           </div>
         </div>
       ) : null}
-    </PublicPage>
+      </div>
+    </Wrapper>
   );
 }

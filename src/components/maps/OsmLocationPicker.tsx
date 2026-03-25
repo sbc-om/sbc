@@ -15,7 +15,6 @@ import type { LeafletMouseEvent } from "leaflet";
 import type { GeoJsonObject } from "geojson";
 
 import { cn } from "@/lib/cn";
-import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
 import {
@@ -51,6 +50,7 @@ export type OsmLocationValue = {
 
 const MIN_RADIUS_METERS = 25;
 const MAX_RADIUS_METERS = 500;
+const RADIUS_MARKS = [25, 100, 150, 250, 350, 500] as const;
 
 function clampRadiusMeters(value: unknown): number {
   const n = Math.trunc(Number(value));
@@ -136,22 +136,6 @@ async function reverseGeocode(lat: number, lng: number): Promise<string | null> 
   return json.display_name ? String(json.display_name) : null;
 }
 
-async function searchPlaces(q: string): Promise<Array<{ label: string; lat: number; lng: number }>> {
-  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
-    q
-  )}&limit=5&countrycodes=om&bounded=1&viewbox=${OMAN_BOUNDS.west},${OMAN_BOUNDS.north},${OMAN_BOUNDS.east},${OMAN_BOUNDS.south}&accept-language=en,ar`;
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
-  if (!res.ok) return [];
-  const json = (await res.json()) as Array<{ display_name: string; lat: string; lon: string }>;
-  return json
-    .map((r) => ({
-      label: r.display_name,
-      lat: Number(r.lat),
-      lng: Number(r.lon),
-    }))
-    .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng) && isWithinOmanBounds(r.lat, r.lng));
-}
-
 export function OsmLocationPicker({
   value,
   onChange,
@@ -174,9 +158,6 @@ export function OsmLocationPicker({
   const ar = locale === "ar";
   const rtl = ar;
 
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<Array<{ label: string; lat: number; lng: number }>>([]);
-  const [searching, setSearching] = useState(false);
   const [geoBusy, setGeoBusy] = useState(false);
   const [omanBorder, setOmanBorder] = useState<OmanBorderFeatureCollection | null>(null);
   const [isDark, setIsDark] = useState(false);
@@ -250,31 +231,9 @@ export function OsmLocationPicker({
     return clampRadiusMeters(localRadius);
   }, [localRadius]);
 
-  const debounceRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
-
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => {
-      void (async () => {
-        setSearching(true);
-        try {
-          const r = await searchPlaces(query.trim());
-          setResults(r);
-        } finally {
-          setSearching(false);
-        }
-      })();
-    }, 350);
-
-    return () => {
-      if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    };
-  }, [query]);
+  const radiusProgressPercent = useMemo(() => {
+    return ((radiusMeters - MIN_RADIUS_METERS) / (MAX_RADIUS_METERS - MIN_RADIUS_METERS)) * 100;
+  }, [radiusMeters]);
 
   async function pick(lat: number, lng: number) {
     if (disabled) return;
@@ -325,7 +284,7 @@ export function OsmLocationPicker({
 
   const containerClassName = viewOnly
     ? cn("w-full h-full", className)
-    : cn("rounded-2xl border border-(--surface-border) bg-(--surface) p-4", className);
+    : cn("rounded-2xl bg-(--surface) p-3 sm:p-4", className);
 
   const markerIcon = useMemo(() => {
     const imageSrc = markerImageUrl?.trim() || "/images/sbc.svg";
@@ -344,21 +303,21 @@ export function OsmLocationPicker({
     <div className={containerClassName}>
       {!viewOnly && (
         <>
-          <div className={cn("flex items-start justify-between gap-3", rtl ? "flex-row-reverse" : "")}>
-            <div className={cn(rtl ? "text-right" : "text-left")}>
+          <div className={cn("flex flex-col gap-3", rtl ? "text-right" : "text-left")}>
+            <div className="min-w-0">
               <div className="text-sm font-semibold">{ar ? "الموقع على الخريطة" : "Location on map"}</div>
-              <div className="mt-1 text-xs text-(--muted-foreground)">
+              <div className="mt-1 max-w-xl text-xs leading-5 text-(--muted-foreground)">
                 {hideRadius
-                  ? (ar ? "اضغط على الخريطة لاختيار الموقع الدقيق." : "Click the map to choose the exact location.")
+                  ? (ar ? "اضغط على الخريطة لاختيار الموقع الدقيق." : "Tap the map to pick a location.")
                   : (ar
-                    ? "اضغط على الخريطة لاختيار الموقع. احفظ نصف القطر لتحديد نطاق الإشعار."
-                    : "Click the map to choose the exact spot. Set radius to define the notification range.")}
+                    ? "اضغط على الخريطة أو استخدم موقعك الحالي. حرّك المنزلق لتحديد نطاق الإشعار."
+                    : "Tap the map or use your current location. Use the slider to set notification range.")}
               </div>
             </div>
 
-            <div className={cn("flex items-center gap-2", rtl ? "flex-row-reverse" : "")}>
+            <div className={cn("flex flex-wrap items-center gap-2", rtl ? "flex-row-reverse justify-start" : "justify-start sm:justify-end")}>
               <Button type="button" variant="secondary" size="sm" disabled={!!disabled || geoBusy} onClick={useMyLocation}>
-                {geoBusy ? (ar ? "…" : "…") : ar ? "موقعي" : "My location"}
+                {geoBusy ? (ar ? "…" : "…") : ar ? "📍 موقعي" : "📍 My location"}
               </Button>
               <Button
                 type="button"
@@ -371,47 +330,13 @@ export function OsmLocationPicker({
               </Button>
             </div>
           </div>
-
-          <div className="mt-4 grid sm:grid-cols-[1fr_auto] sm:items-center">
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={ar ? "ابحث عن مكان…" : "Search a place…"}
-              disabled={disabled}
-              className="w-full"
-            />
-            <div className="text-xs text-(--muted-foreground)">{searching ? (ar ? "بحث…" : "Searching…") : ""}</div>
-          </div>
-
-          {results.length ? (
-            <div className="mt-3 grid gap-2">
-              {results.map((r) => (
-                <button
-                  key={`${r.lat},${r.lng}`}
-                  type="button"
-                  className={cn(
-                    "rounded-xl border border-(--surface-border) bg-(--surface) px-3 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/5",
-                    rtl ? "text-right" : "text-left"
-                  )}
-                  onClick={() => {
-                    setQuery(r.label);
-                    setResults([]);
-                    void pick(r.lat, r.lng);
-                  }}
-                  disabled={disabled}
-                >
-                  <div className="line-clamp-2">{r.label}</div>
-                </button>
-              ))}
-            </div>
-          ) : null}
         </>
       )}
 
       <div
         className={cn(
           "relative overflow-hidden",
-          viewOnly ? "h-full rounded-xl" : "rounded-2xl border border-(--surface-border) mt-4"
+          viewOnly ? "h-full rounded-xl" : "rounded-2xl mt-3"
         )}
       >
         <MapContainer
@@ -423,7 +348,7 @@ export function OsmLocationPicker({
           maxBoundsViscosity={1}
           scrollWheelZoom={false}
           attributionControl={false}
-          style={{ height: viewOnly ? "100%" : 320, width: "100%" }}
+          style={{ height: viewOnly ? "100%" : 360, width: "100%" }}
         >
           <TileLayer
             attribution={OMAN_TILE_ATTRIBUTION}
@@ -488,40 +413,20 @@ export function OsmLocationPicker({
       {!viewOnly && (
         <>
           {!hideRadius ? (
-            <div className="mt-4 space-y-2">
+            <div className="mt-3 space-y-2">
               <div className="grid gap-2">
                 <div className={cn("flex w-full items-center gap-2", rtl ? "flex-row-reverse" : "")}>
-                  <label className="text-xs font-medium text-(--muted-foreground)">
-                    {ar ? "المنطقة (متر)" : "Range (meters)"}
+                  <label className="text-xs font-medium text-(--muted-foreground) shrink-0">
+                    {ar ? "النطاق" : "Range"}
                   </label>
-                  <div className={cn("flex h-10 flex-1", rtl ? "flex-row-reverse" : "")}>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      min={MIN_RADIUS_METERS}
-                      max={MAX_RADIUS_METERS}
-                      value={localRadius}
-                      onChange={(e) => setLocalRadius(e.target.value)}
-                      disabled={disabled || !safeValue}
-                      className={cn("h-full flex-1", rtl ? "rounded-l-none border-l-0" : "rounded-r-none border-r-0")}
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      disabled={disabled || !safeValue}
-                      onClick={applyRadius}
-                      className={cn("h-full px-3 shrink-0", rtl ? "rounded-r-none" : "rounded-l-none")}
-                    >
-                      {ar ? "تطبيق" : "Apply"}
-                    </Button>
-                  </div>
+                  <span className="text-xs font-semibold tabular-nums">{localRadius}m</span>
                 </div>
 
                 <div className={cn("flex items-center gap-2 w-full", rtl ? "flex-row-reverse" : "")}>
                   <label className="text-xs text-(--muted-foreground) shrink-0">
                     {ar ? "الإحداثيات" : "Coordinates"}
                   </label>
-                  <div className="flex-1 flex items-center h-10 rounded-lg border border-(--surface-border) bg-(--surface) px-3">
+                  <div className="flex-1 flex items-center h-10 rounded-lg bg-(--surface) px-3">
                     <div className="text-xs font-mono" dir="ltr">
                       {safeValue ? `${safeValue.lat.toFixed(6)}, ${safeValue.lng.toFixed(6)}` : "—"}
                     </div>
@@ -529,16 +434,81 @@ export function OsmLocationPicker({
                 </div>
               </div>
 
-              <div className={cn("text-[11px] text-(--muted-foreground)", rtl ? "text-right" : "text-left")}>
-                {ar ? "مقترح: 150–500م للمتجر." : "Tip: 150–500m is a good default for a store."}
+              <div className="mt-2 space-y-3">
+                <div className="relative px-2 pt-2">
+                  <div className="pointer-events-none absolute inset-x-2 top-5 h-[3px] rounded-full bg-white/12" />
+                  <div
+                    className="pointer-events-none absolute left-2 top-5 h-[3px] rounded-full bg-linear-to-r from-accent to-accent-2"
+                    style={{ width: `calc(${radiusProgressPercent}% - ${radiusProgressPercent === 0 ? 0 : 2}px)` }}
+                  />
+                  <div className="pointer-events-none absolute inset-x-2 top-[14px] h-3">
+                    {RADIUS_MARKS.map((tick) => {
+                      const tickPercent = ((tick - MIN_RADIUS_METERS) / (MAX_RADIUS_METERS - MIN_RADIUS_METERS)) * 100;
+                      return (
+                        <span
+                          key={tick}
+                          className={cn(
+                            "absolute h-3 w-px -translate-x-1/2 rounded-full bg-white/35",
+                            radiusMeters >= tick && "bg-accent"
+                          )}
+                          style={{ left: `${tickPercent}%` }}
+                        />
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="range"
+                    min={MIN_RADIUS_METERS}
+                    max={MAX_RADIUS_METERS}
+                    step={25}
+                    value={localRadius}
+                    onChange={(e) => {
+                      setLocalRadius(e.target.value);
+                      if (safeValue) {
+                        onChange({ ...safeValue, radiusMeters: clampRadiusMeters(e.target.value) });
+                      }
+                    }}
+                    disabled={disabled || !safeValue}
+                    className="sbc-range relative z-10 w-full disabled:cursor-not-allowed"
+                  />
+                </div>
+                <div className="relative h-4 px-2">
+                  {RADIUS_MARKS.map((tick, index) => {
+                    const tickPercent = ((tick - MIN_RADIUS_METERS) / (MAX_RADIUS_METERS - MIN_RADIUS_METERS)) * 100;
+                    const isFirst = index === 0;
+                    const isLast = index === RADIUS_MARKS.length - 1;
+                    return (
+                      <span
+                        key={tick}
+                        className={cn(
+                          "absolute top-0 text-[10px] tabular-nums text-(--muted-foreground)",
+                          isFirst ? "start-0 translate-x-0" : isLast ? "end-0 translate-x-0" : "-translate-x-1/2",
+                          radiusMeters === tick && "font-semibold text-foreground"
+                        )}
+                        style={
+                          isFirst
+                            ? undefined
+                            : isLast
+                              ? undefined
+                              : { left: `calc(${tickPercent}% + 0.5rem)` }
+                        }
+                      >
+                        {tick}m
+                      </span>
+                    );
+                  })}
+                </div>
+                <div className={cn("flex justify-center text-[10px] text-(--muted-foreground)", rtl ? "text-right" : "text-left")}>
+                  <span>{ar ? "المقترح للمتجر: 150–500م" : "Recommended for store alerts: 150–500m"}</span>
+                </div>
               </div>
             </div>
           ) : (
-            <div className={cn("mt-4 flex items-center gap-2", rtl ? "flex-row-reverse" : "")}>
+            <div className={cn("mt-3 flex items-center gap-2", rtl ? "flex-row-reverse" : "")}>
               <label className="text-xs text-(--muted-foreground) shrink-0">
                 {ar ? "الإحداثيات" : "Coordinates"}
               </label>
-              <div className="flex-1 flex items-center h-10 rounded-lg border border-(--surface-border) bg-(--surface) px-3">
+              <div className="flex-1 flex items-center h-10 rounded-lg bg-(--surface) px-3">
                 <div className="text-xs font-mono" dir="ltr">
                   {value ? `${value.lat.toFixed(6)}, ${value.lng.toFixed(6)}` : "—"}
                 </div>

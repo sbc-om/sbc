@@ -55,7 +55,8 @@ export default async function LoyaltyCardPublicPage({
 
   return (
     <PublicPage>
-      <div className="flex items-start justify-between gap-6">
+      <div className="[&_.sbc-card]:!border-0">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div>
           <h1 className="text-3xl font-semibold leading-tight tracking-tight">
             {ar ? "بطاقة الولاء" : "Loyalty Card"}
@@ -78,7 +79,7 @@ export default async function LoyaltyCardPublicPage({
         {profile ? (
           <div
             className={
-              "mx-auto mb-6 flex max-w-md items-center gap-3 rounded-2xl border border-(--surface-border) bg-(--surface) p-3 " +
+              "mx-auto mb-6 flex max-w-md items-center gap-3 rounded-2xl bg-(--surface) p-3 " +
               (ar ? "flex-row-reverse text-right" : "text-left")
             }
           >
@@ -88,10 +89,10 @@ export default async function LoyaltyCardPublicPage({
                 alt={profile.businessName}
                 width={48}
                 height={48}
-                className="h-12 w-12 shrink-0 rounded-xl border border-(--surface-border) bg-(--surface) object-cover"
+                className="h-12 w-12 shrink-0 rounded-xl bg-(--surface) object-cover"
               />
             ) : (
-              <div className="h-12 w-12 shrink-0 rounded-xl border border-(--surface-border) bg-(--surface)" />
+              <div className="h-12 w-12 shrink-0 rounded-xl bg-(--surface)" />
             )}
             <div className="min-w-0">
               <div className="text-xs text-(--muted-foreground)">{ar ? "النشاط" : "Business"}</div>
@@ -161,12 +162,12 @@ export default async function LoyaltyCardPublicPage({
         <CardQrClient locale={locale as Locale} phone={(customer?.phone ?? "").replace(/^\+/, "")} />
 
         {messages.length ? (
-          <div className={"mt-8 rounded-2xl border border-(--surface-border) bg-(--surface) p-5 " + (ar ? "text-right" : "text-left")}
+          <div className={"mt-8 rounded-2xl bg-(--surface) p-5 " + (ar ? "text-right" : "text-left")}
           >
             <div className="text-sm font-semibold">{ar ? "الرسائل" : "Messages"}</div>
             <div className="mt-3 grid gap-3">
               {messages.map((m) => (
-                <div key={m.id} className="rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+                <div key={m.id} className="rounded-xl bg-(--surface) p-4">
                   <div className={"flex items-start justify-between gap-3 " + (ar ? "flex-row-reverse" : "")}
                   >
                     <div className="min-w-0">
@@ -180,6 +181,7 @@ export default async function LoyaltyCardPublicPage({
             </div>
           </div>
         ) : null}
+      </div>
       </div>
     </PublicPage>
   );

@@ -240,14 +240,14 @@ export function LoyaltyProfileClient({
   }
 
   return (
-    <section className="mt-8 mx-auto max-w-6xl">
-      <div className="sbc-card rounded-2xl p-6 sm:p-8">
+    <section className="mt-5 sm:mt-8 mx-auto max-w-6xl">
+      <div className="sbc-card rounded-2xl p-4 sm:p-6 md:p-8">
         <div className={cn("flex flex-col gap-1", rtl ? "text-right" : "text-left")}>
           <h3 className="text-lg font-semibold">{t.title}</h3>
           <p className="text-sm text-(--muted-foreground)">{t.subtitle}</p>
         </div>
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,420px)] xl:gap-8 xl:items-start">
+        <div className="mt-5 sm:mt-6 grid gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,380px)] lg:gap-8 lg:items-start">
           <div className="min-w-0 grid gap-4">
             <div>
               <label className={cn("block text-sm font-medium", rtl ? "text-right" : "text-left")}>
@@ -278,7 +278,7 @@ export function LoyaltyProfileClient({
               </div>
             </div>
 
-            <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+            <div className="rounded-2xl bg-(--surface) p-4">
               <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between", rtl ? "sm:flex-row-reverse" : "")}> 
                 <div className={cn("min-w-0", rtl ? "text-right" : "text-left")}>
                   <div className="text-sm font-medium">{t.logo}</div>
@@ -323,7 +323,7 @@ export function LoyaltyProfileClient({
                     width={56}
                     height={56}
                     unoptimized={shouldBypassImageOptimization(logoUrl)}
-                    className="h-14 w-14 shrink-0 rounded-xl border border-(--surface-border) bg-(--surface) object-cover"
+                    className="h-14 w-14 shrink-0 rounded-xl bg-(--surface) object-cover"
                   />
                 </div>
               ) : (
@@ -333,30 +333,23 @@ export function LoyaltyProfileClient({
               )}
             </div>
 
-            <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
-              <div className={cn("flex flex-col gap-1", rtl ? "text-right" : "text-left")}>
-                <div className="text-sm font-medium">{t.locationTitle}</div>
-                <div className="text-xs text-(--muted-foreground)">{t.locationHint}</div>
-              </div>
-
-              <div className="mt-4">
-                <OsmLocationPicker
-                  locale={ar ? "ar" : "en"}
-                  value={location}
-                  onChange={setLocation}
-                  disabled={busy}
-                />
-              </div>
+            <div className="mt-1">
+              <OsmLocationPicker
+                locale={ar ? "ar" : "en"}
+                value={location}
+                onChange={setLocation}
+                disabled={busy}
+              />
             </div>
 
             {error ? (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600">
+              <div className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-600">
                 {error}
               </div>
             ) : null}
 
             {success ? (
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+              <div className="rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
                 {success}
               </div>
             ) : null}
@@ -369,7 +362,7 @@ export function LoyaltyProfileClient({
           </div>
 
           <div className="min-w-0 grid gap-4">
-            <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+            <div className="rounded-2xl bg-(--surface) p-4">
               <div className={cn("flex items-center justify-between gap-3", rtl ? "flex-row-reverse" : "")}>
                 <div className={cn("min-w-0", rtl ? "text-right" : "text-left")}>
                   <div className="text-sm font-medium">{t.link}</div>
@@ -393,7 +386,7 @@ export function LoyaltyProfileClient({
               )}
             </div>
 
-            <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
+            <div className="rounded-2xl bg-(--surface) p-4">
               <div className={cn("flex items-start justify-between gap-3", rtl ? "flex-row-reverse" : "")}>
                 <div className={cn("min-w-0", rtl ? "text-right" : "text-left")}>
                   <div className="text-sm font-medium">{t.qr}</div>
@@ -419,7 +412,7 @@ export function LoyaltyProfileClient({
                       href={joinUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="block h-56 w-56 max-w-full rounded-2xl border border-(--surface-border) bg-white p-2 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:h-64 sm:w-64"
+                      className="block h-48 w-48 max-w-full rounded-2xl bg-white p-2 transition hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 sm:h-56 sm:w-56"
                       title={joinUrl}
                     >
                       <Image
@@ -432,7 +425,7 @@ export function LoyaltyProfileClient({
                       />
                     </a>
                   ) : (
-                    <div className="h-56 w-56 max-w-full rounded-2xl border border-(--surface-border) bg-white p-2 sm:h-64 sm:w-64">
+                    <div className="h-48 w-48 max-w-full rounded-2xl bg-white p-2 sm:h-56 sm:w-56">
                       <Image
                         src={qrDataUrl}
                         alt="QR"
@@ -444,7 +437,7 @@ export function LoyaltyProfileClient({
                     </div>
                   )
                 ) : (
-                  <div className="flex h-56 w-56 max-w-full items-center justify-center rounded-2xl border border-(--surface-border) bg-(--surface) text-sm text-(--muted-foreground) sm:h-64 sm:w-64">
+                  <div className="flex h-48 w-48 max-w-full items-center justify-center rounded-2xl bg-(--surface) text-sm text-(--muted-foreground) sm:h-56 sm:w-56">
                     {t.noQr}
                   </div>
                 )}

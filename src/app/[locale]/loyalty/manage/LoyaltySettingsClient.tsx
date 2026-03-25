@@ -195,8 +195,8 @@ export function LoyaltySettingsClient({
   }
 
   return (
-    <div className="mt-8 sbc-card rounded-2xl p-6">
-      <div className={cn("flex items-start justify-between gap-4", rtl ? "flex-row-reverse" : "")}
+    <div className="mt-5 sm:mt-8 sbc-card rounded-2xl p-4 sm:p-6">
+      <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4", rtl ? "sm:flex-row-reverse" : "")}
       >
         <div className={cn(rtl ? "text-right" : "text-left")}>
           <h3 className="text-lg font-semibold">{t.title}</h3>
@@ -253,8 +253,8 @@ export function LoyaltySettingsClient({
         {t.redeemHint}
       </p>
 
-      <div className="mt-6 rounded-2xl border border-(--surface-border) bg-(--surface) p-5">
-        <div className={cn("flex items-start justify-between gap-4", rtl ? "flex-row-reverse" : "")}
+      <div className="mt-5 sm:mt-6 rounded-2xl bg-(--surface) p-4 sm:p-5">
+        <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4", rtl ? "sm:flex-row-reverse" : "")}
         >
           <div className={cn(rtl ? "text-right" : "text-left")}>
             <div className="text-sm font-semibold">{t.iconTitle}</div>
@@ -318,7 +318,7 @@ export function LoyaltySettingsClient({
 
         <div className="mt-5 grid gap-4 sm:grid-cols-[auto_1fr] sm:items-center">
           <div className={cn("flex items-center justify-center", rtl ? "sm:justify-end" : "sm:justify-start")}>
-            <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-(--surface-border) bg-(--surface)">
+              <div className="relative h-16 w-16 overflow-hidden rounded-2xl bg-(--surface)">
               {effectiveIconUrl ? (
                 <Image
                   src={effectiveIconUrl}

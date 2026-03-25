@@ -72,13 +72,14 @@ export default async function StorePage({
   const ar = locale === "ar";
   const Wrapper = user ? AppPage : PublicPage;
   const detailsCtaClass =
-    "h-10 w-full rounded-xl border border-(--surface-border) bg-(--background)/55 px-3 text-sm font-semibold text-foreground transition-colors hover:border-(--accent)/45 hover:bg-(--chip-bg)";
+    "h-10 w-full rounded-xl bg-(--chip-bg) px-3 text-sm font-semibold text-foreground transition-colors hover:bg-(--surface-hover)";
   const primaryCtaClass =
-    "h-10 w-full rounded-xl border border-transparent bg-(--accent) px-3 text-sm font-semibold text-(--accent-foreground) transition-[filter,opacity] hover:brightness-110";
+    "h-10 w-full rounded-xl bg-(--accent) px-3 text-sm font-semibold text-(--accent-foreground) transition-[filter,opacity] hover:brightness-110";
 
   return (
     <Wrapper>
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+      <div className="[&_.sbc-card]:!border-0">
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
         <div>
           <h1 className="text-3xl font-semibold leading-tight tracking-tight">
             {dict.nav.store}
@@ -117,9 +118,9 @@ export default async function StorePage({
         </div>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-5 sm:mt-6">
         <form method="GET" action={`/${locale}/store`}>
-          <div className="sbc-card rounded-2xl p-4 !border-0">
+          <div className="sbc-card rounded-2xl border border-cyan-500/20 p-3 sm:p-4 dark:border-cyan-400/20">
             <div className="flex items-center gap-3">
               <svg
                 className="h-5 w-5 text-(--muted-foreground)"
@@ -155,11 +156,11 @@ export default async function StorePage({
       </div>
 
       {products.length === 0 ? (
-        <div className="mt-8 sbc-card rounded-2xl p-6 text-sm text-(--muted-foreground)">
+        <div className="mt-8 sbc-card rounded-2xl border border-amber-500/25 p-6 text-sm text-(--muted-foreground) dark:border-amber-400/20">
           {ar ? "لا توجد نتائج." : "No results."}
         </div>
       ) : (
-        <div className="mt-8 grid gap-10">
+        <div className="mt-8 grid gap-8 sm:gap-10">
           {(
             [
               {
@@ -268,24 +269,24 @@ export default async function StorePage({
             if (items.length === 0) return null;
             return (
               <section key={section.key}>
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3 sm:gap-4">
                   <div
                     className={
-                      "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl " +
+                      "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl sm:h-12 sm:w-12 " +
                       section.iconBgClassName
                     }
                   >
-                    <section.Icon className={"h-7 w-7 " + section.iconClassName} />
+                    <section.Icon className={"h-6 w-6 sm:h-7 sm:w-7 " + section.iconClassName} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-semibold tracking-tight">{section.title}</h2>
+                      <h2 className="text-lg font-semibold tracking-tight sm:text-xl">{section.title}</h2>
                     </div>
                     <p className="mt-1 text-sm text-(--muted-foreground)">{section.subtitle}</p>
                   </div>
                 </div>
 
-                <div className="mt-5 grid auto-rows-fr gap-5 md:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-4 grid auto-rows-fr gap-4 sm:mt-5 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
                   {items.map((p) => {
                     const t = getStoreProductText(p, locale as Locale);
                     return (
@@ -296,7 +297,7 @@ export default async function StorePage({
                         className="!rounded-2xl !border-2 !p-0"
                       >
                       <div
-                        className="relative flex h-full flex-col p-6"
+                        className="relative flex h-full flex-col p-4 sm:p-6"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
@@ -335,8 +336,8 @@ export default async function StorePage({
                           </ul>
                         </div>
 
-                        <div className="mt-auto pt-6">
-                          <div className="grid grid-cols-2 gap-2">
+                        <div className="mt-auto pt-5 sm:pt-6">
+                          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <Link
                               href={`/${locale}/store/${p.slug}`}
                               className={buttonVariants({ variant: "secondary", size: "sm", className: detailsCtaClass })}
@@ -375,6 +376,7 @@ export default async function StorePage({
           })}
         </div>
       )}
+      </div>
     </Wrapper>
   );
 }

@@ -159,45 +159,46 @@ export default async function LoyaltyPage({
 
   return (
     <PublicPage>
+      <div className="[&_.sbc-card]:!border-0">
       <section className="relative animate-in slide-in-from-bottom-6">
         <div className="absolute -top-24 left-1/2 h-72 w-160 -translate-x-1/2 rounded-full bg-accent/12 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 left-1/2 h-72 w-160 -translate-x-1/2 rounded-full bg-accent-2/12 blur-3xl pointer-events-none" />
 
         <div className="relative text-center">
-          <h1 className="mt-5 text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+          <h1 className="mt-5 text-3xl font-semibold leading-tight tracking-tight sm:text-4xl md:text-5xl">
             <span className="bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent">
               {copy.title}
             </span>
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-(--muted-foreground)">
+          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-(--muted-foreground) sm:text-base">
             {copy.subtitle}
           </p>
 
-          <div className="mt-7 flex flex-wrap items-center justify-center gap-3 relative z-10">
+          <div className="mt-6 sm:mt-7 grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-3 relative z-10">
             <Link
               href={`/${locale}/loyalty/manage`}
-              className={buttonVariants({ variant: "primary", size: "lg", className: "min-w-[180px]" })}
+              className={buttonVariants({ variant: "primary", size: "lg", className: "w-full sm:w-auto sm:min-w-[180px]" })}
             >
               {copy.ctaManage}
               <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "rotate-180" : "")} />
             </Link>
             <Link
               href={`/${locale}/loyalty/staff`}
-              className={buttonVariants({ variant: "secondary", size: "lg", className: "min-w-[180px]" })}
+              className={buttonVariants({ variant: "secondary", size: "lg", className: "w-full sm:w-auto sm:min-w-[180px]" })}
             >
               <HiOutlineUsers className="h-5 w-5" />
               {copy.ctaSeller}
             </Link>
             <Link
               href={`/${locale}/store`}
-              className={buttonVariants({ variant: "secondary", size: "lg", className: "min-w-[180px]" })}
+              className={buttonVariants({ variant: "secondary", size: "lg", className: "w-full sm:w-auto sm:min-w-[180px]" })}
             >
               <HiOutlineGift className="h-5 w-5" />
               {copy.ctaStore}
             </Link>
             <Link
               href={`/${locale}`}
-              className={buttonVariants({ variant: "secondary", size: "lg", className: "min-w-[180px]" })}
+              className={buttonVariants({ variant: "secondary", size: "lg", className: "w-full sm:w-auto sm:min-w-[180px]" })}
             >
               <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "" : "rotate-180")} />
               {copy.backHome}
@@ -206,7 +207,7 @@ export default async function LoyaltyPage({
         </div>
 
         {/* Centered scroll-controlled animation (uses logo.json via LogoScrollLottie) */}
-        <div className="mt-10 flex justify-center">
+        <div className="mt-8 sm:mt-10 flex justify-center">
           <div className="relative w-full max-w-2xl">
             <div className="absolute inset-0 -z-10 rounded-3xl bg-linear-to-r from-accent/10 to-accent-2/10 blur-2xl" />
             <div className="rounded-3xl p-2 sm:p-3">
@@ -215,7 +216,7 @@ export default async function LoyaltyPage({
           </div>
         </div>
 
-        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+        <div className="mt-6 sm:mt-8 grid grid-cols-3 gap-2 sm:gap-3">
           {[
             { icon: HiOutlineUsers, label: ar ? "CRM خفيف" : "Built-in CRM" },
             { icon: HiOutlineChartBar, label: ar ? "نقاط" : "Smart Points" },
@@ -223,67 +224,67 @@ export default async function LoyaltyPage({
           ].map((chip) => {
             const Icon = chip.icon;
             return (
-              <div key={chip.label} className="sbc-card sbc-card--interactive rounded-2xl p-4 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-linear-to-br from-accent/15 to-accent-2/15">
-                  <Icon className="h-8 w-8 text-accent" />
+              <div key={chip.label} className="sbc-card sbc-card--interactive rounded-2xl p-3 sm:p-4 text-center">
+                <div className="mx-auto flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-linear-to-br from-accent/15 to-accent-2/15">
+                  <Icon className="h-6 w-6 sm:h-8 sm:w-8 text-accent" />
                 </div>
-                <div className="mt-2 text-sm font-medium">{chip.label}</div>
+                <div className="mt-2 text-xs sm:text-sm font-medium">{chip.label}</div>
               </div>
             );
           })}
         </div>
       </section>
 
-      <section className="mt-10 animate-in slide-in-from-bottom-6 delay-150">
-        <h2 className="text-xl font-semibold tracking-tight">{copy.sectionShowcase}</h2>
-        <div className="mt-5 grid gap-4 lg:grid-cols-3">
+      <section className="mt-8 sm:mt-10 animate-in slide-in-from-bottom-6 delay-150">
+        <h2 className="text-lg sm:text-xl font-semibold tracking-tight">{copy.sectionShowcase}</h2>
+        <div className="mt-4 sm:mt-5 grid gap-3 sm:gap-4 lg:grid-cols-3">
           {showcase.map((c) => {
             const Icon = c.icon;
             return (
-              <div key={c.title} className="sbc-card sbc-card--interactive rounded-2xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${c.tone}`}>
-                    <Icon className="h-9 w-9" />
+              <div key={c.title} className="sbc-card sbc-card--interactive rounded-2xl p-4 sm:p-6">
+                <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                  <div className={`flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl ${c.tone}`}>
+                    <Icon className="h-7 w-7 sm:h-9 sm:w-9" />
                   </div>
-                  <h3 className="font-semibold">{c.title}</h3>
+                  <h3 className="font-semibold text-sm sm:text-base">{c.title}</h3>
                 </div>
-                <p className="text-sm leading-7 text-(--muted-foreground)">{c.desc}</p>
+                <p className="text-xs sm:text-sm leading-6 sm:leading-7 text-(--muted-foreground)">{c.desc}</p>
               </div>
             );
           })}
         </div>
       </section>
 
-      <section className="mt-10 animate-in slide-in-from-bottom-6 delay-150">
-        <h2 className="text-xl font-semibold tracking-tight">{copy.sectionFeatures}</h2>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="mt-8 sm:mt-10 animate-in slide-in-from-bottom-6 delay-150">
+        <h2 className="text-lg sm:text-xl font-semibold tracking-tight">{copy.sectionFeatures}</h2>
+        <div className="mt-4 sm:mt-5 grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => {
             const Icon = f.icon;
             return (
-              <div key={f.title} className="sbc-card sbc-card--interactive rounded-2xl p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ${f.tone}`}>
-                    <Icon className="h-9 w-9" />
+              <div key={f.title} className="sbc-card sbc-card--interactive rounded-2xl p-4 sm:p-6">
+                <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                  <div className={`flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl ${f.tone}`}>
+                    <Icon className="h-7 w-7 sm:h-9 sm:w-9" />
                   </div>
-                  <h3 className="font-semibold">{f.title}</h3>
+                  <h3 className="font-semibold text-sm sm:text-base">{f.title}</h3>
                 </div>
-                <p className="text-sm leading-7 text-(--muted-foreground)">{f.desc}</p>
+                <p className="text-xs sm:text-sm leading-6 sm:leading-7 text-(--muted-foreground)">{f.desc}</p>
               </div>
             );
           })}
         </div>
       </section>
 
-      <section className="mt-10 animate-in slide-in-from-bottom-6 delay-150">
-        <h2 className="text-xl font-semibold tracking-tight">{copy.sectionHow}</h2>
-        <div className="mt-5 grid gap-4 lg:grid-cols-2">
+      <section className="mt-8 sm:mt-10 animate-in slide-in-from-bottom-6 delay-150">
+        <h2 className="text-lg sm:text-xl font-semibold tracking-tight">{copy.sectionHow}</h2>
+        <div className="mt-4 sm:mt-5 grid gap-3 sm:gap-4 lg:grid-cols-2">
           {steps.map((s) => (
-            <div key={s.n} className="sbc-card sbc-card--interactive rounded-2xl p-6">
-              <div className="flex items-start gap-4">
-                <div className="text-sm font-semibold text-(--muted-foreground)">{s.n}</div>
+            <div key={s.n} className="sbc-card sbc-card--interactive rounded-2xl p-4 sm:p-6">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="text-xs sm:text-sm font-semibold text-(--muted-foreground)">{s.n}</div>
                 <div>
-                  <div className="font-semibold">{s.title}</div>
-                  <p className="mt-1 text-sm leading-7 text-(--muted-foreground)">{s.desc}</p>
+                  <div className="font-semibold text-sm sm:text-base">{s.title}</div>
+                  <p className="mt-1 text-xs sm:text-sm leading-6 sm:leading-7 text-(--muted-foreground)">{s.desc}</p>
                 </div>
               </div>
             </div>
@@ -291,13 +292,14 @@ export default async function LoyaltyPage({
         </div>
       </section>
 
-      <section className="mt-10 sbc-card rounded-2xl p-6 animate-in slide-in-from-bottom-6 delay-300">
-        <h2 className="text-lg font-semibold">{copy.sectionNotes}</h2>
-        <ul className="mt-3 grid gap-2 text-sm text-(--muted-foreground)">
+      <section className="mt-8 sm:mt-10 sbc-card rounded-2xl p-4 sm:p-6 animate-in slide-in-from-bottom-6 delay-300">
+        <h2 className="text-base sm:text-lg font-semibold">{copy.sectionNotes}</h2>
+        <ul className="mt-3 grid gap-2 text-xs sm:text-sm text-(--muted-foreground)">
           <li>• {copy.note1}</li>
           <li>• {copy.note2}</li>
         </ul>
       </section>
+      </div>
     </PublicPage>
   );
 }

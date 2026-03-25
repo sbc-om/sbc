@@ -118,6 +118,18 @@ function hexToRgb(hex: string): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
+function readPemBlock(filePath: string, label?: string): string {
+  const raw = fs.readFileSync(filePath, "utf8");
+  const normalized = raw.replace(/\r\n?/g, "\n");
+  const blocks = normalized.match(/-----BEGIN [^-]+-----[\s\S]+?-----END [^-]+-----/g);
+
+  if (!blocks || blocks.length === 0) {
+    throw new Error(`No PEM block found in ${label ?? path.basename(filePath)}`);
+  }
+
+  return `${blocks.join("\n").trim()}\n`;
+}
+
 type SharpFactory = (input: Buffer) => {
   rotate: () => {
     resize: (options: {
@@ -702,10 +714,11 @@ async function generateApplePkpass(options: {
 }): Promise<Buffer> {
   const config = getAppleConfig();
 
-  // Read certificates as PEM files
-  const wwdr = fs.readFileSync(config.wwdrPath);
-  const signerCert = fs.readFileSync(config.certPemPath);
-  const signerKey = fs.readFileSync(config.keyPemPath);
+  // Some OpenSSL exports prepend metadata like "Bag Attributes" before the PEM block.
+  // passkit-generator expects the raw BEGIN/END PEM payload only.
+  const wwdr = readPemBlock(config.wwdrPath, "APPLE_WWDR_PATH");
+  const signerCert = readPemBlock(config.certPemPath, "APPLE_CERT PEM");
+  const signerKey = readPemBlock(config.keyPemPath, "APPLE_KEY PEM");
 
   const buffers = await buildApplePassAssetBuffers({
     logoSource: options.logoSource,

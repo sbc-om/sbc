@@ -50,7 +50,7 @@ export default async function LoyaltyCardDesignPage({
   return (
     <AppPage>
       {/* Header */}
-      <div className="relative overflow-hidden rounded-3xl border border-(--surface-border) bg-(--surface) p-7 sm:p-8">
+      <div className="relative overflow-hidden rounded-3xl bg-(--surface) p-6 shadow-(--shadow) sm:p-8">
         <div
           className="absolute inset-0 -z-10 opacity-80"
           style={{
@@ -59,8 +59,8 @@ export default async function LoyaltyCardDesignPage({
           }}
         />
 
-        <div className="flex items-start justify-between gap-6">
-          <div>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="max-w-3xl">
             <h1 className="text-3xl font-semibold leading-tight tracking-tight">
               {ar ? "تصميم بطاقة الولاء" : "Loyalty Card Design"}
             </h1>
@@ -72,7 +72,7 @@ export default async function LoyaltyCardDesignPage({
           </div>
           <Link
             href={`/${locale}/loyalty/manage`}
-            className={buttonVariants({ variant: "ghost", size: "sm" })}
+            className={`${buttonVariants({ variant: "ghost", size: "sm" })} self-start sm:self-auto`}
           >
             {ar ? "العودة" : "Back"}
           </Link>

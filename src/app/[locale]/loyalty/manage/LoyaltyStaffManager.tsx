@@ -79,7 +79,7 @@ export function LoyaltyStaffManager({ locale, joinCode, initialStaff }: Props) {
   };
 
   return (
-    <div className="mt-8 sbc-card rounded-2xl p-6">
+    <div className="mt-5 sm:mt-8 sbc-card rounded-2xl p-4 sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg font-semibold">{ar ? "إدارة البائعين" : "Seller Management"}</h3>
@@ -94,7 +94,7 @@ export function LoyaltyStaffManager({ locale, joinCode, initialStaff }: Props) {
         </a>
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+      <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
         <Input
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
@@ -115,12 +115,12 @@ export function LoyaltyStaffManager({ locale, joinCode, initialStaff }: Props) {
 
       <div className="mt-4 grid gap-3">
         {staff.length === 0 ? (
-          <div className="rounded-xl border border-(--surface-border) p-4 text-sm text-(--muted-foreground)">
+          <div className="rounded-xl p-4 text-sm text-(--muted-foreground)">
             {ar ? "لا يوجد بائعون بعد." : "No sellers yet."}
           </div>
         ) : (
           staff.map((item) => (
-            <div key={item.id} className="rounded-xl border border-(--surface-border) bg-(--surface) p-4">
+            <div key={item.id} className="rounded-xl bg-(--surface) p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="font-semibold">{item.fullName}</div>

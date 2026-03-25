@@ -211,8 +211,9 @@ export default async function DashboardPage({
     .sort((a, b) => a.daysLeft - b.daysLeft)[0];
 
   return (
-    <AppPage className="pt-4 sm:pt-6">
-      <section className="relative overflow-hidden rounded-3xl border border-(--surface-border) bg-(--surface)/95 p-4 shadow-(--shadow) backdrop-blur-sm sm:p-6 lg:p-8">
+    <AppPage className="pt-3 sm:pt-5">
+      <div className="[&_.sbc-chip]:!border-0">
+      <section className="relative overflow-hidden rounded-3xl border border-cyan-500/25 bg-(--surface)/95 p-4 shadow-(--shadow) backdrop-blur-sm sm:p-6 lg:p-8 dark:border-cyan-400/20">
         <div className="pointer-events-none absolute -start-20 -top-24 h-56 w-56 rounded-full bg-cyan-500/15 blur-3xl" />
         <div className="pointer-events-none absolute -end-28 -bottom-28 h-64 w-64 rounded-full bg-indigo-500/15 blur-3xl" />
 
@@ -253,7 +254,7 @@ export default async function DashboardPage({
               {user.role === "admin" ? (
                 <Link
                   href={`/${locale}/admin`}
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-(--surface-border) bg-(--surface) px-4 py-2.5 text-sm font-semibold text-foreground shadow-(--shadow) hover:bg-(--chip-bg)"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-(--chip-bg) px-4 py-2.5 text-sm font-semibold text-foreground shadow-(--shadow) hover:bg-(--surface-hover)"
                 >
                   {dict.nav.admin}
                   <HiArrowUpRight className="h-4 w-4" />
@@ -263,21 +264,21 @@ export default async function DashboardPage({
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-            <div className="rounded-2xl border border-(--surface-border) bg-(--background)/55 p-3 sm:p-4">
+            <div className="rounded-2xl bg-(--background)/55 p-3 sm:p-4">
               <p className="text-xs font-medium text-(--muted-foreground) sm:text-sm">{ar ? "إجمالي البرامج" : "Total Programs"}</p>
               <p className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">{totalPrograms}</p>
             </div>
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3 sm:p-4">
+            <div className="rounded-2xl bg-emerald-500/10 p-3 sm:p-4">
               <p className="text-xs font-medium text-emerald-700 dark:text-emerald-200 sm:text-sm">{ar ? "برامج فعّالة" : "Active Programs"}</p>
               <p className="mt-1 text-xl font-semibold tracking-tight text-emerald-700 dark:text-emerald-200 sm:text-2xl">
                 {activePrograms}
               </p>
             </div>
-            <div className="rounded-2xl border border-(--surface-border) bg-(--background)/55 p-3 sm:p-4">
+            <div className="rounded-2xl bg-(--background)/55 p-3 sm:p-4">
               <p className="text-xs font-medium text-(--muted-foreground) sm:text-sm">{ar ? "برامج مشتراة" : "Purchased Plans"}</p>
               <p className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">{purchasedPrograms}</p>
             </div>
-            <div className="rounded-2xl border border-amber-500/35 bg-amber-500/10 p-3 sm:p-4">
+            <div className="rounded-2xl bg-amber-500/10 p-3 sm:p-4">
               <p className="text-xs font-medium text-amber-700 dark:text-amber-200 sm:text-sm">{ar ? "تنتهي قريباً" : "Expiring Soon"}</p>
               <p className="mt-1 text-xl font-semibold tracking-tight text-amber-700 dark:text-amber-200 sm:text-2xl">
                 {expiringSoon}
@@ -298,7 +299,7 @@ export default async function DashboardPage({
               : "Open each program directly or upgrade from the store."}
           </p>
         </div>
-        <span className="inline-flex w-fit items-center rounded-full border border-(--surface-border) bg-(--chip-bg) px-3 py-1 text-xs font-semibold text-(--muted-foreground)">
+        <span className="inline-flex w-fit items-center rounded-full bg-(--chip-bg) px-3 py-1 text-xs font-semibold text-(--muted-foreground)">
           {ar ? `فعال ${activePrograms} من ${totalPrograms}` : `${activePrograms} of ${totalPrograms} active`}
         </span>
       </div>
@@ -410,7 +411,7 @@ export default async function DashboardPage({
                   </span>
                 </div>
 
-                <div className="rounded-2xl border border-(--surface-border) bg-(--background)/45 p-3">
+                <div className="rounded-2xl bg-(--background)/45 p-3">
                   <div className="flex items-center justify-between gap-3 text-xs sm:text-sm">
                     <span className="font-medium text-(--muted-foreground)">
                       {ar ? "حالة التجديد" : "Renewal Status"}
@@ -450,7 +451,7 @@ export default async function DashboardPage({
 
                   <Link
                     href={card.meta.storeHref}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl border border-(--surface-border) bg-(--surface) px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-(--chip-bg)"
+                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-(--chip-bg) px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-(--surface-hover)"
                   >
                     {ar ? "ترقية" : "Upgrade"}
                     <HiArrowUpRight className="h-4 w-4" />
@@ -460,6 +461,7 @@ export default async function DashboardPage({
             </DashboardCard>
           );
         })}
+      </div>
       </div>
     </AppPage>
   );
