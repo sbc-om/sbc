@@ -154,6 +154,8 @@ export default async function MarketingPlatformPage({
         : "Simple points and customer cards in one place.",
       href: `/${locale}/loyalty/staff`,
       hrefLabel: ar ? "دخول الموظف" : "Staff Login",
+      secondaryHref: `/${locale}/loyalty/customer-login`,
+      secondaryHrefLabel: ar ? "دخول العميل" : "Customer Login",
       iconWrap: "from-amber-300 via-rose-400 to-fuchsia-500",
       iconTone: "text-white",
       borderClassName: "border-rose-400/35 hover:border-fuchsia-500/50",
@@ -291,17 +293,32 @@ export default async function MarketingPlatformPage({
                       </p>
                     </div>
                   </div>
-                  <Link
-                    href={service.href}
-                    className={buttonVariants({
-                      variant: "primary",
-                      size: "lg",
-                      className: "w-full lg:w-auto lg:min-w-[230px] !shadow-none hover:!shadow-none",
-                    })}
-                  >
-                    {service.hrefLabel}
-                    <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "rotate-180" : "")} />
-                  </Link>
+                  <div className="flex w-full flex-col gap-2 lg:w-auto lg:min-w-[230px]">
+                    <Link
+                      href={service.href}
+                      className={buttonVariants({
+                        variant: "primary",
+                        size: "lg",
+                        className: "w-full !shadow-none hover:!shadow-none",
+                      })}
+                    >
+                      {service.hrefLabel}
+                      <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "rotate-180" : "")} />
+                    </Link>
+                    {service.secondaryHref ? (
+                      <Link
+                        href={service.secondaryHref}
+                        className={buttonVariants({
+                          variant: "secondary",
+                          size: "lg",
+                          className: "w-full !shadow-none hover:!shadow-none",
+                        })}
+                      >
+                        {service.secondaryHrefLabel}
+                        <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "rotate-180" : "")} />
+                      </Link>
+                    ) : null}
+                  </div>
                 </div>
               </DashboardCard>
             );

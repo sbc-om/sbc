@@ -3,6 +3,8 @@ import { PublicPage } from "@/components/PublicPage";
 import { ScrollLottie } from "@/components/ScrollLottie";
 import { BusinessCard } from "@/components/BusinessCard";
 import { FadeInSection } from "@/components/FadeInSection";
+import Link from "next/link";
+import { buttonVariants } from "@/components/ui/Button";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { listBusinesses } from "@/lib/db/businesses";
@@ -134,6 +136,50 @@ export default async function LocaleHome({
           {/* Scroll-controlled Lottie Animation */}
           <FadeInSection duration={1000} delay={200}>
             <ScrollLottie scrollFactor={1.2} />
+          </FadeInSection>
+
+          <FadeInSection duration={700} delay={260}>
+            <div className="mt-6 grid items-stretch gap-3 sm:mt-8 sm:gap-4 md:grid-cols-2">
+              <article className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-linear-to-br from-amber-500/12 via-rose-500/10 to-fuchsia-500/12 p-4 shadow-[0_24px_70px_rgba(244,63,94,0.14)] sm:rounded-3xl sm:p-6 lg:p-7">
+                <div className="pointer-events-none absolute -right-14 -top-16 h-44 w-44 rounded-full bg-rose-400/18 blur-3xl" />
+                <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
+                  {locale === "ar" ? "الولاء" : "Loyalty"}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-(--muted-foreground) sm:text-base sm:leading-7">
+                  {locale === "ar"
+                    ? "نقاط وبطاقات العملاء في تجربة بسيطة وسريعة."
+                    : "Points and customer cards in one simple flow."}
+                </p>
+                <div className="mt-auto pt-4">
+                  <Link
+                    href={`/${locale}/loyalty`}
+                    className={buttonVariants({ variant: "primary", size: "md", className: "w-full justify-center sm:w-auto" })}
+                  >
+                    {locale === "ar" ? "فتح الولاء" : "Open Loyalty"}
+                  </Link>
+                </div>
+              </article>
+
+              <article className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-linear-to-br from-sky-500/12 via-cyan-500/10 to-emerald-500/12 p-4 shadow-[0_24px_70px_rgba(6,182,212,0.14)] sm:rounded-3xl sm:p-6 lg:p-7">
+                <div className="pointer-events-none absolute -left-14 -top-16 h-44 w-44 rounded-full bg-cyan-400/18 blur-3xl" />
+                <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
+                  {locale === "ar" ? "أدوات الأعمال" : "Business Tools"}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-(--muted-foreground) sm:text-base sm:leading-7">
+                  {locale === "ar"
+                    ? "كل أدوات النمو في مكان واحد: تسويق، CRM، محاسبة وAI."
+                    : "All growth tools in one place: marketing, CRM, accounting, and AI."}
+                </p>
+                <div className="mt-auto pt-4">
+                  <Link
+                    href={`/${locale}/services`}
+                    className={buttonVariants({ variant: "secondary", size: "md", className: "w-full justify-center sm:w-auto" })}
+                  >
+                    {locale === "ar" ? "فتح أدوات الأعمال" : "Open Business Tools"}
+                  </Link>
+                </div>
+              </article>
+            </div>
           </FadeInSection>
         </Container>
       </section>

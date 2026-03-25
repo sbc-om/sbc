@@ -194,6 +194,27 @@ export async function sendOTP(phone: string, code: string, locale: "en" | "ar" =
 }
 
 /**
+ * Send loyalty card access code via WhatsApp.
+ */
+export async function sendLoyaltyCardAccessCode(
+  phone: string,
+  code: string,
+  locale: "en" | "ar" = "en"
+): Promise<WAHAResponse> {
+  const chatId = formatChatId(phone);
+
+  const messages = {
+    en: `🎟️ SBC Loyalty Card Access\n\nYour verification code is:\n*${code}*\n\nEnter this code to open your loyalty card.\nThis code expires soon.`,
+    ar: `🎟️ دخول بطاقة الولاء في SBC\n\nرمز التحقق الخاص بك هو:\n*${code}*\n\nأدخل هذا الرمز لفتح بطاقة الولاء الخاصة بك.\nستنتهي صلاحية الرمز قريباً.`,
+  };
+
+  return sendText({
+    chatId,
+    text: messages[locale],
+  });
+}
+
+/**
  * Send welcome message after successful registration
  */
 export async function sendWelcome(phone: string, name: string, locale: "en" | "ar" = "en"): Promise<WAHAResponse> {

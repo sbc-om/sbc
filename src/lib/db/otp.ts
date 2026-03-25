@@ -8,7 +8,12 @@ import { query } from "./postgres";
 const OTP_EXPIRY_MINUTES = parseInt(process.env.OTP_EXPIRY_MINUTES || "5", 10);
 const OTP_MAX_ATTEMPTS = parseInt(process.env.OTP_MAX_ATTEMPTS || "3", 10);
 
-export type OTPPurpose = "login" | "registration" | "phone_verification" | "password_reset";
+export type OTPPurpose =
+  | "login"
+  | "registration"
+  | "phone_verification"
+  | "password_reset"
+  | "loyalty_customer_login";
 
 export interface OTPRecord {
   id: string;

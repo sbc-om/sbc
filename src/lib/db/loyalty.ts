@@ -345,6 +345,72 @@ export async function listLoyaltyCustomers(userId: string): Promise<LoyaltyCusto
   return result.rows.map(rowToCustomer);
 }
 
+type LoyaltyCustomerCardAccessRow = {
+  customer_id: string;
+  card_id: string;
+  customer_name: string;
+  points: number | null;
+  business_name: string;
+  business_logo_url: string | null;
+  user_id: string;
+  phone: string | null;
+  updated_at: Date | null;
+};
+
+export type LoyaltyCustomerCardAccess = {
+  customerId: string;
+  cardId: string;
+  customerName: string;
+  points: number;
+  businessName: string;
+  businessLogoUrl?: string;
+  userId: string;
+  phone?: string;
+  updatedAt: string;
+};
+
+/**
+ * Find all customer cards that belong to the same normalized phone number.
+ */
+export async function listLoyaltyCustomerCardsByPhone(phone: string): Promise<LoyaltyCustomerCardAccess[]> {
+  const normalizedPhone = phone.replace(/\D/g, "").replace(/^0+/, "");
+  if (!normalizedPhone) return [];
+
+  const result = await query<LoyaltyCustomerCardAccessRow>(
+    `
+      SELECT
+        c.id AS customer_id,
+        c.card_id,
+        c.full_name AS customer_name,
+        c.points,
+        p.business_name,
+        p.logo_url AS business_logo_url,
+        c.user_id,
+        c.phone,
+        c.updated_at
+      FROM loyalty_customers c
+      JOIN loyalty_profiles p ON p.user_id = c.user_id
+      WHERE c.card_id IS NOT NULL
+        AND ltrim(regexp_replace(COALESCE(c.phone, ''), '[^0-9]', '', 'g'), '0') = $1
+      ORDER BY c.updated_at DESC NULLS LAST
+      LIMIT 20
+    `,
+    [normalizedPhone]
+  );
+
+  return result.rows.map((row) => ({
+    customerId: row.customer_id,
+    cardId: row.card_id,
+    customerName: row.customer_name,
+    points: row.points ?? 0,
+    businessName: row.business_name,
+    businessLogoUrl: row.business_logo_url ?? undefined,
+    userId: row.user_id,
+    phone: row.phone ?? undefined,
+    updatedAt: row.updated_at?.toISOString() ?? new Date().toISOString(),
+  }));
+}
+
 export async function updateLoyaltyCustomer(
   id: string,
   update: Partial<Pick<LoyaltyCustomer, "fullName" | "phone" | "email" | "notes" | "tags">>

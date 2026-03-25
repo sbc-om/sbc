@@ -38,6 +38,7 @@ export default async function LoyaltyPage({
       : "Give points, keep customers happy, and bring them back more often. No complicated setup.",
     ctaManage: ar ? "إدارة الولاء" : "Start Now",
     ctaSeller: ar ? "دخول البائعين" : "Staff Login",
+    ctaCustomer: ar ? "دخول العميل" : "Customer Login",
     ctaStore: ar ? "فتح المتجر" : "See Plans",
     backHome: ar ? "العودة للرئيسية" : "Back Home",
     sectionFeatures: ar ? "المزايا" : "Main Features",
@@ -188,6 +189,13 @@ export default async function LoyaltyPage({
             >
               <HiOutlineUsers className="h-5 w-5" />
               {copy.ctaSeller}
+            </Link>
+            <Link
+              href={`/${locale}/loyalty/customer-login`}
+              className={buttonVariants({ variant: "secondary", size: "lg", className: "w-full sm:w-auto sm:min-w-[180px]" })}
+            >
+              <HiOutlineShieldCheck className="h-5 w-5" />
+              {copy.ctaCustomer}
             </Link>
             <Link
               href={`/${locale}/store`}
