@@ -120,15 +120,14 @@ export function CustomersClient({
     }
   }
 
-  async function openQr(customerId: string) {
+  async function openQr(customerId: string, phone?: string) {
     setQrForCustomerId(customerId);
     setQrDataUrl(null);
     setQrBusy(true);
     try {
-      const origin = window.location.origin;
-      const url = `${origin}/${locale}/loyalty/manage/customers/${customerId}`;
+      const value = (phone ?? "").replace(/^\+/, "") || customerId;
       const mod = await import("qrcode");
-      const data = await mod.toDataURL(url, {
+      const data = await mod.toDataURL(value, {
         margin: 1,
         width: 300,
         errorCorrectionLevel: "M",
@@ -228,17 +227,13 @@ export function CustomersClient({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-baseline gap-2">
                           <div className="font-semibold truncate">{c.fullName}</div>
-                          <div className="shrink-0 text-xs text-(--muted-foreground)">
-                            {c.phone ? c.phone : (ar ? "بدون هاتف" : "No phone")}
+                          <div className="shrink-0 text-xs text-(--muted-foreground)" dir="ltr">
+                            {c.phone ? c.phone.replace(/^\+/, "") : (ar ? "بدون هاتف" : "No phone")}
                           </div>
                         </div>
                         <div className="mt-0.5 flex items-center gap-3 text-xs text-(--muted-foreground)">
-                          <div className="flex items-center gap-1.5">
-                            <span className={ar ? "hidden" : ""}>{ar ? "الكود" : "Code"}:</span>
-                            <span className="font-mono" dir="ltr">{c.cardId}</span>
-                          </div>
                           {c.email ? (
-                            <div className="truncate hidden sm:inline">• {c.email}</div>
+                            <div className="truncate">{c.email}</div>
                           ) : null}
                         </div>
                       </div>
@@ -268,7 +263,7 @@ export function CustomersClient({
                       >
                         {ar ? "البطاقة" : "Card"}
                       </Link>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => openQr(c.id)}>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => openQr(c.id, c.phone)}>
                         QR
                       </Button>
                     </div>
@@ -442,8 +437,8 @@ export function CustomersClient({
             <div className={cn("flex items-start justify-between gap-3", rtl ? "flex-row-reverse" : "")}>
               <div className={cn(rtl ? "text-right" : "text-left")}>
                 <div className="text-sm font-semibold">{ar ? "QR للعميل" : "Customer QR"}</div>
-                <div className="mt-1 text-xs text-(--muted-foreground)" dir="ltr">
-                  {qrForCustomerId}
+                <div className="mt-1 text-xs text-(--muted-foreground)">
+                  {ar ? "شماره موبایل مشتری در QR" : "Customer phone number in QR"}
                 </div>
               </div>
               <Button type="button" variant="ghost" size="sm" onClick={closeQr}>

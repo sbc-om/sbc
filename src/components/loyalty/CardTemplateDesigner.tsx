@@ -39,8 +39,8 @@ const defaultTemplate: Omit<LoyaltyCardTemplate, "id" | "userId" | "createdAt" |
   },
   barcode: {
     format: "qr",
-    messageTemplate: "{{memberId}}",
-    altTextTemplate: "{{memberId}}",
+    messageTemplate: "{{phone}}",
+    altTextTemplate: "{{phone}}",
   },
   images: {},
   support: {},
@@ -255,7 +255,7 @@ export function CardTemplateDesigner({ locale, profile, template, onSave, isNew 
   // Sample data for preview
   const samplePoints = 125;
   const sampleCustomerName = ar ? "محمد أحمد" : "John Smith";
-  const sampleMemberId = "SBC-ABC-12345";
+  const sampleMemberId = "96891234567";
 
   return (
     <div className="space-y-6">
@@ -592,13 +592,13 @@ export function CardTemplateDesigner({ locale, profile, template, onSave, isNew 
                   type="text"
                   value={barcode.messageTemplate ?? ""}
                   onChange={(e) => setBarcode((b) => ({ ...b, messageTemplate: e.target.value }))}
-                  placeholder="{{memberId}}"
+                  placeholder="{{phone}}"
                   className="w-full h-10 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm font-mono"
                 />
                 <p className="text-xs text-(--muted-foreground) mt-1">
                   {ar
-                    ? "متغيرات: {{memberId}}, {{customerId}}, {{cardId}}, {{phone}}"
-                    : "Variables: {{memberId}}, {{customerId}}, {{cardId}}, {{phone}}"}
+                    ? "متغيرات: {{phone}}, {{memberId}}, {{customerId}}, {{cardId}}"
+                    : "Variables: {{phone}}, {{memberId}}, {{customerId}}, {{cardId}}"}
                 </p>
               </div>
             </div>
@@ -881,77 +881,69 @@ function IOSPassPreview({
 
       {/* Pass Card */}
       <div
-        className="mx-2 rounded-2xl overflow-hidden shadow-2xl"
+        className="mx-2 overflow-hidden shadow-2xl"
         style={{
           background: getBackground(),
           borderRadius: `${design.cornerRadius}px`,
         }}
       >
-        {/* Header */}
-        <div className="p-4 flex justify-between items-start">
-          <div>
-            {design.showBusinessName && (
-              <div className="text-sm font-semibold" style={{ color: design.textColor }}>
-                {businessName}
-              </div>
-            )}
-            <div className="text-xs mt-0.5 opacity-70" style={{ color: design.textColor }}>
-              {passContent.programName}
-            </div>
-          </div>
+        {/* Header — Logo + Business Name */}
+        <div className="px-5 pt-5 pb-3 flex items-center gap-3">
           {logoUrl && (
-            <div className="w-12 h-12 rounded-lg overflow-hidden bg-white/10 flex items-center justify-center">
+            <div className="w-11 h-11 rounded-full overflow-hidden bg-white/10 flex items-center justify-center flex-shrink-0">
               <Image
                 src={logoUrl}
                 alt="Logo"
-                width={48}
-                height={48}
+                width={44}
+                height={44}
                 unoptimized={shouldBypassImageOptimization(logoUrl)}
-                className="object-contain"
+                className="object-cover"
               />
             </div>
           )}
-        </div>
-
-        {/* Main Content */}
-        <div className="px-4 pb-4">
-          {/* Points Display */}
-          <div className="text-center py-6">
-            <div className="text-5xl font-bold" style={{ color: design.textColor }}>
-              {points}
-            </div>
-            <div className="text-sm mt-1 opacity-70" style={{ color: design.textColor }}>
-              {passContent.pointsLabel}
-            </div>
-          </div>
-
-          {/* Customer Info */}
-          {customerName && (
-            <div className="flex justify-between items-center py-3 border-t border-white/10">
-              <div>
-                <div className="text-xs opacity-60" style={{ color: design.textColor }}>
-                  {passContent.secondaryLabel || "Member"}
-                </div>
-                <div className="text-sm font-medium" style={{ color: design.textColor }}>
-                  {customerName}
-                </div>
-              </div>
-              {passContent.secondaryValue && (
-                <div className="text-right">
-                  <div className="text-xs opacity-60" style={{ color: design.textColor }}>
-                    Status
-                  </div>
-                  <div className="text-sm font-medium" style={{ color: design.textColor }}>
-                    {passContent.secondaryValue}
-                  </div>
-                </div>
-              )}
+          {design.showBusinessName && (
+            <div className="text-[15px] font-semibold" style={{ color: design.textColor }}>
+              {businessName}
             </div>
           )}
         </div>
 
+        {/* Primary Field — Customer Name */}
+        <div className="px-5 pt-2 pb-1">
+          {customerName && (
+            <>
+              <div className="text-[28px] font-bold leading-tight" style={{ color: design.textColor }}>
+                {customerName}
+              </div>
+              <div className="text-[14px] mt-1 opacity-70" style={{ color: design.textColor }}>
+                {passContent.headerLabel || "Customer"}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Secondary Fields — Points + Status */}
+        <div className="px-5 py-4 flex justify-between items-end">
+          <div>
+            <div className="text-[10px] uppercase tracking-wider opacity-60" style={{ color: design.textColor }}>
+              {passContent.pointsLabel}
+            </div>
+            <div className="text-[22px] font-bold leading-tight mt-0.5" style={{ color: design.textColor }}>
+              {points}
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] uppercase tracking-wider opacity-60" style={{ color: design.textColor }}>
+              {passContent.secondaryLabel || "Status"}
+            </div>
+            <div className="text-[22px] font-bold leading-tight mt-0.5" style={{ color: design.textColor }}>
+              {passContent.secondaryValue || "ACTIVE"}
+            </div>
+          </div>
+        </div>
+
         {/* Barcode */}
-        <div className="bg-white p-4 flex flex-col items-center">
+        <div className="bg-white p-5 flex flex-col items-center">
           {barcode.format === "qr" ? (
             <div className="w-32 h-32 bg-gray-100 rounded flex items-center justify-center">
               <div className="grid grid-cols-5 gap-0.5">
@@ -964,18 +956,18 @@ function IOSPassPreview({
               </div>
             </div>
           ) : (
-            <div className="h-16 w-48 bg-gray-100 flex items-center justify-center">
-              <div className="flex gap-px h-12">
-                {[...Array(40)].map((_, i) => (
+            <div className="h-16 w-52 flex items-center justify-center">
+              <div className="flex gap-px h-14">
+                {[...Array(45)].map((_, i) => (
                   <div
                     key={i}
-                    className={`h-full ${i % 3 === 0 ? "bg-black w-0.5" : "bg-black w-1"}`}
+                    className={`h-full ${i % 3 === 0 ? "bg-black w-0.5" : "bg-black w-[1.5px]"}`}
                   />
                 ))}
               </div>
             </div>
           )}
-          <div className="mt-2 text-xs text-gray-600 font-mono">{memberId}</div>
+          <div className="mt-2 text-[12px] text-gray-600 font-mono tracking-wide">{memberId}</div>
         </div>
       </div>
 
@@ -1035,16 +1027,16 @@ function AndroidPassPreview({
       {/* Pass Card */}
       <div className="px-3 pb-4 bg-white dark:bg-gray-900">
         <div
-          className="rounded-2xl overflow-hidden shadow-lg"
+          className="overflow-hidden shadow-lg"
           style={{
             background: getBackground(),
             borderRadius: `${design.cornerRadius}px`,
           }}
         >
-          {/* Header Row */}
-          <div className="p-4 flex items-center gap-3">
+          {/* Header — Logo + Business Name */}
+          <div className="px-5 pt-5 pb-3 flex items-center gap-3">
             {logoUrl && (
-              <div className="w-10 h-10 rounded-full overflow-hidden bg-white flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
                 <Image
                   src={logoUrl}
                   alt="Logo"
@@ -1055,42 +1047,49 @@ function AndroidPassPreview({
                 />
               </div>
             )}
-            <div className="flex-1">
-              {design.showBusinessName && (
-                <div className="text-sm font-medium" style={{ color: design.textColor }}>
-                  {businessName}
-                </div>
-              )}
-              <div className="text-xs opacity-70" style={{ color: design.textColor }}>
-                {passContent.programName}
-              </div>
-            </div>
-          </div>
-
-          {/* Points Section */}
-          <div className="px-4 py-6 flex justify-between items-center">
-            <div>
-              <div className="text-xs opacity-60" style={{ color: design.textColor }}>
-                {passContent.pointsLabel}
-              </div>
-              <div className="text-4xl font-bold" style={{ color: design.textColor }}>
-                {points}
-              </div>
-            </div>
-            {customerName && (
-              <div className="text-right">
-                <div className="text-xs opacity-60" style={{ color: design.textColor }}>
-                  {passContent.secondaryLabel || "Member"}
-                </div>
-                <div className="text-sm font-medium" style={{ color: design.textColor }}>
-                  {customerName}
-                </div>
+            {design.showBusinessName && (
+              <div className="text-[15px] font-semibold" style={{ color: design.textColor }}>
+                {businessName}
               </div>
             )}
           </div>
 
+          {/* Primary Field — Customer Name */}
+          <div className="px-5 pt-2 pb-1">
+            {customerName && (
+              <>
+                <div className="text-[26px] font-bold leading-tight" style={{ color: design.textColor }}>
+                  {customerName}
+                </div>
+                <div className="text-[14px] mt-1 opacity-70" style={{ color: design.textColor }}>
+                  {passContent.headerLabel || "Customer"}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Secondary Fields — Points + Status */}
+          <div className="px-5 py-4 flex justify-between items-end">
+            <div>
+              <div className="text-[10px] uppercase tracking-wider opacity-60" style={{ color: design.textColor }}>
+                {passContent.pointsLabel}
+              </div>
+              <div className="text-[22px] font-bold leading-tight mt-0.5" style={{ color: design.textColor }}>
+                {points}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-wider opacity-60" style={{ color: design.textColor }}>
+                {passContent.secondaryLabel || "Status"}
+              </div>
+              <div className="text-[22px] font-bold leading-tight mt-0.5" style={{ color: design.textColor }}>
+                {passContent.secondaryValue || "ACTIVE"}
+              </div>
+            </div>
+          </div>
+
           {/* Barcode Section */}
-          <div className="bg-white p-4">
+          <div className="bg-white p-5">
             <div className="flex flex-col items-center">
               {barcode.format === "qr" ? (
                 <div className="w-28 h-28 bg-gray-100 rounded flex items-center justify-center">
@@ -1104,18 +1103,18 @@ function AndroidPassPreview({
                   </div>
                 </div>
               ) : (
-                <div className="h-14 w-44 bg-gray-100 flex items-center justify-center">
-                  <div className="flex gap-px h-10">
-                    {[...Array(35)].map((_, i) => (
+                <div className="h-14 w-48 flex items-center justify-center">
+                  <div className="flex gap-px h-12">
+                    {[...Array(40)].map((_, i) => (
                       <div
                         key={i}
-                        className={`h-full ${i % 3 === 0 ? "bg-black w-0.5" : "bg-black w-1"}`}
+                        className={`h-full ${i % 3 === 0 ? "bg-black w-0.5" : "bg-black w-[1.5px]"}`}
                       />
                     ))}
                   </div>
                 </div>
               )}
-              <div className="mt-2 text-xs text-gray-600 font-mono">{memberId}</div>
+              <div className="mt-2 text-[12px] text-gray-600 font-mono tracking-wide">{memberId}</div>
             </div>
           </div>
         </div>

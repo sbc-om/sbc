@@ -158,7 +158,7 @@ export default async function LoyaltyCardPublicPage({
           </div>
         )}
 
-        <CardQrClient locale={locale as Locale} customerId={card.customerId} />
+        <CardQrClient locale={locale as Locale} phone={(customer?.phone ?? "").replace(/^\+/, "")} />
 
         {messages.length ? (
           <div className={"mt-8 rounded-2xl border border-(--surface-border) bg-(--surface) p-5 " + (ar ? "text-right" : "text-left")}

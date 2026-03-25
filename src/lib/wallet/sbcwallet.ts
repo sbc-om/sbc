@@ -58,7 +58,7 @@ function hexToRgbCss(hex: string): string | null {
 
 function resolveBarcodeMessage(template: string | undefined, vars: Record<string, string>): string {
   const raw = String(template ?? "").trim();
-  if (!raw) return vars.memberId || vars.customerId || vars.cardId;
+  if (!raw) return vars.phone || vars.memberId || vars.customerId || vars.cardId;
   return raw.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, k: string) => vars[k] ?? "").trim() || raw;
 }
 
@@ -415,12 +415,13 @@ async function prepareLoyaltyCardData(input: {
   const programId = `loyalty-${card.userId}`;
   const design = settings.cardDesign;
   const memberId = customer.memberId;
+  const phoneStripped = customer.phone ? String(customer.phone).replace(/^\+/, "") : "";
   
   const barcodeMessage = resolveBarcodeMessage(settings.walletBarcodeMessage, {
     memberId,
     customerId: customer.id,
     cardId: card.id,
-    phone: customer.phone ? String(customer.phone) : "",
+    phone: phoneStripped,
   });
   
   const googleBarcodeType = settings.walletBarcodeFormat === "code128" ? "CODE_128" : "QR_CODE";
@@ -940,11 +941,12 @@ export async function getSbcwalletApplePkpassForLoyaltyCard(input: {
   const appleLabel = design?.secondaryColor ? hexToRgbCss(design.secondaryColor) : null;
 
   const memberId = customer.memberId;
+  const phoneStripped = customer.phone ? String(customer.phone).replace(/^\+/, "") : "";
   const barcodeMessage = resolveBarcodeMessage(settings.walletBarcodeMessage, {
     memberId,
     customerId: customer.id,
     cardId: card.id,
-    phone: customer.phone ? String(customer.phone) : "",
+    phone: phoneStripped,
   });
 
   const appleBarcodeFormat = settings.walletBarcodeFormat === "code128" ? "PKBarcodeFormatCode128" : "PKBarcodeFormatQR";
@@ -973,7 +975,7 @@ export async function getSbcwalletApplePkpassForLoyaltyCard(input: {
       format: appleBarcodeFormat,
       message: barcodeMessage,
       messageEncoding: "iso-8859-1",
-      altText: memberId,
+      altText: phoneStripped || memberId,
     }],
     locations: profile?.location
       ? [{ latitude: profile.location.lat, longitude: profile.location.lng }]
@@ -993,7 +995,7 @@ export async function getSbcwalletApplePkpassForLoyaltyCard(input: {
         { key: "status", label: "Status", value: "ACTIVE" },
       ],
       backFields: [
-        { key: "memberId", label: "Member ID", value: memberId },
+        { key: "phone", label: "Phone", value: phoneStripped },
         { key: "parentId", label: "Program ID", value: programId },
       ],
     },

@@ -145,10 +145,7 @@ export default async function LoyaltyManageCustomerDetailPage({
 
           <div className="mt-6 rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
             <div className="text-xs text-(--muted-foreground)">{ar ? "الهاتف" : "Phone"}</div>
-            <div className="mt-1 font-mono text-sm" dir="ltr">{customer.phone ?? "—"}</div>
-
-            <div className="mt-4 text-xs text-(--muted-foreground)">{ar ? "الكود" : "Code"}</div>
-            <div className="mt-1 font-mono text-sm" dir="ltr">{customer.cardId}</div>
+            <div className="mt-1 font-mono text-sm" dir="ltr">{customer.phone ? customer.phone.replace(/^\+/, "") : "—"}</div>
           </div>
         </div>
 

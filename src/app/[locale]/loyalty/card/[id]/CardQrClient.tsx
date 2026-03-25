@@ -10,10 +10,10 @@ import { cn } from "@/lib/cn";
 
 export function CardQrClient({
   locale,
-  customerId,
+  phone,
 }: {
   locale: Locale;
-  customerId: string;
+  phone: string;
 }) {
   const rtl = localeDir(locale) === "rtl";
   const ar = locale === "ar";
@@ -26,10 +26,8 @@ export function CardQrClient({
 
     async function gen() {
       try {
-        const origin = window.location.origin;
-        const url = `${origin}/${locale}/loyalty/manage/customers/${customerId}`;
         const qrMod = await import("qrcode");
-        const qrData = await qrMod.toDataURL(url, {
+        const qrData = await qrMod.toDataURL(phone, {
           margin: 1,
           width: 320,
           errorCorrectionLevel: "M",
@@ -39,7 +37,7 @@ export function CardQrClient({
         // Generate barcode
         const barcodeMod = await import("jsbarcode");
         const canvas = document.createElement("canvas");
-        barcodeMod.default(canvas, customerId, {
+        barcodeMod.default(canvas, phone, {
           format: "CODE128",
           width: 2,
           height: 80,
@@ -60,13 +58,13 @@ export function CardQrClient({
     return () => {
       cancelled = true;
     };
-  }, [customerId, locale]);
+  }, [phone, locale]);
 
   function downloadQr() {
     if (!qrDataUrl) return;
     const a = document.createElement("a");
     a.href = qrDataUrl;
-    a.download = `loyalty-customer-${customerId}.png`;
+    a.download = `loyalty-customer-${phone}.png`;
     document.body.appendChild(a);
     a.click();
     a.remove();

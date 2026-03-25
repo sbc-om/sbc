@@ -90,6 +90,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             cardId: card.id,
             memberId: card.memberId,
             customerName: customer.fullName,
+            phone: customer.phone ? String(customer.phone) : undefined,
             points: card.points,
             template,
             profile,

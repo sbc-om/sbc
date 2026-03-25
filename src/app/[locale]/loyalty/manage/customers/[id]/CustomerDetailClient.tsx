@@ -35,16 +35,19 @@ export function CustomerDetailClient({
 
     async function gen() {
       try {
+        const phoneVal = (customer.phone ?? "").replace(/^\+/, "");
         const origin = window.location.origin;
-        const lookupUrl = `${origin}/${locale}/loyalty/manage/customers/${customer.id}`;
         const walletUrl = `${origin}/${locale}/loyalty/card/${customer.cardId}?joined=1`;
         const mod = await import("qrcode");
-        const lookupData = await mod.toDataURL(lookupUrl, {
-          margin: 1,
-          width: 360,
-          errorCorrectionLevel: "M",
-        });
-        if (!cancelled) setLookupQrDataUrl(lookupData);
+
+        if (phoneVal) {
+          const lookupData = await mod.toDataURL(phoneVal, {
+            margin: 1,
+            width: 360,
+            errorCorrectionLevel: "M",
+          });
+          if (!cancelled) setLookupQrDataUrl(lookupData);
+        }
 
         const walletData = await mod.toDataURL(walletUrl, {
           margin: 1,
@@ -64,7 +67,7 @@ export function CustomerDetailClient({
     return () => {
       cancelled = true;
     };
-  }, [customer.id, customer.cardId, locale]);
+  }, [customer.id, customer.cardId, customer.phone, locale]);
 
   function downloadLookupQr() {
     if (!lookupQrDataUrl) return;
@@ -160,14 +163,10 @@ export function CustomerDetailClient({
         </div>
       </div>
 
-      <div className={cn("mt-4 grid gap-3 sm:grid-cols-2", rtl ? "text-right" : "text-left")}>
+      <div className={cn("mt-4", rtl ? "text-right" : "text-left")}>
         <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
           <div className="text-xs text-(--muted-foreground)">{ar ? "الهاتف" : "Phone"}</div>
-          <div className="mt-1 font-mono text-sm" dir="ltr">{customer.phone ?? "—"}</div>
-        </div>
-        <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4">
-          <div className="text-xs text-(--muted-foreground)">{ar ? "الكود" : "Code"}</div>
-          <div className="mt-1 font-mono text-sm" dir="ltr">{customer.cardId}</div>
+          <div className="mt-1 font-mono text-sm" dir="ltr">{customer.phone ? customer.phone.replace(/^\+/, "") : "—"}</div>
         </div>
       </div>
     </div>

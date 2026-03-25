@@ -67,7 +67,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
     // Generate a sample/preview pass with test data
     const sampleCardId = `preview-${template.id}-${Date.now()}`;
-    const sampleMemberId = "SBC-SAMPLE-12345";
+    const sampleMemberId = "96891234567";
     const sampleCustomerName = "Sample Customer";
     const samplePoints = 125;
 
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       cardId: sampleCardId,
       memberId: sampleMemberId,
       customerName: sampleCustomerName,
-      phone: "+1234567890",
+      phone: "96891234567",
       points: samplePoints,
       template,
       profile,

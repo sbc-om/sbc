@@ -176,7 +176,7 @@ function normalizeHexColor(input?: string): string | undefined {
 
 function resolveBarcodeMessage(template: string | undefined, vars: Record<string, string>): string {
   const raw = String(template ?? "").trim();
-  if (!raw) return vars.memberId || vars.customerId || vars.cardId;
+  if (!raw) return vars.phone || vars.memberId || vars.customerId || vars.cardId;
   return raw.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_m, k: string) => vars[k] ?? "").trim() || raw;
 }
 
@@ -218,6 +218,7 @@ export async function generateGoogleWalletSaveUrl(input: {
   cardId: string;
   memberId: string;
   customerName: string;
+  phone?: string;
   points: number;
   template: LoyaltyCardTemplate;
   profile?: LoyaltyProfile | null;
@@ -232,7 +233,7 @@ export async function generateGoogleWalletSaveUrl(input: {
     memberId,
     customerId: cardId,
     cardId,
-    phone: "",
+    phone: (input.phone ?? "").replace(/^\+/, ""),
   });
 
   const googleBarcodeType = template.barcode.format === "code128" ? "CODE_128" 
@@ -352,11 +353,12 @@ export async function generateApplePassFromTemplate(input: {
   const businessId = `biz-${uniqueId}`;
   
   // Resolve barcode message
+  const phoneStripped = (phone ?? "").replace(/^\+/, "");
   const barcodeMessage = resolveBarcodeMessage(template.barcode.messageTemplate, {
     memberId,
     customerId: cardId,
     cardId,
-    phone: phone ?? "",
+    phone: phoneStripped,
   });
   
   // Map barcode format for Apple
@@ -394,8 +396,8 @@ export async function generateApplePassFromTemplate(input: {
       message: barcodeMessage,
       messageEncoding: "iso-8859-1",
       altText: template.barcode.altTextTemplate 
-        ? resolveBarcodeMessage(template.barcode.altTextTemplate, { memberId, customerId: cardId, cardId, phone: phone ?? "" })
-        : memberId,
+        ? resolveBarcodeMessage(template.barcode.altTextTemplate, { memberId, customerId: cardId, cardId, phone: phoneStripped })
+        : phoneStripped || memberId,
     }],
   };
   

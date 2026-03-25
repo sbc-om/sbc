@@ -57,8 +57,8 @@ const DEFAULT_PASS: PassContent = {
 
 const DEFAULT_BARCODE: BarcodeConfig = {
   format: "qr",
-  messageTemplate: "{{memberId}}",
-  altTextTemplate: "{{memberId}}",
+  messageTemplate: "{{phone}}",
+  altTextTemplate: "{{phone}}",
 };
 
 const DEFAULT_SUPPORT: Support = {};
@@ -135,7 +135,7 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
     (async () => {
       try {
         const QRCode = (await import("qrcode")).default;
-        const url = await QRCode.toDataURL(barcode.messageTemplate || "SBC-LOYALTY", { width: 200, margin: 1 });
+        const url = await QRCode.toDataURL(barcode.messageTemplate || "96891234567", { width: 200, margin: 1 });
         if (!canceled) setQrDataUrl(url);
       } catch { if (!canceled) setQrDataUrl(null); }
     })();
@@ -216,7 +216,7 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
   /* ---- sample data ---- */
   const samplePoints = 12;
   const sampleCustomer = ar ? "محمد أحمد" : "John Smith";
-  const sampleMemberId = barcode.messageTemplate?.includes("{{") ? "SBC-XY7-48201" : (barcode.messageTemplate || "SBC-XY7-48201");
+  const sampleMemberId = barcode.messageTemplate?.includes("{{") ? "96891234567" : (barcode.messageTemplate || "96891234567");
 
   /* ---- section renderer ---- */
   const Section = ({ id, icon, label, children }: { id: string; icon: React.ReactNode; label: string; children: React.ReactNode }) => {
@@ -382,8 +382,8 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
           </div>
           <div>
             <label className="block text-xs text-(--muted-foreground) mb-1.5">{ar ? "قالب الرسالة" : "Message Template"}</label>
-            <input type="text" value={barcode.messageTemplate ?? ""} onChange={(e) => setBarcode((b) => ({ ...b, messageTemplate: e.target.value }))} placeholder="{{memberId}}" className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm font-mono" />
-            <p className="text-xs text-(--muted-foreground) mt-1">{ar ? "متغيرات: {{memberId}}, {{customerId}}, {{cardId}}, {{phone}}" : "Variables: {{memberId}}, {{customerId}}, {{cardId}}, {{phone}}"}</p>
+            <input type="text" value={barcode.messageTemplate ?? ""} onChange={(e) => setBarcode((b) => ({ ...b, messageTemplate: e.target.value }))} placeholder="{{phone}}" className="w-full h-9 px-3 rounded-lg border border-(--surface-border) bg-(--surface) text-sm font-mono" />
+            <p className="text-xs text-(--muted-foreground) mt-1">{ar ? "متغيرات: {{phone}}, {{memberId}}, {{customerId}}, {{cardId}}" : "Variables: {{phone}}, {{memberId}}, {{customerId}}, {{cardId}}"}</p>
           </div>
           {/* Live barcode preview */}
           <div className="rounded-xl border border-(--surface-border) bg-white p-3 flex items-center justify-center overflow-hidden">
@@ -630,64 +630,41 @@ function IOSPreview({ design, passContent, businessName, logoUrl, points, custom
           {/* Pass Card */}
           <div className="p-4 bg-white">
             <div className="relative overflow-hidden shadow-xl" style={{ background: getBackground(design), borderRadius: `${design.cornerRadius}px`, color: design.textColor }}>
-              {/* Header */}
-              <div className="px-5 pt-5 pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    {logoUrl && (
-                      <div className="relative w-[44px] h-[44px] rounded-[10px] overflow-hidden flex-shrink-0" style={{ background: `${design.textColor}15` }}>
-                        <Image src={logoUrl} alt={businessName} fill unoptimized={shouldBypassImageOptimization(logoUrl)} className="object-cover" />
-                      </div>
-                    )}
-                    {design.showBusinessName && (
-                      <div>
-                        <div className="text-[17px] font-semibold tracking-tight leading-tight">{businessName}</div>
-                        <div className="text-[13px] opacity-70 mt-0.5">{passContent.programName}</div>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[11px] uppercase tracking-wider opacity-60">{passContent.pointsLabel}</div>
-                    <div className="text-[28px] font-bold leading-none mt-0.5 tabular-nums">{points}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Main Points */}
-              <div className="px-5 py-6 text-center">
-                <div className="text-[11px] uppercase tracking-widest opacity-50 mb-2">{ar ? "رصيد النقاط" : "POINTS BALANCE"}</div>
-                <div className="text-[72px] font-black leading-none tabular-nums">{points}</div>
-                <div className="text-[13px] uppercase tracking-wider opacity-60 mt-2">{passContent.pointsLabel}</div>
-              </div>
-
-              {/* Progress */}
-              <div className="mx-5 mb-3">
-                <div className="flex items-center justify-between text-[11px] uppercase tracking-wider opacity-50 mb-2">
-                  <span>{ar ? "التقدم" : "PROGRESS"}</span>
-                  <span>{Math.min(points, 10)}/10</span>
-                </div>
-                <div className="h-[6px] rounded-full overflow-hidden" style={{ background: `${design.textColor}20` }}>
-                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min((points / 10) * 100, 100)}%`, background: design.textColor }} />
-                </div>
-              </div>
-
-              {/* Member Info */}
-              {customerName && (
-                <div className="mx-5 mb-4 px-4 py-3 rounded-xl" style={{ background: `${design.textColor}10` }}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider opacity-50">{passContent.secondaryLabel || (ar ? "العضو" : "MEMBER")}</div>
-                      <div className="text-[15px] font-semibold mt-0.5">{customerName}</div>
+              {/* Header — Logo + Business Name */}
+              <div className="px-5 pt-5 pb-3">
+                <div className="flex items-center gap-3">
+                  {logoUrl && (
+                    <div className="relative w-[44px] h-[44px] rounded-full overflow-hidden flex-shrink-0" style={{ background: `${design.textColor}15` }}>
+                      <Image src={logoUrl} alt={businessName} fill unoptimized={shouldBypassImageOptimization(logoUrl)} className="object-cover" />
                     </div>
-                    {passContent.secondaryValue && (
-                      <div className="text-right">
-                        <div className="text-[10px] uppercase tracking-wider opacity-50">{ar ? "الحالة" : "STATUS"}</div>
-                        <div className="text-[15px] font-semibold mt-0.5">{passContent.secondaryValue}</div>
-                      </div>
-                    )}
+                  )}
+                  {design.showBusinessName && (
+                    <div className="text-[17px] font-semibold tracking-tight">{businessName}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Primary Field — Customer Name */}
+              {customerName && (
+                <div className="px-5 pt-2 pb-1">
+                  <div className="text-[28px] font-bold leading-tight">{customerName}</div>
+                  <div className="text-[14px] mt-1" style={{ color: design.secondaryColor, opacity: 0.85 }}>
+                    {passContent.headerLabel || (ar ? "عميل" : "Customer")}
                   </div>
                 </div>
               )}
+
+              {/* Secondary Fields — Points + Status */}
+              <div className="px-5 py-4 flex justify-between items-end">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider opacity-60">{passContent.pointsLabel}</div>
+                  <div className="text-[24px] font-bold leading-tight mt-0.5 tabular-nums">{points}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] uppercase tracking-wider opacity-60">{passContent.secondaryLabel || (ar ? "الحالة" : "STATUS")}</div>
+                  <div className="text-[24px] font-bold leading-tight mt-0.5">{passContent.secondaryValue || "ACTIVE"}</div>
+                </div>
+              </div>
 
               {/* Barcode */}
               <div className="bg-white mx-4 mb-4 rounded-xl overflow-hidden">
@@ -739,61 +716,40 @@ function AndroidPreview({ design, passContent, businessName, logoUrl, points, cu
           {/* Card container */}
           <div className="p-4 bg-gray-100 min-h-[480px]">
             <div className="relative overflow-hidden shadow-lg" style={{ background: getBackground(design), borderRadius: `${design.cornerRadius}px`, color: design.textColor }}>
-              {/* Header */}
-              <div className="px-5 pt-5 pb-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    {logoUrl && (
-                      <div className="relative w-[48px] h-[48px] rounded-[12px] overflow-hidden flex-shrink-0" style={{ background: `${design.textColor}15` }}>
-                        <Image src={logoUrl} alt={businessName} fill unoptimized={shouldBypassImageOptimization(logoUrl)} className="object-cover" />
-                      </div>
-                    )}
-                    {design.showBusinessName && (
-                      <div>
-                        <div className="text-[16px] font-semibold">{businessName}</div>
-                        <div className="text-[13px] opacity-60 mt-0.5">{passContent.programName}</div>
-                      </div>
-                    )}
-                  </div>
-                  <button className="p-2 rounded-full" style={{ background: `${design.textColor}15` }}>
-                    <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" /></svg>
-                  </button>
+              {/* Header — Logo + Business Name */}
+              <div className="px-5 pt-5 pb-3">
+                <div className="flex items-center gap-3">
+                  {logoUrl && (
+                    <div className="relative w-[48px] h-[48px] rounded-full overflow-hidden flex-shrink-0" style={{ background: `${design.textColor}15` }}>
+                      <Image src={logoUrl} alt={businessName} fill unoptimized={shouldBypassImageOptimization(logoUrl)} className="object-cover" />
+                    </div>
+                  )}
+                  {design.showBusinessName && (
+                    <div className="text-[16px] font-semibold">{businessName}</div>
+                  )}
                 </div>
               </div>
 
-              {/* Points */}
-              <div className="px-5 pb-5">
-                <div className="py-8 text-center">
-                  <div className="text-[64px] font-black leading-none tabular-nums">{points}</div>
-                  <div className="text-[14px] uppercase tracking-wider opacity-60 mt-2">{passContent.pointsLabel}</div>
-                </div>
-
-                {/* Progress segments */}
-                <div className="py-4 border-t border-b" style={{ borderColor: `${design.textColor}20` }}>
-                  <div className="flex items-center justify-between text-[12px] opacity-60 mb-3">
-                    <span>{ar ? "التقدم نحو المكافأة" : "Progress to reward"}</span>
-                    <span>{Math.min(points, 10)}/10</span>
-                  </div>
-                  <div className="flex gap-2">
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <div key={i} className="flex-1 h-[8px] rounded-full transition-all duration-300" style={{ background: i < Math.min(points, 10) ? design.textColor : `${design.textColor}25` }} />
-                    ))}
+              {/* Primary Field — Customer Name */}
+              {customerName && (
+                <div className="px-5 pt-2 pb-1">
+                  <div className="text-[26px] font-bold leading-tight">{customerName}</div>
+                  <div className="text-[14px] mt-1" style={{ color: design.secondaryColor, opacity: 0.85 }}>
+                    {passContent.headerLabel || (ar ? "عميل" : "Customer")}
                   </div>
                 </div>
+              )}
 
-                {/* Member info */}
-                {customerName && (
-                  <div className="pt-4 flex items-center justify-between">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-wider opacity-50">{passContent.secondaryLabel || (ar ? "العضو" : "Member")}</div>
-                      <div className="text-[15px] font-semibold mt-1">{customerName}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[11px] uppercase tracking-wider opacity-50">{ar ? "المستوى" : "Tier"}</div>
-                      <div className="text-[15px] font-semibold mt-1">{passContent.secondaryValue || (points >= 10 ? (ar ? "ذهبي" : "Gold") : (ar ? "فضي" : "Silver"))}</div>
-                    </div>
-                  </div>
-                )}
+              {/* Secondary Fields — Points + Status */}
+              <div className="px-5 py-4 flex justify-between items-end">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider opacity-60">{passContent.pointsLabel}</div>
+                  <div className="text-[24px] font-bold leading-tight mt-0.5 tabular-nums">{points}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] uppercase tracking-wider opacity-60">{passContent.secondaryLabel || (ar ? "الحالة" : "STATUS")}</div>
+                  <div className="text-[24px] font-bold leading-tight mt-0.5">{passContent.secondaryValue || "ACTIVE"}</div>
+                </div>
               </div>
 
               {/* Barcode */}
@@ -803,12 +759,6 @@ function AndroidPreview({ design, passContent, businessName, logoUrl, points, cu
                   <div className="mt-2 text-[12px] text-gray-500 font-mono">{memberId}</div>
                 </div>
               </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="mt-4 flex gap-3">
-              <button className="flex-1 h-[44px] rounded-full bg-white border border-gray-200 text-gray-700 text-[14px] font-medium shadow-sm">{ar ? "التفاصيل" : "Details"}</button>
-              <button className="flex-1 h-[44px] rounded-full bg-white border border-gray-200 text-gray-700 text-[14px] font-medium shadow-sm">{ar ? "مشاركة" : "Share"}</button>
             </div>
           </div>
         </div>

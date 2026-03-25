@@ -89,7 +89,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
       status: 200,
       headers: {
         "Content-Type": "application/vnd.apple.pkpass",
-        "Content-Disposition": `attachment; filename="${card.memberId}.pkpass"`,
+        "Content-Disposition": `attachment; filename="${customer.phone || card.id}.pkpass"`,
         "Content-Length": String(passBuffer.length),
         "Cache-Control": "no-store",
       },

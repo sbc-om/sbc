@@ -53,7 +53,7 @@ const defaultWalletContent: WalletContent = {
   walletSupportPhone: "",
   walletAddress: "",
   walletBarcodeFormat: "qr",
-  walletBarcodeMessage: "SBC-LOYALTY-000123",
+  walletBarcodeMessage: "96891234567",
   walletNotificationTitle: "Loyalty update",
   walletNotificationBody: "Your loyalty points balance has been updated.",
 };
@@ -700,7 +700,7 @@ export function LoyaltyCardDesigner({
                   )
                 ) : (
                   <Barcode
-                    value={(wallet.walletBarcodeMessage || "SBC-LOYALTY-000123").slice(0, 80)}
+                    value={(wallet.walletBarcodeMessage || "96891234567").slice(0, 80)}
                     format="CODE128"
                     width={2}
                     height={70}
@@ -870,7 +870,7 @@ export function LoyaltyCardDesigner({
   );
 }
 
-// iOS Wallet Pass Preview - Styled like real Apple Wallet passes
+// iOS Wallet Pass Preview - Matches real Apple Wallet store card layout
 function IOSWalletPreview({
   design,
   businessName,
@@ -942,115 +942,64 @@ function IOSWalletPreview({
                 color: design.textColor,
               }}
             >
-              {/* Header Strip */}
-              <div className="px-5 pt-5 pb-4">
-                <div className="flex items-start justify-between">
-                  {/* Logo & Business Name */}
-                  <div className="flex items-center gap-3">
-                    {logoUrl && (
-                      <div 
-                        className="relative w-[44px] h-[44px] rounded-[10px] overflow-hidden flex-shrink-0"
-                        style={{ background: `${design.textColor}15` }}
-                      >
-                        <Image
-                          src={logoUrl}
-                          alt={businessName}
-                          fill
-                          unoptimized={shouldBypassImageOptimization(logoUrl)}
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    {design.showBusinessName && (
-                      <div>
-                        <div className="text-[17px] font-semibold tracking-tight leading-tight">
-                          {businessName}
-                        </div>
-                        <div className="text-[13px] opacity-70 mt-0.5">
-                          {ar ? "بطاقة ولاء" : "Loyalty Card"}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Points Badge (Top Right) */}
-                  <div className="text-right">
-                    <div className="text-[11px] uppercase tracking-wider opacity-60">
-                      {ar ? "النقاط" : "POINTS"}
+              {/* Header — Logo + Business Name */}
+              <div className="px-5 pt-5 pb-3">
+                <div className="flex items-center gap-3">
+                  {logoUrl && (
+                    <div 
+                      className="relative w-[44px] h-[44px] rounded-full overflow-hidden flex-shrink-0"
+                      style={{ background: `${design.textColor}15` }}
+                    >
+                      <Image
+                        src={logoUrl}
+                        alt={businessName}
+                        fill
+                        unoptimized={shouldBypassImageOptimization(logoUrl)}
+                        className="object-cover"
+                      />
                     </div>
-                    <div className="text-[28px] font-bold leading-none mt-0.5 tabular-nums">
-                      {points}
+                  )}
+                  {design.showBusinessName && (
+                    <div className="text-[17px] font-semibold tracking-tight">
+                      {businessName}
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
-              {/* Main Content - Points Display */}
-              <div className="px-5 py-6">
-                <div className="text-center">
-                  <div className="text-[11px] uppercase tracking-widest opacity-50 mb-2">
-                    {ar ? "رصيد النقاط" : "POINTS BALANCE"}
+              {/* Primary Field — Customer Name */}
+              <div className="px-5 pt-2 pb-1">
+                {design.showCustomerName && (
+                  <>
+                    <div className="text-[28px] font-bold leading-tight">
+                      {customerName}
+                    </div>
+                    <div className="text-[14px] mt-1 opacity-70">
+                      {ar ? "عميل" : "Customer"}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Secondary Fields — Points + Status */}
+              <div className="px-5 py-4 flex justify-between items-end">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider opacity-60">
+                    {ar ? "النقاط" : "POINTS"}
                   </div>
-                  <div className="text-[72px] font-black leading-none tabular-nums">
+                  <div className="text-[22px] font-bold leading-tight mt-0.5 tabular-nums">
                     {points}
                   </div>
-                  <div className="text-[13px] uppercase tracking-wider opacity-60 mt-2">
-                    {ar ? "نقطة ولاء" : "LOYALTY POINTS"}
-                  </div>
                 </div>
-
-                {/* Progress Indicator */}
-                <div className="mt-6">
-                  <div className="flex items-center justify-between text-[11px] uppercase tracking-wider opacity-50 mb-2">
-                    <span>{ar ? "التقدم" : "PROGRESS"}</span>
-                    <span>{Math.min(points, 10)}/10</span>
+                <div className="text-right">
+                  <div className="text-[10px] uppercase tracking-wider opacity-60">
+                    {ar ? "الحالة" : "STATUS"}
                   </div>
-                  <div 
-                    className="h-[6px] rounded-full overflow-hidden"
-                    style={{ background: `${design.textColor}20` }}
-                  >
-                    <div 
-                      className="h-full rounded-full transition-all duration-700 ease-out"
-                      style={{ 
-                        width: `${Math.min((points / 10) * 100, 100)}%`,
-                        background: design.textColor,
-                      }}
-                    />
-                  </div>
-                  <div className="text-[11px] text-center opacity-50 mt-2">
-                    {points >= 10 
-                      ? (ar ? "🎉 حصلت على مكافأة!" : "🎉 You earned a reward!") 
-                      : (ar ? `${10 - Math.min(points, 10)} نقاط للمكافأة` : `${10 - Math.min(points, 10)} points to reward`)}
+                  <div className="text-[22px] font-bold leading-tight mt-0.5">
+                    ACTIVE
                   </div>
                 </div>
               </div>
-
-              {/* Member Info Strip */}
-              {design.showCustomerName && (
-                <div 
-                  className="mx-5 mb-4 px-4 py-3 rounded-xl"
-                  style={{ background: `${design.textColor}10` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider opacity-50">
-                        {ar ? "العضو" : "MEMBER"}
-                      </div>
-                      <div className="text-[15px] font-semibold mt-0.5">
-                        {customerName}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[10px] uppercase tracking-wider opacity-50">
-                        {ar ? "منذ" : "SINCE"}
-                      </div>
-                      <div className="text-[15px] font-semibold mt-0.5">
-                        2024
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Barcode Section */}
               <div className="bg-white mx-4 mb-4 rounded-xl overflow-hidden">
@@ -1065,7 +1014,7 @@ function IOSWalletPreview({
                     )
                   ) : (
                     <Barcode
-                      value={(wallet.walletBarcodeMessage || "SBC-LOYALTY-000123").slice(0, 80)}
+                      value={(wallet.walletBarcodeMessage || "96891234567").slice(0, 80)}
                       format="CODE128"
                       width={2}
                       height={50}
@@ -1074,7 +1023,7 @@ function IOSWalletPreview({
                     />
                   )}
                   <div className="mt-2 text-[12px] text-gray-500 font-mono tracking-wide">
-                    {wallet.walletBarcodeMessage || "SBC-LOYALTY-000123"}
+                    {wallet.walletBarcodeMessage || "96891234567"}
                   </div>
                 </div>
               </div>
@@ -1089,7 +1038,7 @@ function IOSWalletPreview({
   );
 }
 
-// Android Google Wallet Preview
+// Android Google Wallet Preview - Matches real Google Wallet layout
 function AndroidWalletPreview({
   design,
   businessName,
@@ -1157,7 +1106,7 @@ function AndroidWalletPreview({
           </div>
 
           {/* Card Container */}
-          <div className="p-4 bg-gray-100 min-h-[520px]">
+          <div className="p-4 bg-gray-100 min-h-[480px]">
             {/* Pass Card */}
             <div
               className="relative overflow-hidden shadow-lg"
@@ -1167,105 +1116,63 @@ function AndroidWalletPreview({
                 color: design.textColor,
               }}
             >
-              {/* Header */}
-              <div className="px-5 pt-5 pb-4">
-                <div className="flex items-start justify-between">
-                  {/* Logo & Name */}
-                  <div className="flex items-center gap-3">
-                    {logoUrl && (
-                      <div 
-                        className="relative w-[48px] h-[48px] rounded-[12px] overflow-hidden flex-shrink-0"
-                        style={{ background: `${design.textColor}15` }}
-                      >
-                        <Image
-                          src={logoUrl}
-                          alt={businessName}
-                          fill
-                          unoptimized={shouldBypassImageOptimization(logoUrl)}
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    {design.showBusinessName && (
-                      <div>
-                        <div className="text-[16px] font-semibold">
-                          {businessName}
-                        </div>
-                        <div className="text-[13px] opacity-60 mt-0.5">
-                          {ar ? "بطاقة ولاء" : "Loyalty Card"}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Menu */}
-                  <button 
-                    className="p-2 rounded-full"
-                    style={{ background: `${design.textColor}15` }}
-                  >
-                    <svg className="w-[20px] h-[20px]" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-                    </svg>
-                  </button>
+              {/* Header — Logo + Business Name */}
+              <div className="px-5 pt-5 pb-3">
+                <div className="flex items-center gap-3">
+                  {logoUrl && (
+                    <div 
+                      className="relative w-[48px] h-[48px] rounded-full overflow-hidden flex-shrink-0"
+                      style={{ background: `${design.textColor}15` }}
+                    >
+                      <Image
+                        src={logoUrl}
+                        alt={businessName}
+                        fill
+                        unoptimized={shouldBypassImageOptimization(logoUrl)}
+                        className="object-cover"
+                      />
+                    </div>
+                  )}
+                  {design.showBusinessName && (
+                    <div className="text-[16px] font-semibold">
+                      {businessName}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Points Display */}
-              <div className="px-5 pb-5">
-                <div className="py-8 text-center">
-                  <div className="text-[64px] font-black leading-none tabular-nums">
+              {/* Primary Field — Customer Name */}
+              <div className="px-5 pt-2 pb-1">
+                {design.showCustomerName && (
+                  <>
+                    <div className="text-[26px] font-bold leading-tight">
+                      {customerName}
+                    </div>
+                    <div className="text-[14px] mt-1 opacity-70">
+                      {ar ? "عميل" : "Customer"}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Secondary Fields — Points + Status */}
+              <div className="px-5 py-4 flex justify-between items-end">
+                <div>
+                  <div className="text-[10px] uppercase tracking-wider opacity-60">
+                    {ar ? "النقاط" : "POINTS"}
+                  </div>
+                  <div className="text-[22px] font-bold leading-tight mt-0.5 tabular-nums">
                     {points}
                   </div>
-                  <div className="text-[14px] uppercase tracking-wider opacity-60 mt-2">
-                    {ar ? "نقطة ولاء" : "Loyalty Points"}
+                </div>
+                <div className="text-right">
+                  <div className="text-[10px] uppercase tracking-wider opacity-60">
+                    {ar ? "الحالة" : "STATUS"}
+                  </div>
+                  <div className="text-[22px] font-bold leading-tight mt-0.5">
+                    ACTIVE
                   </div>
                 </div>
-
-                {/* Progress */}
-                <div 
-                  className="py-4 border-t border-b"
-                  style={{ borderColor: `${design.textColor}20` }}
-                >
-                  <div className="flex items-center justify-between text-[12px] opacity-60 mb-3">
-                    <span>{ar ? "التقدم نحو المكافأة" : "Progress to reward"}</span>
-                    <span>{Math.min(points, 10)}/10</span>
-                  </div>
-                  <div className="flex gap-2">
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <div
-                        key={i}
-                        className="flex-1 h-[8px] rounded-full transition-all duration-300"
-                        style={{
-                          background: i < Math.min(points, 10) 
-                            ? design.textColor 
-                            : `${design.textColor}25`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Member Info */}
-                {design.showCustomerName && (
-                  <div className="pt-4 flex items-center justify-between">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-wider opacity-50">
-                        {ar ? "العضو" : "Member"}
-                      </div>
-                      <div className="text-[15px] font-semibold mt-1">
-                        {customerName}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-[11px] uppercase tracking-wider opacity-50">
-                        {ar ? "المستوى" : "Tier"}
-                      </div>
-                      <div className="text-[15px] font-semibold mt-1">
-                        {points >= 10 ? (ar ? "ذهبي" : "Gold") : ar ? "فضي" : "Silver"}
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Barcode */}
@@ -1281,7 +1188,7 @@ function AndroidWalletPreview({
                     )
                   ) : (
                     <Barcode
-                      value={(wallet.walletBarcodeMessage || "SBC-LOYALTY-000123").slice(0, 80)}
+                      value={(wallet.walletBarcodeMessage || "96891234567").slice(0, 80)}
                       format="CODE128"
                       width={2}
                       height={45}
@@ -1290,20 +1197,10 @@ function AndroidWalletPreview({
                     />
                   )}
                   <div className="mt-2 text-[12px] text-gray-500 font-mono">
-                    {wallet.walletBarcodeMessage || "SBC-LOYALTY-000123"}
+                    {wallet.walletBarcodeMessage || "96891234567"}
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="mt-4 flex gap-3">
-              <button className="flex-1 h-[44px] rounded-full bg-white border border-gray-200 text-gray-700 text-[14px] font-medium shadow-sm">
-                {ar ? "التفاصيل" : "Details"}
-              </button>
-              <button className="flex-1 h-[44px] rounded-full bg-white border border-gray-200 text-gray-700 text-[14px] font-medium shadow-sm">
-                {ar ? "مشاركة" : "Share"}
-              </button>
             </div>
           </div>
         </div>

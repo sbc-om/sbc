@@ -602,7 +602,7 @@ export function StaffWorkspaceClient({
                   <div>
                     <div className="font-semibold">{customer.fullName}</div>
                     <div className="text-xs text-(--muted-foreground)" dir="ltr">
-                      {customer.phone || customer.memberId}
+                      {(customer.phone || "").replace(/^\+/, "") || customer.memberId}
                     </div>
                   </div>
                   <div className="text-right">
