@@ -127,7 +127,7 @@ export function CryptoListClient({
   );
 
   return (
-    <div className="sbc-card divide-y divide-(--surface-border) overflow-hidden rounded-2xl">
+    <div className="sbc-card divide-y divide-(--surface-border) dark:divide-slate-700 overflow-hidden rounded-2xl !border-0">
       {initialPairs.map((pair) => {
         const live = liveMap[pair.symbol];
         const change = live?.priceChangePercent ?? pair.priceChangePercent;

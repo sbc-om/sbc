@@ -115,10 +115,10 @@ export function FeedProfileHeader({ user, locale }: FeedProfileHeaderProps) {
           {locale === "ar" ? "تعديل الملف الشخصي" : "Edit Profile"}
         </Link>
         <Link
-          href={`/${locale}/businesses`}
+          href={`/${locale}/explore`}
           className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-center bg-(--muted-foreground)/10 hover:bg-(--muted-foreground)/20 transition-colors"
         >
-          {locale === "ar" ? "الأعمال" : "Businesses"}
+          {locale === "ar" ? "استكشف" : "Explore"}
         </Link>
       </div>
     </div>

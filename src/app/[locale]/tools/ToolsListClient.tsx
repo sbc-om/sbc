@@ -79,7 +79,7 @@ export function ToolsListClient({ locale }: { locale: Locale }) {
           <Link
             key={tool.key}
             href={tool.href}
-            className="sbc-card sbc-card--interactive flex flex-col rounded-2xl p-6 transition-all"
+            className="sbc-card sbc-card--interactive flex flex-col rounded-2xl p-6 transition-all !border-0"
           >
             <div className="mb-4 flex items-center gap-3">
               <span

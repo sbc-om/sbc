@@ -46,19 +46,19 @@ export default async function ContactPage({
         </div>
 
         {/* Description */}
-        <div className="mt-6 sbc-card rounded-2xl p-6">
+        <div className="mt-6 sbc-card rounded-2xl p-6 !border-0">
           <p className="text-sm leading-7 text-foreground">
             {dict.contact.description}
           </p>
         </div>
 
         {sent ? (
-          <div className="mt-4 sbc-card rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 text-sm text-emerald-700">
+          <div className="mt-4 sbc-card rounded-2xl bg-emerald-50/60 p-4 text-sm text-emerald-700 !border-0">
             {locale === "ar" ? "تم إرسال رسالتك بنجاح." : "Your message has been sent successfully."}
           </div>
         ) : null}
         {error ? (
-          <div className="mt-4 sbc-card rounded-2xl border border-rose-200 bg-rose-50/60 p-4 text-sm text-rose-700">
+          <div className="mt-4 sbc-card rounded-2xl bg-rose-50/60 p-4 text-sm text-rose-700 !border-0">
             {locale === "ar"
               ? "تعذر إرسال الرسالة. الرجاء التأكد من تعبئة الحقول بشكل صحيح."
               : "Could not send the message. Please check the fields and try again."}
@@ -68,7 +68,7 @@ export default async function ContactPage({
         {/* Main Content */}
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_400px]">
           {/* Contact Form */}
-          <div className="sbc-card rounded-2xl p-6 sm:p-8">
+          <div className="sbc-card rounded-2xl p-6 sm:p-8 !border-0">
             <h2 className="text-xl font-semibold tracking-tight mb-6">
               {dict.contact.formTitle}
             </h2>
@@ -166,7 +166,7 @@ export default async function ContactPage({
           {/* Contact Info Sidebar */}
           <aside className="space-y-6">
             {/* Contact Information */}
-            <div className="sbc-card rounded-2xl p-6">
+            <div className="sbc-card rounded-2xl p-6 !border-0">
               <h3 className="text-lg font-semibold tracking-tight mb-4">
                 {dict.contact.info}
               </h3>
@@ -269,7 +269,7 @@ export default async function ContactPage({
             </div>
 
             {/* Social Media */}
-            <div className="sbc-card rounded-2xl p-6">
+            <div className="sbc-card rounded-2xl p-6 !border-0">
               <h3 className="text-lg font-semibold tracking-tight mb-4">
                 {dict.contact.social}
               </h3>
@@ -309,7 +309,7 @@ export default async function ContactPage({
             </div>
 
             {/* Quick Links */}
-            <div className="sbc-card rounded-2xl p-6">
+            <div className="sbc-card rounded-2xl p-6 !border-0">
               <h3 className="text-lg font-semibold tracking-tight mb-4">
                 {locale === "ar" ? "روابط سريعة" : "Quick Links"}
               </h3>

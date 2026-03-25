@@ -38,7 +38,7 @@ export default async function AboutPage({
         </div>
 
         {/* Hero Section with Logo */}
-        <div className="mt-8 sbc-card rounded-2xl p-8 sm:p-12 text-center">
+        <div className="mt-8 sbc-card rounded-2xl p-8 sm:p-12 text-center !border-0">
           <div className="flex justify-center mb-6">
             <AboutLogoLottie className="h-28 w-28 sm:h-32 sm:w-32" />
           </div>
@@ -49,7 +49,7 @@ export default async function AboutPage({
 
         {/* Mission & Vision */}
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
-          <div className="sbc-card rounded-2xl p-6">
+          <div className="sbc-card rounded-2xl p-6 !border-0">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/10">
                 <svg
@@ -75,7 +75,7 @@ export default async function AboutPage({
             </p>
           </div>
 
-          <div className="sbc-card rounded-2xl p-6">
+          <div className="sbc-card rounded-2xl p-6 !border-0">
             <div className="flex items-center gap-3 mb-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-2/10">
                 <svg
@@ -114,7 +114,7 @@ export default async function AboutPage({
             {dict.about.features}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="sbc-card rounded-2xl p-5 text-center">
+            <div className="sbc-card rounded-2xl p-5 text-center !border-0">
               <div className="flex justify-center mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
                   <svg
@@ -138,7 +138,7 @@ export default async function AboutPage({
               </p>
             </div>
 
-            <div className="sbc-card rounded-2xl p-5 text-center">
+            <div className="sbc-card rounded-2xl p-5 text-center !border-0">
               <div className="flex justify-center mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-2/10">
                   <svg
@@ -162,7 +162,7 @@ export default async function AboutPage({
               </p>
             </div>
 
-            <div className="sbc-card rounded-2xl p-5 text-center">
+            <div className="sbc-card rounded-2xl p-5 text-center !border-0">
               <div className="flex justify-center mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
                   <svg
@@ -186,7 +186,7 @@ export default async function AboutPage({
               </p>
             </div>
 
-            <div className="sbc-card rounded-2xl p-5 text-center">
+            <div className="sbc-card rounded-2xl p-5 text-center !border-0">
               <div className="flex justify-center mb-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-2/10">
                   <svg
@@ -213,7 +213,7 @@ export default async function AboutPage({
         </div>
 
         {/* CTA */}
-        <div className="mt-8 sbc-card rounded-2xl p-8 text-center">
+        <div className="mt-8 sbc-card rounded-2xl p-8 text-center !border-0">
           <h3 className="text-xl font-semibold mb-4">
             {locale === "ar"
               ? "هل أنت مستعد للبدء؟"
@@ -244,7 +244,7 @@ export default async function AboutPage({
         <div className="mt-8 grid gap-4 sm:grid-cols-3">
           <Link
             href={`/${locale}/faq`}
-            className="sbc-card sbc-card--interactive rounded-2xl p-6 text-center group"
+            className="sbc-card sbc-card--interactive rounded-2xl p-6 text-center group !border-0"
           >
             <div className="flex justify-center mb-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 group-hover:bg-accent/20 transition-colors">
@@ -275,7 +275,7 @@ export default async function AboutPage({
 
           <Link
             href={`/${locale}/terms`}
-            className="sbc-card sbc-card--interactive rounded-2xl p-6 text-center group"
+            className="sbc-card sbc-card--interactive rounded-2xl p-6 text-center group !border-0"
           >
             <div className="flex justify-center mb-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent-2/10 group-hover:bg-accent-2/20 transition-colors">
@@ -306,7 +306,7 @@ export default async function AboutPage({
 
           <Link
             href={`/${locale}/rules`}
-            className="sbc-card sbc-card--interactive rounded-2xl p-6 text-center group"
+            className="sbc-card sbc-card--interactive rounded-2xl p-6 text-center group !border-0"
           >
             <div className="flex justify-center mb-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 group-hover:bg-accent/20 transition-colors">

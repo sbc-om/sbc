@@ -18,6 +18,7 @@ import { AppPage } from "@/components/AppPage";
 import { PublicPage } from "@/components/PublicPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { AddToCartButton } from "@/components/store/AddToCartButton";
+import { DashboardCard } from "@/components/DashboardCard";
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
@@ -73,7 +74,7 @@ export default async function StorePage({
   const detailsCtaClass =
     "h-10 w-full rounded-xl border border-(--surface-border) bg-(--background)/55 px-3 text-sm font-semibold text-foreground transition-colors hover:border-(--accent)/45 hover:bg-(--chip-bg)";
   const primaryCtaClass =
-    "h-10 w-full rounded-xl border border-transparent bg-linear-to-r from-accent to-accent-2 px-3 text-sm font-semibold text-(--accent-foreground) transition-[filter,opacity] hover:brightness-105";
+    "h-10 w-full rounded-xl border border-transparent bg-(--accent) px-3 text-sm font-semibold text-(--accent-foreground) transition-[filter,opacity] hover:brightness-110";
 
   return (
     <Wrapper>
@@ -169,6 +170,7 @@ export default async function StorePage({
                 iconClassName: "text-indigo-600 dark:text-indigo-300",
                 iconBgClassName: "bg-indigo-500/12",
                 borderClassName: "border-indigo-500/25 dark:border-indigo-400/25",
+                glowColor: "rgba(99,102,241,0.15)",
               },
               {
                 key: "loyalty" as const,
@@ -178,6 +180,7 @@ export default async function StorePage({
                 iconClassName: "text-emerald-600 dark:text-emerald-300",
                 iconBgClassName: "bg-emerald-500/12",
                 borderClassName: "border-emerald-500/25 dark:border-emerald-400/25",
+                glowColor: "rgba(16,185,129,0.14)",
               },
               {
                 key: "marketing" as const,
@@ -187,6 +190,7 @@ export default async function StorePage({
                 iconClassName: "text-fuchsia-600 dark:text-fuchsia-300",
                 iconBgClassName: "bg-fuchsia-500/12",
                 borderClassName: "border-fuchsia-500/25 dark:border-fuchsia-400/25",
+                glowColor: "rgba(217,70,239,0.14)",
               },
               {
                 key: "crm" as const,
@@ -196,6 +200,7 @@ export default async function StorePage({
                 iconClassName: "text-sky-600 dark:text-sky-300",
                 iconBgClassName: "bg-sky-500/12",
                 borderClassName: "border-sky-500/25 dark:border-sky-400/25",
+                glowColor: "rgba(14,165,233,0.14)",
               },
               {
                 key: "accounting" as const,
@@ -205,6 +210,7 @@ export default async function StorePage({
                 iconClassName: "text-lime-600 dark:text-lime-300",
                 iconBgClassName: "bg-lime-500/12",
                 borderClassName: "border-lime-500/25 dark:border-lime-400/25",
+                glowColor: "rgba(132,204,22,0.15)",
               },
               {
                 key: "online-classes" as const,
@@ -214,6 +220,7 @@ export default async function StorePage({
                 iconClassName: "text-teal-600 dark:text-teal-300",
                 iconBgClassName: "bg-teal-500/12",
                 borderClassName: "border-teal-500/25 dark:border-teal-400/25",
+                glowColor: "rgba(20,184,166,0.14)",
               },
               {
                 key: "sbcclaw" as const,
@@ -223,6 +230,7 @@ export default async function StorePage({
                 iconClassName: "text-rose-600 dark:text-rose-300",
                 iconBgClassName: "bg-rose-500/12",
                 borderClassName: "border-rose-500/25 dark:border-rose-400/25",
+                glowColor: "rgba(244,63,94,0.14)",
               },
               {
                 key: "website" as const,
@@ -232,6 +240,7 @@ export default async function StorePage({
                 iconClassName: "text-cyan-600 dark:text-cyan-300",
                 iconBgClassName: "bg-cyan-500/12",
                 borderClassName: "border-cyan-500/25 dark:border-cyan-400/25",
+                glowColor: "rgba(6,182,212,0.14)",
               },
               {
                 key: "email" as const,
@@ -241,6 +250,7 @@ export default async function StorePage({
                 iconClassName: "text-orange-600 dark:text-orange-300",
                 iconBgClassName: "bg-orange-500/12",
                 borderClassName: "border-orange-500/25 dark:border-orange-400/25",
+                glowColor: "rgba(249,115,22,0.14)",
               },
               {
                 key: "agent-builder" as const,
@@ -250,6 +260,7 @@ export default async function StorePage({
                 iconClassName: "text-violet-600 dark:text-violet-300",
                 iconBgClassName: "bg-violet-500/12",
                 borderClassName: "border-violet-500/25 dark:border-violet-400/25",
+                glowColor: "rgba(139,92,246,0.14)",
               },
             ] as const
           ).map((section) => {
@@ -278,12 +289,14 @@ export default async function StorePage({
                   {items.map((p) => {
                     const t = getStoreProductText(p, locale as Locale);
                     return (
-                      <article
+                      <DashboardCard
                         key={p.slug}
-                        className={
-                          "relative flex h-full flex-col overflow-hidden rounded-2xl border-2 bg-(--surface) p-6 backdrop-blur-sm transition-all duration-200 " +
-                          section.borderClassName
-                        }
+                        borderClassName={section.borderClassName}
+                        glowColor={section.glowColor}
+                        className="!rounded-2xl !border-2 !p-0"
+                      >
+                      <div
+                        className="relative flex h-full flex-col p-6"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
@@ -352,7 +365,8 @@ export default async function StorePage({
                               : "Note: real payments will be integrated later."}
                           </div>
                         </div>
-                      </article>
+                      </div>
+                      </DashboardCard>
                     );
                   })}
                 </div>

@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
+import { HiBell } from "react-icons/hi";
+
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -176,22 +178,40 @@ export function UserPushOptIn({ dir = "ltr" }: { dir?: "ltr" | "rtl" }) {
   }
 
   const containerDirClass = dir === "rtl" ? "text-right" : "text-left";
+  const actionButtonClass = "h-10 min-w-[170px] w-full sm:w-auto rounded-xl px-4 text-sm font-semibold";
 
   return (
-    <div className={cn("rounded-2xl bg-slate-200/65 p-5 dark:bg-slate-700/35", containerDirClass)} dir={dir}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold">{t.title}</div>
-          <div className="mt-1 text-xs text-(--muted-foreground)">{t.subtitle}</div>
+    <div className={cn(containerDirClass)} dir={dir}>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
+            <HiBell className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold">{t.title}</div>
+            <div className="mt-1 text-sm text-(--muted-foreground)">{t.subtitle}</div>
+          </div>
         </div>
         {state.kind === "idle" || state.kind === "busy" || state.kind === "error" ? (
           <div className="shrink-0">
             {state.subscribed ? (
-              <Button type="button" size="sm" variant="secondary" disabled={state.kind === "busy"} onClick={disable}>
+              <Button
+                type="button"
+                variant="secondary"
+                className={actionButtonClass}
+                disabled={state.kind === "busy"}
+                onClick={disable}
+              >
                 {t.disable}
               </Button>
             ) : (
-              <Button type="button" size="sm" variant="primary" disabled={state.kind === "busy"} onClick={enable}>
+              <Button
+                type="button"
+                variant="secondary"
+                className={actionButtonClass}
+                disabled={state.kind === "busy"}
+                onClick={enable}
+              >
                 {t.enable}
               </Button>
             )}

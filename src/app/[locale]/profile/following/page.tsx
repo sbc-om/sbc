@@ -52,7 +52,7 @@ export default async function ProfileFollowingPage({
       </div>
 
       {categories.length === 0 ? (
-        <div className="sbc-card rounded-2xl p-12 text-center">
+        <div className="sbc-card rounded-2xl p-12 text-center !border-0">
           <p className="text-(--muted-foreground)">{t.empty}</p>
         </div>
       ) : (
@@ -63,7 +63,7 @@ export default async function ProfileFollowingPage({
             <Link
               key={category.id}
               href={`/${locale}/categories/${category.slug}`}
-              className="sbc-card rounded-2xl p-4 flex flex-col items-center gap-3 hover:ring-2 hover:ring-accent/20 transition-all"
+              className="sbc-card rounded-2xl p-4 flex flex-col items-center gap-3 hover:ring-2 hover:ring-accent/20 transition-all !border-0"
             >
               <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center">
                 <CategoryIcon className="w-8 h-8 text-accent" />

@@ -33,7 +33,7 @@ export function CryptoTradingView({ symbol }: { symbol: string }) {
   }, [symbol, theme]);
 
   return (
-    <section className="sbc-card overflow-hidden rounded-2xl p-0">
+    <section className="sbc-card overflow-hidden rounded-2xl p-0 !border-0">
       <div className="h-[560px] w-full overflow-hidden">
         <iframe
           title={`TradingView ${symbol}`}

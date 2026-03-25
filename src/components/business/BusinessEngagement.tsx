@@ -171,10 +171,10 @@ export function BusinessEngagement({
         <button
           type="button"
           onClick={onToggleLike}
-          className={`group relative isolate inline-flex items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-sm shadow-sm transition-[background-color,border-color,color,box-shadow,transform] duration-200 motion-reduce:transition-none ${
+          className={`group relative isolate inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-sm shadow-sm transition-[background-color,color,box-shadow,transform] duration-200 motion-reduce:transition-none ${
             liked
-              ? "border-red-500/35 bg-red-500/10 text-red-500 hover:shadow-red-500/20"
-              : "border-(--surface-border) bg-(--chip-bg) text-(--muted-foreground) hover:text-foreground hover:shadow-[var(--shadow)]"
+              ? "bg-red-500/10 text-red-500 hover:shadow-red-500/20"
+              : "bg-(--chip-bg) text-(--muted-foreground) hover:text-foreground hover:shadow-[var(--shadow)]"
           }`}
           aria-label={liked ? t.liked : t.like}
         >
@@ -206,7 +206,7 @@ export function BusinessEngagement({
           placeholder={t.write}
           className="min-h-28 rounded-2xl border-(--surface-border) bg-(--background) focus:border-(--accent)"
         />
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-(--surface-border) bg-(--chip-bg) px-3 py-2.5">
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-(--chip-bg) px-3 py-2.5">
           <div className="text-xs text-(--muted-foreground)">{t.pendingHint}</div>
           <Button variant="primary" size="sm" disabled={!commentText.trim()} onClick={onPostComment} className="min-w-20">
             {t.post}

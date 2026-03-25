@@ -178,8 +178,8 @@ export function ChatSidebar({ locale }: ChatSidebarProps) {
   }, [activeSlug]);
 
   return (
-    <div className="h-full flex flex-col border-e border-(--surface-border) bg-(--surface/0.5)">
-      <div className="p-4 border-b border-(--surface-border)">
+    <div className="h-full flex flex-col border-e border-(--surface-border) bg-zinc-50/75 dark:bg-zinc-900/55">
+      <div className="p-4 border-b border-(--surface-border) bg-zinc-50/80 dark:bg-zinc-900/65">
         <h2 className="text-lg font-semibold tracking-tight">
           {locale === "ar" ? "الدردشات" : "Chats"}
         </h2>
@@ -240,8 +240,8 @@ export function ChatSidebar({ locale }: ChatSidebarProps) {
                   onClick={() => sidebarRef?.current?.close()}
                   className={`
                     flex items-center gap-3 px-4 py-3 border-b border-(--surface-border) 
-                    transition-colors hover:bg-(--surface)
-                    ${isActive ? "bg-(--surface) border-s-2 border-s-blue-500" : ""}
+                    transition-colors hover:bg-zinc-100/85 dark:hover:bg-zinc-800/70
+                    ${isActive ? "bg-zinc-100 dark:bg-zinc-800/80 border-s-2 border-s-blue-500" : ""}
                   `}
                 >
                   <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-(--chip-bg) flex items-center justify-center">

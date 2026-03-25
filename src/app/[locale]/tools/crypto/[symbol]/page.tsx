@@ -79,7 +79,7 @@ export default async function ToolsCryptoSymbolPage({
         <CryptoSymbolLivePanel locale={locale as Locale} initial={details} />
         <CryptoTradingView symbol={cleanSymbol} />
 
-        <section className="sbc-card rounded-2xl p-5 text-sm text-(--muted-foreground)">
+        <section className="sbc-card rounded-2xl p-5 text-sm text-(--muted-foreground) !border-0">
           <p>
             {locale === "ar"
               ? "ملاحظة: البيانات المعروضة مرجعية وتعليمية، وليست نصيحة استثمارية."

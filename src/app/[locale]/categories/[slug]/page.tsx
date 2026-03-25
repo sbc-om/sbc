@@ -88,7 +88,7 @@ export default async function CategoryDetailPage({
       </div>
 
       {/* Category Header */}
-      <div className="sbc-card rounded-2xl p-6 mb-6">
+      <div className="sbc-card rounded-2xl p-6 mb-6 !border-0">
         <div className="flex items-center gap-4">
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
             {renderCategoryIcon(category.iconId, "w-8 h-8 sm:w-10 sm:h-10 text-accent")}
@@ -112,7 +112,7 @@ export default async function CategoryDetailPage({
 
       {/* Businesses Grid */}
       {businesses.length === 0 ? (
-        <div className="sbc-card rounded-2xl p-12 text-center">
+        <div className="sbc-card rounded-2xl p-12 text-center !border-0">
           <p className="text-(--muted-foreground)">{t.noBusinesses}</p>
         </div>
       ) : (

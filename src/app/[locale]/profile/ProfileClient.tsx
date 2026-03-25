@@ -14,7 +14,9 @@ import {
   HiClock,
   HiXCircle,
   HiRefresh,
-  HiExternalLink
+  HiExternalLink,
+  HiCamera,
+  HiTrash
 } from "react-icons/hi";
 
 import { Button } from "@/components/ui/Button";
@@ -118,9 +120,7 @@ export function ProfileClient({
   const [usernameInput, setUsernameInput] = useState<string>(initial.username ?? "");
   const [usernameLoading, setUsernameLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
-  const [usernameSaving, setUsernameSaving] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
-  const [usernameSuccess, setUsernameSuccess] = useState(false);
 
   const [passkeySupported, setPasskeySupported] = useState(false);
   const [passkeyBusy, setPasskeyBusy] = useState(false);
@@ -208,37 +208,6 @@ export function ProfileClient({
     return () => clearTimeout(timeout);
   }, [usernameInput, username, ar]);
 
-  async function saveUsername() {
-    const trimmed = usernameInput.trim().toLowerCase();
-    if (!trimmed || trimmed.length < 3 || !usernameAvailable) return;
-
-    setUsernameSaving(true);
-    setUsernameError(null);
-    setUsernameSuccess(false);
-
-    try {
-      const res = await fetch("/api/users/username", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: trimmed }),
-      });
-      const data = await res.json();
-
-      if (data.ok) {
-        setUsername(trimmed);
-        setUsernameSuccess(true);
-        setTimeout(() => setUsernameSuccess(false), 3000);
-        router.refresh();
-      } else {
-        setUsernameError(data.error || (ar ? "فشل في الحفظ" : "Failed to save"));
-      }
-    } catch {
-      setUsernameError(ar ? "خطأ في الاتصال" : "Connection error");
-    } finally {
-      setUsernameSaving(false);
-    }
-  }
-
   const t = useMemo(() => {
     return {
       title: ar ? "الملف الشخصي" : "Profile",
@@ -277,8 +246,7 @@ export function ProfileClient({
       usernameDesc: ar 
         ? "اختر اسم مستخدم فريد للملف الشخصي والمحادثات."
         : "Choose a unique username for your profile and chats.",
-      usernameSave: ar ? "حفظ" : "Save",
-      usernameSaving: ar ? "جارٍ الحفظ..." : "Saving...",
+      usernameInvalid: ar ? "اسم المستخدم يجب أن يكون 3 أحرف على الأقل" : "Username must be at least 3 characters.",
       // Tabs
       tabProfile: ar ? "الملف الشخصي" : "Profile",
       tabOrders: ar ? "مشترياتي" : "My Orders",
@@ -303,8 +271,27 @@ export function ProfileClient({
   async function saveProfile() {
     setError(null);
     setSuccess(null);
+    setUsernameError(null);
     setBusy(true);
     try {
+      const trimmedUsername = usernameInput.trim().toLowerCase();
+      const usernameChanged = trimmedUsername !== username;
+
+      if (usernameChanged) {
+        if (trimmedUsername.length < 3) {
+          setUsernameError(t.usernameInvalid);
+          return;
+        }
+        if (!/^[a-z0-9_]+$/.test(trimmedUsername)) {
+          setUsernameError(ar ? "يمكن استخدام الأحرف الإنجليزية الصغيرة والأرقام و _ فقط" : "Only lowercase letters, numbers, and _ allowed");
+          return;
+        }
+        if (usernameAvailable === false) {
+          setUsernameError(ar ? "اسم المستخدم مستخدم بالفعل" : "Username is already taken");
+          return;
+        }
+      }
+
       const res = await fetch("/api/users/me/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -326,6 +313,26 @@ export function ProfileClient({
       setPendingPhone(json.profile.pendingPhone ?? null);
       setApprovalStatus(json.profile.approvalStatus ?? "approved");
       setApprovalReason(json.profile.approvalReason ?? null);
+
+      if (usernameChanged) {
+        const usernameRes = await fetch("/api/users/username", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username: trimmedUsername }),
+        });
+        const usernameJson = (await usernameRes.json()) as
+          | { ok: true; username?: string }
+          | { ok: false; error: string };
+
+        if (!usernameRes.ok || !usernameJson.ok) {
+          throw new Error(usernameJson.ok ? "USERNAME_SAVE_FAILED" : usernameJson.error);
+        }
+
+        setUsername(trimmedUsername);
+        setUsernameInput(trimmedUsername);
+        setUsernameAvailable(null);
+      }
+
       setSuccess(t.updated);
       router.refresh();
     } catch (e) {
@@ -334,6 +341,8 @@ export function ProfileClient({
         setError(t.emailTaken);
       } else if (message === "PHONE_TAKEN") {
         setError(t.phoneTaken);
+      } else if (message === "USERNAME_TAKEN") {
+        setUsernameError(ar ? "اسم المستخدم مستخدم بالفعل" : "Username is already taken");
       } else {
         setError(t.saveFailed);
       }
@@ -486,52 +495,135 @@ export function ProfileClient({
   return (
     <div className="mt-6">
       {/* Profile Header Card */}
-      <div className="sbc-card rounded-2xl p-6 mb-6 !border-0">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-          {/* Avatar */}
-          <div className="shrink-0">
-            <div className="relative h-24 w-24 sm:h-28 sm:w-28">
-              {avatarSrc ? (
-                <Image
-                  src={avatarSrc}
-                  alt={initial.email}
-                  fill
-                  className="rounded-full object-cover ring-4 ring-accent/20"
-                  sizes="112px"
-                />
-              ) : (
-                <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-full bg-gradient-to-br from-accent to-blue-600 ring-4 ring-accent/20 flex items-center justify-center">
-                  <span className="text-4xl font-bold text-white">{initials(initial.email)}</span>
-                </div>
-              )}
+      <div className="sbc-card rounded-2xl p-4 sm:p-5 mb-4 sm:mb-6 !border-0">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="hidden"
+          onChange={(e) => onPickAvatar(e.target.files)}
+        />
+
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-center">
+          <div className="flex items-start gap-3 sm:gap-4">
+            {/* Avatar with quick actions */}
+            <div className="shrink-0">
+              <div className="group relative h-16 w-16 sm:h-20 sm:w-20">
+                {avatarSrc ? (
+                  <Image
+                    src={avatarSrc}
+                    alt={initial.email}
+                    fill
+                    className="rounded-full object-cover ring-2 ring-accent/25"
+                    sizes="80px"
+                  />
+                ) : (
+                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full bg-gradient-to-br from-accent to-blue-600 ring-2 ring-accent/25 flex items-center justify-center">
+                    <span className="text-2xl sm:text-3xl font-bold text-white">{initials(initial.email)}</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  disabled={busyAvatar}
+                  onClick={() => fileRef.current?.click()}
+                  className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-all duration-200 group-hover:bg-black/35 cursor-pointer"
+                >
+                  <HiCamera className="h-5 w-5 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 drop-shadow-lg" />
+                </button>
+
+                {busyAvatar ? (
+                  <div className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full border-2 border-(--surface) bg-accent">
+                    <svg className="h-2.5 w-2.5 animate-spin text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full border-2 border-(--surface) bg-accent text-white transition-transform hover:scale-110 cursor-pointer"
+                  >
+                    <HiCamera className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Identity block */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-xl font-bold truncate">{displayName}</h2>
+                {initial.role === "admin" && (
+                  <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm">
+                    Admin
+                  </span>
+                )}
+              </div>
+              {username ? <p className="text-xs sm:text-sm text-accent font-medium">@{username}</p> : null}
+              <p className="text-xs text-(--muted-foreground) truncate">{email}</p>
+              {bio ? <p className="mt-0.5 text-xs sm:text-sm text-(--muted-foreground) line-clamp-2">{bio}</p> : null}
+
+              <div className="mt-2 flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="secondary"
+                  disabled={busyAvatar}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  {busyAvatar ? t.uploading : t.changePhoto}
+                </Button>
+                {(avatarUrl || localPreview) && (
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="ghost"
+                    className="text-red-500 hover:text-red-600"
+                    disabled={busyAvatar}
+                    onClick={removeAvatar}
+                  >
+                    <HiTrash className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Info */}
-          <div className="flex-1 min-w-0 text-center sm:text-start">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <h2 className="text-xl font-bold">{displayName}</h2>
-              {initial.role === "admin" && (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-amber-500 to-orange-500 text-white">
-                  Admin
-                </span>
-              )}
+          {/* Stats */}
+          {initial.stats && (
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <Link
+                href={`/${locale}/profile/businesses`}
+                className="rounded-xl bg-(--surface)/60 p-2 sm:p-3 text-center transition-colors hover:bg-(--chip-bg)"
+              >
+                <div className="text-base sm:text-lg font-bold leading-none">{initial.stats.businesses}</div>
+                <div className="mt-1 text-[10px] sm:text-xs text-(--muted-foreground)">{t.businesses}</div>
+              </Link>
+              <Link
+                href={`/${locale}/profile/followers`}
+                className="rounded-xl bg-(--surface)/60 p-2 sm:p-3 text-center transition-colors hover:bg-(--chip-bg)"
+              >
+                <div className="text-base sm:text-lg font-bold leading-none">{initial.stats.followers}</div>
+                <div className="mt-1 text-[10px] sm:text-xs text-(--muted-foreground)">{t.followers}</div>
+              </Link>
+              <Link
+                href={`/${locale}/profile/following`}
+                className="rounded-xl bg-(--surface)/60 p-2 sm:p-3 text-center transition-colors hover:bg-(--chip-bg)"
+              >
+                <div className="text-base sm:text-lg font-bold leading-none">{initial.stats.followedCategories}</div>
+                <div className="mt-1 text-[10px] sm:text-xs text-(--muted-foreground)">{t.following}</div>
+              </Link>
             </div>
-            {username && (
-              <p className="mt-1 text-sm text-accent font-medium">@{username}</p>
-            )}
-            <p className="mt-1 text-sm text-(--muted-foreground)">{email}</p>
-            {bio && (
-              <p className="mt-2 text-sm text-(--muted-foreground) line-clamp-2">{bio}</p>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
       {/* Tabs + Content Card */}
-      <div className="sbc-card rounded-2xl p-6 !border-0">
+      <div className="sbc-card rounded-2xl p-4 sm:p-6 !border-0">
         {/* Tab Headers */}
-        <div className="flex gap-4 pb-2 mb-6" style={{ borderColor: "var(--surface-border)" }}>
+        <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 flex border-b border-(--surface-border) mb-4 sm:mb-6 overflow-x-auto scrollbar-none">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -539,14 +631,17 @@ export function ProfileClient({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-2 pb-2 text-sm font-semibold transition-colors ${
+                className={`relative flex shrink-0 items-center gap-1.5 sm:gap-2 px-3 sm:px-4 pb-3 text-xs sm:text-sm font-semibold transition-colors ${
                   isActive
-                    ? "text-accent border-b-2 border-accent"
+                    ? "text-accent"
                     : "text-(--muted-foreground) hover:text-foreground"
                 }`}
               >
                 <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span>{tab.label}</span>
+                {isActive && (
+                  <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-accent" />
+                )}
               </button>
             );
           })}
@@ -557,41 +652,15 @@ export function ProfileClient({
           <div className="grid gap-6">
             {/* Edit Profile */}
             <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
                 <HiUser className="h-5 w-5 text-accent" />
                 {ar ? "تحرير الملف الشخصي" : "Edit Profile"}
             </h3>
-            
-            <div className="flex items-center gap-4 mb-6">
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                className="hidden"
-                onChange={(e) => onPickAvatar(e.target.files)}
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={busyAvatar}
-                onClick={() => fileRef.current?.click()}
-              >
-                {busyAvatar ? t.uploading : t.changePhoto}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={busyAvatar || (!avatarUrl && !localPreview)}
-                onClick={removeAvatar}
-              >
-                {t.removePhoto}
-              </Button>
-            </div>
 
-            <div className="grid gap-4">
-              <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 sm:gap-4">
+              <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t.fullName}</label>
+                  <label className="block text-sm font-medium mb-1.5 sm:mb-2">{t.fullName}</label>
                   <Input
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -599,7 +668,7 @@ export function ProfileClient({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t.displayName}</label>
+                  <label className="block text-sm font-medium mb-1.5 sm:mb-2">{t.displayName}</label>
                   <Input
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
@@ -608,9 +677,9 @@ export function ProfileClient({
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t.email}</label>
+                  <label className="block text-sm font-medium mb-1.5 sm:mb-2">{t.email}</label>
                   <Input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -619,13 +688,50 @@ export function ProfileClient({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t.phone}</label>
+                  <label className="block text-sm font-medium mb-1.5 sm:mb-2">{t.phone}</label>
                   <PhoneInput
                     value={phone}
                     onChange={setPhone}
                     autoComplete="tel"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1.5 sm:mb-2">{t.username}</label>
+                <p className="mb-2 text-xs sm:text-sm text-(--muted-foreground)">{t.usernameDesc}</p>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-(--muted-foreground)">@</span>
+                  <input
+                    type="text"
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                    placeholder={ar ? "اسم_المستخدم" : "your_username"}
+                    className="w-full rounded-xl border border-(--surface-border) bg-(--surface) px-3 py-2.5 pl-8 text-sm placeholder:text-(--muted-foreground) focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                    maxLength={30}
+                  />
+                  {usernameLoading && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <svg className="h-4 w-4 animate-spin text-(--muted-foreground)" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    </span>
+                  )}
+                  {!usernameLoading && usernameAvailable === true && usernameInput.trim().toLowerCase() !== username && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">✓</span>
+                  )}
+                  {!usernameLoading && usernameAvailable === false && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">✗</span>
+                  )}
+                </div>
+                {usernameError && <p className="mt-2 text-xs text-red-500">{usernameError}</p>}
+                {username && !usernameError && (
+                  <p className="mt-2 text-xs text-(--muted-foreground)">
+                    {ar ? "رابط ملفك الشخصي: " : "Your profile: "}
+                    <span className="font-mono text-accent">/{locale}/u/@{username}</span>
+                  </p>
+                )}
               </div>
 
               {approvalStatus === "pending" && approvalReason === "contact_update" && (
@@ -635,7 +741,7 @@ export function ProfileClient({
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-2">{t.bio}</label>
+                <label className="block text-sm font-medium mb-1.5 sm:mb-2">{t.bio}</label>
                 <Textarea
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
@@ -663,62 +769,12 @@ export function ProfileClient({
             </div>
           </div>
 
-          {/* Username */}
-          <div className="mt-6">
-            <h3 className="text-base font-semibold">{t.username}</h3>
-            <p className="mt-1 text-sm text-(--muted-foreground)">{t.usernameDesc}</p>
-            <div className="mt-4 space-y-3">
-              <div className="flex gap-3">
-                <div className="flex-1 relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-(--muted-foreground)">@</span>
-                  <input
-                    type="text"
-                    value={usernameInput}
-                    onChange={(e) => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                    placeholder={ar ? "اسم_المستخدم" : "your_username"}
-                    className="w-full rounded-xl border border-(--surface-border) bg-(--surface) px-3 py-2.5 pl-8 text-sm placeholder:text-(--muted-foreground) focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                    maxLength={30}
-                  />
-                  {usernameLoading && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <svg className="h-4 w-4 animate-spin text-(--muted-foreground)" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                    </span>
-                  )}
-                  {!usernameLoading && usernameAvailable === true && usernameInput !== username && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">✓</span>
-                  )}
-                  {!usernameLoading && usernameAvailable === false && (
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">✗</span>
-                  )}
-                </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  disabled={!usernameAvailable || usernameSaving || usernameInput === username}
-                  onClick={saveUsername}
-                >
-                  {usernameSaving ? t.usernameSaving : t.usernameSave}
-                </Button>
-              </div>
-              {usernameError && <p className="text-xs text-red-500">{usernameError}</p>}
-              {usernameSuccess && <p className="text-xs text-green-500">{ar ? "تم حفظ اسم المستخدم بنجاح!" : "Username saved!"}</p>}
-              {username && (
-                <p className="text-xs text-(--muted-foreground)">
-                  {ar ? "رابط ملفك الشخصي: " : "Your profile: "}
-                  <span className="font-mono text-accent">/{locale}/u/@{username}</span>
-                </p>
-              )}
-            </div>
-          </div>
         </div>
       )}
 
       {activeTab === "orders" && (
         <div>
-          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center gap-2">
             <HiShoppingBag className="h-5 w-5 text-accent" />
             {t.tabOrders}
           </h3>
@@ -749,48 +805,46 @@ export function ProfileClient({
                 return (
                   <div
                     key={order.id}
-                    className="rounded-xl bg-(--surface) p-4 transition-colors"
+                    className="rounded-xl bg-(--surface) p-3 sm:p-4 transition-colors"
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        <div className={`shrink-0 flex h-10 w-10 items-center justify-center rounded-full ${statusColors[order.status]}`}>
-                          <StatusIcon className="h-5 w-5" />
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-2.5 sm:gap-3 min-w-0">
+                        <div className={`shrink-0 flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full ${statusColors[order.status]}`}>
+                          <StatusIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm font-medium">{order.orderNumber}</span>
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[order.status]}`}>
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                            <span className="font-mono text-xs sm:text-sm font-medium">{order.orderNumber}</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${statusColors[order.status]}`}>
                               {statusLabel}
                             </span>
                           </div>
-                          <p className="mt-1 text-xs text-(--muted-foreground)">
+                          <p className="mt-0.5 text-[11px] sm:text-xs text-(--muted-foreground)">
                             {formatDate(order.createdAt)}
                           </p>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-4">
-                        <div className="text-end">
-                          <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
-                            {formatPrice(order.total)}
-                          </div>
-                          <div className="text-xs text-(--muted-foreground)">
-                            {order.items.length} {ar ? "منتج" : "item(s)"}
-                          </div>
+                      <div className="shrink-0 text-end">
+                        <div className="text-sm sm:text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatPrice(order.total)}
+                        </div>
+                        <div className="text-[10px] sm:text-xs text-(--muted-foreground)">
+                          {order.items.length} {ar ? "منتج" : "item(s)"}
                         </div>
                       </div>
                     </div>
 
                     {/* Order Items */}
-                    <div className="mt-4 pt-4">
-                      <div className="space-y-2">
+                    <div className="mt-3 pt-3 sm:mt-4 sm:pt-4 border-t border-(--surface-border)">
+                      <div className="space-y-1.5 sm:space-y-2">
                         {order.items.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-2">
-                              <span className="text-(--muted-foreground)">×{item.quantity}</span>
-                              <span>{item.productName}</span>
+                          <div key={item.id} className="flex items-center justify-between gap-2 text-xs sm:text-sm">
+                            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                              <span className="shrink-0 text-(--muted-foreground)">×{item.quantity}</span>
+                              <span className="truncate">{item.productName}</span>
                             </div>
-                            <span className="font-medium">{formatPrice(item.total)}</span>
+                            <span className="shrink-0 font-medium">{formatPrice(item.total)}</span>
                           </div>
                         ))}
                       </div>
@@ -812,18 +866,19 @@ export function ProfileClient({
 
           {/* Passkeys */}
           <div>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
                 <div className="shrink-0 flex h-10 w-10 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
                   <HiKey className="h-5 w-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-semibold">{t.passkeysTitle}</h3>
                   <p className="mt-1 text-sm text-(--muted-foreground)">{t.passkeysSubtitle}</p>
                 </div>
               </div>
               <Button
                 variant="secondary"
+                className="h-10 min-w-[170px] w-full sm:w-auto shrink-0 rounded-xl px-4 text-sm font-semibold"
                 onClick={createPasskey}
                 disabled={passkeyBusy}
               >

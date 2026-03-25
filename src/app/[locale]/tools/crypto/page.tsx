@@ -53,7 +53,7 @@ export default async function ToolsCryptoPage({
         </div>
 
         {pairs.length === 0 ? (
-          <div className="sbc-card rounded-2xl p-6 text-sm text-(--muted-foreground)">
+          <div className="sbc-card rounded-2xl p-6 text-sm text-(--muted-foreground) !border-0">
             {locale === "ar"
               ? "تعذر تحميل بيانات السوق حالياً."
               : "Unable to load market data right now."}

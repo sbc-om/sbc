@@ -71,8 +71,6 @@ export function AIBusinessCard({ business, locale }: AIBusinessCardProps) {
         className="relative rounded-2xl overflow-hidden backdrop-blur-xl shadow-lg transition-all duration-300 hover:shadow-xl h-full"
         style={{
           background: "rgba(var(--surface-rgb, 255, 255, 255), 0.8)",
-          border: "1px solid",
-          borderColor: "var(--surface-border)",
         }}
       >
         {/* Cover Image */}

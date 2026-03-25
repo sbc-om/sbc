@@ -775,7 +775,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <section className="relative overflow-hidden rounded-3xl border border-(--surface-border) bg-(--surface) px-5 py-6 shadow-[var(--shadow)] backdrop-blur sm:px-7 sm:py-8">
+      <section className="relative overflow-hidden rounded-3xl bg-(--surface) px-5 py-6 shadow-[var(--shadow)] backdrop-blur sm:px-7 sm:py-8">
         <div className="pointer-events-none absolute -top-24 -right-20 h-64 w-64 rounded-full bg-cyan-400/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
 
@@ -796,7 +796,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
-        <div className="sbc-card rounded-3xl p-4 sm:p-6">
+        <div className="sbc-card rounded-3xl p-4 sm:p-6 !border-0">
           <div className="-mx-1 pb-1 md:mx-0">
             <div className="flex flex-wrap gap-2 px-1 md:px-0">
               {TYPE_OPTIONS.map((option) => {
@@ -822,11 +822,11 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-(--surface-border) bg-(--background) p-4 sm:p-5">
+          <div className="mt-5 rounded-2xl bg-(--background) p-4 sm:p-5">
             {renderTypeSpecificForm()}
           </div>
 
-          <div className="mt-7 rounded-2xl border border-(--surface-border) bg-(--chip-bg) p-4">
+          <div className="mt-7 rounded-2xl bg-(--chip-bg) p-4">
             <h2 className="text-sm font-semibold">{ar ? "تنظیمات کیفیت" : "Quality Settings"}</h2>
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -930,15 +930,15 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
           </div>
         </div>
 
-        <div className="sbc-card rounded-3xl p-4 sm:p-5 xl:sticky xl:top-24 xl:h-fit">
+        <div className="sbc-card rounded-3xl p-4 sm:p-5 xl:sticky xl:top-24 xl:h-fit !border-0">
           <div className={rtl ? "text-right" : "text-left"}>
             <h2 className="text-base font-semibold">{ar ? "پیش‌نمایش" : "Preview"}</h2>
             <p className="mt-1 text-xs text-(--muted-foreground)">{availabilityText}</p>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-(--surface-border) p-4">
+          <div className="mt-4 rounded-2xl p-4">
             <div
-              className="mx-auto flex h-[17rem] w-full max-w-[18rem] items-center justify-center rounded-2xl border border-(--surface-border) bg-(--background) p-3 sm:h-72"
+              className="mx-auto flex h-[17rem] w-full max-w-[18rem] items-center justify-center rounded-2xl bg-(--background) p-3 sm:h-72"
               style={{
                 backgroundImage:
                   "linear-gradient(45deg, rgba(148,163,184,0.12) 25%, transparent 25%), linear-gradient(-45deg, rgba(148,163,184,0.12) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(148,163,184,0.12) 75%), linear-gradient(-45deg, transparent 75%, rgba(148,163,184,0.12) 75%)",
@@ -1020,7 +1020,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
           </div>
 
           {errorMessage ? (
-            <div className="mt-3 rounded-xl border border-red-400/35 bg-red-500/8 px-3 py-2 text-xs text-red-600 dark:text-red-300">
+            <div className="mt-3 rounded-xl bg-red-500/8 px-3 py-2 text-xs text-red-600 dark:text-red-300">
               {errorMessage}
             </div>
           ) : null}

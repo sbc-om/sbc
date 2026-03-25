@@ -120,7 +120,7 @@ export function CryptoSymbolLivePanel({
   const spread = live.askPrice - live.bidPrice;
 
   return (
-    <section className="sbc-card rounded-2xl p-5">
+    <section className="sbc-card rounded-2xl p-5 !border-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <CoinLogo asset={initial.baseAsset} size={40} />
@@ -169,7 +169,7 @@ export function CryptoSymbolLivePanel({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-(--surface-border) bg-(--surface) px-3 py-2">
+    <div className="rounded-xl bg-(--surface) px-3 py-2">
       <p className="text-xs text-(--muted-foreground)">{label}</p>
       <p className="mt-1 font-semibold">{value}</p>
     </div>

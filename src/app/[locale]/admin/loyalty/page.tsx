@@ -49,7 +49,7 @@ function StatCard({
   accent: string;
 }) {
   return (
-    <div className="sbc-card flex items-center gap-4 p-5">
+    <div className="sbc-card flex items-center gap-4 p-5 !border-0">
       <div
         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${accent}`}
       >
@@ -268,7 +268,7 @@ export default async function AdminLoyaltyPage({
       </div>
 
       {profiles.length === 0 ? (
-        <div className="sbc-card p-12 text-center">
+        <div className="sbc-card rounded-2xl p-12 text-center !border-0">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-(--muted-foreground)">
             {IconBuilding}
           </div>
@@ -284,7 +284,7 @@ export default async function AdminLoyaltyPage({
       ) : (
         <div className="grid gap-4">
           {enriched.map(({ profile, user, stats }, idx) => (
-            <div key={profile.userId} className="sbc-card overflow-hidden">
+            <div key={profile.userId} className="sbc-card overflow-hidden !border-0">
               <div className="p-6">
                 {/* ── Row 1: Business identity ──────────────────── */}
                 <div className="flex items-start gap-4">
@@ -344,13 +344,46 @@ export default async function AdminLoyaltyPage({
                     </div>
                   </div>
 
-                  {/* Rank badge */}
-                  <div className="shrink-0 hidden sm:block">
+                  {/* Rank + quick admin actions */}
+                  <div className="shrink-0 hidden sm:flex flex-col items-end gap-2">
                     <span className="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-semibold">
                       #{idx + 1}
                     </span>
+                    {profile.joinCode ? (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Link
+                          href={`/${locale}/loyalty/lookup/${profile.joinCode}`}
+                          className={buttonVariants({ variant: "secondary", size: "xs" })}
+                        >
+                          {ar ? "بوابة البحث" : "Lookup Portal"}
+                        </Link>
+                        <Link
+                          href={`/${locale}/loyalty/staff/${profile.joinCode}`}
+                          className={buttonVariants({ variant: "ghost", size: "xs" })}
+                        >
+                          {ar ? "بوابة الموظفين" : "Staff Workspace"}
+                        </Link>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
+
+                {profile.joinCode ? (
+                  <div className="mt-4 flex flex-wrap items-center gap-2 sm:hidden">
+                    <Link
+                      href={`/${locale}/loyalty/lookup/${profile.joinCode}`}
+                      className={buttonVariants({ variant: "secondary", size: "xs" })}
+                    >
+                      {ar ? "بوابة البحث" : "Lookup Portal"}
+                    </Link>
+                    <Link
+                      href={`/${locale}/loyalty/staff/${profile.joinCode}`}
+                      className={buttonVariants({ variant: "ghost", size: "xs" })}
+                    >
+                      {ar ? "بوابة الموظفين" : "Staff Workspace"}
+                    </Link>
+                  </div>
+                ) : null}
 
                 {/* ── Row 2: Stats grid ────────────────────────── */}
                 <div className="mt-5 grid grid-cols-3 sm:grid-cols-6 gap-3">

@@ -106,7 +106,7 @@ export function PdfToWordClient({ locale }: { locale: Locale }) {
 
       {/* Drop Zone */}
       <div
-        className={`sbc-card rounded-2xl p-8 transition-all ${
+        className={`sbc-card rounded-2xl p-8 transition-all !border-0 ${
           dragActive ? "ring-2 ring-accent ring-offset-2" : ""
         }`}
       >
@@ -124,7 +124,7 @@ export function PdfToWordClient({ locale }: { locale: Locale }) {
             input.onchange = () => handleFiles(input.files);
             input.click();
           }}
-          className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-(--surface-border) p-10 text-center transition-colors hover:border-accent/50 hover:bg-accent/5"
+          className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-xl p-10 text-center transition-colors hover:bg-accent/5"
         >
           <Upload className="h-10 w-10 text-(--muted-foreground)" />
           {file ? (
@@ -196,7 +196,7 @@ export function PdfToWordClient({ locale }: { locale: Locale }) {
       </div>
 
       {/* Info */}
-      <div className="mt-6 sbc-card rounded-2xl p-5">
+      <div className="mt-6 sbc-card rounded-2xl p-5 !border-0">
         <h2 className="mb-3 text-sm font-semibold text-foreground">
           {ar ? "ملاحظات" : "Notes"}
         </h2>
