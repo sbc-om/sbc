@@ -4,7 +4,7 @@ import Image from "next/image";
 
 import { AppPage } from "@/components/AppPage";
 import { requireAdmin } from "@/lib/auth/requireUser";
-import { countStoriesModerationQueue, listStoriesModerationQueue } from "@/lib/db/stories";
+import { countStoriesModerationQueue, listStoriesModerationQueue, type StoryOverlays } from "@/lib/db/stories";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
 import { moderateStoryAction } from "../actions";
@@ -36,6 +36,68 @@ function formatDate(iso: string, locale: Locale): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(iso));
+}
+
+const FILTER_STYLES: Record<string, string> = {
+  none: "",
+  grayscale: "grayscale(100%)",
+  sepia: "sepia(80%)",
+  warm: "saturate(1.3) sepia(20%) brightness(1.1)",
+  cool: "saturate(1.1) hue-rotate(10deg) brightness(1.05)",
+  vintage: "sepia(30%) contrast(1.1) brightness(0.95)",
+  dramatic: "contrast(1.4) saturate(1.2) brightness(0.9)",
+  fade: "contrast(0.9) brightness(1.1) saturate(0.8)",
+  vivid: "saturate(1.5) contrast(1.1)",
+};
+
+function buildFilterStyle(o: StoryOverlays): string {
+  const f = FILTER_STYLES[o.filter ?? "none"] || "";
+  return `${f} brightness(${o.brightness ?? 100}%) contrast(${o.contrast ?? 100}%) saturate(${o.saturation ?? 100}%)`.trim();
+}
+
+function StoryOverlayLayer({ overlays }: { overlays: StoryOverlays }) {
+  return (
+    <div className="absolute inset-0 pointer-events-none z-[5]">
+      {overlays.textOverlays?.map((t, i) => (
+        <div
+          key={`t-${i}`}
+          className="absolute"
+          style={{
+            left: `${t.x}%`,
+            top: `${t.y}%`,
+            transform: `translate(-50%, -50%) rotate(${t.rotation}deg) scale(${t.scale})`,
+          }}
+        >
+          <span
+            style={{
+              fontSize: `${t.fontSize}px`,
+              fontFamily: t.fontFamily,
+              fontWeight: t.fontWeight ?? 400,
+              color: t.color,
+              backgroundColor: t.backgroundColor,
+              textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {t.text}
+          </span>
+        </div>
+      ))}
+      {overlays.stickerOverlays?.map((s, i) => (
+        <div
+          key={`s-${i}`}
+          className="absolute text-3xl sm:text-5xl"
+          style={{
+            left: `${s.x}%`,
+            top: `${s.y}%`,
+            transform: `translate(-50%, -50%) rotate(${s.rotation}deg) scale(${s.scale})`,
+          }}
+        >
+          {s.emoji}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default async function AdminModerationStoriesPage({
@@ -153,12 +215,23 @@ export default async function AdminModerationStoriesPage({
               return (
                 <article key={item.id} className="sbc-card !border-0 rounded-2xl overflow-hidden">
                   {/* Media — edge-to-edge */}
-                  <div className="relative w-full aspect-[9/16] bg-(--surface)">
+                  <div className="relative w-full aspect-[9/16] bg-(--surface) overflow-hidden">
                     {item.mediaType === "video" ? (
-                      <video src={item.mediaUrl} className="h-full w-full object-cover object-top" controls />
+                      <video
+                        src={item.mediaUrl}
+                        className="h-full w-full object-cover object-top"
+                        style={item.overlays ? {
+                          filter: buildFilterStyle(item.overlays),
+                          transform: `scale(${item.overlays.imageScale ?? 1}) translate(${item.overlays.imagePosition?.x ?? 0}%, ${item.overlays.imagePosition?.y ?? 0}%)`,
+                        } : undefined}
+                        controls
+                      />
                     ) : (
                       <Image src={item.mediaUrl} alt={businessName} fill className="object-cover object-top" />
                     )}
+
+                    {/* Story overlays (text + stickers) */}
+                    {item.overlays && <StoryOverlayLayer overlays={item.overlays} />}
 
                     {/* Status badge overlay */}
                     <div className={`absolute top-2 start-2 rounded-lg px-2 py-1 text-[10px] font-semibold backdrop-blur-md ${moderationClass(item.moderationStatus)}`}>
