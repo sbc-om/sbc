@@ -26,9 +26,16 @@ function moderationLabel(status: "pending" | "approved" | "rejected", ar: boolea
 }
 
 function moderationClass(status: "pending" | "approved" | "rejected"): string {
-  if (status === "approved") return "border-emerald-300/40 bg-emerald-500/5 text-emerald-700";
-  if (status === "rejected") return "border-rose-300/40 bg-rose-500/5 text-rose-700";
-  return "border-amber-300/40 bg-amber-500/5 text-amber-700";
+  if (status === "approved") return "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300";
+  if (status === "rejected") return "bg-rose-500/15 text-rose-700 dark:text-rose-300";
+  return "bg-amber-500/15 text-amber-700 dark:text-amber-300";
+}
+
+function formatDate(iso: string, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-OM" : "en-OM", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(iso));
 }
 
 export default async function AdminModerationStoriesPage({
@@ -97,7 +104,7 @@ export default async function AdminModerationStoriesPage({
 
   return (
     <AppPage>
-      <div className="mb-6 flex items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{ar ? "مراجعة الستوري" : "Moderate Stories"}</h1>
         <Link href={`/${locale}/admin`} className="text-sm text-(--muted-foreground) hover:underline">
           {ar ? "العودة للوحة التحكم" : "Back to admin dashboard"}
@@ -113,10 +120,10 @@ export default async function AdminModerationStoriesPage({
             <Link
               key={filter.value}
               href={href}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
                 active
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-(--surface-border) text-(--muted-foreground) hover:bg-(--chip-bg)"
+                  ? "bg-accent/10 text-accent"
+                  : "text-(--muted-foreground) hover:bg-(--chip-bg)"
               }`}
             >
               <span>{filter.label}</span>
@@ -131,47 +138,89 @@ export default async function AdminModerationStoriesPage({
       </div>
 
       {filteredItems.length === 0 ? (
-        <div className="sbc-card rounded-2xl p-6 text-sm text-(--muted-foreground)">
+        <div className="sbc-card !border-0 rounded-2xl p-6 text-sm text-(--muted-foreground)">
           {ar ? "لا توجد عناصر في هذا الفلتر." : "No submissions for this filter."}
         </div>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {filteredItems.map((item) => {
               const approve = moderateStoryAction.bind(null, locale as Locale, item.id, "approved");
               const reject = moderateStoryAction.bind(null, locale as Locale, item.id, "rejected");
               const businessName = ar ? item.businessName.ar : item.businessName.en;
+              const localeValue = locale as Locale;
 
               return (
-                <article key={item.id} className="sbc-card rounded-2xl p-4">
-                  <div className="relative mb-3 w-full aspect-[9/16] overflow-hidden rounded-xl bg-(--surface)">
+                <article key={item.id} className="sbc-card !border-0 rounded-2xl overflow-hidden">
+                  {/* Media — edge-to-edge */}
+                  <div className="relative w-full aspect-[9/16] bg-(--surface)">
                     {item.mediaType === "video" ? (
                       <video src={item.mediaUrl} className="h-full w-full object-cover object-top" controls />
                     ) : (
                       <Image src={item.mediaUrl} alt={businessName} fill className="object-cover object-top" />
                     )}
+
+                    {/* Status badge overlay */}
+                    <div className={`absolute top-2 start-2 rounded-lg px-2 py-1 text-[10px] font-semibold backdrop-blur-md ${moderationClass(item.moderationStatus)}`}>
+                      {moderationLabel(item.moderationStatus, ar)}
+                    </div>
+
+                    {/* View count overlay */}
+                    {item.viewCount > 0 && (
+                      <div className="absolute top-2 end-2 flex items-center gap-1 rounded-lg bg-black/40 px-2 py-1 text-[10px] font-medium text-white backdrop-blur-md">
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        {item.viewCount}
+                      </div>
+                    )}
                   </div>
 
-                  <p className="text-xs text-(--muted-foreground)">
-                    {businessName} • @{item.businessUsername || "-"}
-                  </p>
-                  {item.caption ? <p className="mt-2 text-sm">{item.caption}</p> : null}
+                  {/* Content */}
+                  <div className="p-3 sm:p-4 space-y-2.5">
+                    {/* Business info */}
+                    <div className="flex items-center gap-2 min-w-0">
+                      {item.businessAvatar ? (
+                        <Image
+                          src={item.businessAvatar}
+                          alt={businessName}
+                          width={24}
+                          height={24}
+                          className="h-6 w-6 shrink-0 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-6 w-6 shrink-0 rounded-full bg-(--chip-bg)" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate text-xs font-semibold">{businessName}</p>
+                        <p className="truncate text-[10px] text-(--muted-foreground)">@{item.businessUsername || "-"}</p>
+                      </div>
+                    </div>
 
-                  <div className={`mt-2 inline-flex rounded-lg border px-2 py-1 text-xs ${moderationClass(item.moderationStatus)}`}>
-                    {moderationLabel(item.moderationStatus, ar)}
-                  </div>
+                    {/* Caption */}
+                    {item.caption ? (
+                      <p className="text-xs leading-relaxed line-clamp-2 text-(--muted-foreground)">{item.caption}</p>
+                    ) : null}
 
-                  <div className="mt-4 flex items-center gap-2">
-                    <form action={approve}>
-                      <button type="submit" className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
-                        {ar ? "قبول" : "Approve"}
-                      </button>
-                    </form>
-                    <form action={reject}>
-                      <button type="submit" className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700">
-                        {ar ? "رفض" : "Reject"}
-                      </button>
-                    </form>
+                    {/* Date */}
+                    <p className="text-[10px] text-(--muted-foreground)">
+                      {formatDate(item.createdAt, localeValue)}
+                    </p>
+
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <form action={approve} className="flex-1">
+                        <button type="submit" className="w-full rounded-lg bg-emerald-600 px-2 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">
+                          {ar ? "قبول" : "Approve"}
+                        </button>
+                      </form>
+                      <form action={reject} className="flex-1">
+                        <button type="submit" className="w-full rounded-lg bg-rose-600 px-2 py-1.5 text-xs font-semibold text-white hover:bg-rose-700">
+                          {ar ? "رفض" : "Reject"}
+                        </button>
+                      </form>
+                    </div>
                   </div>
                 </article>
               );
@@ -179,7 +228,7 @@ export default async function AdminModerationStoriesPage({
           </div>
 
           {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between rounded-xl border border-(--surface-border) bg-(--surface) px-4 py-3 text-sm">
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-(--surface) px-4 py-3 text-sm">
               <div className="text-(--muted-foreground)">
                 {ar
                   ? `عرض ${offset + 1}-${Math.min(offset + ITEMS_PER_PAGE, totalFiltered)} من ${totalFiltered}`
@@ -187,7 +236,7 @@ export default async function AdminModerationStoriesPage({
               </div>
               <div className="flex items-center gap-2">
                 {safePage > 1 ? (
-                  <Link href={buildModerationHref(currentFilter, safePage - 1)} className="rounded-lg border border-(--surface-border) px-3 py-1.5 font-medium hover:bg-(--chip-bg)">
+                  <Link href={buildModerationHref(currentFilter, safePage - 1)} className="rounded-lg bg-(--chip-bg) px-3 py-1.5 font-medium hover:opacity-80">
                     {ar ? "السابق" : "Previous"}
                   </Link>
                 ) : null}
@@ -195,7 +244,7 @@ export default async function AdminModerationStoriesPage({
                   {safePage} / {totalPages}
                 </span>
                 {safePage < totalPages ? (
-                  <Link href={buildModerationHref(currentFilter, safePage + 1)} className="rounded-lg border border-(--surface-border) px-3 py-1.5 font-medium hover:bg-(--chip-bg)">
+                  <Link href={buildModerationHref(currentFilter, safePage + 1)} className="rounded-lg bg-(--chip-bg) px-3 py-1.5 font-medium hover:opacity-80">
                     {ar ? "التالي" : "Next"}
                   </Link>
                 ) : null}

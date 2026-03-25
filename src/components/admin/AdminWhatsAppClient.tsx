@@ -142,7 +142,7 @@ export function AdminWhatsAppClient({
 
   if (!enabled) {
     return (
-      <div className="sbc-card p-6">
+      <div className="sbc-card !border-0 p-6">
         <div className="flex items-center gap-3 text-amber-600">
           <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -156,7 +156,7 @@ export function AdminWhatsAppClient({
   return (
     <div className="grid gap-6">
       {/* Compose Section */}
-      <div className="sbc-card p-6">
+      <div className="sbc-card !border-0 p-6">
         <h2 className="text-lg font-semibold mb-2">{t.title}</h2>
         <p className="text-sm text-(--muted-foreground) mb-4">{t.subtitle}</p>
 
@@ -230,7 +230,7 @@ export function AdminWhatsAppClient({
 
             {/* Image Preview */}
             {imageUrl && (
-              <div className="rounded-xl border border-(--surface-border) p-4">
+              <div className="rounded-xl p-4 bg-(--surface)">
                 <p className="text-sm font-medium mb-2">{t.preview}</p>
                 <div className="relative aspect-video max-w-sm rounded-lg overflow-hidden bg-(--surface)">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -278,19 +278,19 @@ export function AdminWhatsAppClient({
 
         {/* Status Messages */}
         {error && (
-          <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-600">
+          <div className="mt-4 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-600">
             {error}
           </div>
         )}
         {success && (
-          <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600">
+          <div className="mt-4 rounded-xl bg-emerald-500/10 px-4 py-3 text-sm text-emerald-600">
             {success}
           </div>
         )}
       </div>
 
       {/* Users List */}
-      <div className="sbc-card p-6">
+      <div className="sbc-card !border-0 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <h2 className="text-lg font-semibold">{t.usersTitle}</h2>
           <div className="flex items-center gap-2">
@@ -319,10 +319,10 @@ export function AdminWhatsAppClient({
             {filteredUsers.map((u) => (
               <label
                 key={u.userId}
-                className={`flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-colors ${
+                className={`flex items-center gap-3 rounded-xl p-3 cursor-pointer transition-colors ${
                   selected.has(u.userId)
-                    ? "border-green-500 bg-green-500/10"
-                    : "border-(--surface-border) hover:bg-(--surface)"
+                    ? "bg-green-500/10"
+                    : "hover:bg-(--surface)"
                 }`}
               >
                 <input

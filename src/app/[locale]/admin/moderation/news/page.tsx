@@ -26,9 +26,9 @@ function moderationLabel(status: "pending" | "approved" | "rejected", ar: boolea
 }
 
 function moderationClass(status: "pending" | "approved" | "rejected"): string {
-  if (status === "approved") return "border-emerald-300/40 bg-emerald-500/5 text-emerald-700";
-  if (status === "rejected") return "border-rose-300/40 bg-rose-500/5 text-rose-700";
-  return "border-amber-300/40 bg-amber-500/5 text-amber-700";
+  if (status === "approved") return "bg-emerald-500/5 text-emerald-700";
+  if (status === "rejected") return "bg-rose-500/5 text-rose-700";
+  return "bg-amber-500/5 text-amber-700";
 }
 
 function formatDate(iso: string, locale: Locale): string {
@@ -70,7 +70,7 @@ export default async function AdminModerationNewsPage({
 
   return (
     <AppPage>
-      <div className="mb-6 flex items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{ar ? "مراجعة أخبار الأنشطة" : "Moderate Business News"}</h1>
         <Link href={`/${locale}/admin`} className="text-sm text-(--muted-foreground) hover:underline">
           {ar ? "العودة للوحة التحكم" : "Back to admin dashboard"}
@@ -88,10 +88,10 @@ export default async function AdminModerationNewsPage({
             <Link
               key={filter.value}
               href={href}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold ${
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold ${
                 active
-                  ? "border-accent bg-accent/10 text-accent"
-                  : "border-(--surface-border) text-(--muted-foreground) hover:bg-(--chip-bg)"
+                  ? "bg-accent/10 text-accent"
+                  : "text-(--muted-foreground) hover:bg-(--chip-bg)"
               }`}
             >
               <span>{filter.label}</span>
@@ -106,7 +106,7 @@ export default async function AdminModerationNewsPage({
       </div>
 
       {filteredItems.length === 0 ? (
-        <div className="sbc-card rounded-2xl p-6 text-sm text-(--muted-foreground)">
+        <div className="sbc-card !border-0 rounded-2xl p-6 text-sm text-(--muted-foreground)">
           {ar ? "لا توجد عناصر في هذا الفلتر." : "No submissions for this filter."}
         </div>
       ) : (
@@ -119,7 +119,7 @@ export default async function AdminModerationNewsPage({
             const localeValue = locale as Locale;
 
             return (
-              <article key={item.id} className="sbc-card rounded-2xl p-5">
+              <article key={item.id} className="sbc-card !border-0 rounded-2xl p-5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-xs text-(--muted-foreground)">
@@ -145,7 +145,7 @@ export default async function AdminModerationNewsPage({
                 </div>
 
                 {item.imageUrl ? (
-                  <div className="relative mt-4 h-52 w-full overflow-hidden rounded-xl border border-(--surface-border)">
+                  <div className="relative mt-4 h-40 sm:h-52 w-full overflow-hidden rounded-xl">
                     <Image src={item.imageUrl} alt={title} fill className="object-cover" />
                   </div>
                 ) : null}
@@ -160,14 +160,14 @@ export default async function AdminModerationNewsPage({
                 ) : null}
 
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-(--surface-border) p-3">
+                  <div className="rounded-xl bg-(--chip-bg) p-3">
                     <p className="mb-2 text-xs font-semibold text-(--muted-foreground)">EN</p>
                     <h3 className="text-sm font-semibold">{item.title.en}</h3>
                     <div className="mt-2 text-sm leading-7">
                       <MarkdownRenderer content={item.content.en} />
                     </div>
                   </div>
-                  <div className="rounded-xl border border-(--surface-border) p-3">
+                  <div className="rounded-xl bg-(--chip-bg) p-3">
                     <p className="mb-2 text-xs font-semibold text-(--muted-foreground)">AR</p>
                     <h3 className="text-sm font-semibold">{item.title.ar}</h3>
                     <div className="mt-2 text-sm leading-7">
@@ -176,7 +176,7 @@ export default async function AdminModerationNewsPage({
                   </div>
                 </div>
 
-                <div className={`mt-3 rounded-xl border px-3 py-2 text-xs ${moderationClass(item.moderationStatus)}`}>
+                <div className={`mt-3 rounded-xl px-3 py-2 text-xs ${moderationClass(item.moderationStatus)}`}>
                   {ar ? "الحالة الحالية:" : "Current status:"} {moderationLabel(item.moderationStatus, ar)}
                 </div>
               </article>

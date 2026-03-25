@@ -79,7 +79,7 @@ export default async function AdminCategoriesPage({
 
   return (
     <AppPage>
-      <div className="flex items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
           <p className="mt-1 text-sm text-(--muted-foreground)">
@@ -98,7 +98,7 @@ export default async function AdminCategoriesPage({
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
+          <div className="mt-4 rounded-2xl bg-red-50 p-4 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-200">
           {locale === "ar" ? "خطأ: " : "Error: "}
           {error}
         </div>
@@ -106,7 +106,7 @@ export default async function AdminCategoriesPage({
 
       <div className="mt-8 space-y-8">
         {cats.length === 0 ? (
-          <div className="sbc-card rounded-2xl p-6 text-sm text-(--muted-foreground)">
+          <div className="sbc-card !border-0 rounded-2xl p-6 text-sm text-(--muted-foreground)">
             {locale === "ar" ? "لا توجد تصنيفات بعد." : "No categories yet."}
           </div>
         ) : null}
@@ -120,10 +120,10 @@ export default async function AdminCategoriesPage({
           return (
             <section key={`group:${parent.id}`} className="space-y-3">
               {/* Parent Category Header */}
-              <div className="sbc-card rounded-2xl p-5 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+              <div className="sbc-card !border-0 rounded-2xl p-5 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <div className="flex items-center gap-4 min-w-0">
                   {parent.image ? (
-                    <div className="relative h-14 w-14 shrink-0 rounded-xl overflow-hidden border border-(--surface-border)">
+                    <div className="relative h-14 w-14 shrink-0 rounded-xl overflow-hidden">
                       <Image
                         src={parent.image}
                         alt={locale === "ar" ? parent.name.ar : parent.name.en}
@@ -133,7 +133,7 @@ export default async function AdminCategoriesPage({
                       />
                     </div>
                   ) : (
-                    <div className={`h-14 w-14 shrink-0 rounded-xl border border-(--surface-border) flex items-center justify-center ${parentAccent.bg}`}>
+                    <div className={`h-14 w-14 shrink-0 rounded-xl flex items-center justify-center ${parentAccent.bg}`}>
                       <ParentIcon className={`h-8 w-8 ${parentAccent.fg}`} />
                     </div>
                   )}
@@ -184,11 +184,11 @@ export default async function AdminCategoriesPage({
                     return (
                       <div
                         key={`child-${parent.id}-${c.id}`}
-                        className="sbc-card rounded-2xl p-4 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                        className="sbc-card !border-0 rounded-2xl p-4 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           {c.image ? (
-                            <div className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden border border-(--surface-border)">
+                            <div className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden">
                               <Image
                                 src={c.image}
                                 alt={locale === "ar" ? c.name.ar : c.name.en}
@@ -198,7 +198,7 @@ export default async function AdminCategoriesPage({
                               />
                             </div>
                           ) : (
-                            <div className={`h-10 w-10 shrink-0 rounded-lg border border-(--surface-border) flex items-center justify-center ${accent.bg}`}>
+                            <div className={`h-10 w-10 shrink-0 rounded-lg flex items-center justify-center ${accent.bg}`}>
                               <Icon className={`h-5 w-5 ${accent.fg}`} />
                             </div>
                           )}
@@ -255,11 +255,11 @@ export default async function AdminCategoriesPage({
                 return (
                   <div
                     key={`orphan-${c.id}`}
-                    className="sbc-card rounded-2xl p-4 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                    className="sbc-card !border-0 rounded-2xl p-4 sm:flex sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       {c.image ? (
-                        <div className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden border border-(--surface-border)">
+                        <div className="relative h-10 w-10 shrink-0 rounded-lg overflow-hidden">
                           <Image
                             src={c.image}
                             alt={locale === "ar" ? c.name.ar : c.name.en}
@@ -269,7 +269,7 @@ export default async function AdminCategoriesPage({
                           />
                         </div>
                       ) : (
-                        <div className={`h-10 w-10 shrink-0 rounded-lg border border-(--surface-border) flex items-center justify-center ${accent.bg}`}>
+                        <div className={`h-10 w-10 shrink-0 rounded-lg flex items-center justify-center ${accent.bg}`}>
                           <Icon className={`h-5 w-5 ${accent.fg}`} />
                         </div>
                       )}

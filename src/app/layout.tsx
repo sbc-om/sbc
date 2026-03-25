@@ -8,6 +8,7 @@ import "./globals.css";
 import { defaultLocale, isLocale, localeDir } from "@/lib/i18n/locales";
 import { OverlayScrollbarsInit } from "@/components/OverlayScrollbarsInit";
 import { LoyaltyPushSwInit } from "@/components/loyalty/LoyaltyPushSwInit";
+import { CardGlowInit } from "@/components/CardGlowInit";
 import { ToastProvider } from "@/components/ui/Toast";
 import { PWASplashScreen } from "@/components/PWASplashScreen";
 
@@ -195,6 +196,7 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-profile-btn{width:
         <div id="sbc-app-root">
           <OverlayScrollbarsInit />
           <LoyaltyPushSwInit />
+          <CardGlowInit />
           <ToastProvider>{children}</ToastProvider>
         </div>
       </body>
