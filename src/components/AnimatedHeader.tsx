@@ -133,7 +133,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
         <Container size="lg">
           <motion.div
             ref={mobileMenuRootRef}
-            className="sbc-instagram-ring relative rounded-2xl overflow-visible backdrop-blur-md border"
+            className="sbc-instagram-ring relative rounded-2xl overflow-visible backdrop-blur-md"
             onMouseEnter={() => setDesktopNavHovered(true)}
             onMouseLeave={() => setDesktopNavHovered(false)}
             style={{
@@ -145,7 +145,6 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
               paddingInlineEnd: cardPx,
               background:
                 "linear-gradient(165deg, rgba(var(--surface-rgb, 255, 255, 255), 0.94), rgba(var(--surface-rgb, 255, 255, 255), 0.84))",
-              borderColor: "var(--surface-border)",
               boxShadow: "none",
             }}
           >
@@ -329,10 +328,9 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
               {mobileOpen ? (
                 <motion.div
                   id="mobile-nav"
-                  className="md:hidden absolute inset-x-0 top-full mt-2 rounded-2xl border backdrop-blur-md overflow-hidden"
+                  className="md:hidden absolute inset-x-0 top-full mt-2 rounded-2xl backdrop-blur-md overflow-hidden"
                   style={{
                     background: "rgba(var(--surface-rgb, 255, 255, 255), 0.96)",
-                    borderColor: "var(--surface-border)",
                     boxShadow: "none",
                   }}
                   role="dialog"

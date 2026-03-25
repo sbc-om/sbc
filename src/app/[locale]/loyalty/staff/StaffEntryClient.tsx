@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Lottie from "lottie-react";
 
+import toolsAnimation from "../../../../../public/animation/tools.json";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PhoneInput } from "@/components/ui/PhoneInput";
@@ -33,7 +35,11 @@ export function StaffEntryClient({ locale }: { locale: Locale }) {
   };
 
   return (
-    <div className="mx-auto w-full max-w-md rounded-2xl border border-(--surface-border) bg-(--surface) p-5 sm:p-6">
+    <div className="mx-auto w-full max-w-md">
+      <div className="mx-auto mb-4 h-80 w-80">
+        <Lottie animationData={toolsAnimation} loop autoplay style={{ width: "100%", height: "100%" }} />
+      </div>
+      <div className="rounded-2xl bg-(--surface) p-5 sm:p-6">
       <h1 className="text-xl font-semibold">{ar ? "دخول البائع" : "Seller Login"}</h1>
       <p className="mt-1 text-sm text-(--muted-foreground)">
         {ar
@@ -73,6 +79,7 @@ export function StaffEntryClient({ locale }: { locale: Locale }) {
           ? "إذا ما عندك الكود، تواصل مع صاحب البرنامج."
           : "If you don't have the code, ask the business owner."}
       </p>
+      </div>
     </div>
   );
 }

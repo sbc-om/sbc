@@ -29,7 +29,7 @@ export function HumanChallenge({ locale, challenge }: HumanChallengeProps) {
   const handleReset = () => setSelectedIds([]);
 
   return (
-    <div className="grid gap-3 rounded-2xl border border-(--surface-border) bg-(--surface) p-4 shadow-(--shadow)">
+    <div className="grid gap-3 rounded-2xl bg-(--surface) p-4 shadow-(--shadow)">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold">
@@ -51,9 +51,9 @@ export function HumanChallenge({ locale, challenge }: HumanChallengeProps) {
               type="button"
               onClick={() => handleSelect(option.id)}
               className={cn(
-                "relative flex flex-col items-center justify-center gap-1 rounded-xl border border-(--surface-border) bg-(--surface) px-3 py-3 text-sm font-medium transition",
+                "relative flex flex-col items-center justify-center gap-1 rounded-xl bg-(--chip-bg) px-3 py-3 text-sm font-medium transition",
                 "hover:brightness-[1.02] active:brightness-[0.98]",
-                selectedIndex ? "border-accent" : "",
+                selectedIndex ? "ring-2 ring-accent" : "",
               )}
               aria-pressed={Boolean(selectedIndex)}
             >

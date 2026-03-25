@@ -168,8 +168,6 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
             className="relative rounded-2xl overflow-visible py-5 px-5"
             style={{
               background: "rgb(var(--surface-rgb, 255, 255, 255))",
-              border: "1px solid",
-              borderColor: "var(--surface-border)",
             }}
           >
             {/* Responsive layout: vertical on mobile, horizontal on desktop */}
@@ -210,7 +208,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
                       rel="noreferrer"
                       aria-label={s.label}
                       title={s.label}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-none hover:scale-110 transition-all"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-(--chip-bg) shadow-none hover:scale-110 transition-all"
                     >
                       {s.icon}
                     </a>
@@ -220,7 +218,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
                       href={s.href}
                       aria-label={s.label}
                       title={s.label}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-none hover:scale-110 transition-all"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-(--chip-bg) shadow-none hover:scale-110 transition-all"
                     >
                       {s.icon}
                     </Link>
@@ -234,7 +232,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
                     onClick={() => setPlatformOpen((v) => !v)}
                     aria-label={locale === "ar" ? "المنصة" : "Platform"}
                     title={locale === "ar" ? "المنصة" : "Platform"}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-(--surface-border) bg-(--surface) shadow-none hover:scale-110 transition-all"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-(--chip-bg) shadow-none hover:scale-110 transition-all"
                   >
                     <FaThLarge className="h-4 w-4 text-[#8B5CF6]" />
                   </button>
@@ -257,7 +255,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
           {/* Panel */}
           <div
             ref={platformRef}
-            className="relative z-10 w-[min(94vw,760px)] rounded-2xl border border-(--surface-border) p-3 shadow-none"
+            className="relative z-10 w-[min(94vw,760px)] rounded-2xl p-3 shadow-none"
             style={{ background: "rgb(var(--surface-rgb, 255, 255, 255))" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -267,7 +265,7 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
                   key={item.key}
                   href={item.href}
                   onClick={() => setPlatformOpen(false)}
-                  className="group/item flex items-start gap-3 rounded-xl border border-transparent px-3 py-3 text-start transition hover:border-(--surface-border) hover:bg-(--chip-bg)"
+                  className="group/item flex items-start gap-3 rounded-xl px-3 py-3 text-start transition hover:bg-(--chip-bg)"
                   style={{ background: "rgb(var(--surface-rgb, 255, 255, 255))" }}
                 >
                   <span

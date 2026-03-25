@@ -58,7 +58,7 @@ export default async function LoyaltyStaffPortalPage({
     return (
       <PublicPage>
         <div className="py-4 sm:py-8">
-          <div className="mx-auto w-full max-w-md rounded-2xl border border-(--surface-border) bg-(--surface) p-5 sm:p-6">
+          <div className="mx-auto w-full max-w-md rounded-2xl bg-(--surface) p-5 sm:p-6">
             <h1 className="text-xl font-semibold">{ar ? "الرابط غير صحيح" : "Invalid business link"}</h1>
             <p className="mt-2 text-sm text-(--muted-foreground)">
               {ar

@@ -355,15 +355,15 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
       {error && (
         <div className={`rounded-xl p-3 text-sm ${
           error === "approval" || error === "inactive"
-            ? "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800"
-            : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800"
+            ? "bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200"
+            : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200"
         }`}>
           {t.errors[error as keyof typeof t.errors] || error}
         </div>
       )}
 
       {/* Professional Full-Width Tabs */}
-      <div className="rounded-xl bg-(--surface) border border-(--surface-border) p-1">
+      <div className="rounded-xl bg-(--surface) p-1">
         <nav className="grid grid-cols-3 gap-1" aria-label="Tabs">
           {tabs.map((tab) => (
             <button
@@ -432,7 +432,7 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-green-600 border-t-transparent" />
             </div>
           ) : !whatsappEnabled ? (
-            <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4 text-sm text-amber-800 dark:text-amber-200">
+            <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-800 dark:text-amber-200">
               {t.whatsapp.notEnabled}
             </div>
           ) : step === "phone" ? (
@@ -536,13 +536,13 @@ export function LoginTabs({ locale, challenge, next, error, dict }: LoginTabsPro
           </div>
 
           {passkeyError && (
-            <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">
+            <div className="rounded-xl bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300">
               {passkeyError}
             </div>
           )}
 
           {!passkeySupported ? (
-            <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-700 dark:text-amber-300">
+            <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 p-4 text-sm text-amber-700 dark:text-amber-300">
               {t.passkey.notSupported}
             </div>
           ) : (

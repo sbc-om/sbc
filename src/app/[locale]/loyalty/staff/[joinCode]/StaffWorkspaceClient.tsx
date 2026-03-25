@@ -399,10 +399,10 @@ export function StaffWorkspaceClient({
 
   return (
     <div className="mx-auto w-full max-w-2xl">
-      <div className="rounded-2xl border border-(--surface-border) bg-(--surface) p-4 sm:p-6">
+      <div className="rounded-2xl bg-(--surface) p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="relative h-12 w-12 overflow-hidden rounded-xl border border-(--surface-border) bg-(--background)">
+            <div className="relative h-12 w-12 overflow-hidden rounded-xl bg-(--chip-bg)">
               {businessLogoUrl ? (
                 <Image src={businessLogoUrl} alt={businessName} fill sizes="48px" className="object-cover" />
               ) : (
@@ -419,31 +419,31 @@ export function StaffWorkspaceClient({
         </div>
 
         <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <div className="rounded-xl border border-(--surface-border) bg-(--background) p-3">
+          <div className="rounded-xl bg-(--chip-bg) p-3">
             <div className="mb-2 flex items-center gap-2 text-blue-600">
               <HiQrcode className="h-5 w-5" />
               <span className="text-xs font-semibold">{ar ? "المسح السريع" : "Quick scan"}</span>
             </div>
             <p className="text-xs text-(--muted-foreground)">{ar ? "امسح بطاقة العميل بالـ QR فوراً." : "Scan customer QR card instantly."}</p>
           </div>
-          <div className="rounded-xl border border-(--surface-border) bg-(--background) p-3">
+          <div className="rounded-xl bg-(--chip-bg) p-3">
             <div className="mb-2 flex items-center gap-2 text-emerald-600">
               <HiSearch className="h-5 w-5" />
               <span className="text-xs font-semibold">{ar ? "بحث ذكي" : "Smart search"}</span>
             </div>
             <p className="text-xs text-(--muted-foreground)">{ar ? "ابحث بالاسم أو الرقم أو الممبر." : "Search by name, phone, or member ID."}</p>
           </div>
-          <div className="rounded-xl border border-(--surface-border) bg-(--background) p-3">
+          <div className="rounded-xl bg-(--chip-bg) p-3">
             <div className="mb-2 flex items-center gap-2 text-amber-600">
               <HiCheckCircle className="h-5 w-5" />
               <span className="text-xs font-semibold">{ar ? "إجراءات سريعة" : "Quick actions"}</span>
             </div>
-            <p className="text-xs text-(--muted-foreground)">{ar ? "أضف نقاطاً أو نفّذ ريديم بنقرة." : "Add points or redeem in one tap."}</p>
+            <p className="text-xs text-(--muted-foreground)">{ar ? "أضف نقاطاً أو نفّذ ریدیم بنقرة." : "Add points or redeem in one tap."}</p>
           </div>
         </div>
 
         {isStandalone === false ? (
-          <div className="mt-3 rounded-xl border border-(--surface-border) bg-(--background) p-3">
+          <div className="mt-3 rounded-xl bg-(--chip-bg) p-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-semibold">{ar ? "تثبيت تطبيق البائع" : "Install seller app"}</p>
@@ -505,14 +505,14 @@ export function StaffWorkspaceClient({
           </div>
         ) : (
           <div className="mt-4 space-y-4">
-            <div className="rounded-xl border border-(--surface-border) bg-(--background) p-3">
+            <div className="rounded-xl bg-(--chip-bg) p-3">
               <button
                 type="button"
                 className="flex w-full items-center justify-between gap-3"
                 onClick={() => setShowProfileMenu((v) => !v)}
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="relative h-11 w-11 overflow-hidden rounded-full border border-(--surface-border) bg-(--surface)">
+                  <div className="relative h-11 w-11 overflow-hidden rounded-full bg-(--surface)">
                     {staff?.avatarUrl ? (
                       <Image src={staff.avatarUrl} alt={staff.fullName} fill sizes="44px" className="object-cover" />
                     ) : (
@@ -530,7 +530,7 @@ export function StaffWorkspaceClient({
               </button>
 
               {showProfileMenu ? (
-                <div className="mt-3 space-y-3 border-t border-(--surface-border) pt-3">
+                <div className="mt-3 space-y-3 pt-3">
                   <p className="text-xs text-(--muted-foreground)">{profileShortHelp}</p>
 
                   <label className="text-xs font-semibold text-(--muted-foreground)">{ar ? "الاسم" : "Name"}</label>
@@ -552,7 +552,7 @@ export function StaffWorkspaceClient({
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
-                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-(--surface-border) bg-(--surface) px-3 py-2 text-sm font-medium">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-(--surface) px-3 py-2 text-sm font-medium">
                       <HiPhotograph className="h-4 w-4 text-indigo-600" />
                       <span>{busyAvatar ? (ar ? "جاري الرفع..." : "Uploading...") : (ar ? "رفع صورة" : "Upload avatar")}</span>
                       <input
@@ -597,7 +597,7 @@ export function StaffWorkspaceClient({
             {showScanner ? <QrScanner locale={locale} onClose={() => setShowScanner(false)} onScan={handleScan} /> : null}
 
             {customer ? (
-              <div className="rounded-xl border border-(--surface-border) bg-(--background) p-4">
+              <div className="rounded-xl bg-(--chip-bg) p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="font-semibold">{customer.fullName}</div>
