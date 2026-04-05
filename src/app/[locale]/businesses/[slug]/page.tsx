@@ -121,11 +121,6 @@ export default async function BusinessDetailPage({
     ? `/@${business.username}`
     : `/${locale}/businesses/${business.slug}`;
 
-  const mapQuery = [business.address, business.city].filter(Boolean).join(" ").trim();
-  const mapsHref = mapQuery
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
-    : null;
-
   const headersList = await headers();
   const hostHeader = headersList.get("host") || "";
   const hostname = hostHeader.split(":")[0] || "";
@@ -178,7 +173,6 @@ export default async function BusinessDetailPage({
         category={category}
         categoryIconId={category?.iconId}
         handlePath={shareHandlePath}
-        mapsHref={mapsHref}
         stories={stories}
         currentUserId={user?.id}
         isOwner={!!isOwner}

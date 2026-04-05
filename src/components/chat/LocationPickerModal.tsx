@@ -1,27 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useMemo, useState } from "react";
+
 import { Button } from "@/components/ui/Button";
-import type L from "leaflet";
-import type { Feature } from "geojson";
-import {
-  clampToOmanBounds,
-  OMAN_BOUNDS_TUPLE,
-  OMAN_CITY_ZOOM,
-  OMAN_DEFAULT_CENTER,
-  OMAN_DETAIL_ZOOM,
-  OMAN_MAX_ZOOM,
-  OMAN_MIN_ZOOM,
-  OMAN_TILE_LAYER_OPTIONS,
-  OMAN_TILE_TEMPLATE,
-} from "@/lib/maps/oman";
-import {
-  getPrimaryOmanGeometry,
-  isPointInsideOmanGeometry,
-  loadOmanBorderGeoJson,
-  OmanBorderGeometry,
-  toMaskGeometry,
-} from "@/lib/maps/omanBorder";
+import { clampToOmanBounds, OMAN_DEFAULT_CENTER } from "@/lib/maps/oman";
 
 type LocationPickerModalProps = {
   isOpen: boolean;
@@ -36,338 +18,124 @@ export function LocationPickerModal({
   onSelectLocation,
   locale,
 }: LocationPickerModalProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
-  const omanBorderLayerRef = useRef<L.GeoJSON | null>(null);
-  const omanMaskLayerRef = useRef<L.GeoJSON | null>(null);
-  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-  const [omanGeometry, setOmanGeometry] = useState<OmanBorderGeometry | null>(null);
+  const ar = locale === "ar";
+  const [lat, setLat] = useState(String(OMAN_DEFAULT_CENTER.lat));
+  const [lng, setLng] = useState(String(OMAN_DEFAULT_CENTER.lng));
+  const [loadingLocation, setLoadingLocation] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const safePreview = useMemo(() => {
+    const parsedLat = Number(lat);
+    const parsedLng = Number(lng);
+    if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) return OMAN_DEFAULT_CENTER;
+    return clampToOmanBounds(parsedLat, parsedLng);
+  }, [lat, lng]);
 
-    void loadOmanBorderGeoJson()
-      .then((geojson) => {
-        if (!cancelled) setOmanGeometry(getPrimaryOmanGeometry(geojson));
-      })
-      .catch(() => {});
+  const embedSrc = `https://maps.google.com/maps?q=${safePreview.lat},${safePreview.lng}&z=15&output=embed`;
+  const openInGoogleHref = `https://www.google.com/maps/search/?api=1&query=${safePreview.lat},${safePreview.lng}`;
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Get user's current location when modal opens
-  useEffect(() => {
-    if (isOpen && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation(clampToOmanBounds(position.coords.latitude, position.coords.longitude));
-        },
-        () => {
-          setUserLocation(OMAN_DEFAULT_CENTER);
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
-      );
+  const handleMyLocation = async () => {
+    if (!navigator.geolocation) return;
+    setLoadingLocation(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 12000,
+        });
+      });
+      const safe = clampToOmanBounds(position.coords.latitude, position.coords.longitude);
+      setLat(String(safe.lat));
+      setLng(String(safe.lng));
+    } catch {
+      // ignore
+    } finally {
+      setLoadingLocation(false);
     }
-  }, [isOpen]);
-
-  // Initialize map
-  useEffect(() => {
-    if (!isOpen || !mapRef.current) return;
-
-    let mounted = true;
-
-    const initMap = async () => {
-      const L = (await import("leaflet")).default;
-
-      if (!mounted || !mapRef.current) return;
-
-      // Cleanup existing map
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-        markerRef.current = null;
-      }
-
-      const center = userLocation || OMAN_DEFAULT_CENTER;
-
-      // Create map
-      const map = L.map(mapRef.current, {
-        center: [center.lat, center.lng],
-        zoom: OMAN_CITY_ZOOM,
-        minZoom: OMAN_MIN_ZOOM,
-        maxZoom: OMAN_MAX_ZOOM,
-        maxBounds: L.latLngBounds(OMAN_BOUNDS_TUPLE),
-        maxBoundsViscosity: 1,
-        zoomControl: false,
-        attributionControl: false,
-        preferCanvas: true,
-        fadeAnimation: false,
-      });
-
-      L.tileLayer(OMAN_TILE_TEMPLATE, { ...OMAN_TILE_LAYER_OPTIONS }).addTo(map);
-
-      const maskPane = map.createPane("oman-mask-pane");
-      maskPane.style.zIndex = "350";
-      maskPane.style.pointerEvents = "none";
-
-      const borderPane = map.createPane("oman-border-pane");
-      borderPane.style.zIndex = "360";
-      borderPane.style.pointerEvents = "none";
-
-      if (omanGeometry) {
-        const maskOptions: L.GeoJSONOptions = {
-          pane: "oman-mask-pane",
-          interactive: false,
-          style: {
-            stroke: false,
-            fillColor: "#f5f7fa",
-            fillOpacity: 1,
-          },
-        };
-
-        const borderFeature: Feature = {
-          type: "Feature",
-          properties: {},
-          geometry: omanGeometry,
-        };
-
-        const borderOptions: L.GeoJSONOptions = {
-          pane: "oman-border-pane",
-          interactive: false,
-          style: {
-            color: "#0ea5e9",
-            weight: 1.8,
-            opacity: 0.95,
-            fillOpacity: 0,
-            lineCap: "round",
-            lineJoin: "round",
-          },
-        };
-
-        omanMaskLayerRef.current = L.geoJSON(toMaskGeometry(omanGeometry), maskOptions).addTo(map);
-
-        omanBorderLayerRef.current = L.geoJSON(borderFeature, borderOptions).addTo(map);
-      }
-
-      // Custom marker icon
-      const markerIcon = L.divIcon({
-        className: "chat-location-marker",
-        html: `
-          <svg viewBox="0 0 24 24" fill="none" style="width: 40px; height: 40px; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.35));">
-            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="#ef4444"/>
-            <circle cx="12" cy="9" r="2.5" fill="white"/>
-          </svg>
-        `,
-        iconSize: [40, 40],
-        iconAnchor: [20, 40],
-      });
-
-      // Handle map click
-      map.on("click", (e: L.LeafletMouseEvent) => {
-        const { lat, lng } = e.latlng;
-        if (omanGeometry && !isPointInsideOmanGeometry(lat, lng, omanGeometry)) return;
-        setSelectedLocation({ lat, lng });
-
-        if (markerRef.current) {
-          markerRef.current.setLatLng([lat, lng]);
-        } else {
-          markerRef.current = L.marker([lat, lng], { icon: markerIcon }).addTo(map);
-        }
-      });
-
-      mapInstanceRef.current = map;
-      setIsLoading(false);
-
-      // Force resize after render
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 100);
-    };
-
-    initMap();
-
-    return () => {
-      mounted = false;
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-      omanBorderLayerRef.current = null;
-      omanMaskLayerRef.current = null;
-      markerRef.current = null;
-    };
-  }, [isOpen, userLocation, omanGeometry]);
-
-  // Center map on user location
-  const handleCenterOnUser = useCallback(() => {
-    if (navigator.geolocation) {
-      setIsLoadingLocation(true);
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { lat, lng } = clampToOmanBounds(position.coords.latitude, position.coords.longitude);
-          setUserLocation({ lat, lng });
-          if (mapInstanceRef.current) {
-            mapInstanceRef.current.setView([lat, lng], OMAN_DETAIL_ZOOM, { animate: true });
-          }
-          setIsLoadingLocation(false);
-        },
-        () => {
-          setIsLoadingLocation(false);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
-    }
-  }, []);
-
-  // Zoom controls
-  const handleZoomIn = useCallback(() => {
-    mapInstanceRef.current?.zoomIn();
-  }, []);
-
-  const handleZoomOut = useCallback(() => {
-    mapInstanceRef.current?.zoomOut();
-  }, []);
+  };
 
   const handleConfirm = () => {
-    if (selectedLocation) {
-      const safeLocation = clampToOmanBounds(selectedLocation.lat, selectedLocation.lng);
-      onSelectLocation(safeLocation.lat, safeLocation.lng);
-      onClose();
-    }
-  };
-
-  const handleClose = () => {
-    setSelectedLocation(null);
+    onSelectLocation(safePreview.lat, safePreview.lng);
     onClose();
   };
-
-  // Reset state when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setSelectedLocation(null);
-      setIsLoading(true);
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={handleClose}
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 bg-(--surface) rounded-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-(--surface-border)">
-          <h3 className="text-lg font-semibold">
-            {locale === "ar" ? "اختر موقعاً" : "Select Location"}
-          </h3>
+      <div className="relative mx-4 w-full max-w-lg overflow-hidden rounded-2xl bg-(--surface) shadow-2xl">
+        <div className="flex items-center justify-between border-b border-(--surface-border) px-4 py-3">
+          <h3 className="text-lg font-semibold">{ar ? "إرسال موقع" : "Send location"}</h3>
           <button
             type="button"
-            onClick={handleClose}
-            className="p-2 hover:bg-(--chip-bg) rounded-full transition-colors"
+            onClick={onClose}
+            className="rounded-full p-2 transition-colors hover:bg-(--chip-bg)"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Map container */}
-        <div className="relative h-80 bg-(--chip-bg)">
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center z-10">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-          <div ref={mapRef} className="w-full h-full" />
-
-          {/* Zoom controls */}
-          <div className="absolute top-3 end-3 flex flex-col gap-1 z-[1000]">
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              className="w-8 h-8 bg-(--surface) rounded-lg shadow-lg hover:bg-(--chip-bg) transition-colors flex items-center justify-center text-lg font-bold"
-            >
-              +
-            </button>
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              className="w-8 h-8 bg-(--surface) rounded-lg shadow-lg hover:bg-(--chip-bg) transition-colors flex items-center justify-center text-lg font-bold"
-            >
-              −
-            </button>
+        <div className="space-y-3 p-4">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="space-y-1 text-xs text-(--muted-foreground)">
+              <span>{ar ? "خط العرض" : "Latitude"}</span>
+              <input
+                type="number"
+                step="0.000001"
+                value={lat}
+                onChange={(e) => setLat(e.target.value)}
+                className="w-full rounded-xl bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none ring-1 ring-(--surface-border) focus:ring-accent/35"
+              />
+            </label>
+            <label className="space-y-1 text-xs text-(--muted-foreground)">
+              <span>{ar ? "خط الطول" : "Longitude"}</span>
+              <input
+                type="number"
+                step="0.000001"
+                value={lng}
+                onChange={(e) => setLng(e.target.value)}
+                className="w-full rounded-xl bg-(--background) px-3 py-2 text-sm text-(--foreground) outline-none ring-1 ring-(--surface-border) focus:ring-accent/35"
+              />
+            </label>
           </div>
 
-          {/* Center on me button */}
-          <button
-            type="button"
-            onClick={handleCenterOnUser}
-            disabled={isLoadingLocation}
-            className="absolute bottom-3 end-3 p-3 bg-(--surface) rounded-full shadow-lg hover:bg-(--chip-bg) transition-colors z-[1000] disabled:opacity-50"
-            title={locale === "ar" ? "موقعي الحالي" : "My location"}
-          >
-            {isLoadingLocation ? (
-              <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
-              </svg>
-            )}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="secondary" onClick={handleMyLocation} disabled={loadingLocation}>
+              {loadingLocation ? "..." : ar ? "موقعي" : "My location"}
+            </Button>
+            <a
+              href={openInGoogleHref}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center rounded-xl bg-accent px-3 py-2 text-xs font-semibold text-white hover:opacity-90"
+            >
+              {ar ? "فتح في Google Maps" : "Open in Google Maps"}
+            </a>
+          </div>
+
+          <div className="h-72 overflow-hidden rounded-xl ring-1 ring-(--surface-border)">
+            <iframe
+              title={ar ? "خريطة جوجل" : "Google map"}
+              src={embedSrc}
+              className="h-full w-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
         </div>
 
-        {/* Instructions */}
-        <div className="px-4 py-3 text-center text-sm text-(--muted-foreground) border-t border-(--surface-border)">
-          {selectedLocation ? (
-            <span className="text-green-500 font-medium">
-              {locale === "ar" ? "تم تحديد الموقع ✓" : "Location selected ✓"}
-            </span>
-          ) : (
-            <span>
-              {locale === "ar" ? "انقر على الخريطة لتحديد الموقع" : "Tap on the map to select location"}
-            </span>
-          )}
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3 p-4 border-t border-(--surface-border)">
-          <Button
-            variant="secondary"
-            className="flex-1"
-            onClick={handleClose}
-          >
-            {locale === "ar" ? "إلغاء" : "Cancel"}
+        <div className="flex gap-3 border-t border-(--surface-border) p-4">
+          <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
+            {ar ? "إلغاء" : "Cancel"}
           </Button>
-          <Button
-            className="flex-1"
-            onClick={handleConfirm}
-            disabled={!selectedLocation}
-          >
-            {locale === "ar" ? "إرسال الموقع" : "Send Location"}
+          <Button type="button" variant="primary" className="flex-1" onClick={handleConfirm}>
+            {ar ? "تأكيد" : "Confirm"}
           </Button>
         </div>
       </div>
-
-      {/* Global styles for leaflet marker */}
-      <style jsx global>{`
-        .chat-location-marker {
-          background: transparent !important;
-          border: none !important;
-        }
-      `}</style>
     </div>
   );
 }

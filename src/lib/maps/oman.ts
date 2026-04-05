@@ -16,18 +16,18 @@ export const OMAN_MIN_ZOOM = 7;
 export const OMAN_DEFAULT_ZOOM = 8;
 export const OMAN_CITY_ZOOM = 12;
 export const OMAN_DETAIL_ZOOM = 16;
-export const OMAN_MAX_ZOOM = 18;
+export const OMAN_MAX_ZOOM = 19;
 
 export const OMAN_TILE_ATTRIBUTION =
-  'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors • Tiles © <a href="https://carto.com/attributions">CARTO</a>';
+  'Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 export const OMAN_TILE_TEMPLATE =
-  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 export const OMAN_DARK_TILE_TEMPLATE =
-  "https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png";
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png";
 
-export const OMAN_TILE_SUBDOMAINS = ["a", "b", "c", "d"];
+export const OMAN_TILE_SUBDOMAINS = ["a", "b", "c"];
 
 export const OMAN_TILE_LAYER_OPTIONS = {
   attribution: OMAN_TILE_ATTRIBUTION,
@@ -102,7 +102,8 @@ export function buildOmanTileWarmupUrls({
   limit = 36,
 }: TileWarmupInput) {
   const urls: string[] = [];
-  const retinaSuffix = devicePixelRatio > 1 ? "@2x" : "";
+  const useRetinaHint = devicePixelRatio > 1;
+  void useRetinaHint;
 
   for (const zoomLevel of zooms) {
     const zoom = clamp(Math.round(zoomLevel), OMAN_MIN_ZOOM, OMAN_MAX_ZOOM);
@@ -114,9 +115,7 @@ export function buildOmanTileWarmupUrls({
     for (let x = xStart; x <= xEnd; x += 1) {
       for (let y = yStart; y <= yEnd; y += 1) {
         const subdomain = OMAN_TILE_SUBDOMAINS[(x + y + zoom) % OMAN_TILE_SUBDOMAINS.length];
-        urls.push(
-          `https://${subdomain}.basemaps.cartocdn.com/rastertiles/voyager/${zoom}/${x}/${y}${retinaSuffix}.png`
-        );
+        urls.push(`https://${subdomain}.tile.openstreetmap.org/${zoom}/${x}/${y}.png`);
         if (urls.length >= limit) return urls;
       }
     }

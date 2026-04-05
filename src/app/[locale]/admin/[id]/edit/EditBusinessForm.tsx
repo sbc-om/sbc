@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { Category, Business } from "@/lib/db/types";
@@ -16,11 +15,6 @@ import { CategorySelect } from "@/components/ui/CategorySelect";
 import { UserSelect } from "@/components/ui/UserSelect";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
 import { useToast } from "@/components/ui/Toast";
-
-const OsmLocationPicker = dynamic(
-  () => import("@/components/maps/OsmLocationPicker").then((mod) => mod.OsmLocationPicker),
-  { ssr: false }
-);
 
 const USERNAME_MIN = 2;
 const USERNAME_MAX = 30;
@@ -215,7 +209,7 @@ export function EditBusinessForm({
   const galleryFilesRef = useRef<File[]>([]);
   
   // Location state
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(
+  const [location] = useState<{ lat: number; lng: number } | null>(
     Number.isFinite(business.latitude) && Number.isFinite(business.longitude)
       ? { lat: business.latitude as number, lng: business.longitude as number }
       : null
@@ -864,44 +858,30 @@ export function EditBusinessForm({
 
         <div className={`sbc-card p-6 ${stepPanelClass(2)}`}>
           <h2 className="text-lg font-semibold text-foreground mb-1">
-            {ar ? "الموقع الجغرافي" : "Geographic Location"}
+            {ar ? "إحداثيات الموقع" : "Location Coordinates"}
           </h2>
           <p className="text-sm text-(--muted-foreground) mb-6">
-            {ar ? "حدد الموقع الدقيق للنشاط على الخريطة" : "Mark the exact business location on the map"}
+            {ar ? "تم إيقاف الخريطة في قسم الأنشطة. سيتم الاحتفاظ بالإحداثيات الحالية." : "Map is disabled in business sections. Existing coordinates are kept."}
           </p>
           
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">
-                {ar ? "حدد موقعك على الخريطة" : "Select your location on the map"}
-              </label>
-              <p className="text-sm text-(--muted-foreground) mb-3">
-                {ar 
-                  ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك التجاري"
-                  : "Click on the map to mark your exact business location"}
+          <div className="rounded-xl bg-(--chip-bg) p-4 text-sm">
+            {location ? (
+              <p className="text-(--muted-foreground)">
+                {ar ? "الإحداثيات الحالية:" : "Current coordinates:"}{" "}
+                <span dir="ltr" className="font-medium text-foreground">
+                  {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
+                </span>
               </p>
-              <div className="rounded-lg overflow-hidden border border-(--surface-border)">
-                <OsmLocationPicker
-                  value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
-                  onChange={(next) => {
-                    setLocation(next ? { lat: next.lat, lng: next.lng } : null);
-                  }}
-                  locale={locale}
-                  hideRadius
-                  markerImageUrl={business.media?.logo}
-                />
-              </div>
-              {location && (
-                <>
-                  <p className="mt-2 text-xs text-(--muted-foreground)">
-                    {ar ? "الموقع المحدد:" : "Selected location:"} {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
-                  </p>
-                  <input type="hidden" name="latitude" value={String(location.lat)} />
-                  <input type="hidden" name="longitude" value={String(location.lng)} />
-                </>
-              )}
-            </div>
+            ) : (
+              <p className="text-(--muted-foreground)">{ar ? "لا توجد إحداثيات مخزنة." : "No saved coordinates."}</p>
+            )}
           </div>
+          {location && (
+            <>
+              <input type="hidden" name="latitude" value={String(location.lat)} />
+              <input type="hidden" name="longitude" value={String(location.lng)} />
+            </>
+          )}
         </div>
 
         <div className={`sbc-card p-6 ${stepPanelClass(4)}`}>

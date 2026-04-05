@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -89,16 +89,16 @@ export default function AgentWalletClient({ locale, commissionRate, summary, req
   });
 
   const t = {
-    title: ar ? "محفظة الوكيل" : "Agent Wallet",
-    subtitle: ar ? "إدارة أرباحك وطلبات السحب" : "Manage your earnings and withdrawal requests",
-    commissionRate: ar ? "نسبة العمولة" : "Commission Rate",
-    totalSales: ar ? "إجمالي المبيعات" : "Total Sales",
-    totalEarned: ar ? "إجمالي العمولة" : "Total Commission Earned",
-    available: ar ? "المتاح للسحب" : "Available for Withdrawal",
-    withdrawn: ar ? "تم سحبه" : "Total Withdrawn",
-    pendingReq: ar ? "طلبات سحب معلقة" : "Pending Withdrawal Requests",
-    totalTransactions: ar ? "إجمالي العمليات" : "Total Transactions",
-    requestWithdraw: ar ? "طلب سحب" : "Request Withdrawal",
+    title: ar ? "المحفظة" : "Wallet",
+    subtitle: ar ? "الأرباح" : "Earnings",
+    commissionRate: ar ? "العمولة" : "Commission",
+    totalSales: ar ? "المبيعات" : "Sales",
+    totalEarned: ar ? "العمولة" : "Earned",
+    available: ar ? "المتاح" : "Available",
+    withdrawn: ar ? "المسحوب" : "Withdrawn",
+    pendingReq: ar ? "المعلق" : "Pending",
+    totalTransactions: ar ? "العمليات" : "Transactions",
+    requestWithdraw: ar ? "سحب" : "Withdraw",
     history: ar ? "سجل طلبات السحب" : "Withdrawal Request History",
     approved: ar ? "معتمد" : "Approved",
     noRequests: ar ? "لا توجد طلبات سحب بعد" : "No withdrawal requests yet",
@@ -113,7 +113,16 @@ export default function AgentWalletClient({ locale, commissionRate, summary, req
 
   const surfaceCard = "rounded-2xl bg-white p-4 shadow-(--shadow) dark:bg-white/[0.02]";
 
-  const formatAmount = (value: number) => (hideBalance ? "***" : value.toFixed(3));
+  const amountFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(ar ? "ar-OM" : "en-OM", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 3,
+      }),
+    [ar]
+  );
+  const formatAmountValue = useCallback((value: number) => amountFormatter.format(value), [amountFormatter]);
+  const formatAmount = (value: number) => (hideBalance ? "***" : formatAmountValue(value));
   const formatDateTime = (value: string) =>
     new Date(value).toLocaleString(ar ? "ar-OM" : "en-OM", {
       year: "numeric",
@@ -164,9 +173,9 @@ export default function AgentWalletClient({ locale, commissionRate, summary, req
 
           if (data.type === "withdrawal_processed") {
             if (data.status === "approved") {
-              showToast(
+                showToast(
                 data.approvedAmount
-                  ? `${t.requestApprovedToast}: ${Number(data.approvedAmount).toFixed(3)} OMR`
+                  ? `${t.requestApprovedToast}: ${formatAmountValue(Number(data.approvedAmount))} OMR`
                   : t.requestApprovedToast,
                 "success"
               );
@@ -213,7 +222,7 @@ export default function AgentWalletClient({ locale, commissionRate, summary, req
         clearTimeout(reconnectTimeout);
       }
     };
-  }, [refreshData, showToast, t.requestApprovedToast, t.requestCreatedToast, t.requestRejectedToast]);
+  }, [formatAmountValue, refreshData, showToast, t.requestApprovedToast, t.requestCreatedToast, t.requestRejectedToast]);
 
   const statusBadge = (status: AgentWithdrawalRequest["status"]) => {
     if (status === "approved") {
@@ -291,28 +300,28 @@ export default function AgentWalletClient({ locale, commissionRate, summary, req
           <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
             <HiOutlineBanknotes className="h-4 w-4" />
           </div>
-          <p className="text-xs text-(--muted-foreground)">{t.totalEarned}</p>
+          <p className="truncate whitespace-nowrap text-xs text-(--muted-foreground)">{t.totalEarned}</p>
           <p className="text-lg font-bold tabular-nums">{formatAmount(summary.totalEarned)} OMR</p>
         </div>
         <div className={surfaceCard}>
           <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
             <HiOutlineCash className="h-4 w-4" />
           </div>
-          <p className="text-xs text-(--muted-foreground)">{t.withdrawn}</p>
+          <p className="truncate whitespace-nowrap text-xs text-(--muted-foreground)">{t.withdrawn}</p>
           <p className="text-lg font-bold tabular-nums">{formatAmount(summary.totalWithdrawn)} OMR</p>
         </div>
         <div className={surfaceCard}>
           <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-100 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-400">
             <HiOutlineBanknotes className="h-4 w-4" />
           </div>
-          <p className="text-xs text-(--muted-foreground)">{t.totalSales}</p>
+          <p className="truncate whitespace-nowrap text-xs text-(--muted-foreground)">{t.totalSales}</p>
           <p className="text-lg font-bold tabular-nums">{formatAmount(summary.totalSales)} OMR</p>
         </div>
         <div className={surfaceCard}>
           <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
             <HiOutlineWallet className="h-4 w-4" />
           </div>
-          <p className="text-xs text-(--muted-foreground)">{t.totalTransactions}</p>
+          <p className="truncate whitespace-nowrap text-xs text-(--muted-foreground)">{t.totalTransactions}</p>
           <p className="text-lg font-bold tabular-nums">{summary.totalTransactions}</p>
         </div>
       </div>

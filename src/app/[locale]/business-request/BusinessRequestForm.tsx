@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 
 import type { Locale } from "@/lib/i18n/locales";
@@ -13,14 +12,6 @@ import { Button } from "@/components/ui/Button";
 import { CategorySelectField } from "@/components/CategorySelectField";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
 import { useToast } from "@/components/ui/Toast";
-
-const OsmLocationPicker = dynamic(
-  () =>
-    import("@/components/maps/OsmLocationPicker").then(
-      (m) => m.OsmLocationPicker
-    ),
-  { ssr: false }
-);
 
 /* ================================================================== */
 /*  Types                                                              */
@@ -124,7 +115,7 @@ export function BusinessRequestForm({
 
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [location, setLocation] = useState<LocationData | null>(null);
+  const [location] = useState<LocationData | null>(null);
   const [animDir, setAnimDir] = useState<"next" | "prev">("next");
 
   // Media previews
@@ -399,10 +390,6 @@ export function BusinessRequestForm({
             ar={ar}
             formData={formData}
             set={set}
-            locale={locale}
-            location={location}
-            setLocation={setLocation}
-            logoPreview={logoPreview}
           />
         )}
         {steps[currentStep].id === "media" && (
@@ -643,25 +630,17 @@ function StepLocation({
   ar,
   formData,
   set,
-  locale,
-  location,
-  setLocation,
-  logoPreview,
 }: {
   ar: boolean;
   formData: FormData;
   set: <K extends keyof FormData>(key: K, value: FormData[K]) => void;
-  locale: Locale;
-  location: LocationData | null;
-  setLocation: (l: LocationData | null) => void;
-  logoPreview: string[];
 }) {
   return (
     <div className="space-y-6">
       <StepHeader
         icon={IconMap}
-        title={ar ? "الموقع الجغرافي" : "Geographic Location"}
-        desc={ar ? "حدد عنوان وموقع نشاطك على الخريطة ليسهل على العملاء إيجادك" : "Mark your address and pin on the map so customers can find you"}
+        title={ar ? "العنوان" : "Address"}
+        desc={ar ? "الخريطة غير مفعلة في قسم الأنشطة." : "Map is disabled in business sections."}
       />
 
       <div className="sbc-card p-6 space-y-5">
@@ -675,43 +654,10 @@ function StepLocation({
           />
         </Field>
 
-        <div>
-          <label className="block text-sm font-medium mb-1.5">
-            {ar ? "حدد موقعك على الخريطة" : "Pin your location on the map"}
-          </label>
-          <p className="text-xs text-(--muted-foreground) mb-3">
-            {ar
-              ? "انقر على الخريطة لتحديد الموقع الدقيق لنشاطك التجاري"
-              : "Click on the map to mark your exact business location"}
-          </p>
-          <div className="rounded-xl overflow-hidden border border-(--border)">
-            <OsmLocationPicker
-              value={
-                location
-                  ? { lat: location.lat, lng: location.lng, radiusMeters: 250 }
-                  : null
-              }
-              onChange={(next) =>
-                setLocation(next ? { lat: next.lat, lng: next.lng } : null)
-              }
-              locale={locale}
-              hideRadius
-              markerImageUrl={logoPreview[0]}
-            />
-          </div>
-          {location && (
-            <div className="mt-3 flex items-center gap-2 text-sm">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-                {ar ? "تم تحديد الموقع" : "Location selected"}
-              </span>
-              <span className="text-xs text-(--muted-foreground) font-mono">
-                {location.lat.toFixed(6)}, {location.lng.toFixed(6)}
-              </span>
-            </div>
-          )}
+        <div className="rounded-xl bg-(--chip-bg) p-4 text-sm text-(--muted-foreground)">
+          {ar
+            ? "تم إلغاء عرض الخريطة في قسم الأنشطة. العنوان النصي يكفي في هذه المرحلة."
+            : "Map display is removed for business sections. Text address is sufficient at this stage."}
         </div>
       </div>
     </div>

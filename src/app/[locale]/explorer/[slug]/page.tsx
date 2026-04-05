@@ -43,11 +43,6 @@ export default async function ExplorerBusinessDetailPage({
     ? `/@${business.username}`
     : `/${locale}/businesses/${business.slug}`;
 
-  const mapQuery = [business.address, business.city].filter(Boolean).join(" ").trim();
-  const mapsHref = mapQuery
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`
-    : null;
-
   const likeCount = await getBusinessLikeCount(business.id);
   const liked = await hasUserLikedBusiness(user.id, business.id);
 
@@ -110,7 +105,6 @@ export default async function ExplorerBusinessDetailPage({
         category={category}
         categoryIconId={category?.iconId}
         handlePath={handlePath}
-        mapsHref={mapsHref}
         likeCount={likeCount}
         liked={liked}
         approvedComments={approvedComments}

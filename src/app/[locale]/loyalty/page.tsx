@@ -40,7 +40,6 @@ export default async function LoyaltyPage({
     ctaSeller: ar ? "دخول البائعين" : "Staff Login",
     ctaCustomer: ar ? "دخول العميل" : "Customer Login",
     ctaStore: ar ? "فتح المتجر" : "See Plans",
-    backHome: ar ? "العودة للرئيسية" : "Back Home",
     sectionFeatures: ar ? "المزايا" : "Main Features",
     sectionShowcase: ar ? "لماذا هذا النظام؟" : "Why Teams Love It",
     sectionHow: ar ? "طريقة الاستخدام" : "How It Works",
@@ -178,38 +177,51 @@ export default async function LoyaltyPage({
           <div className="mt-6 sm:mt-7 grid grid-cols-2 gap-2.5 sm:flex sm:flex-wrap sm:items-center sm:justify-center sm:gap-3 relative z-10">
             <Link
               href={`/${locale}/loyalty/manage`}
-              className={buttonVariants({ variant: "primary", size: "lg", className: "w-full sm:w-auto sm:min-w-[180px]" })}
+              className={buttonVariants({
+                variant: "primary",
+                size: "lg",
+                className:
+                  "group h-12 w-full sm:w-auto sm:min-w-[190px] rounded-2xl bg-linear-to-r from-accent to-accent-2 text-white shadow-[0_12px_30px_-16px_rgba(0,121,244,0.7)] hover:brightness-110",
+              })}
             >
               {copy.ctaManage}
-              <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "rotate-180" : "")} />
+              <HiOutlineArrowRight className={"h-5 w-5 transition-transform group-hover:translate-x-0.5 " + (ar ? "rotate-180 group-hover:-translate-x-0.5" : "")} />
             </Link>
             <Link
               href={`/${locale}/loyalty/staff`}
-              className={buttonVariants({ variant: "secondary", size: "lg", className: "w-full sm:w-auto sm:min-w-[180px]" })}
+              className={buttonVariants({
+                variant: "secondary",
+                size: "lg",
+                className:
+                  "h-12 w-full sm:w-auto sm:min-w-[190px] rounded-2xl bg-(--surface)/90 ring-1 ring-(--surface-border) shadow-[0_10px_24px_-18px_rgba(15,23,42,0.8)] hover:bg-(--surface) hover:ring-accent/30",
+              })}
             >
               <HiOutlineUsers className="h-5 w-5" />
               {copy.ctaSeller}
             </Link>
             <Link
               href={`/${locale}/loyalty/customer-login`}
-              className={buttonVariants({ variant: "secondary", size: "lg", className: "w-full sm:w-auto sm:min-w-[180px]" })}
+              className={buttonVariants({
+                variant: "secondary",
+                size: "lg",
+                className:
+                  "h-12 w-full sm:w-auto sm:min-w-[190px] rounded-2xl bg-(--surface)/90 ring-1 ring-(--surface-border) shadow-[0_10px_24px_-18px_rgba(15,23,42,0.8)] hover:bg-(--surface) hover:ring-accent/30",
+              })}
             >
               <HiOutlineShieldCheck className="h-5 w-5" />
               {copy.ctaCustomer}
             </Link>
             <Link
               href={`/${locale}/store`}
-              className={buttonVariants({ variant: "secondary", size: "lg", className: "w-full sm:w-auto sm:min-w-[180px]" })}
+              className={buttonVariants({
+                variant: "secondary",
+                size: "lg",
+                className:
+                  "h-12 w-full sm:w-auto sm:min-w-[190px] rounded-2xl bg-(--surface)/90 ring-1 ring-(--surface-border) shadow-[0_10px_24px_-18px_rgba(15,23,42,0.8)] hover:bg-(--surface) hover:ring-accent/30",
+              })}
             >
               <HiOutlineGift className="h-5 w-5" />
               {copy.ctaStore}
-            </Link>
-            <Link
-              href={`/${locale}`}
-              className={buttonVariants({ variant: "secondary", size: "lg", className: "w-full sm:w-auto sm:min-w-[180px]" })}
-            >
-              <HiOutlineArrowRight className={"h-5 w-5 " + (ar ? "" : "rotate-180")} />
-              {copy.backHome}
             </Link>
           </div>
         </div>

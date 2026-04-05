@@ -12,8 +12,8 @@ export function CardGlowInit() {
     function onPointerMove(e: PointerEvent) {
       if (e.pointerType === "touch") return;
 
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
+      const target = e.target;
+      if (!(target instanceof Element)) return;
 
       const card = target.closest<HTMLElement>(".sbc-card");
       if (!card) return;
@@ -28,8 +28,8 @@ export function CardGlowInit() {
     }
 
     function onPointerLeave(e: PointerEvent) {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
+      const target = e.target;
+      if (!(target instanceof Element)) return;
       const card = target.closest<HTMLElement>(".sbc-card");
       if (card) {
         card.style.setProperty("--card-glow-opacity", "0");

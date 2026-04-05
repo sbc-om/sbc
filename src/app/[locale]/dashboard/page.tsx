@@ -202,11 +202,24 @@ export default async function DashboardPage({
     }),
   );
 
-  const totalPrograms = cards.length;
-  const activePrograms = cards.filter((card) => card.active).length;
-  const purchasedPrograms = cards.filter((card) => card.sub !== null).length;
-  const expiringSoon = cards.filter((card) => card.active && card.sub !== null && card.daysLeft <= 14).length;
-  const nextRenewal = [...cards]
+  const hiddenProgramIds = new Set([
+    "marketing",
+    "crm",
+    "accounting",
+    "online-classes",
+    "sbcclaw",
+    "website",
+    "email",
+    "agent-builder",
+  ]);
+
+  const visibleCards = cards.filter((card) => !hiddenProgramIds.has(card.programId));
+
+  const totalPrograms = visibleCards.length;
+  const activePrograms = visibleCards.filter((card) => card.active).length;
+  const purchasedPrograms = visibleCards.filter((card) => card.sub !== null).length;
+  const expiringSoon = visibleCards.filter((card) => card.active && card.sub !== null && card.daysLeft <= 14).length;
+  const nextRenewal = [...visibleCards]
     .filter((card) => card.active && card.sub !== null)
     .sort((a, b) => a.daysLeft - b.daysLeft)[0];
 
@@ -305,7 +318,7 @@ export default async function DashboardPage({
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-2">
-        {cards.map((card, index) => {
+        {visibleCards.map((card, index) => {
           const statusLabel = card.active ? (ar ? "مفعل" : "Active") : ar ? "غير مفعل" : "Inactive";
           const remainingLabel = card.active
             ? ar

@@ -128,7 +128,7 @@ export function AgentBusinessesList({
   };
 
   return (
-    <div className="agent-view-root space-y-6">
+    <div className="agent-view-root agent-businesses-view space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -144,7 +144,7 @@ export function AgentBusinessesList({
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="agent-businesses-panel flex flex-col gap-3 rounded-2xl p-3 sm:flex-row">
         <div className="relative flex-1">
           <HiOutlineSearch className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-(--muted-foreground)" />
           <Input
@@ -154,7 +154,7 @@ export function AgentBusinessesList({
             className="ps-10"
           />
         </div>
-        <div className="flex gap-1 rounded-xl bg-(--surface) border border-(--surface-border) p-1">
+        <div className="flex gap-1 rounded-xl bg-(--chip-bg) p-1 ring-1 ring-black/5 dark:ring-white/10">
           {(["all", "pending", "approved", "rejected"] as StatusFilter[]).map((f) => (
             <button
               key={f}
@@ -173,7 +173,7 @@ export function AgentBusinessesList({
 
       {/* Business list */}
       {filtered.length === 0 ? (
-        <div className="sbc-card rounded-2xl p-12 text-center">
+        <div className="sbc-card agent-businesses-panel rounded-2xl p-12 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-(--chip-bg)">
             <HiOutlinePlus className="h-8 w-8 text-(--muted-foreground)" />
           </div>
@@ -193,7 +193,7 @@ export function AgentBusinessesList({
             return (
               <div
                 key={req.id}
-                className="sbc-card rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+                className="sbc-card agent-businesses-panel rounded-2xl p-5 flex flex-col gap-4 sm:flex-row sm:items-center"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">

@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import {
   HiOutlineCheckCircle,
@@ -32,14 +31,6 @@ import { UserSelect } from "@/components/ui/UserSelect";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
 import { useToast } from "@/components/ui/Toast";
 
-const OsmLocationPicker = dynamic(
-  () =>
-    import("@/components/maps/OsmLocationPicker").then(
-      (m) => m.OsmLocationPicker
-    ),
-  { ssr: false }
-);
-
 type ClientSub = { productSlug: string; program: string; plan?: string };
 
 const texts = {
@@ -57,12 +48,7 @@ const texts = {
     phone: "Phone",
     email: "Email",
     website: "Website",
-    location: "Geographic Location",
-    locationDesc: "Mark the exact business location on the map",
     address: "Address",
-    selectLocation: "Select your location on the map",
-    selectLocationHint: "Click on the map to mark the exact business location",
-    selectedLocation: "Selected location:",
     additional: "Additional Details",
     tags: "Tags (comma-separated)",
     tagsPlaceholder: "coffee, wifi, breakfast",
@@ -138,12 +124,7 @@ const texts = {
     phone: "الهاتف",
     email: "البريد الإلكتروني",
     website: "الموقع الإلكتروني",
-    location: "الموقع الجغرافي",
-    locationDesc: "حدد الموقع الدقيق للنشاط على الخريطة",
     address: "العنوان",
-    selectLocation: "حدد موقعك على الخريطة",
-    selectLocationHint: "انقر على الخريطة لتحديد الموقع الدقيق",
-    selectedLocation: "الموقع المحدد:",
     additional: "معلومات إضافية",
     tags: "الوسوم (مفصولة بفواصل)",
     tagsPlaceholder: "قهوة، واي فاي، إفطار",
@@ -242,10 +223,6 @@ export function AgentBusinessForm({
   const [loading, setLoading] = useState(false);
 
   // ── Business form state ──
-  const [location, setLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
   const [coverPreview, setCoverPreview] = useState<string[]>([]);
   const [logoPreview, setLogoPreview] = useState<string[]>([]);
   const [bannerPreview, setBannerPreview] = useState<string[]>([]);
@@ -370,8 +347,6 @@ export function AgentBusinessForm({
         ...formData,
         clientUserId: selectedClientId,
         productSlug: selectedProductSlug,
-        latitude: location?.lat,
-        longitude: location?.lng,
       };
 
       const res = await fetch("/api/agent/business-request", {
@@ -404,12 +379,17 @@ export function AgentBusinessForm({
     if (durationDays === 180) return t.per6mo;
     return durationDays ? `${durationDays} ${t.days}` : "";
   };
+  const formatMoney = (value: number) =>
+    new Intl.NumberFormat(ar ? "ar-OM" : "en-OM", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 3,
+    }).format(value);
 
   // ── Success state ──
   if (success) {
     return (
-      <div className="space-y-6">
-        <div className="sbc-card rounded-2xl p-8 text-center">
+      <div className="agent-view-root agent-businesses-view space-y-6">
+        <div className="sbc-card agent-businesses-panel rounded-2xl p-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
             <HiOutlineCheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
           </div>
@@ -435,39 +415,29 @@ export function AgentBusinessForm({
   // ════════════════════════════════════════════════════════════════
   if (step === 1) {
     return (
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t.step1Title}
-          </h1>
-          <p className="mt-1 text-sm text-(--muted-foreground)">
-            {t.step1Subtitle}
-          </p>
-        </div>
-
-        {/* Step indicator */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center rounded-full bg-accent h-8 w-8 text-white text-xs font-bold">
-            1
+      <div className="agent-view-root agent-businesses-view space-y-6">
+        <section className="agent-businesses-panel rounded-3xl p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t.step1Title}</h1>
+              <p className="mt-1 text-sm text-(--muted-foreground)">{t.step1Subtitle}</p>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full bg-(--chip-bg) px-3 py-1.5 text-xs font-semibold text-(--muted-foreground)">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white">1</span>
+              <span>/</span>
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/60 text-(--foreground) dark:bg-white/10">2</span>
+            </div>
           </div>
-          <div className="h-0.5 flex-1 bg-(--surface-border)" />
-          <div className="flex items-center justify-center rounded-full bg-(--chip-bg) h-8 w-8 text-(--muted-foreground) text-xs font-bold">
-            2
-          </div>
-        </div>
+        </section>
 
-        {/* Client Selector */}
-        <div className="sbc-card rounded-2xl p-6 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10">
+        <section className="sbc-card agent-businesses-panel rounded-3xl p-4 sm:p-6">
+          <div className="mb-4 flex items-start gap-3">
+            <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/12">
               <HiOutlineShieldCheck className="h-5 w-5 text-accent" />
             </div>
             <div>
               <h3 className="text-lg font-semibold">{t.clientSection}</h3>
-              <p className="text-sm text-(--muted-foreground)">
-                {t.clientHint}
-              </p>
+              <p className="text-sm text-(--muted-foreground)">{t.clientHint}</p>
             </div>
           </div>
 
@@ -484,93 +454,76 @@ export function AgentBusinessForm({
             locale={locale as "en" | "ar"}
           />
 
-          {/* Client Balance Display */}
-          {selectedClientId && (
-            <div
-              className={`flex items-center justify-between rounded-xl p-4 transition-all ${
-                clientBalance > 0
-                  ? "bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50"
-                  : "bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                    clientBalance > 0
-                      ? "bg-emerald-100 dark:bg-emerald-900/40"
-                      : "bg-red-100 dark:bg-red-900/40"
-                  }`}
-                >
-                  <HiOutlineWallet
-                    className={`h-5 w-5 ${
-                      clientBalance > 0
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-red-600 dark:text-red-400"
-                    }`}
-                  />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-(--muted-foreground)">
-                    {t.clientBalance}
-                  </p>
-                  <p
-                    className={`text-lg font-bold ${
-                      clientBalance > 0
-                        ? "text-emerald-700 dark:text-emerald-300"
-                        : "text-red-700 dark:text-red-300"
-                    }`}
-                  >
-                    {clientBalance.toFixed(3)} {t.omr}
-                  </p>
+          {selectedClientId ? (
+            <div className="mt-4 space-y-3">
+              <div
+                className={`rounded-2xl p-4 ${
+                  clientBalance > 0
+                    ? "bg-emerald-100/55 dark:bg-emerald-900/20"
+                    : "bg-rose-100/55 dark:bg-rose-900/20"
+                }`}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                        clientBalance > 0 ? "bg-emerald-200/70 dark:bg-emerald-900/45" : "bg-rose-200/70 dark:bg-rose-900/45"
+                      }`}
+                    >
+                      <HiOutlineWallet
+                        className={`h-5 w-5 ${
+                          clientBalance > 0 ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"
+                        }`}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-(--muted-foreground)">{t.clientBalance}</p>
+                      <p className="text-2xl font-bold tabular-nums">
+                        {formatMoney(clientBalance)} {t.omr}
+                      </p>
+                    </div>
+                  </div>
+                  {clientBalance <= 0 ? (
+                    <Link
+                      href={`/${locale}/agent`}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white transition-colors hover:opacity-90"
+                    >
+                      <HiOutlineBanknotes className="h-4 w-4" />
+                      {t.topUpWallet}
+                    </Link>
+                  ) : null}
                 </div>
               </div>
 
-              {clientBalance <= 0 && (
-                <Link
-                  href={`/${locale}/agent`}
-                  className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-accent/90"
-                >
-                  <HiOutlineBanknotes className="h-4 w-4" />
-                  {t.topUpWallet}
-                </Link>
-              )}
+              {!selectedClientVerified ? (
+                <div className="rounded-2xl bg-amber-100/55 p-4 dark:bg-amber-900/20">
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">{t.needsActivation}</p>
+                  <p className="mt-1 text-xs text-amber-700/95 dark:text-amber-200/90">{t.needsActivationMsg}</p>
+                </div>
+              ) : null}
             </div>
-          )}
+          ) : null}
+        </section>
 
-          {selectedClientId && !selectedClientVerified && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-950/20">
-              <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">{t.needsActivation}</p>
-              <p className="mt-1 text-xs text-amber-700/90 dark:text-amber-300/90">{t.needsActivationMsg}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Plan Selection */}
         {selectedClientId ? (
-          <div className="sbc-card rounded-2xl p-6 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10">
+          <section className="sbc-card agent-businesses-panel rounded-3xl p-4 sm:p-6">
+            <div className="mb-4 flex items-start gap-3">
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/12">
                 <HiOutlineSparkles className="h-5 w-5 text-accent" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold">{t.selectPlan}</h3>
-                <p className="text-sm text-(--muted-foreground)">
-                  {t.selectPlanHint}
-                </p>
+                <p className="text-sm text-(--muted-foreground)">{t.selectPlanHint}</p>
               </div>
             </div>
 
-            {/* Product cards */}
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {sortedProducts.map((product) => {
                 const active = isProductActive(product);
                 const selected = selectedProductSlug === product.slug;
                 const affordable = clientBalance >= product.price;
                 const disabled = !affordable && !active;
-                const productName =
-                  locale === "ar"
-                    ? product.name.ar || product.name.en
-                    : product.name.en;
+                const productName = locale === "ar" ? product.name.ar || product.name.en : product.name.en;
 
                 return (
                   <button
@@ -578,155 +531,110 @@ export function AgentBusinessForm({
                     type="button"
                     disabled={disabled}
                     onClick={() => {
-                      if (!disabled) {
-                        setSelectedProductSlug(
-                          selected ? "" : product.slug
-                        );
-                      }
+                      if (!disabled) setSelectedProductSlug(selected ? "" : product.slug);
                     }}
-                    className={`relative flex flex-col rounded-2xl border-2 p-5 text-start transition-all duration-200 ${
+                    className={`product-plan-card relative flex min-h-[248px] flex-col rounded-2xl border-2 p-4 text-start transition-all duration-200 sm:p-5 ${
                       selected
-                        ? "border-accent bg-accent/5 shadow-lg shadow-accent/10 ring-2 ring-accent/20"
+                        ? "border-accent bg-accent/5 ring-2 ring-accent/20"
                         : active
-                        ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-950/10"
-                        : disabled
-                        ? "border-(--surface-border) opacity-50 cursor-not-allowed"
-                        : "border-(--surface-border) hover:border-accent/50 hover:shadow-md cursor-pointer"
+                          ? "border-emerald-300 bg-emerald-50/55 dark:border-emerald-700 dark:bg-emerald-950/10"
+                          : disabled
+                            ? "border-(--surface-border) opacity-55 cursor-not-allowed"
+                            : "border-(--surface-border) hover:border-accent/50"
                     }`}
                   >
-                    {/* Active badge */}
-                    {active && (
-                      <span className="absolute -top-2.5 end-3 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                    {active ? (
+                      <span className="absolute -top-2.5 end-3 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-bold text-white">
                         <HiOutlineCheckBadge className="h-3 w-3" />
                         {t.planActive}
                       </span>
-                    )}
-
-                    {/* Selected indicator */}
-                    {selected && (
-                      <span className="absolute -top-2.5 start-3 inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                    ) : null}
+                    {selected ? (
+                      <span className="absolute -top-2.5 start-3 inline-flex items-center gap-1 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold text-white">
                         <HiOutlineCheckCircle className="h-3 w-3" />
                         {t.planSelected}
                       </span>
-                    )}
-
-                    {/* Locked badge */}
-                    {disabled && (
-                      <span className="absolute -top-2.5 end-3 inline-flex items-center gap-1 rounded-full bg-gray-400 px-2.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+                    ) : null}
+                    {disabled ? (
+                      <span className="absolute -top-2.5 end-3 inline-flex items-center gap-1 rounded-full bg-slate-500 px-2.5 py-0.5 text-[10px] font-bold text-white">
                         <HiOutlineLockClosed className="h-3 w-3" />
                         {t.insufficientBalance}
                       </span>
-                    )}
+                    ) : null}
 
-                    {/* Product name & program */}
-                    <div className="mb-3">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-accent/70">
-                        {product.program}
-                      </p>
-                      <h4 className="mt-0.5 text-base font-bold">
-                        {productName}
-                      </h4>
-                    </div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-accent/80">{product.program}</p>
+                    <h4 className="mt-1 line-clamp-2 text-lg font-bold leading-snug">{productName}</h4>
 
-                    {/* Price */}
-                    <div className="mb-3">
-                      <span className="text-2xl font-extrabold text-accent">
-                        {product.price.toFixed(3)}
-                      </span>{" "}
+                    <div className="mt-3">
+                      <span className="text-3xl font-extrabold text-accent">{formatMoney(product.price)}</span>{" "}
                       <span className="text-sm text-(--muted-foreground)">
                         {t.omr}
                         {formatInterval(product.durationDays)}
                       </span>
                     </div>
 
-                    {/* Features */}
-                    {product.features.length > 0 && (
-                      <ul className="space-y-1 text-xs text-(--muted-foreground)">
+                    {product.features.length > 0 ? (
+                      <ul className="mt-3 space-y-1 text-xs text-(--muted-foreground)">
                         {product.features.slice(0, 4).map((f, i) => (
                           <li key={i} className="flex items-start gap-1.5">
-                            <HiOutlineCheckCircle className="h-3.5 w-3.5 shrink-0 text-emerald-500 mt-0.5" />
-                            <span>{f}</span>
+                            <HiOutlineCheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                            <span className="line-clamp-2">{f}</span>
                           </li>
                         ))}
-                        {product.features.length > 4 && (
-                          <li className="text-(--muted-foreground)/60">
-                            +{product.features.length - 4} more
-                          </li>
-                        )}
                       </ul>
-                    )}
+                    ) : null}
 
-                    {/* Badges */}
-                    {product.badges && product.badges.length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">
+                    {product.badges && product.badges.length > 0 ? (
+                      <div className="mt-auto flex flex-wrap gap-1.5 pt-3">
                         {product.badges.map((badge, i) => (
-                          <span
-                            key={i}
-                            className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent"
-                          >
+                          <span key={i} className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
                             {badge}
                           </span>
                         ))}
                       </div>
-                    )}
+                    ) : null}
                   </button>
                 );
               })}
             </div>
 
-            {/* Insufficient balance warning */}
-            {selectedProductSlug && !canAffordSelected && (
-              <div className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-950/20 p-4">
-                <HiOutlineExclamationTriangle className="h-5 w-5 shrink-0 text-red-500 mt-0.5" />
+            {selectedProductSlug && !canAffordSelected ? (
+              <div className="mt-4 flex items-start gap-3 rounded-2xl bg-rose-100/60 p-4 dark:bg-rose-900/20">
+                <HiOutlineExclamationTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-300" />
                 <div>
-                  <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-                    {t.insufficientBalance}
-                  </p>
-                  <p className="mt-0.5 text-xs text-red-600 dark:text-red-400">
-                    {t.insufficientBalanceMsg}
-                  </p>
-                  <Link
-                    href={`/${locale}/agent`}
-                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors"
-                  >
-                    <HiOutlineBanknotes className="h-3.5 w-3.5" />
-                    {t.topUpWallet}
-                  </Link>
+                  <p className="text-sm font-semibold text-rose-700 dark:text-rose-300">{t.insufficientBalance}</p>
+                  <p className="mt-0.5 text-xs text-rose-700/90 dark:text-rose-200/90">{t.insufficientBalanceMsg}</p>
                 </div>
               </div>
-            )}
-          </div>
+            ) : null}
+          </section>
         ) : (
-          <div className="sbc-card rounded-2xl p-8 text-center">
-            <p className="text-sm text-(--muted-foreground)">
-              {t.noClientSelected}
-            </p>
-          </div>
+          <section className="sbc-card agent-businesses-panel rounded-3xl p-8 text-center">
+            <p className="text-sm text-(--muted-foreground)">{t.noClientSelected}</p>
+          </section>
         )}
 
-        {/* Continue Button */}
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => router.push(`/${locale}/agent/businesses`)}
-          >
-            {t.cancel}
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            disabled={!canProceed}
-            onClick={() => setStep(2)}
-            className="gap-2"
-          >
-            {t.proceedToForm}
-            {ar ? (
-              <HiOutlineArrowLeft className="h-4 w-4" />
-            ) : (
-              <HiOutlineArrowRight className="h-4 w-4" />
-            )}
-          </Button>
+        <div className="sticky bottom-3 z-20 rounded-2xl bg-white/80 p-2 backdrop-blur dark:bg-black/25 sm:static sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => router.push(`/${locale}/agent/businesses`)}
+              className="w-full sm:w-auto"
+            >
+              {t.cancel}
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              disabled={!canProceed}
+              onClick={() => setStep(2)}
+              className="w-full gap-2 sm:w-auto"
+            >
+              {t.proceedToForm}
+              {ar ? <HiOutlineArrowLeft className="h-4 w-4" /> : <HiOutlineArrowRight className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -736,7 +644,7 @@ export function AgentBusinessForm({
   // STEP 2: Business Details Form
   // ════════════════════════════════════════════════════════════════
   return (
-    <div className="space-y-6">
+    <div className="agent-view-root agent-businesses-view space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
@@ -759,7 +667,7 @@ export function AgentBusinessForm({
       </div>
 
       {/* Selected client & plan summary */}
-      <div className="sbc-card rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="sbc-card agent-businesses-panel rounded-2xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10">
             <HiOutlineCheckBadge className="h-5 w-5 text-accent" />
@@ -792,7 +700,7 @@ export function AgentBusinessForm({
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
-        <div className="sbc-card p-6 space-y-4">
+        <div className="sbc-card agent-businesses-panel p-6 space-y-4">
           <h3 className="text-lg font-semibold">{t.basicInfo}</h3>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -866,7 +774,7 @@ export function AgentBusinessForm({
         </div>
 
         {/* Contact Information */}
-        <div className="sbc-card p-6 space-y-4">
+        <div className="sbc-card agent-businesses-panel p-6 space-y-4">
           <h3 className="text-lg font-semibold">{t.contactInfo}</h3>
 
           <div className="grid gap-4 md:grid-cols-2">
@@ -924,67 +832,20 @@ export function AgentBusinessForm({
           </div>
         </div>
 
-        {/* Geographic Location */}
-        <div className="sbc-card p-6 space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold">{t.location}</h3>
-            <p className="text-sm text-(--muted-foreground) mt-1">
-              {t.locationDesc}
-            </p>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {t.address}
-            </label>
-            <MarkdownEditor
-              value={formData.address}
-              onChange={(val) => setFormData({ ...formData, address: val })}
-              placeholder={ar ? "العنوان التفصيلي" : "Detailed address"}
-              dir={ar ? "rtl" : "ltr"}
-              height={80}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              {t.selectLocation}
-            </label>
-            <p className="text-sm text-(--muted-foreground) mb-3">
-              {t.selectLocationHint}
-            </p>
-            <div className="rounded-lg overflow-hidden">
-              <OsmLocationPicker
-                value={
-                  location
-                    ? {
-                        lat: location.lat,
-                        lng: location.lng,
-                        radiusMeters: 250,
-                      }
-                    : null
-                }
-                onChange={(next) => {
-                  setLocation(
-                    next ? { lat: next.lat, lng: next.lng } : null
-                  );
-                }}
-                locale={locale}
-                hideRadius
-                markerImageUrl={logoPreview[0]}
-              />
-            </div>
-            {location && (
-              <p className="mt-2 text-xs text-(--muted-foreground)">
-                {t.selectedLocation} {location.lat.toFixed(6)},{" "}
-                {location.lng.toFixed(6)}
-              </p>
-            )}
-          </div>
+        {/* Address */}
+        <div className="sbc-card agent-businesses-panel p-6 space-y-4">
+          <h3 className="text-lg font-semibold">{t.address}</h3>
+          <MarkdownEditor
+            value={formData.address}
+            onChange={(val) => setFormData({ ...formData, address: val })}
+            placeholder={ar ? "العنوان التفصيلي" : "Detailed address"}
+            dir={ar ? "rtl" : "ltr"}
+            height={100}
+          />
         </div>
 
         {/* Additional Details */}
-        <div className="sbc-card p-6 space-y-4">
+        <div className="sbc-card agent-businesses-panel p-6 space-y-4">
           <h3 className="text-lg font-semibold">{t.additional}</h3>
           <div>
             <label className="block text-sm font-medium mb-2">
@@ -1001,7 +862,7 @@ export function AgentBusinessForm({
         </div>
 
         {/* Images & Media */}
-        <div className="sbc-card p-6 space-y-6">
+        <div className="sbc-card agent-businesses-panel p-6 space-y-6">
           <h3 className="text-lg font-semibold">{t.images}</h3>
 
           {/* Cover Image */}
@@ -1032,7 +893,7 @@ export function AgentBusinessForm({
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+              <label className="flex h-48 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-(--surface-border) bg-(--chip-bg)/40 transition-colors hover:border-accent">
                 <span className="text-sm text-(--muted-foreground)">
                   {t.chooseCover}
                 </span>
@@ -1076,7 +937,7 @@ export function AgentBusinessForm({
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+              <label className="flex h-32 w-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-(--surface-border) bg-(--chip-bg)/40 transition-colors hover:border-accent">
                 <span className="text-xs text-(--muted-foreground) text-center px-2">
                   {t.chooseLogo}
                 </span>
@@ -1120,7 +981,7 @@ export function AgentBusinessForm({
                 </button>
               </div>
             ) : (
-              <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+              <label className="flex h-64 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-(--surface-border) bg-(--chip-bg)/40 transition-colors hover:border-accent">
                 <span className="text-sm text-(--muted-foreground)">
                   {t.chooseBanner}
                 </span>
@@ -1171,7 +1032,7 @@ export function AgentBusinessForm({
                 ))}
               </div>
             )}
-            <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-(--surface-border) rounded-lg cursor-pointer hover:border-(--primary) transition-colors">
+            <label className="flex h-32 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-(--surface-border) bg-(--chip-bg)/40 transition-colors hover:border-accent">
               <span className="text-sm text-(--muted-foreground)">
                 {t.chooseGallery}
               </span>

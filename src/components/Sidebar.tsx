@@ -338,11 +338,25 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
 
     let eventSource: EventSource | null = null;
     let pulseTimeout: ReturnType<typeof setTimeout> | null = null;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let reconnectDelay = 1200;
+    let disposed = false;
 
     const connect = () => {
-      eventSource = new EventSource("/api/notifications/stream");
+      if (disposed) return;
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
 
-      eventSource.onmessage = (event) => {
+      const current = new EventSource("/api/notifications/stream");
+      eventSource = current;
+
+      current.onopen = () => {
+        reconnectDelay = 1200;
+      };
+
+      current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data) as {
             type?: "connected" | "read" | "new";
@@ -366,18 +380,25 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
         }
       };
 
-      eventSource.onerror = () => {
-        if (eventSource) {
-          eventSource.close();
+      current.onerror = () => {
+        if (eventSource === current) {
+          current.close();
           eventSource = null;
         }
+
+        if (disposed) return;
+        if (reconnectTimeout) clearTimeout(reconnectTimeout);
+        reconnectTimeout = setTimeout(connect, reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 1.8, 10_000);
       };
     };
 
     connect();
 
     return () => {
+      disposed = true;
       if (pulseTimeout) clearTimeout(pulseTimeout);
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (eventSource) eventSource.close();
     };
   }, [notificationPreferences.notificationsEnabled, notificationPreferences.soundsEnabled]);

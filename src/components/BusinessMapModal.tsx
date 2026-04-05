@@ -1,20 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
 import { Button } from "@/components/ui/Button";
 import type { Business } from "@/lib/db/types";
-import { attachMapResizeStabilizer } from "@/components/maps/mapResize";
-import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
-import {
-  isWithinOmanBounds,
-  OMAN_BOUNDS_TUPLE,
-  OMAN_CITY_ZOOM,
-  OMAN_DEFAULT_CENTER,
-  OMAN_MAX_ZOOM,
-  OMAN_MIN_ZOOM,
-  OMAN_TILE_LAYER_OPTIONS,
-  OMAN_TILE_TEMPLATE,
-} from "@/lib/maps/oman";
+import { clampToOmanBounds, OMAN_DEFAULT_CENTER } from "@/lib/maps/oman";
 
 type Props = {
   isOpen: boolean;
@@ -23,22 +13,26 @@ type Props = {
 };
 
 export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
-  const mapRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<LeafletMap | null>(null);
-  const markersRef = useRef<LeafletMarker[]>([]);
-  const resizeCleanupRef = useRef<(() => void) | null>(null);
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [active, setActive] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     let mounted = true;
-    setLoading(true);
     fetch(`/api/businesses?locale=${encodeURIComponent(locale)}`)
       .then((r) => r.json())
       .then((data) => {
         if (!mounted) return;
-        if (data.ok && Array.isArray(data.businesses)) setBusinesses(data.businesses);
+        if (data.ok && Array.isArray(data.businesses)) {
+          setBusinesses(data.businesses);
+          const firstWithLocation = data.businesses.find(
+            (b: Business) => typeof b.latitude === "number" && typeof b.longitude === "number"
+          );
+          if (firstWithLocation) {
+            setActive(clampToOmanBounds(firstWithLocation.latitude as number, firstWithLocation.longitude as number));
+          }
+        }
       })
       .catch(() => {})
       .finally(() => mounted && setLoading(false));
@@ -48,94 +42,11 @@ export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
     };
   }, [isOpen, locale]);
 
-  useEffect(() => {
-    if (!isOpen || !mapRef.current) return;
-    let mounted = true;
-
-    const init = async () => {
-      const L = (await import("leaflet")).default;
-
-      if (!mounted || !mapRef.current) return;
-
-      if (mapInstanceRef.current) {
-        resizeCleanupRef.current?.();
-        resizeCleanupRef.current = null;
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-        markersRef.current = [];
-      }
-
-      const map = L.map(mapRef.current, {
-        center: [OMAN_DEFAULT_CENTER.lat, OMAN_DEFAULT_CENTER.lng],
-        zoom: OMAN_CITY_ZOOM,
-        minZoom: OMAN_MIN_ZOOM,
-        maxZoom: OMAN_MAX_ZOOM,
-        maxBounds: L.latLngBounds(OMAN_BOUNDS_TUPLE),
-        maxBoundsViscosity: 1,
-        zoomControl: false,
-        attributionControl: false,
-        preferCanvas: true,
-        fadeAnimation: false,
-      });
-
-      L.tileLayer(OMAN_TILE_TEMPLATE, { ...OMAN_TILE_LAYER_OPTIONS }).addTo(map);
-
-      mapInstanceRef.current = map;
-      resizeCleanupRef.current = attachMapResizeStabilizer(map);
-
-      // add markers when businesses are loaded
-      const addMarkers = () => {
-        if (!businesses || !mapInstanceRef.current) return;
-        const points: [number, number][] = [];
-        for (const b of businesses) {
-          if (
-            typeof b.latitude !== "number" ||
-            typeof b.longitude !== "number" ||
-            !isWithinOmanBounds(b.latitude, b.longitude)
-          ) continue;
-          const marker = L.marker([b.latitude, b.longitude]).addTo(map);
-          const name = (locale === "ar" ? b.name.ar : b.name.en) || b.slug || "";
-          const href = b.username ? `/${locale}/businesses/@${b.username}` : `/${locale}/businesses/${b.slug}`;
-          marker.bindPopup(`<div style="min-width:120px"><strong>${name}</strong><br/><a href='${href}'>View</a></div>`);
-          markersRef.current.push(marker);
-          points.push([b.latitude, b.longitude]);
-        }
-
-        if (points.length > 0) {
-          const bounds = L.latLngBounds(points.map((p) => L.latLng(p[0], p[1])));
-          map.fitBounds(bounds.pad(0.15), { animate: false, maxZoom: OMAN_CITY_ZOOM, padding: [24, 24] });
-        } else {
-          map.fitBounds(L.latLngBounds(OMAN_BOUNDS_TUPLE), {
-            animate: false,
-            maxZoom: OMAN_CITY_ZOOM,
-            padding: [24, 24],
-          });
-        }
-      };
-
-      addMarkers();
-    };
-
-    void init();
-
-    return () => {
-      mounted = false;
-      resizeCleanupRef.current?.();
-      resizeCleanupRef.current = null;
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-      markersRef.current = [];
-    };
-  }, [isOpen, businesses, locale]);
-
-  useEffect(() => {
-    return () => {
-      resizeCleanupRef.current?.();
-      resizeCleanupRef.current = null;
-    };
-  }, []);
+  const center = active ?? OMAN_DEFAULT_CENTER;
+  const embedSrc = useMemo(
+    () => `https://maps.google.com/maps?q=${center.lat},${center.lng}&z=12&output=embed`,
+    [center.lat, center.lng]
+  );
 
   if (!isOpen) return null;
 
@@ -143,28 +54,64 @@ export function BusinessMapModal({ isOpen, onClose, locale }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-4xl mx-4 bg-(--surface) rounded-2xl overflow-hidden shadow-2xl">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-(--surface-border)">
+      <div className="relative mx-4 flex w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-(--surface) shadow-2xl">
+        <div className="flex items-center justify-between border-b border-(--surface-border) px-4 py-3">
           <h3 className="text-lg font-semibold">{locale === "ar" ? "الخريطة" : "Map"}</h3>
-          <button type="button" onClick={onClose} className="p-2 hover:bg-(--chip-bg) rounded-full">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button type="button" onClick={onClose} className="rounded-full p-2 hover:bg-(--chip-bg)">
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="relative h-96 bg-(--chip-bg)">
-          {loading && (
-            <div className="absolute inset-0 flex items-center justify-center z-10">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
-          <div ref={mapRef} className="w-full h-full" />
+        <div className="grid gap-0 md:grid-cols-[300px,1fr]">
+          <div className="max-h-[28rem] overflow-y-auto border-b border-(--surface-border) p-3 md:max-h-[34rem] md:border-b-0 md:border-e">
+            {loading ? (
+              <div className="px-1 py-3 text-sm text-(--muted-foreground)">{locale === "ar" ? "جارٍ التحميل..." : "Loading..."}</div>
+            ) : (
+              <ul className="space-y-2">
+                {(businesses ?? []).map((b) => {
+                  if (typeof b.latitude !== "number" || typeof b.longitude !== "number") return null;
+                  const point = clampToOmanBounds(b.latitude, b.longitude);
+                  const href = `https://www.google.com/maps/search/?api=1&query=${point.lat},${point.lng}`;
+                  return (
+                    <li key={b.id} className="rounded-xl bg-(--chip-bg) p-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setActive(point)}
+                        className="w-full text-start text-sm font-medium hover:opacity-90"
+                      >
+                        {locale === "ar" ? b.name.ar : b.name.en}
+                      </button>
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 inline-block text-xs text-accent hover:underline"
+                      >
+                        {locale === "ar" ? "فتح في Google Maps" : "Open in Google Maps"}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          <div className="h-[28rem] md:h-[34rem]">
+            <iframe
+              title={locale === "ar" ? "خريطة جوجل" : "Google map"}
+              src={embedSrc}
+              className="h-full w-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+            />
+          </div>
         </div>
 
-        <div className="flex gap-3 p-4 border-t border-(--surface-border)">
-          <Button variant="secondary" className="flex-1" onClick={onClose}>
-            {locale === "ar" ? "بستن" : "Close"}
+        <div className="border-t border-(--surface-border) p-4">
+          <Button variant="secondary" className="w-full" onClick={onClose}>
+            {locale === "ar" ? "إغلاق" : "Close"}
           </Button>
         </div>
       </div>

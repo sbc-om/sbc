@@ -6,7 +6,6 @@ import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
 import { FiPhone, FiMail, FiGlobe, FiMapPin, FiTag, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { buttonVariants } from "@/components/ui/Button";
-import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
 import { BusinessEngagement } from "@/components/business/BusinessEngagement";
 import { ShareActionButton } from "@/components/ShareActionButton";
 import { FollowBusinessButton } from "@/components/business/FollowBusinessButton";
@@ -29,7 +28,6 @@ interface ExplorerBusinessViewProps {
   category: Category | null;
   categoryIconId?: string;
   handlePath: string;
-  mapsHref: string | null;
   likeCount: number;
   liked: boolean;
   approvedComments: BusinessComment[];
@@ -54,7 +52,6 @@ export function ExplorerBusinessView({
   category,
   categoryIconId,
   handlePath,
-  mapsHref,
   likeCount,
   liked,
   approvedComments,
@@ -105,15 +102,6 @@ export function ExplorerBusinessView({
     : "";
   const isVerified = business.isVerified ?? false;
   const isSpecial = business.isSpecial ?? false;
-  const latitude =
-    typeof business.latitude === "number" && Number.isFinite(business.latitude)
-      ? business.latitude
-      : null;
-  const longitude =
-    typeof business.longitude === "number" && Number.isFinite(business.longitude)
-      ? business.longitude
-      : null;
-
   const closeGalleryModal = () => {
     setIsGalleryModalVisible(false);
     if (galleryCloseTimerRef.current !== null) {
@@ -436,18 +424,6 @@ export function ExplorerBusinessView({
             </section>
           ) : null}
 
-          {latitude !== null && longitude !== null ? (
-            <section className="sbc-card mt-6 rounded-2xl overflow-hidden">
-              <StaticLocationMap
-                latitude={latitude}
-                longitude={longitude}
-                locale={locale}
-                className="h-72 w-full"
-                markerImageUrl={business.media?.logo}
-              />
-            </section>
-          ) : null}
-
           {beforeEngagement}
 
           <div className="mt-6">
@@ -563,19 +539,6 @@ export function ExplorerBusinessView({
                     </div>
                     <div className="mt-0.5 text-sm font-medium text-foreground">
                       {[business.address, business.city].filter(Boolean).join(", ")}
-                      {mapsHref ? (
-                        <>
-                          {" "}
-                          <a
-                            href={mapsHref}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-accent hover:underline inline-flex items-center gap-1"
-                          >
-                            {locale === "ar" ? "عرض على الخريطة" : "View on map"}
-                          </a>
-                        </>
-                      ) : null}
                     </div>
                   </div>
                 </div>

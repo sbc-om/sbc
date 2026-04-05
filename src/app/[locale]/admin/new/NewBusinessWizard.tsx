@@ -12,7 +12,6 @@ import {
   type SetStateAction,
 } from "react";
 import { useRouter } from "next/navigation";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 
 import { createBusinessAction } from "@/app/[locale]/admin/actions";
@@ -25,11 +24,6 @@ import { UserSelect } from "@/components/ui/UserSelect";
 import { useToast } from "@/components/ui/Toast";
 import type { Category } from "@/lib/db/types";
 import type { Locale } from "@/lib/i18n/locales";
-
-const OsmLocationPicker = dynamic(
-  () => import("@/components/maps/OsmLocationPicker").then((m) => m.OsmLocationPicker),
-  { ssr: false },
-);
 
 type StepId = "info" | "contact" | "location" | "media" | "settings" | "review";
 
@@ -48,11 +42,6 @@ interface FormDataState {
   email: string;
   website: string;
   tags: string;
-}
-
-interface LocationData {
-  lat: number;
-  lng: number;
 }
 
 function slugifyEnglish(input: string) {
@@ -174,7 +163,6 @@ export function NewBusinessWizard({
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [animDir, setAnimDir] = useState<"next" | "prev">("next");
-  const [location, setLocation] = useState<LocationData | null>(null);
   const [slugTouched, setSlugTouched] = useState(false);
 
   const [isApproved, setIsApproved] = useState(true);
@@ -413,7 +401,7 @@ export function NewBusinessWizard({
         case "contact":
           return !!(formData.city || formData.phone || formData.email);
         case "location":
-          return !!location;
+          return true;
         case "media":
           return logoPreview.length > 0 || coverPreview.length > 0 || bannerPreview.length > 0 || galleryPreview.length > 0;
         case "settings":
@@ -422,7 +410,7 @@ export function NewBusinessWizard({
           return false;
       }
     },
-    [steps, formData, location, logoPreview.length, coverPreview.length, bannerPreview.length, galleryPreview.length, isApproved, isVerified, isSpecial, homepageFeatured, homepageTop, avatarMode],
+    [steps, formData, logoPreview.length, coverPreview.length, bannerPreview.length, galleryPreview.length, isApproved, isVerified, isSpecial, homepageFeatured, homepageTop, avatarMode],
   );
 
   const goNext = useCallback(() => {
@@ -486,11 +474,6 @@ export function NewBusinessWizard({
       payload.append("avatarMode", avatarMode);
       payload.append("showSimilarBusinesses", showSimilarBusinesses ? "true" : "false");
       payload.append("customDomain", domainValue.trim().toLowerCase());
-
-      if (location) {
-        payload.append("latitude", String(location.lat));
-        payload.append("longitude", String(location.lng));
-      }
 
       if (coverFileRef.current) payload.append("coverImage", coverFileRef.current);
       if (logoFileRef.current) payload.append("logoImage", logoFileRef.current);
@@ -753,22 +736,15 @@ export function NewBusinessWizard({
           <div className="space-y-6">
             <StepHeader
               icon={IconMap}
-              title={ar ? "الموقع الجغرافي" : "Geographic Location"}
-              desc={ar ? "حدد موقع النشاط على الخريطة" : "Pin your business location on the map"}
+              title={ar ? "الموقع" : "Location"}
+              desc={ar ? "تم إيقاف الخريطة في قسم الأنشطة." : "Map is disabled in business sections."}
             />
             <div className="sbc-card p-6">
-              <div className="rounded-xl overflow-hidden border border-(--surface-border)">
-                <OsmLocationPicker
-                  value={location ? { lat: location.lat, lng: location.lng, radiusMeters: 250 } : null}
-                  onChange={(next) => setLocation(next ? { lat: next.lat, lng: next.lng } : null)}
-                  locale={locale}
-                  hideRadius
-                  markerImageUrl={logoPreview[0]}
-                />
+              <div className="rounded-xl bg-(--chip-bg) p-4 text-sm text-(--muted-foreground)">
+                {ar
+                  ? "لا يتم استخدام الخريطة هنا. تابع إنشاء النشاط بدون تحديد موقع على الخريطة."
+                  : "Map is not used here. Continue creating the business without selecting a map location."}
               </div>
-              {location ? (
-                <p className="mt-3 text-xs text-(--muted-foreground)">{location.lat.toFixed(6)}, {location.lng.toFixed(6)}</p>
-              ) : null}
             </div>
           </div>
         )}

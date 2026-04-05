@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { StaticLocationMap } from "@/components/maps/StaticLocationMap";
 import type {
   Website,
   WebsitePage,
@@ -432,11 +433,14 @@ function BlockRenderer({ block, locale }: { block: WebsiteBlock; locale: Locale 
       return (
         <section className="mx-auto max-w-5xl px-6 py-14">
           <div className="overflow-hidden rounded-2xl ring-1 ring-gray-200 dark:ring-white/10 shadow-lg">
-            <iframe
-              className="w-full h-80 md:h-96 border-0"
-              loading="lazy"
-              src={`https://www.openstreetmap.org/export/embed.html?bbox=${block.data.longitude - 0.01},${block.data.latitude - 0.01},${block.data.longitude + 0.01},${block.data.latitude + 0.01}&layer=mapnik&marker=${block.data.latitude},${block.data.longitude}`}
-            />
+            <div className="h-80 md:h-96">
+              <StaticLocationMap
+                latitude={block.data.latitude}
+                longitude={block.data.longitude}
+                locale={locale as "en" | "ar"}
+                className="h-full w-full"
+              />
+            </div>
           </div>
         </section>
       );
