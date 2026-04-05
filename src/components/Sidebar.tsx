@@ -33,8 +33,6 @@ import {
   HiX,
   HiBell,
   HiOutlineBell,
-  HiLocationMarker,
-  HiOutlineLocationMarker,
 } from "react-icons/hi";
 import { IoBookmark, IoBookmarkOutline, IoWallet, IoWalletOutline } from "react-icons/io5";
 import { HiPlus, HiOutlinePlus, HiBriefcase, HiOutlineBriefcase, HiUserGroup, HiOutlineUserGroup } from "react-icons/hi";
@@ -412,14 +410,6 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       path: "/store",
       Icon: HiShoppingBag,
       IconOutline: HiOutlineShoppingBag,
-    },
-    {
-      key: "map",
-      label: locale === "ar" ? "الخريطة" : "Map",
-      path: "/map",
-      Icon: HiLocationMarker,
-      IconOutline: HiOutlineLocationMarker,
-      hardNavigate: true,
     },
     {
       key: "wallet",

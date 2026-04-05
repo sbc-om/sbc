@@ -500,9 +500,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .leaflet-map-pane,
-.leaflet-tile-pane,
-.leaflet-marker-pane {
-  transform: translateZ(0);
+.leaflet-tile-pane {
   backface-visibility: hidden;
 }
 
@@ -533,19 +531,31 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ── Business marker base ──────────────────────── */
-.map-business-marker {
-  background: transparent !important;
+.leaflet-marker-icon.map-business-logo-icon {
   border: 0 !important;
+  background: transparent !important;
   box-shadow: none !important;
+  pointer-events: auto;
+  transition: none !important;
+  animation: none !important;
+  will-change: auto !important;
+  filter: none;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
-.map-business-marker img {
+.map-business-logo-icon__inner {
+  display: block;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  background-color: #ffffff;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   pointer-events: none;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
-}
-
-.map-business-marker:hover img {
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
 }
 
 /* ── Cluster bubble styling ──────────────────────── */

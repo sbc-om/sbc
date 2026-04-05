@@ -29,8 +29,6 @@ import {
   HiOutlineCash,
   HiBriefcase,
   HiOutlineBriefcase,
-  HiLocationMarker,
-  HiOutlineLocationMarker,
   HiSun,
   HiMoon,
   HiDesktopComputer,
@@ -204,14 +202,6 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
       path: "/categories",
       Icon: HiCollection,
       IconOutline: HiOutlineCollection,
-    },
-    {
-      key: "map",
-      label: locale === "ar" ? "الخريطة" : "Map",
-      path: "/map",
-      Icon: HiLocationMarker,
-      IconOutline: HiOutlineLocationMarker,
-      hardNavigate: true,
     },
   ];
 

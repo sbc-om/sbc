@@ -132,13 +132,15 @@ function FileMessage({ url, locale }: { url: string; locale: string }) {
   );
 }
 
-// Location message component - compact version that links to full map page
+// Location message component - opens directly in Google Maps
 function LocationMessage({ lat, lng, locale }: { lat: number; lng: number; locale: string }) {
-  const mapPageUrl = `/${locale}/map?lat=${lat}&lng=${lng}`;
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${lat},${lng}`)}`;
   
   return (
     <a 
-      href={mapPageUrl}
+      href={googleMapsUrl}
+      target="_blank"
+      rel="noopener noreferrer"
       className="flex items-center gap-3 px-3 py-2.5 bg-(--chip-bg) hover:bg-(--surface-border) rounded-xl transition-colors max-w-[200px] group"
     >
       {/* Map preview icon */}
@@ -155,7 +157,7 @@ function LocationMessage({ lat, lng, locale }: { lat: number; lng: number; local
           {locale === "ar" ? "موقع مشترك" : "Shared location"}
         </p>
         <p className="text-xs text-(--muted-foreground) truncate">
-          {locale === "ar" ? "انقر للعرض" : "Tap to view"}
+          {locale === "ar" ? "فتح في خرائط Google" : "Open in Google Maps"}
         </p>
       </div>
       

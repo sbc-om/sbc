@@ -232,17 +232,6 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   </Link>
                 )}
 
-                <Link
-                  href={`/${locale}/map`}
-                  className={buttonVariants({
-                    variant: "secondary",
-                    size: "sm",
-                    className: `${topNavStableClass} ${topNavBlueHoverClass} ${topNavNoShadowClass}`,
-                  })}
-                >
-                  {locale === "ar" ? "الخريطة" : "Map"}
-                </Link>
-
                 {user ? (
                   <a
                     href={`/${locale}/dashboard`}
@@ -384,18 +373,6 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                           {dict.nav.businesses}
                         </Link>
                       )}
-
-                      <Link
-                        href={`/${locale}/map`}
-                        onClick={() => setMobileOpen(false)}
-                        className={buttonVariants({
-                          variant: "ghost",
-                          size: "md",
-                          className: `w-full justify-start rounded-xl ${topNavNoShadowClass}`,
-                        })}
-                      >
-                        {locale === "ar" ? "الخريطة" : "Map"}
-                      </Link>
 
                       {user ? (
                         <a

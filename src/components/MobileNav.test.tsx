@@ -33,12 +33,10 @@ describe("MobileNav", () => {
     localStorage.clear();
   });
 
-  it("renders hard-navigation map anchor with locale-prefixed href", () => {
+  it("does not render map navigation item", () => {
     render(<MobileNav locale="en" dict={dict} user={{ role: "admin" }} />);
 
-    const mapLink = screen.getByText("Map").closest("a");
-    expect(mapLink).toBeTruthy();
-    expect(mapLink?.getAttribute("href")).toBe("/en/map");
+    expect(screen.queryByText("Map")).not.toBeInTheDocument();
   });
 
   it("opens profile menu and closes on escape/outside click", async () => {
