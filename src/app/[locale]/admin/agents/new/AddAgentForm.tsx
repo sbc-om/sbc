@@ -109,7 +109,7 @@ export default function AddAgentForm({
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-7">
+    <div className="agent-view-root mx-auto max-w-2xl space-y-7">
       {/* Header */}
       <div>
         <Link

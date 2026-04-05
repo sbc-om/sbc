@@ -250,7 +250,7 @@ export function AddClientForm({ locale }: { locale: Locale }) {
 
   if (success) {
     return (
-      <div className="space-y-6">
+      <div className="agent-view-root space-y-6">
         <div className="sbc-card rounded-2xl p-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
             <HiOutlineCheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
@@ -328,7 +328,7 @@ export function AddClientForm({ locale }: { locale: Locale }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="agent-view-root space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
         <p className="mt-1 text-sm text-(--muted-foreground)">{t.subtitle}</p>

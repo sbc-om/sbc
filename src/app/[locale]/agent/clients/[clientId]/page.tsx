@@ -97,7 +97,7 @@ export default async function AgentClientDetailsPage({
     : "";
 
   return (
-    <AppPage>
+    <AppPage className="agent-workspace-page" containerClassName="agent-workspace-container">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{t.title}</h1>

@@ -28,7 +28,7 @@ export default async function AddAgentPage({
   );
 
   return (
-    <AppPage>
+    <AppPage className="agent-workspace-page" containerClassName="agent-workspace-container">
       <AddAgentForm locale={locale as Locale} users={eligibleUsers} />
     </AppPage>
   );

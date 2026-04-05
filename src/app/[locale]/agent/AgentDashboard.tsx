@@ -235,7 +235,7 @@ export default function AgentDashboard({
   }
 
   return (
-    <div className="space-y-7">
+    <div className="agent-view-root space-y-7">
       {/* ── Header ── */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t.title}</h1>

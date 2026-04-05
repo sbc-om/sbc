@@ -24,7 +24,7 @@ export default async function AgentBusinessesPage({
   const categoriesById = new Map(categories.map((c) => [c.id, c]));
 
   return (
-    <AppPage>
+    <AppPage className="agent-workspace-page" containerClassName="agent-workspace-container">
       <AgentBusinessesList
         locale={locale as Locale}
         requests={requests}

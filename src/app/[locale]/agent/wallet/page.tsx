@@ -26,7 +26,7 @@ export default async function AgentWalletPage({
   ]);
 
   return (
-    <AppPage>
+    <AppPage className="agent-workspace-page" containerClassName="agent-workspace-container">
       <AgentWalletClient
         locale={locale as Locale}
         summary={summary}

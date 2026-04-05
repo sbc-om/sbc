@@ -59,9 +59,9 @@ export default async function AgentLayout({
   }
 
   return (
-    <div className="flex min-h-dvh">
+    <div className="flex min-h-dvh bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.08),transparent_42%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.08),transparent_38%)]">
       {/* Agent-specific sidebar — desktop only */}
-      <aside className="hidden md:flex w-64 shrink-0 flex-col border-e border-(--surface-border) bg-(--surface)">
+      <aside className="hidden md:flex w-64 shrink-0 flex-col border-e border-(--surface-border) bg-(--surface)/85 backdrop-blur-xl">
         <AgentSidebar locale={locale as Locale} />
       </aside>
 

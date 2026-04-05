@@ -24,7 +24,7 @@ export default async function AgentWalletRequestPage({
   const summary = await getAgentWalletSummary(user.id);
 
   return (
-    <AppPage>
+    <AppPage className="agent-workspace-page" containerClassName="agent-workspace-container">
       <RequestWithdrawalClient
         locale={locale as Locale}
         availableWallet={summary.availableWallet}

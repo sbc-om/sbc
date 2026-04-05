@@ -34,7 +34,7 @@ export default async function AdminAgentDetailPage({
   const stats = await getAgentStats(id);
 
   return (
-    <AppPage>
+    <AppPage className="agent-workspace-page" containerClassName="agent-workspace-container">
       <AgentDetailView
         locale={locale as Locale}
         agent={agent}

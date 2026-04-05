@@ -217,7 +217,7 @@ export default function AgentDetailView({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-7">
+    <div className="agent-view-root mx-auto max-w-4xl space-y-7">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>

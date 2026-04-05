@@ -64,7 +64,7 @@ export default async function AgentPage({
   );
 
   return (
-    <AppPage>
+    <AppPage className="agent-workspace-page" containerClassName="agent-workspace-container">
       <AgentDashboard
         locale={locale as Locale}
         agent={agent ?? defaultAgent}

@@ -52,7 +52,7 @@ export default async function AgentNewBusinessPage({
   );
 
   return (
-    <AppPage>
+    <AppPage className="agent-workspace-page" containerClassName="agent-workspace-container">
       <AgentBusinessForm
         locale={locale as Locale}
         categories={categories}

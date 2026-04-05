@@ -10,8 +10,11 @@ import {
   HiOutlineClock,
   HiOutlineCheckCircle,
   HiOutlineXCircle,
+  HiOutlineRefresh,
+  HiOutlineEye,
+  HiOutlineEyeOff,
 } from "react-icons/hi";
-import { HiOutlineBanknotes, HiOutlineChartBar, HiOutlineReceiptPercent, HiOutlineWallet } from "react-icons/hi2";
+import { HiOutlineBanknotes, HiOutlineReceiptPercent, HiOutlineWallet } from "react-icons/hi2";
 
 import type { Locale } from "@/lib/i18n/locales";
 import type { AgentWithdrawalRequest } from "@/lib/db/agents";
@@ -80,6 +83,10 @@ export default function AgentWalletClient({ locale, commissionRate, summary, req
   const eventSourceRef = useRef<EventSource | null>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const sseConnectedRef = useRef(false);
+  const [hideBalance, setHideBalance] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("agent_wallet_hide_balance") === "true";
+  });
 
   const t = {
     title: ar ? "محفظة الوكيل" : "Agent Wallet",
@@ -92,20 +99,9 @@ export default function AgentWalletClient({ locale, commissionRate, summary, req
     pendingReq: ar ? "طلبات سحب معلقة" : "Pending Withdrawal Requests",
     totalTransactions: ar ? "إجمالي العمليات" : "Total Transactions",
     requestWithdraw: ar ? "طلب سحب" : "Request Withdrawal",
-    amount: ar ? "المبلغ" : "Amount",
-    bankName: ar ? "اسم البنك" : "Bank Name",
-    accountName: ar ? "اسم صاحب الحساب" : "Account Holder Name",
-    accountNumber: ar ? "رقم الحساب" : "Account Number",
-    iban: ar ? "رقم الآيبان" : "IBAN",
-    note: ar ? "ملاحظات" : "Note",
-    submit: ar ? "إرسال الطلب" : "Submit Request",
-    cancel: ar ? "إلغاء" : "Cancel",
     history: ar ? "سجل طلبات السحب" : "Withdrawal Request History",
-    status: ar ? "الحالة" : "Status",
-    requested: ar ? "مطلوب" : "Requested",
     approved: ar ? "معتمد" : "Approved",
     noRequests: ar ? "لا توجد طلبات سحب بعد" : "No withdrawal requests yet",
-    availableHint: ar ? "رصيدك المتاح للسحب الآن" : "Your current withdrawable balance",
     adminMessage: ar ? "رسالة الإدارة" : "Admin Message",
     receipt: ar ? "إيصال التحويل" : "Payment Receipt",
     reference: ar ? "المرجع" : "Reference",
@@ -113,10 +109,19 @@ export default function AgentWalletClient({ locale, commissionRate, summary, req
     requestCreatedToast: ar ? "تم إرسال طلب السحب" : "Withdrawal request submitted",
     requestApprovedToast: ar ? "تمت الموافقة على طلب السحب" : "Withdrawal approved",
     requestRejectedToast: ar ? "تم رفض طلب السحب" : "Withdrawal rejected",
-    requestOnPageHint: ar ? "تقديم طلب السحب يتم الآن من صفحة مستقلة" : "Submit withdrawal requests from a dedicated page",
   };
 
-  const surfaceCard = "rounded-2xl border border-gray-200/70 bg-white p-4 shadow-xs dark:border-white/[0.06] dark:bg-white/[0.02]";
+  const surfaceCard = "rounded-2xl bg-white p-4 shadow-(--shadow) dark:bg-white/[0.02]";
+
+  const formatAmount = (value: number) => (hideBalance ? "***" : value.toFixed(3));
+  const formatDateTime = (value: string) =>
+    new Date(value).toLocaleString(ar ? "ar-OM" : "en-OM", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   const showToast = useCallback((message: string, type: "success" | "error" | "info" = "info") => {
     setToast({ message, type });
@@ -221,66 +226,147 @@ export default function AgentWalletClient({ locale, commissionRate, summary, req
   };
 
   return (
-    <div className="space-y-7">
-      <div className="flex flex-col gap-4 rounded-2xl border border-gray-200/70 bg-white p-5 dark:border-white/[0.06] dark:bg-white/[0.02] sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t.title}</h1>
-          <p className="mt-1 text-sm text-(--muted-foreground)">{t.subtitle}</p>
-          <p className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
-            <HiOutlineWallet className="h-3.5 w-3.5" />
-            {t.availableHint}: {summary.availableWallet.toFixed(3)} OMR
-          </p>
+    <div className="agent-view-root space-y-6">
+      <section className="relative overflow-hidden rounded-3xl bg-(--surface) p-5 sm:p-6 shadow-(--shadow)">
+        <div className="pointer-events-none absolute -top-20 -end-16 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -start-14 h-56 w-56 rounded-full bg-accent-2/10 blur-3xl" />
+
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{t.title}</h1>
+            <p className="mt-1 text-sm text-(--muted-foreground)">{t.subtitle}</p>
+            <div className="mt-4">
+              <p className="text-xs text-(--muted-foreground)">{t.available}</p>
+              <p className="mt-1 text-3xl sm:text-4xl font-bold tabular-nums">
+                {formatAmount(summary.availableWallet)} <span className="text-lg font-semibold">OMR</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex w-full flex-col gap-2 sm:w-auto">
+            <button
+              type="button"
+              onClick={() => {
+                const next = !hideBalance;
+                setHideBalance(next);
+                localStorage.setItem("agent_wallet_hide_balance", String(next));
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-(--chip-bg) px-3.5 py-2 text-xs font-semibold text-(--foreground) shadow-xs hover:bg-(--surface)"
+            >
+              {hideBalance ? <HiOutlineEye className="h-4 w-4" /> : <HiOutlineEyeOff className="h-4 w-4" />}
+              {hideBalance ? (ar ? "إظهار الرصيد" : "Show balance") : (ar ? "إخفاء الرصيد" : "Hide balance")}
+            </button>
+            <button
+              type="button"
+              onClick={refreshData}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-(--chip-bg) px-3.5 py-2 text-xs font-semibold text-(--foreground) shadow-xs hover:bg-(--surface)"
+            >
+              <HiOutlineRefresh className="h-4 w-4" />
+              {ar ? "تحديث" : "Refresh"}
+            </button>
+            <Link
+              href={`/${locale}/agent/wallet/request`}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90"
+            >
+              <HiOutlineCash className="h-4 w-4" />
+              {t.requestWithdraw}
+            </Link>
+          </div>
         </div>
-        <Link
-          href={`/${locale}/agent/wallet/request`}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.98]"
-        >
-          <HiOutlineCash className="h-4 w-4" />
-          {t.requestWithdraw}
-        </Link>
+
+        <div className="relative mt-4 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-2.5 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-950/35 dark:text-indigo-300">
+            <HiOutlineReceiptPercent className="h-3.5 w-3.5" />
+            {t.commissionRate}: {commissionRate}%
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-950/35 dark:text-amber-300">
+            <HiOutlineClock className="h-3.5 w-3.5" />
+            {t.pendingReq}: {summary.pendingWithdrawRequests}
+          </span>
+        </div>
+      </section>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className={surfaceCard}>
+          <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+            <HiOutlineBanknotes className="h-4 w-4" />
+          </div>
+          <p className="text-xs text-(--muted-foreground)">{t.totalEarned}</p>
+          <p className="text-lg font-bold tabular-nums">{formatAmount(summary.totalEarned)} OMR</p>
+        </div>
+        <div className={surfaceCard}>
+          <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+            <HiOutlineCash className="h-4 w-4" />
+          </div>
+          <p className="text-xs text-(--muted-foreground)">{t.withdrawn}</p>
+          <p className="text-lg font-bold tabular-nums">{formatAmount(summary.totalWithdrawn)} OMR</p>
+        </div>
+        <div className={surfaceCard}>
+          <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-100 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-400">
+            <HiOutlineBanknotes className="h-4 w-4" />
+          </div>
+          <p className="text-xs text-(--muted-foreground)">{t.totalSales}</p>
+          <p className="text-lg font-bold tabular-nums">{formatAmount(summary.totalSales)} OMR</p>
+        </div>
+        <div className={surfaceCard}>
+          <div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+            <HiOutlineWallet className="h-4 w-4" />
+          </div>
+          <p className="text-xs text-(--muted-foreground)">{t.totalTransactions}</p>
+          <p className="text-lg font-bold tabular-nums">{summary.totalTransactions}</p>
+        </div>
       </div>
 
-      <p className="-mt-3 text-xs text-(--muted-foreground)">{t.requestOnPageHint}</p>
-
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <div className={surfaceCard}><div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400"><HiOutlineReceiptPercent className="h-4 w-4" /></div><p className="text-xs text-(--muted-foreground)">{t.commissionRate}</p><p className="text-lg font-bold">{commissionRate}%</p></div>
-        <div className={surfaceCard}><div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-100 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-400"><HiOutlineChartBar className="h-4 w-4" /></div><p className="text-xs text-(--muted-foreground)">{t.totalSales}</p><p className="text-lg font-bold">{summary.totalSales.toFixed(3)} OMR</p></div>
-        <div className={surfaceCard}><div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400"><HiOutlineBanknotes className="h-4 w-4" /></div><p className="text-xs text-(--muted-foreground)">{t.totalEarned}</p><p className="text-lg font-bold">{summary.totalEarned.toFixed(3)} OMR</p></div>
-        <div className={surfaceCard}><div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 text-green-600 dark:bg-green-950/40 dark:text-green-400"><HiOutlineWallet className="h-4 w-4" /></div><p className="text-xs text-(--muted-foreground)">{t.available}</p><p className="text-lg font-bold text-emerald-600">{summary.availableWallet.toFixed(3)} OMR</p></div>
-        <div className={surfaceCard}><div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400"><HiOutlineCash className="h-4 w-4" /></div><p className="text-xs text-(--muted-foreground)">{t.withdrawn}</p><p className="text-lg font-bold">{summary.totalWithdrawn.toFixed(3)} OMR</p></div>
-        <div className={surfaceCard}><div className="mb-2 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400"><HiOutlineClock className="h-4 w-4" /></div><p className="text-xs text-(--muted-foreground)">{t.pendingReq}</p><p className="text-lg font-bold">{summary.pendingWithdrawRequests.toFixed(3)} OMR</p></div>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border border-gray-200/70 bg-white dark:border-white/[0.06] dark:bg-white/[0.02]">
-        <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-3 text-sm font-semibold dark:border-white/[0.05]">
+      <section className="overflow-hidden rounded-2xl bg-white shadow-(--shadow) dark:bg-white/[0.02]">
+        <div className="flex items-center gap-2 px-4 py-3 text-sm font-semibold">
           <HiOutlineBanknotes className="h-4 w-4" />
           {t.history}
         </div>
+
         <div className="p-4">
-        {requests.length === 0 ? (
-          <p className="text-sm text-(--muted-foreground)">{t.noRequests}</p>
-        ) : (
-          <div className="space-y-2">
-            {requests.map((request) => (
-              <div key={request.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-200/70 bg-white px-3 py-2.5 dark:border-white/[0.06] dark:bg-white/[0.01]">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold">{request.requestedAmount.toFixed(3)} OMR</p>
-                  <p className="text-xs text-(--muted-foreground)">{new Date(request.createdAt).toLocaleString(ar ? "ar-OM" : "en-OM")}</p>
-                  {(request.adminNote || request.payoutReceiptUrl || request.payoutReference) && (
-                    <div className="mt-1.5 space-y-1 text-xs text-(--muted-foreground)">
-                      {request.adminNote && (
+          {requests.length === 0 ? (
+            <div className="rounded-xl bg-(--chip-bg) p-6 text-center text-sm text-(--muted-foreground)">
+              {t.noRequests}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {requests.map((request) => (
+                <article
+                  key={request.id}
+                  className="rounded-xl bg-(--surface) p-3.5 shadow-xs"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-base font-bold tabular-nums">
+                        {formatAmount(request.requestedAmount)} OMR
+                      </p>
+                      <p className="text-xs text-(--muted-foreground)">{formatDateTime(request.createdAt)}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {statusBadge(request.status)}
+                      {request.status === "approved" && request.approvedAmount != null ? (
+                        <span className="text-xs font-medium text-(--muted-foreground)">
+                          {t.approved}: {formatAmount(request.approvedAmount)} OMR
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  {(request.adminNote || request.payoutReference || request.payoutReceiptUrl) ? (
+                    <div className="mt-3 grid gap-1.5 text-xs text-(--muted-foreground)">
+                      {request.adminNote ? (
                         <p>
                           <span className="font-medium text-(--foreground)">{t.adminMessage}: </span>
                           {request.adminNote}
                         </p>
-                      )}
-                      {request.payoutReference && (
+                      ) : null}
+                      {request.payoutReference ? (
                         <p>
                           <span className="font-medium text-(--foreground)">{t.reference}: </span>
                           {request.payoutReference}
                         </p>
-                      )}
-                      {request.payoutReceiptUrl && (
+                      ) : null}
+                      {request.payoutReceiptUrl ? (
                         <a
                           href={request.payoutReceiptUrl}
                           target="_blank"
@@ -289,22 +375,15 @@ export default function AgentWalletClient({ locale, commissionRate, summary, req
                         >
                           {t.receipt}: {t.openReceipt}
                         </a>
-                      )}
+                      ) : null}
                     </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  {statusBadge(request.status)}
-                  {request.status === "approved" && request.approvedAmount != null && (
-                    <span className="text-xs font-medium text-(--muted-foreground)">{t.approved}: {request.approvedAmount.toFixed(3)} OMR</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+                  ) : null}
+                </article>
+              ))}
+            </div>
+          )}
         </div>
-      </div>
+      </section>
 
       {toast && typeof document !== "undefined" && createPortal(
         <div

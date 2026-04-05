@@ -17,7 +17,7 @@ export default async function AgentClientsNewPage({
   await requireAgent(locale as Locale);
 
   return (
-    <AppPage>
+    <AppPage className="agent-workspace-page" containerClassName="agent-workspace-container">
       <AddClientForm locale={locale as Locale} />
     </AppPage>
   );

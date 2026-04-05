@@ -52,7 +52,7 @@ export default async function AgentClientsPage({
   }));
 
   return (
-    <AppPage>
+    <AppPage className="agent-workspace-page" containerClassName="agent-workspace-container">
       <AgentClientsList locale={locale as Locale} clients={enrichedClients} />
     </AppPage>
   );
