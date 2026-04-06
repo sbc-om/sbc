@@ -1,6 +1,8 @@
 # Dependencies (will be installed fresh in container)
 node_modules
 .pnpm-store
+.venv
+.venv-pdf
 
 # Build output (will be generated fresh)
 .next

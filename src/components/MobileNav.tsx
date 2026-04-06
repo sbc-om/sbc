@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ComponentType } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { OverlayScrollbars } from "overlayscrollbars";
@@ -48,6 +49,14 @@ interface MobileNavProps {
 }
 
 type ThemeMode = "light" | "dark" | "system";
+type NavItem = {
+  key: string;
+  label: string;
+  path: string;
+  Icon: ComponentType<{ className?: string }>;
+  IconOutline: ComponentType<{ className?: string }>;
+  hardNavigate?: boolean;
+};
 
 export function MobileNav({ locale, dict, user }: MobileNavProps) {
   const pathname = usePathname();
@@ -181,7 +190,7 @@ export function MobileNav({ locale, dict, user }: MobileNavProps) {
     };
   }, []);
 
-  const navItems = [
+  const navItems: NavItem[] = [
     {
       key: "home",
       label: locale === "ar" ? "الرئيسية" : "Home",
