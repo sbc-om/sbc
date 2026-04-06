@@ -353,14 +353,36 @@ async function buildApplePassAssetBuffers(input: {
   const buffers: Record<string, Buffer> = {};
   const publicImagesDir = path.join(process.cwd(), "public", "images");
 
-  const icon = readFileIfExists(path.join(publicImagesDir, "icon.png"));
-  if (icon) buffers["icon.png"] = icon;
-
-  const icon2x = readFileIfExists(path.join(publicImagesDir, "icon@2x.png"));
-  if (icon2x) buffers["icon@2x.png"] = icon2x;
-
   const rawLogo = await loadImageFromSource(input.logoSource)
     ?? readFileIfExists(path.join(publicImagesDir, "sbc.png"));
+
+  // icon.png is used by Apple Wallet for lock-screen & proximity notifications.
+  // Generate it from the business logo so alerts show the business branding
+  // instead of the generic SBC icon.
+  const iconSizes = [
+    { name: "icon.png", width: 29, height: 29 },
+    { name: "icon@2x.png", width: 58, height: 58 },
+    { name: "icon@3x.png", width: 87, height: 87 },
+  ] as const;
+
+  if (rawLogo) {
+    for (const spec of iconSizes) {
+      const resized = await resizeToPng(rawLogo, {
+        width: spec.width,
+        height: spec.height,
+        fit: "cover",
+        background: { r: 255, g: 255, b: 255, alpha: 0 },
+      });
+      if (resized) buffers[spec.name] = resized;
+    }
+  } else {
+    // Fallback to static SBC icons when no business logo is available
+    const icon = readFileIfExists(path.join(publicImagesDir, "icon.png"));
+    if (icon) buffers["icon.png"] = icon;
+
+    const icon2x = readFileIfExists(path.join(publicImagesDir, "icon@2x.png"));
+    if (icon2x) buffers["icon@2x.png"] = icon2x;
+  }
 
   if (rawLogo) {
     const logoSizes = [
