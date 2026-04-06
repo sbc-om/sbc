@@ -468,9 +468,11 @@ async function prepareLoyaltyCardData(input: {
   const supportPhone = settings.walletSupportPhone?.trim();
   if (supportPhone) links.push({ id: "phone", label: "Call", url: `tel:${supportPhone}` });
 
-  const publicLogoOverride = env("GOOGLE_WALLET_PUBLIC_LOGO_URL");
-  const logoUrl = sanitizeUrl(publicLogoOverride, ["https:", "http:"], false) 
-    || sanitizeUrl(resolvePublicUrl(profile?.logoUrl ?? undefined, input.origin), ["https:", "http:"], false);
+  // Prefer business logo; fall back to the static GOOGLE_WALLET_PUBLIC_LOGO_URL
+  const effectiveOrigin = input.origin || env("PUBLIC_URL");
+  const publicLogoFallback = env("GOOGLE_WALLET_PUBLIC_LOGO_URL");
+  const logoUrl = sanitizeUrl(resolvePublicUrl(profile?.logoUrl ?? undefined, effectiveOrigin), ["https:", "http:"], false)
+    || sanitizeUrl(publicLogoFallback, ["https:", "http:"], false);
 
   return {
     card,
@@ -522,11 +524,13 @@ async function prepareBusinessCardData(input: {
   const supportPhone = (card.phone || business.phone || settings.walletSupportPhone)?.trim();
   if (supportPhone) links.push({ id: "phone", label: "Call", url: `tel:${supportPhone}` });
 
-  const publicLogoOverride = env("GOOGLE_WALLET_PUBLIC_LOGO_URL");
-  const logoUrl = sanitizeUrl(publicLogoOverride, ["https:", "http:"], false)
-    || sanitizeUrl(resolvePublicUrl(business.media?.logo ?? undefined, input.origin), ["https:", "http:"], false);
+  // Prefer business logo; fall back to the static GOOGLE_WALLET_PUBLIC_LOGO_URL
+  const effectiveOrigin = input.origin || env("PUBLIC_URL");
+  const publicLogoFallback = env("GOOGLE_WALLET_PUBLIC_LOGO_URL");
+  const logoUrl = sanitizeUrl(resolvePublicUrl(business.media?.logo ?? undefined, effectiveOrigin), ["https:", "http:"], false)
+    || sanitizeUrl(publicLogoFallback, ["https:", "http:"], false);
 
-  const publicCardUrl = resolvePublicUrl(input.publicCardUrl, input.origin) || input.publicCardUrl;
+  const publicCardUrl = resolvePublicUrl(input.publicCardUrl, effectiveOrigin) || input.publicCardUrl;
   const effectiveBarcodeMessage = publicCardUrl || barcodeMessage;
 
   return {
