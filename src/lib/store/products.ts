@@ -38,6 +38,8 @@ function toStoreProduct(product: Product): StoreProduct {
       ar: product.features,
     },
     isActive: product.isActive,
+    showInDashboard: product.showInDashboard,
+    showInStore: product.showInStore,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   };

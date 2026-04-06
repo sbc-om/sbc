@@ -45,19 +45,8 @@ export default async function StorePage({
 
   const sp = await searchParams;
   const q = (sp.q ?? "").trim().toLowerCase();
-  const hiddenProgramIds = new Set([
-    "marketing",
-    "crm",
-    "accounting",
-    "online-classes",
-    "sbcclaw",
-    "website",
-    "email",
-    "agent-builder",
-  ]);
-
   const products = (await listStoreProducts()).filter((p) => {
-    if (hiddenProgramIds.has(p.program)) return false;
+    if (!p.showInStore) return false;
     if (!q) return true;
     const t = getStoreProductText(p, locale as Locale);
     return (

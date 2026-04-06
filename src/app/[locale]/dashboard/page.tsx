@@ -202,18 +202,18 @@ export default async function DashboardPage({
     }),
   );
 
-  const hiddenProgramIds = new Set([
-    "marketing",
-    "crm",
-    "accounting",
-    "online-classes",
-    "sbcclaw",
-    "website",
-    "email",
-    "agent-builder",
-  ]);
+  const hiddenProgramIds = new Set(
+    (Object.keys(programMeta) as Array<keyof typeof programMeta>).filter((programId) => {
+      const hasActiveStorePackage = products.some(
+        (p) => p.program === programId && p.isActive && p.showInStore,
+      );
+      return !hasActiveStorePackage;
+    }),
+  );
 
-  const visibleCards = cards.filter((card) => !hiddenProgramIds.has(card.programId));
+  const visibleCards = cards.filter(
+    (card) => !hiddenProgramIds.has(card.programId) || card.active,
+  );
 
   const totalPrograms = visibleCards.length;
   const activePrograms = visibleCards.filter((card) => card.active).length;

@@ -18,6 +18,8 @@ export type Product = {
   features: string[];
   badges?: string[];
   isActive: boolean;
+  showInDashboard: boolean;
+  showInStore: boolean;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -46,6 +48,8 @@ const productSchema = z.object({
   features: z.array(z.string()).default([]),
   badges: z.array(z.string()).default([]),
   isActive: z.boolean().default(true),
+  showInDashboard: z.boolean().default(true),
+  showInStore: z.boolean().default(true),
   sortOrder: z.number().int().default(0),
 });
 
@@ -66,6 +70,8 @@ type ProductRow = {
   features: unknown;
   badges: unknown;
   is_active: boolean | null;
+  show_in_dashboard: boolean | null;
+  show_in_store: boolean | null;
   sort_order: number | null;
   created_at: Date | null;
   updated_at: Date | null;
@@ -103,6 +109,8 @@ function rowToProduct(r: ProductRow): Product {
     features: normalizeFeatures(r.features),
     badges: toStringArray(r.badges),
     isActive: r.is_active ?? true,
+    showInDashboard: r.show_in_dashboard ?? true,
+    showInStore: r.show_in_store ?? true,
     sortOrder: r.sort_order ?? 0,
     createdAt: r.created_at?.toISOString() || new Date().toISOString(),
     updatedAt: r.updated_at?.toISOString() || new Date().toISOString(),
@@ -123,14 +131,14 @@ export async function createProduct(input: ProductInput): Promise<Product> {
   const result = await query<ProductRow>(`
     INSERT INTO products (
       id, slug, name_en, name_ar, description_en, description_ar, price, currency,
-      program, plan, duration_days, features, badges, is_active, sort_order, created_at, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $16)
+      program, plan, duration_days, features, badges, is_active, show_in_dashboard, show_in_store, sort_order, created_at, updated_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $18)
     RETURNING *
   `, [
     id, data.slug, data.name.en, data.name.ar,
     data.description?.en, data.description?.ar,
     data.price, data.currency, data.program, data.plan, data.durationDays,
-    JSON.stringify(data.features), JSON.stringify(data.badges), data.isActive, data.sortOrder, now
+    JSON.stringify(data.features), JSON.stringify(data.badges), data.isActive, data.showInDashboard, data.showInStore, data.sortOrder, now
   ]);
 
   return rowToProduct(result.rows[0]);
@@ -192,9 +200,11 @@ export async function updateProduct(id: string, input: Partial<ProductInput>): P
       duration_days = $9,
       features = COALESCE($10, features),
       is_active = COALESCE($11, is_active),
-      sort_order = COALESCE($12, sort_order),
-      updated_at = $13
-    WHERE id = $14
+      show_in_dashboard = COALESCE($12, show_in_dashboard),
+      show_in_store = COALESCE($13, show_in_store),
+      sort_order = COALESCE($14, sort_order),
+      updated_at = $15
+    WHERE id = $16
     RETURNING *
   `, [
     input.slug,
@@ -208,6 +218,8 @@ export async function updateProduct(id: string, input: Partial<ProductInput>): P
     input.durationDays !== undefined ? input.durationDays : current.durationDays,
     input.features ? JSON.stringify(input.features) : null,
     input.isActive,
+    input.showInDashboard,
+    input.showInStore,
     input.sortOrder,
     new Date(),
     id

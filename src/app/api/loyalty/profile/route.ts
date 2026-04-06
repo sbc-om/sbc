@@ -23,16 +23,21 @@ const patchSchema = z.object({
 });
 
 export async function GET() {
-  const auth = await getCurrentUser();
-  if (!auth) return new Response("Unauthorized", { status: 401 });
+  try {
+    const auth = await getCurrentUser();
+    if (!auth) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
-  const profile = await getLoyaltyProfileByUserId(auth.id);
-  return Response.json({ ok: true, profile: profile ?? null });
+    const profile = await getLoyaltyProfileByUserId(auth.id);
+    return Response.json({ ok: true, profile: profile ?? null });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "FETCH_FAILED";
+    return Response.json({ ok: false, error: message }, { status: 500 });
+  }
 }
 
 export async function PATCH(req: Request) {
   const auth = await getCurrentUser();
-  if (!auth) return new Response("Unauthorized", { status: 401 });
+  if (!auth) return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 
   try {
     const json = await req.json();

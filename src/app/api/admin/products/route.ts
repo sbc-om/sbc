@@ -62,6 +62,8 @@ export async function POST(req: NextRequest) {
       badges: body.badges,
       features: normalizeFeatures(body.features),
       isActive: body.isActive ?? body.active ?? true,
+      showInDashboard: body.showInDashboard ?? true,
+      showInStore: body.showInStore ?? true,
       sortOrder: body.sortOrder ?? 0,
     };
     

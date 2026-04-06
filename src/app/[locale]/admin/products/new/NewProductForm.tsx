@@ -43,6 +43,8 @@ export function NewProductForm({ locale }: { locale: Locale }) {
     featuresAr: "",
     badges: "",
     active: true,
+    showInDashboard: true,
+    showInStore: true,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,6 +76,8 @@ export function NewProductForm({ locale }: { locale: Locale }) {
         },
         badges: formData.badges ? formData.badges.split(",").map((b) => b.trim()).filter(Boolean) : [],
         active: formData.active,
+        showInDashboard: formData.showInDashboard,
+        showInStore: formData.showInStore,
       };
 
       const res = await fetch(`/api/admin/products`, {
@@ -336,6 +340,34 @@ export function NewProductForm({ locale }: { locale: Locale }) {
         <label htmlFor="active" className="text-sm font-medium">
           {ar ? "نشط" : "Active"}
         </label>
+      </div>
+
+      {/* Visibility toggles */}
+      <div className="flex flex-wrap gap-6">
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="showInDashboard"
+            checked={formData.showInDashboard}
+            onChange={(e) => setFormData({ ...formData, showInDashboard: e.target.checked })}
+            className="w-4 h-4"
+          />
+          <label htmlFor="showInDashboard" className="text-sm font-medium">
+            {ar ? "عرض في لوحة التحكم" : "Show in Dashboard"}
+          </label>
+        </div>
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="showInStore"
+            checked={formData.showInStore}
+            onChange={(e) => setFormData({ ...formData, showInStore: e.target.checked })}
+            className="w-4 h-4"
+          />
+          <label htmlFor="showInStore" className="text-sm font-medium">
+            {ar ? "عرض في المتجر" : "Show in Store"}
+          </label>
+        </div>
       </div>
 
       {/* Actions */}

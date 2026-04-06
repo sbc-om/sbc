@@ -77,6 +77,8 @@ export async function PATCH(
     if (body.badges !== undefined) input.badges = body.badges;
     if (body.features !== undefined) input.features = normalizeFeatures(body.features);
     if (body.isActive !== undefined) input.isActive = body.isActive;
+    if (body.showInDashboard !== undefined) input.showInDashboard = body.showInDashboard;
+    if (body.showInStore !== undefined) input.showInStore = body.showInStore;
     
     const product = await updateProduct(id, input);
     

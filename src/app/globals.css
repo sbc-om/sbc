@@ -225,9 +225,9 @@ select {
 }
 
 /* Global flat style: disable box shadows across the UI. */
-*,
-*::before,
-*::after {
+*:not(.leaflet-container *):not(.leaflet-container),
+*:not(.leaflet-container *)::before,
+*:not(.leaflet-container *)::after {
   box-shadow: none !important;
 }
 
@@ -370,16 +370,16 @@ select {
 
 /* Global anti-jump rule: no hover/active lift or scale anywhere in the UI. */
 @media (hover: hover) {
-  a:hover,
-  button:hover,
-  [role="button"]:hover,
+  a:not(.leaflet-container a):hover,
+  button:not(.leaflet-container button):hover,
+  [role="button"]:not(.leaflet-container [role="button"]):hover,
   .sbc-card--interactive:hover {
     transform: none !important;
   }
 
-  a:active,
-  button:active,
-  [role="button"]:active {
+  a:not(.leaflet-container a):active,
+  button:not(.leaflet-container button):active,
+  [role="button"]:not(.leaflet-container [role="button"]):active {
     transform: none !important;
   }
 }
@@ -491,7 +491,7 @@ html {
 
 /* Prevent flash on initial load */
 html,
-html *,
+html *:not(.leaflet-container *):not(.leaflet-container),
 body {
   transition: none !important;
 }
@@ -509,14 +509,14 @@ html.loaded button {
 /* Add GPU acceleration for smoother animations */
 .sbc-card,
 .sbc-card--interactive,
-button,
-a {
+button:not(.leaflet-container button),
+a:not(.leaflet-container a) {
   transform: translateZ(0);
   will-change: auto;
 }
 
 .sbc-card--interactive:hover,
-button:hover {
+button:not(.leaflet-container button):hover {
   will-change: transform, box-shadow;
 }
 
@@ -579,6 +579,74 @@ h1, h2, h3, h4, h5, h6 {
     radial-gradient(circle at 20% 20%, rgba(8, 119, 251, 0.08), transparent 30%),
     linear-gradient(180deg, #dfeaf2 0%, #eef4f8 100%);
   font-family: inherit;
+}
+
+.dark .leaflet-container {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(8, 119, 251, 0.12), transparent 30%),
+    linear-gradient(180deg, #1a1d26 0%, #14161c 100%);
+}
+
+/* Pulse marker for static / viewOnly maps */
+.sbc-map-pulse-marker {
+  position: relative;
+  width: 18px;
+  height: 18px;
+}
+
+.sbc-map-pulse-dot {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--accent, #0079f4);
+  border: 2px solid #fff;
+  z-index: 2;
+}
+
+.sbc-map-pulse-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--accent, #0079f4);
+  opacity: 0.5;
+  animation: sbc-map-pulse 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  z-index: 1;
+}
+
+@keyframes sbc-map-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+/* SVG pin marker */
+.sbc-map-pin {
+  display: block;
+  pointer-events: none;
+}
+
+/* Reset: prevent global rules from breaking Leaflet internals */
+.leaflet-container,
+.leaflet-container * {
+  box-shadow: revert !important;
+  transition: revert !important;
+  transform: revert;
+  will-change: auto;
+}
+
+.leaflet-container .leaflet-marker-icon {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+/* Keep Leaflet's default shadow image hidden for our divIcon markers */
+.leaflet-marker-shadow {
+  display: none !important;
 }
 
 .leaflet-map-pane,

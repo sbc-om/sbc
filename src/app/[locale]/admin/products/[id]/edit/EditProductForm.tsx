@@ -47,6 +47,8 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
     featuresAr: featuresAr.join("\n"),
     badges: product.badges?.join(", ") || "",
     active: product.isActive,
+    showInDashboard: product.showInDashboard,
+    showInStore: product.showInStore,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +80,8 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
         },
         badges: formData.badges ? formData.badges.split(",").map((b: string) => b.trim()).filter(Boolean) : [],
         isActive: formData.active,
+        showInDashboard: formData.showInDashboard,
+        showInStore: formData.showInStore,
       };
 
       const res = await fetch(`/api/admin/products/${product.id}`, {
@@ -340,6 +344,34 @@ export function EditProductForm({ product, locale }: { product: StoreProduct; lo
         <label htmlFor="active" className="text-sm font-medium">
           {ar ? "نشط" : "Active"}
         </label>
+      </div>
+
+      {/* Visibility toggles */}
+      <div className="flex flex-wrap gap-6">
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="showInDashboard"
+            checked={formData.showInDashboard}
+            onChange={(e) => setFormData({ ...formData, showInDashboard: e.target.checked })}
+            className="w-4 h-4"
+          />
+          <label htmlFor="showInDashboard" className="text-sm font-medium">
+            {ar ? "عرض في لوحة التحكم" : "Show in Dashboard"}
+          </label>
+        </div>
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="showInStore"
+            checked={formData.showInStore}
+            onChange={(e) => setFormData({ ...formData, showInStore: e.target.checked })}
+            className="w-4 h-4"
+          />
+          <label htmlFor="showInStore" className="text-sm font-medium">
+            {ar ? "عرض في المتجر" : "Show in Store"}
+          </label>
+        </div>
       </div>
 
       {/* Actions */}

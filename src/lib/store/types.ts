@@ -38,6 +38,8 @@ export type StoreProduct = {
   badges?: string[];
   features: { en: string[]; ar: string[] };
   isActive: boolean;
+  showInDashboard: boolean;
+  showInStore: boolean;
   createdAt: string;
   updatedAt: string;
 };

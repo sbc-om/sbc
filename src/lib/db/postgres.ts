@@ -564,6 +564,8 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       features JSONB DEFAULT '[]',
       badges JSONB DEFAULT '[]',
       is_active BOOLEAN DEFAULT true,
+      show_in_dashboard BOOLEAN DEFAULT true,
+      show_in_store BOOLEAN DEFAULT true,
       sort_order INTEGER DEFAULT 0,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -1224,6 +1226,10 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_business_ai_agents_business ON business_ai_agents(business_id);
     CREATE INDEX IF NOT EXISTS idx_business_ai_agents_owner ON business_ai_agents(owner_id);
+
+    -- Migration: Add show_in_dashboard and show_in_store to products
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS show_in_dashboard BOOLEAN DEFAULT true;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS show_in_store BOOLEAN DEFAULT true;
 
     -- Create SBC Treasury system user if not exists
     INSERT INTO users (id, email, phone, full_name, password_hash, role, is_active, is_verified, display_name, approval_status, created_at, updated_at)

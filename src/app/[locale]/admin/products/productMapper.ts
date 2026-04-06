@@ -60,6 +60,8 @@ export function toStoreAdminProduct(product: Product): StoreProduct {
     badges: asStringArray(product.badges),
     features: normalizeLocalizedFeatures(product.features),
     isActive: product.isActive,
+    showInDashboard: product.showInDashboard,
+    showInStore: product.showInStore,
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   };
