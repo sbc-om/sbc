@@ -227,10 +227,10 @@ export default async function LoyaltyPage({
         </div>
 
         {/* Centered scroll-controlled animation (uses logo.json via LogoScrollLottie) */}
-        <div className="mt-8 sm:mt-10 flex justify-center">
-          <div className="relative w-full max-w-2xl">
-            <div className="absolute inset-0 -z-10 rounded-3xl bg-linear-to-r from-accent/10 to-accent-2/10 blur-2xl" />
-            <div className="rounded-3xl p-2 sm:p-3">
+        <div className="mt-6 sm:mt-8 flex justify-center">
+          <div className="relative w-full max-w-xs sm:max-w-sm">
+            <div className="absolute inset-0 -z-10 rounded-2xl bg-linear-to-r from-accent/10 to-accent-2/10 blur-2xl" />
+            <div className="rounded-2xl p-1 sm:p-2">
               <LogoScrollLottie className="py-0 max-w-none" />
             </div>
           </div>
