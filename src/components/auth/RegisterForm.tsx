@@ -26,6 +26,7 @@ interface RegisterFormProps {
   };
   next?: string;
   challenge: HumanChallengeType;
+  initialError?: string;
 }
 
 const texts = {
@@ -68,6 +69,7 @@ export function RegisterForm({
   dict,
   next,
   challenge,
+  initialError,
 }: RegisterFormProps) {
   const t = texts[locale];
 
@@ -79,7 +81,11 @@ export function RegisterForm({
     password: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    initialError && initialError in t.errors
+      ? t.errors[initialError as keyof typeof t.errors]
+      : "",
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -192,7 +198,7 @@ export function RegisterForm({
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         )}
 
-        <Button type="submit" className="mt-2" disabled={loading}>
+        <Button type="submit" className="mt-2" disabled={loading || !!error}>
           {loading ? "..." : dict.auth.signUp}
         </Button>
 

@@ -20,7 +20,7 @@ export default async function RegisterPage({
   const dict = await getDictionary(locale as Locale);
   const challenge = createHumanChallenge(locale as Locale);
 
-  const { next } = await searchParams;
+  const { next, error } = await searchParams;
 
   return (
     <PublicPage>
@@ -28,6 +28,7 @@ export default async function RegisterPage({
         <h1 className="text-2xl font-semibold tracking-tight">{dict.nav.register}</h1>
 
         <RegisterForm
+          key={error || "no-error"}
           locale={locale as Locale}
           dict={{
             auth: {
@@ -43,6 +44,7 @@ export default async function RegisterPage({
           }}
           next={next}
           challenge={challenge}
+          initialError={error}
         />
       </div>
     </PublicPage>
