@@ -33,6 +33,7 @@ export function SidebarLayout({
   // Sync viewport/localStorage state before paint to avoid visible refresh jumps.
   useLayoutEffect(() => {
     const mobile = window.innerWidth < 1024;
+    const shouldAutoCollapse = window.innerWidth < 1200;
     let nextCollapsed = initialCollapsed;
 
     try {
@@ -46,6 +47,10 @@ export function SidebarLayout({
       // Ignore localStorage read/write failures and keep SSR value.
     }
 
+    if (shouldAutoCollapse && !mobile) {
+      nextCollapsed = true;
+    }
+
     const root = document.documentElement;
     const nextWidth = mobile ? "0rem" : nextCollapsed ? "5rem" : "16rem";
     root.style.setProperty("--sidebar-width", nextWidth);
@@ -56,7 +61,12 @@ export function SidebarLayout({
     initializedRef.current = true;
 
     const onResize = () => {
-      setIsMobile(window.innerWidth < 1024);
+      const nowMobile = window.innerWidth < 1024;
+      const nowNarrow = window.innerWidth < 1160;
+      setIsMobile(nowMobile);
+      if (nowNarrow && !nowMobile) {
+        setCollapsed(true);
+      }
     };
 
     window.addEventListener("resize", onResize);
