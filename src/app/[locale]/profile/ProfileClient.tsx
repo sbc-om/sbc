@@ -877,8 +877,7 @@ export function ProfileClient({
                 </div>
               </div>
               <Button
-                variant="secondary"
-                className="h-10 min-w-[170px] w-full sm:w-auto shrink-0 rounded-xl px-4 text-sm font-semibold"
+                className="h-10 min-w-[170px] w-full sm:w-auto shrink-0 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-500 active:bg-emerald-700 dark:bg-emerald-500 dark:text-white dark:hover:bg-emerald-400 dark:active:bg-emerald-600"
                 onClick={createPasskey}
                 disabled={passkeyBusy}
               >

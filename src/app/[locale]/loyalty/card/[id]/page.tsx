@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { FaApple, FaGoogle } from "react-icons/fa";
 
 import { PublicPage } from "@/components/PublicPage";
 import { buttonVariants } from "@/components/ui/Button";
@@ -128,13 +129,19 @@ export default async function LoyaltyCardPublicPage({
             href={`/api/loyalty/wallet/apple/${encodeURIComponent(card.id)}`}
             className={buttonVariants({ variant: "primary", size: "md" })}
           >
-            {ar ? "إضافة إلى Apple Wallet" : "Add to Apple Wallet"}
+            <FaApple className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>{ar ? "إضافة إلى Apple Wallet" : "Add to Apple Wallet"}</span>
           </a>
           <a
             href={`/api/loyalty/wallet/google/${encodeURIComponent(card.id)}`}
-            className={buttonVariants({ variant: "secondary", size: "md" })}
+            className={buttonVariants({
+              size: "md",
+              className:
+                "bg-emerald-600 text-white hover:bg-emerald-500 active:bg-emerald-700 dark:bg-emerald-500 dark:text-white dark:hover:bg-emerald-400 dark:active:bg-emerald-600",
+            })}
           >
-            {ar ? "إضافة إلى Google Wallet" : "Add to Google Wallet"}
+            <FaGoogle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span>{ar ? "إضافة إلى Google Wallet" : "Add to Google Wallet"}</span>
           </a>
         </div>
 
