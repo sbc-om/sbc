@@ -36,6 +36,9 @@ function isAlwaysPublicPath(pathname: string): boolean {
   const section = segments.length > 1 ? segments[1] : "";
   const subSection = segments.length > 2 ? segments[2] : "";
 
+  // Bare /{locale} route — always show public shell (homepage)
+  if (section === "") return true;
+
   if (section === "loyalty" && subSection === "manage") {
     return false;
   }

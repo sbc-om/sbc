@@ -259,8 +259,8 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
         };
       }
       const message = waMessage.trim();
-      const query = message ? `?text=${encodeURIComponent(message)}` : "";
-      return { value: `https://wa.me/${normalized}${query}`, reason: null };
+      const query = message ? `&text=${encodeURIComponent(message)}` : "";
+      return { value: `https://api.whatsapp.com/send?phone=${normalized}${query}`, reason: null };
     }
 
     if (qrType === "location") {
@@ -780,11 +780,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
         <div className="pointer-events-none absolute -bottom-24 -left-16 h-64 w-64 rounded-full bg-indigo-500/20 blur-3xl" />
 
         <div className={rtl ? "relative text-right" : "relative text-left"}>
-          <div className="inline-flex items-center gap-2 rounded-full border border-(--chip-border) bg-(--chip-bg) px-3 py-1 text-xs font-semibold text-(--chip-foreground)">
-            <QrCode className="h-3.5 w-3.5" />
-            <span>{ar ? "QR Studio" : "QR Studio"}</span>
-          </div>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
             {ar ? "سازنده حرفه‌ای QR Code" : "Professional QR Code Generator"}
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-(--muted-foreground) sm:text-base">
@@ -795,7 +791,72 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
+      {/* Mobile preview — shown only below lg as a compact sticky bar */}
+      <div className="lg:hidden">
+        <div className="sbc-card rounded-2xl p-3 !border-0">
+          <div className="flex items-center gap-3">
+            <div
+              className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-(--background)"
+              style={{
+                backgroundImage:
+                  "linear-gradient(45deg, rgba(148,163,184,0.12) 25%, transparent 25%), linear-gradient(-45deg, rgba(148,163,184,0.12) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(148,163,184,0.12) 75%), linear-gradient(-45deg, transparent 75%, rgba(148,163,184,0.12) 75%)",
+                backgroundSize: "10px 10px",
+                backgroundPosition: "0 0, 0 5px, 5px -5px, -5px 0px",
+              }}
+            >
+              {previewUrl ? (
+                <Image
+                  src={previewUrl}
+                  alt="QR Preview"
+                  width={72}
+                  height={72}
+                  unoptimized
+                  className="h-full w-full rounded-lg object-contain p-1"
+                />
+              ) : (
+                <QrCode className="h-6 w-6 text-(--muted-foreground)" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">{ar ? "پیش‌نمایش" : "Preview"}</p>
+              <p className="mt-0.5 truncate text-xs text-(--muted-foreground)">{availabilityText}</p>
+              <div className="mt-2 flex gap-1.5">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleDownloadPng}
+                  disabled={!payload || isDownloadingPng}
+                  className="h-8 px-3 text-xs"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  PNG
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleDownloadSvg}
+                  disabled={!payload || isDownloadingSvg}
+                  className="h-8 px-3 text-xs"
+                >
+                  SVG
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCopyPayload}
+                  disabled={!payload}
+                  className="h-8 px-3 text-xs"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {copied ? (ar ? "✓" : "✓") : ar ? "کپی" : "Copy"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(300px,380px)]">
         <div className="sbc-card rounded-3xl p-4 sm:p-6 !border-0">
           <div className="-mx-1 pb-1 md:mx-0">
             <div className="flex flex-wrap gap-2 px-1 md:px-0">
@@ -808,7 +869,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
                     type="button"
                     onClick={() => setQrType(option.id)}
                     className={[
-                      "inline-flex items-center gap-2 rounded-2xl border px-3 py-2.5 text-sm transition",
+                      "inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition",
                       active
                         ? "border-transparent bg-[color:var(--accent)] text-[color:var(--accent-foreground)]"
                         : "border-(--surface-border) bg-(--background) text-foreground hover:bg-(--chip-bg)",
@@ -826,205 +887,215 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
             {renderTypeSpecificForm()}
           </div>
 
-          <div className="mt-7 rounded-2xl bg-(--chip-bg) p-4">
-            <h2 className="text-sm font-semibold">{ar ? "تنظیمات کیفیت" : "Quality Settings"}</h2>
+          <details className="mt-5 rounded-2xl bg-(--chip-bg) open:pb-4">
+            <summary className="cursor-pointer select-none rounded-2xl p-4 text-sm font-semibold transition-colors hover:bg-(--chip-bg)">
+              {ar ? "تنظیمات پیشرفته" : "Advanced Settings"}
+            </summary>
 
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "Error correction" : "Error correction"}</label>
-                <select
-                  value={errorLevel}
-                  onChange={(event) => setErrorLevel(event.target.value as ErrorLevel)}
-                  className="h-11 w-full rounded-xl border border-(--surface-border) bg-(--background) px-3 text-sm text-foreground"
-                >
-                  <option value="L">L (~7%)</option>
-                  <option value="M">M (~15%)</option>
-                  <option value="Q">Q (~25%)</option>
-                  <option value="H">H (~30%)</option>
-                </select>
-              </div>
+            <div className="px-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{ar ? "Error correction" : "Error correction"}</label>
+                  <select
+                    value={errorLevel}
+                    onChange={(event) => setErrorLevel(event.target.value as ErrorLevel)}
+                    className="h-11 w-full rounded-xl border border-(--surface-border) bg-(--background) px-3 text-sm text-foreground"
+                  >
+                    <option value="L">L (~7%)</option>
+                    <option value="M">M (~15%)</option>
+                    <option value="Q">Q (~25%)</option>
+                    <option value="H">H (~30%)</option>
+                  </select>
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "حاشیه" : "Margin"}</label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={10}
-                  value={margin}
-                  onChange={(event) => {
-                    const next = Number(event.target.value);
-                    if (Number.isFinite(next)) {
-                      const clamped = Math.min(10, Math.max(0, Math.trunc(next)));
-                      setMargin(clamped);
-                    }
-                  }}
-                />
-              </div>
-            </div>
-
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "رنگ کد" : "Code color"}</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={foregroundColor}
-                    onChange={(event) => setForegroundColor(event.target.value)}
-                    className="h-11 w-14 cursor-pointer rounded-xl border border-(--surface-border) bg-transparent p-1"
-                    aria-label={ar ? "رنگ کد" : "Code color"}
-                  />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{ar ? "حاشیه" : "Margin"}</label>
                   <Input
-                    value={foregroundColor}
-                    onChange={(event) => setForegroundColor(event.target.value)}
+                    type="number"
+                    min={0}
+                    max={10}
+                    value={margin}
+                    onChange={(event) => {
+                      const next = Number(event.target.value);
+                      if (Number.isFinite(next)) {
+                        const clamped = Math.min(10, Math.max(0, Math.trunc(next)));
+                        setMargin(clamped);
+                      }
+                    }}
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "رنگ پس‌زمینه" : "Background"}</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={backgroundColor}
-                    onChange={(event) => setBackgroundColor(event.target.value)}
-                    className="h-11 w-14 cursor-pointer rounded-xl border border-(--surface-border) bg-transparent p-1"
-                    aria-label={ar ? "رنگ پس‌زمینه" : "Background color"}
-                    disabled={transparentBg}
-                  />
-                  <Input
-                    value={backgroundColor}
-                    onChange={(event) => setBackgroundColor(event.target.value)}
-                    disabled={transparentBg}
-                  />
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{ar ? "رنگ کد" : "Code color"}</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={foregroundColor}
+                      onChange={(event) => setForegroundColor(event.target.value)}
+                      className="h-11 w-14 cursor-pointer rounded-xl border border-(--surface-border) bg-transparent p-1"
+                      aria-label={ar ? "رنگ کد" : "Code color"}
+                    />
+                    <Input
+                      value={foregroundColor}
+                      onChange={(event) => setForegroundColor(event.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{ar ? "رنگ پس‌زمینه" : "Background"}</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={backgroundColor}
+                      onChange={(event) => setBackgroundColor(event.target.value)}
+                      className="h-11 w-14 cursor-pointer rounded-xl border border-(--surface-border) bg-transparent p-1"
+                      aria-label={ar ? "رنگ پس‌زمینه" : "Background color"}
+                      disabled={transparentBg}
+                    />
+                    <Input
+                      value={backgroundColor}
+                      onChange={(event) => setBackgroundColor(event.target.value)}
+                      disabled={transparentBg}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{ar ? "رزولوشن دانلود" : "Download resolution"}</label>
+                  <select
+                    value={String(downloadSize)}
+                    onChange={(event) => setDownloadSize(Number(event.target.value) as 1024 | 2048 | 4096)}
+                    className="h-11 w-full rounded-xl border border-(--surface-border) bg-(--background) px-3 text-sm text-foreground"
+                  >
+                    <option value="1024">1024px</option>
+                    <option value="2048">2048px</option>
+                    <option value="4096">4096px</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">{ar ? "شفاف" : "Transparency"}</label>
+                  <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-(--surface-border) bg-(--background) px-3 text-sm text-(--muted-foreground)">
+                    <input
+                      type="checkbox"
+                      checked={transparentBg}
+                      onChange={(event) => setTransparentBg(event.target.checked)}
+                      className="h-4 w-4 rounded border border-(--surface-border)"
+                    />
+                    {ar ? "پس‌زمینه شفاف" : "Transparent background"}
+                  </label>
                 </div>
               </div>
             </div>
+          </details>
+        </div>
 
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "رزولوشن دانلود" : "Download resolution"}</label>
-                <select
-                  value={String(downloadSize)}
-                  onChange={(event) => setDownloadSize(Number(event.target.value) as 1024 | 2048 | 4096)}
-                  className="h-11 w-full rounded-xl border border-(--surface-border) bg-(--background) px-3 text-sm text-foreground"
-                >
-                  <option value="1024">1024px</option>
-                  <option value="2048">2048px</option>
-                  <option value="4096">4096px</option>
-                </select>
-              </div>
+        {/* Desktop preview — hidden on mobile */}
+        <div className="hidden lg:block">
+          <div className="sbc-card rounded-3xl p-4 sm:p-5 !border-0">
+            <div className={rtl ? "text-right" : "text-left"}>
+              <h2 className="text-base font-semibold">{ar ? "پیش‌نمایش" : "Preview"}</h2>
+              <p className="mt-1 text-xs text-(--muted-foreground)">{availabilityText}</p>
+            </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "شفاف" : "Transparency"}</label>
-                <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-(--surface-border) bg-(--background) px-3 text-sm text-(--muted-foreground)">
-                  <input
-                    type="checkbox"
-                    checked={transparentBg}
-                    onChange={(event) => setTransparentBg(event.target.checked)}
-                    className="h-4 w-4 rounded border border-(--surface-border)"
+            <div className="mt-4 rounded-2xl p-3">
+              <div
+                className="mx-auto flex aspect-square w-full max-w-[16rem] items-center justify-center rounded-2xl bg-(--background) p-3"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(45deg, rgba(148,163,184,0.12) 25%, transparent 25%), linear-gradient(-45deg, rgba(148,163,184,0.12) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(148,163,184,0.12) 75%), linear-gradient(-45deg, transparent 75%, rgba(148,163,184,0.12) 75%)",
+                  backgroundSize: "14px 14px",
+                  backgroundPosition: "0 0, 0 7px, 7px -7px, -7px 0px",
+                }}
+              >
+                {previewUrl ? (
+                  <Image
+                    src={previewUrl}
+                    alt="Generated QR"
+                    width={360}
+                    height={360}
+                    unoptimized
+                    className="h-full w-full rounded-lg object-contain"
                   />
-                  {ar ? "پس‌زمینه شفاف" : "Transparent background"}
-                </label>
+                ) : (
+                  <div className="text-center text-sm text-(--muted-foreground)">
+                    {isGenerating
+                      ? ar
+                        ? "در حال ساخت QR..."
+                        : "Generating QR..."
+                      : ar
+                        ? "ابتدا اطلاعات را وارد کنید"
+                        : "Enter your data to generate"}
+                  </div>
+                )}
               </div>
             </div>
+
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleDownloadPng}
+                disabled={!payload || isDownloadingPng}
+                className="w-full justify-center"
+              >
+                <Download className="h-4 w-4" />
+                {isDownloadingPng ? "..." : "PNG"}
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleDownloadSvg}
+                disabled={!payload || isDownloadingSvg}
+                className="w-full justify-center"
+              >
+                <Globe className="h-4 w-4" />
+                {isDownloadingSvg ? "..." : "SVG"}
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCopyPayload}
+                disabled={!payload}
+                className="w-full justify-center"
+              >
+                <Copy className="h-4 w-4" />
+                {copied ? "✓" : ar ? "کپی" : "Copy"}
+              </Button>
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wide text-(--muted-foreground)">
+                {payloadLabel}
+              </label>
+              <Textarea
+                value={payload}
+                readOnly
+                className="min-h-20 bg-(--background) font-mono text-xs leading-5"
+              />
+            </div>
+
+            {errorMessage ? (
+              <div className="mt-3 rounded-xl bg-red-500/8 px-3 py-2 text-xs text-red-600 dark:text-red-300">
+                {errorMessage}
+              </div>
+            ) : null}
           </div>
         </div>
 
-        <div className="sbc-card rounded-3xl p-4 sm:p-5 xl:sticky xl:top-24 xl:h-fit !border-0">
-          <div className={rtl ? "text-right" : "text-left"}>
-            <h2 className="text-base font-semibold">{ar ? "پیش‌نمایش" : "Preview"}</h2>
-            <p className="mt-1 text-xs text-(--muted-foreground)">{availabilityText}</p>
+        {/* Mobile error message */}
+        {errorMessage ? (
+          <div className="lg:hidden rounded-xl bg-red-500/8 px-3 py-2 text-xs text-red-600 dark:text-red-300">
+            {errorMessage}
           </div>
-
-          <div className="mt-4 rounded-2xl p-4">
-            <div
-              className="mx-auto flex h-[17rem] w-full max-w-[18rem] items-center justify-center rounded-2xl bg-(--background) p-3 sm:h-72"
-              style={{
-                backgroundImage:
-                  "linear-gradient(45deg, rgba(148,163,184,0.12) 25%, transparent 25%), linear-gradient(-45deg, rgba(148,163,184,0.12) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(148,163,184,0.12) 75%), linear-gradient(-45deg, transparent 75%, rgba(148,163,184,0.12) 75%)",
-                backgroundSize: "18px 18px",
-                backgroundPosition: "0 0, 0 9px, 9px -9px, -9px 0px",
-              }}
-            >
-              {previewUrl ? (
-                <Image
-                  src={previewUrl}
-                  alt="Generated QR"
-                  width={360}
-                  height={360}
-                  unoptimized
-                  className="h-full w-full rounded-lg object-contain"
-                />
-              ) : (
-                <div className="text-center text-sm text-(--muted-foreground)">
-                  {isGenerating
-                    ? ar
-                      ? "در حال ساخت QR..."
-                      : "Generating QR..."
-                    : ar
-                      ? "ابتدا اطلاعات را وارد کنید"
-                      : "Enter your data to generate"}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleDownloadPng}
-              disabled={!payload || isDownloadingPng}
-              className="w-full justify-center"
-            >
-              <Download className="h-4 w-4" />
-              {isDownloadingPng
-                ? ar
-                  ? "آماده‌سازی..."
-                  : "Preparing..."
-                : "PNG"}
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleDownloadSvg}
-              disabled={!payload || isDownloadingSvg}
-              className="w-full justify-center"
-            >
-              <Globe className="h-4 w-4" />
-              {isDownloadingSvg ? (ar ? "آماده‌سازی..." : "Preparing...") : "SVG"}
-            </Button>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopyPayload}
-              disabled={!payload}
-              className="w-full justify-center"
-            >
-              <Copy className="h-4 w-4" />
-              {copied ? (ar ? "کپی شد" : "Copied") : ar ? "کپی" : "Copy"}
-            </Button>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wide text-(--muted-foreground)">
-              {payloadLabel}
-            </label>
-            <Textarea
-              value={payload}
-              readOnly
-              className="min-h-28 bg-(--background) font-mono text-xs leading-5"
-            />
-          </div>
-
-          {errorMessage ? (
-            <div className="mt-3 rounded-xl bg-red-500/8 px-3 py-2 text-xs text-red-600 dark:text-red-300">
-              {errorMessage}
-            </div>
-          ) : null}
-        </div>
+        ) : null}
       </section>
     </div>
   );

@@ -10,10 +10,8 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/Button";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
-import { getCurrentUser } from "@/lib/auth/currentUser";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { redirect } from "next/navigation";
 
 export async function generateMetadata({
   params,
@@ -63,12 +61,6 @@ export default async function LocaleHome({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-
-  const user = await getCurrentUser();
-  // Logged in users land on the followed feed.
-  if (user) {
-    redirect(`/${locale}/home`);
-  }
 
   const dict = await getDictionary(locale as Locale);
 

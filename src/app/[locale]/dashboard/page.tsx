@@ -277,7 +277,7 @@ export default async function DashboardPage({
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-            <div className="rounded-2xl bg-(--background)/55 p-3 sm:p-4">
+            <div className="rounded-2xl bg-(--chip-bg) p-3 sm:p-4">
               <p className="text-xs font-medium text-(--muted-foreground) sm:text-sm">{ar ? "إجمالي البرامج" : "Total Programs"}</p>
               <p className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">{totalPrograms}</p>
             </div>
@@ -287,7 +287,7 @@ export default async function DashboardPage({
                 {activePrograms}
               </p>
             </div>
-            <div className="rounded-2xl bg-(--background)/55 p-3 sm:p-4">
+            <div className="rounded-2xl bg-(--chip-bg) p-3 sm:p-4">
               <p className="text-xs font-medium text-(--muted-foreground) sm:text-sm">{ar ? "برامج مشتراة" : "Purchased Plans"}</p>
               <p className="mt-1 text-xl font-semibold tracking-tight sm:text-2xl">{purchasedPrograms}</p>
             </div>
