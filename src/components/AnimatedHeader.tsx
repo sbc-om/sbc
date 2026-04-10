@@ -67,6 +67,14 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
   const gradientOpacity = useSpring(rawGradientOpacity, springConfig);
   const cardWidth = useMotionTemplate`calc(100% - ${cardHorizontalTrim}px)`;
 
+  // Scroll-driven visual enhancements
+  const rawBorderOpacity = useTransform(scrollY, [0, 100], [0, 0.5]);
+  const rawShadowIntensity = useTransform(scrollY, [0, 150], [0, 0.1]);
+  const borderOpacity = useSpring(rawBorderOpacity, springConfig);
+  const shadowIntensity = useSpring(rawShadowIntensity, springConfig);
+  const bottomAccent = useMotionTemplate`linear-gradient(90deg, transparent 0%, rgba(0, 121, 244, ${borderOpacity}) 25%, rgba(6, 182, 212, ${borderOpacity}) 75%, transparent 100%)`;
+  const cardShadow = useMotionTemplate`0 8px 32px -8px rgba(0, 121, 244, ${shadowIntensity})`;
+
   // Close mobile menu on navigation
   useEffect(() => {
     queueMicrotask(() => {
@@ -145,7 +153,7 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
               paddingInlineEnd: cardPx,
               background:
                 "linear-gradient(165deg, rgba(var(--surface-rgb, 255, 255, 255), 0.94), rgba(var(--surface-rgb, 255, 255, 255), 0.84))",
-              boxShadow: "none",
+              boxShadow: prefersReducedMotion ? undefined : cardShadow,
             }}
           >
             {/* Subtle gradient overlay */}
@@ -156,6 +164,12 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   "linear-gradient(135deg, rgba(0, 121, 244, 0.12) 0%, rgba(6, 182, 212, 0.14) 52%, rgba(0, 121, 244, 0.1) 100%)",
                 opacity: gradientOpacity,
               }}
+            />
+
+            {/* Scroll-driven bottom accent line */}
+            <motion.div
+              className="absolute bottom-0 inset-x-6 h-px pointer-events-none rounded-full"
+              style={{ background: bottomAccent }}
             />
 
             <div className="flex items-center justify-between gap-4 md:gap-6">
@@ -184,8 +198,10 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   />
                 </motion.div>
                 <motion.span
-                  className={`block whitespace-nowrap py-0.5 font-bold leading-none tracking-tight transition-colors duration-200 ${
-                    desktopNavHovered ? "text-white" : "text-accent"
+                  className={`block whitespace-nowrap py-0.5 font-bold leading-none tracking-tight transition-all duration-300 ${
+                    desktopNavHovered
+                      ? "text-white"
+                      : "bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent"
                   }`}
                   style={{ fontSize, transformOrigin: "left center" }}
                 >

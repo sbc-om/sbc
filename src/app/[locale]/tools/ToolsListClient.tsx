@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   QrCode,
-  Bitcoin,
+  CandlestickChart,
   FileText,
   Wrench,
 } from "lucide-react";
@@ -37,7 +37,7 @@ export function ToolsListClient({ locale }: { locale: Locale }) {
     {
       key: "crypto",
       href: `/${locale}/tools/crypto`,
-      icon: <Bitcoin className="h-7 w-7" />,
+      icon: <CandlestickChart className="h-7 w-7" />,
       label: ar ? "أسعار العملات الرقمية" : "Crypto Market",
       description: ar
         ? "متابعة لحظية لأسعار أهم العملات الرقمية من Binance مع تحديثات فورية."
