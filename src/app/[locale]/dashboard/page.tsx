@@ -241,8 +241,8 @@ export default async function DashboardPage({
               </p>
               <p className="mt-3 max-w-3xl text-sm text-(--muted-foreground) sm:text-base">
                 {ar
-                  ? "تحكم بكل خدمات نشاطك من شاشة واحدة: اكتشاف العملاء، الولاء، التسويق، CRM، المحاسبة، الاجتماعات الافتراضية، شبكة SBCClaw، الموقع الإلكتروني، البريد المؤسسي، والذكاء الاصطناعي."
-                  : "Manage your full business stack in one place: discovery, loyalty, marketing, CRM, accounting, online classes, SBCClaw smart networking, website, business email, and AI automation."}
+                  ? "أدر خدمتيك الأساسيتين من مكان واحد: دليل الأعمال ليكتشفك العملاء بسهولة، ونظام الولاء لتكرار الزيارة وبناء علاقة أقوى مع عملائك."
+                  : "Manage your two core services in one place: Business Directory to help customers find you, and Loyalty System to bring them back more often."}
               </p>
               <p className="mt-3 text-sm font-medium text-(--muted-foreground)">
                 {nextRenewal
@@ -304,12 +304,12 @@ export default async function DashboardPage({
       <div className="mt-6 flex flex-col gap-2 sm:mt-8 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold tracking-tight sm:text-xl">
-            {ar ? "برامجك وخططك" : "Programs & Plans"}
+            {ar ? "خدماتك الحالية" : "Your Current Services"}
           </h2>
           <p className="text-sm text-(--muted-foreground)">
             {ar
-              ? "افتح أي برنامج مباشرة أو قم بالترقية من المتجر."
-              : "Open each program directly or upgrade from the store."}
+              ? "افتح الخدمة مباشرة أو اختر الخطة المناسبة من المتجر."
+              : "Open a service directly or choose the right plan from the store."}
           </p>
         </div>
         <span className="inline-flex w-fit items-center rounded-full bg-(--chip-bg) px-3 py-1 text-xs font-semibold text-(--muted-foreground)">

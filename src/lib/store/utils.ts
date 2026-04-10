@@ -22,15 +22,13 @@ export function getStoreProductText(product: StoreProduct, locale: Locale) {
  * Format product price with currency and interval
  */
 export function formatStorePrice(price: StoreProductPrice, locale: Locale): string {
-  // OMR uses 3 minor units
-  const fractionDigits = price.currency === "OMR" ? 3 : 0;
   const nf = new Intl.NumberFormat(locale === "ar" ? "ar-OM" : "en-OM", {
     style: "decimal",
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: price.currency === "OMR" ? 3 : 0,
   });
 
-  // Format as "100.000 OMR" (number first, then currency)
+  // Format as "100 OMR" or "10.500 OMR" (number first, then currency)
   const base = `${nf.format(price.amount)} ${price.currency}`;
   if (!price.interval) return base;
 
