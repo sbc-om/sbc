@@ -3,6 +3,7 @@ import { PublicPage } from "@/components/PublicPage";
 import { ScrollLottie } from "@/components/ScrollLottie";
 import { BusinessCard } from "@/components/BusinessCard";
 import { FadeInSection } from "@/components/FadeInSection";
+import { TypewriterText } from "@/components/TypewriterText";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/Button";
 import { getDictionary } from "@/lib/i18n/getDictionary";
@@ -125,7 +126,7 @@ export default async function LocaleHome({
           <FadeInSection duration={800} delay={0}>
             <div className="text-center mb-12">
               <h1 className="mb-6 whitespace-nowrap text-[clamp(1.45rem,7vw,4.5rem)] font-bold leading-tight tracking-tight bg-linear-to-r from-accent via-accent-2 to-accent bg-clip-text text-transparent">
-                {dict.home.title}
+                <TypewriterText text={dict.home.title} speedMs={70} />
               </h1>
               <p className="max-w-3xl mx-auto text-xl leading-8 text-muted-foreground">
                 {dict.home.subtitle}
@@ -143,12 +144,12 @@ export default async function LocaleHome({
               <article className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-linear-to-br from-amber-500/12 via-rose-500/10 to-fuchsia-500/12 p-4 shadow-[0_24px_70px_rgba(244,63,94,0.14)] sm:rounded-3xl sm:p-6 lg:p-7">
                 <div className="pointer-events-none absolute -right-14 -top-16 h-44 w-44 rounded-full bg-rose-400/18 blur-3xl" />
                 <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
-                  {locale === "ar" ? "الولاء" : "Loyalty"}
+                  {locale === "ar" ? "نظام الولاء" : "Loyalty System"}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-(--muted-foreground) sm:text-base sm:leading-7">
                   {locale === "ar"
-                    ? "نقاط وبطاقات العملاء في تجربة بسيطة وسريعة."
-                    : "Points and customer cards in one simple flow."}
+                    ? "نقاط وبطاقات العملاء."
+                    : "Points and customer cards."}
                 </p>
                 <div className="mt-auto pt-4">
                   <Link
@@ -163,19 +164,19 @@ export default async function LocaleHome({
               <article className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-linear-to-br from-sky-500/12 via-cyan-500/10 to-emerald-500/12 p-4 shadow-[0_24px_70px_rgba(6,182,212,0.14)] sm:rounded-3xl sm:p-6 lg:p-7">
                 <div className="pointer-events-none absolute -left-14 -top-16 h-44 w-44 rounded-full bg-cyan-400/18 blur-3xl" />
                 <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
-                  {locale === "ar" ? "أدوات الأعمال" : "Business Tools"}
+                  {locale === "ar" ? "دليل الأعمال" : "Business Directory"}
                 </h2>
                 <p className="mt-2 text-sm leading-6 text-(--muted-foreground) sm:text-base sm:leading-7">
                   {locale === "ar"
-                    ? "كل أدوات النمو في مكان واحد: تسويق، CRM، محاسبة وAI."
-                    : "All growth tools in one place: marketing, CRM, accounting, and AI."}
+                    ? "اكتشف الأنشطة التجارية في مكان واحد."
+                    : "Discover businesses in one place."}
                 </p>
                 <div className="mt-auto pt-4">
                   <Link
-                    href={`/${locale}/services`}
+                    href={`/${locale}/businesses`}
                     className={buttonVariants({ variant: "secondary", size: "md", className: "w-full justify-center sm:w-auto" })}
                   >
-                    {locale === "ar" ? "فتح أدوات الأعمال" : "Open Business Tools"}
+                    {locale === "ar" ? "فتح دليل الأعمال" : "Open Business Directory"}
                   </Link>
                 </div>
               </article>

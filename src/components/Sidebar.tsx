@@ -477,11 +477,11 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
   const renderNavContent = (navScrollRef: React.RefObject<HTMLElement | null>) => (
     <>
       {/* Logo */}
-      <div className={`sbc-sidebar-head ${iconOnly ? "px-0" : "px-3"} pt-4 ${collapsed ? "mb-4" : "mb-8"}`}>
+      <div className={`sbc-sidebar-head ${iconOnly ? "px-0" : "px-3"} pt-6 ${collapsed ? "mb-4" : "mb-8"}`}>
         <div className={`sbc-sidebar-head-row ${iconOnly ? "flex flex-col items-center gap-2" : "flex items-center justify-between gap-2"}`}>
           <Link
             href={`/${locale}`}
-            className={`sbc-sidebar-logo-link flex items-center gap-3 group min-w-0 ${iconOnly ? "justify-center" : "justify-start"}`}
+            className={`sbc-sidebar-logo-link group flex min-w-0 items-center ${iconOnly ? "justify-center gap-3" : "justify-start gap-3.5 py-1.5 pe-2"}`}
             title={iconOnly ? "SBC" : undefined}
           >
             <Image
@@ -493,7 +493,7 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
               priority
             />
             {!collapsed && (
-              <span className="sbc-sidebar-brand font-bold text-xl bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent overflow-hidden">
+              <span className="sbc-sidebar-brand bg-linear-to-r from-accent via-sky-400 to-accent-2 bg-clip-text py-1.5 text-[1.7rem] font-black leading-none tracking-[-0.04em] text-transparent antialiased">
                 SBC
               </span>
             )}

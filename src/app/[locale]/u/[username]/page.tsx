@@ -119,7 +119,14 @@ export default async function HandlePage({
   // Try user
   const targetUser = await getUserByUsername(handle);
   if (targetUser) {
-    return <UserProfilePage locale={locale as Locale} user={targetUser} />;
+    const currentUser = await getCurrentUser();
+    return (
+      <UserProfilePage
+        locale={locale as Locale}
+        user={targetUser}
+        isOwnProfile={currentUser?.id === targetUser.id}
+      />
+    );
   }
 
   notFound();

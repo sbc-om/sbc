@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import { isLocale } from "@/lib/i18n/locales";
 import { requireUser } from "@/lib/auth/requireUser";
@@ -54,7 +54,7 @@ export default async function ChatConversationPage({
   if (targetUser) {
     // Prevent chatting with self
     if (targetUser.id === user.id) {
-      notFound();
+      redirect(`/${locale}/profile`);
     }
 
     const conv = await getOrCreateConversation([user.id, targetUser.id]);
@@ -79,4 +79,3 @@ export default async function ChatConversationPage({
 
   notFound();
 }
-

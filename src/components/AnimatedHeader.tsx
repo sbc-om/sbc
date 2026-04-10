@@ -184,10 +184,8 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   />
                 </motion.div>
                 <motion.span
-                  className={`block font-bold leading-none tracking-tight whitespace-nowrap transition-colors duration-200 ${
-                    desktopNavHovered
-                      ? "text-white"
-                      : "bg-linear-to-r from-accent to-accent-2 bg-clip-text text-transparent"
+                  className={`block whitespace-nowrap py-0.5 font-bold leading-none tracking-tight transition-colors duration-200 ${
+                    desktopNavHovered ? "text-white" : "text-accent"
                   }`}
                   style={{ fontSize, transformOrigin: "left center" }}
                 >

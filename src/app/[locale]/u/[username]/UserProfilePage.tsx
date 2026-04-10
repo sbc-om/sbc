@@ -10,9 +10,10 @@ import type { User } from "@/lib/db/types";
 type UserProfilePageProps = {
   locale: Locale;
   user: User;
+  isOwnProfile?: boolean;
 };
 
-export function UserProfilePage({ locale, user }: UserProfilePageProps) {
+export function UserProfilePage({ locale, user, isOwnProfile = false }: UserProfilePageProps) {
   const ar = locale === "ar";
   const displayName = user.displayName || user.fullName || user.email;
   const [copied, setCopied] = useState(false);
@@ -90,20 +91,37 @@ export function UserProfilePage({ locale, user }: UserProfilePageProps) {
 
           {/* Actions */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href={`/${locale}/chat/@${user.username || user.id}`}
-              className={buttonVariants({ variant: "primary" })}
-            >
-              <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
-              </svg>
-              {ar ? "إرسال رسالة" : "Send Message"}
-            </Link>
+            {isOwnProfile ? (
+              <Link
+                href={`/${locale}/profile`}
+                className={buttonVariants({ variant: "primary" })}
+              >
+                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5.121 17.804A13.937 13.937 0 0112 16c2.507 0 4.86.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                {ar ? "تعديل الملف الشخصي" : "Edit Profile"}
+              </Link>
+            ) : (
+              <Link
+                href={`/${locale}/chat/@${user.username || user.id}`}
+                className={buttonVariants({ variant: "primary" })}
+              >
+                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                {ar ? "إرسال رسالة" : "Send Message"}
+              </Link>
+            )}
 
             <button
               onClick={handleShare}

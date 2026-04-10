@@ -484,7 +484,10 @@ export function ExplorerBusinessView({
                     <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       {locale === "ar" ? "هاتف" : "Phone"}
                     </div>
-                    <div className="mt-0.5 text-sm font-medium text-foreground group-hover:text-accent transition-colors truncate">
+                    <div
+                      dir="ltr"
+                      className="mt-0.5 truncate text-left text-sm font-medium tabular-nums text-foreground transition-colors group-hover:text-accent"
+                    >
                       {business.phone}
                     </div>
                   </div>
@@ -502,7 +505,10 @@ export function ExplorerBusinessView({
                     <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       {locale === "ar" ? "بريد إلكتروني" : "Email"}
                     </div>
-                    <div className="mt-0.5 text-sm font-medium text-foreground group-hover:text-accent transition-colors truncate">
+                    <div
+                      dir="ltr"
+                      className="mt-0.5 truncate text-left text-sm font-medium text-foreground transition-colors group-hover:text-accent"
+                    >
                       {business.email}
                     </div>
                   </div>
@@ -522,7 +528,10 @@ export function ExplorerBusinessView({
                     <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       {locale === "ar" ? "موقع إلكتروني" : "Website"}
                     </div>
-                    <div className="mt-0.5 text-sm font-medium text-foreground group-hover:text-accent transition-colors truncate">
+                    <div
+                      dir="ltr"
+                      className="mt-0.5 truncate text-left text-sm font-medium text-foreground transition-colors group-hover:text-accent"
+                    >
                       {business.website.replace(/^https?:\/\/(www\.)?/, "")}
                     </div>
                   </div>
