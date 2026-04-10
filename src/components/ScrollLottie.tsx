@@ -24,20 +24,24 @@ export function ScrollLottie({
 }: ScrollLottieProps) {
   const lottieRef = useRef<LottieRefCurrentProps>(null);
   const [isReady, setIsReady] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
-    // Wait for animation to be loaded
-    const timer = setTimeout(() => {
-      setIsReady(true);
-      if (lottieRef.current) {
-        lottieRef.current.pause();
-        lottieRef.current.goToAndStop(0, true);
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
+    setIsReady(true);
+    if (lottieRef.current) {
+      lottieRef.current.pause();
+      lottieRef.current.goToAndStop(0, true);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!isReady) return;
+    const frame = window.requestAnimationFrame(() => {
+      setIsVisible(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [isReady]);
 
   useEffect(() => {
     if (!isReady || !lottieRef.current) return;
@@ -109,11 +113,12 @@ export function ScrollLottie({
   }, [isReady, scrollFactor, prefersReducedMotion]);
 
   return (
-    <div className={"w-full max-w-md mx-auto py-8 relative " + (className ?? "")}>
+    <div className={"relative mx-auto w-full max-w-md py-8 " + (className ?? "")}>
       <div
-        className="relative z-10"
+        className="relative z-10 aspect-square w-full transition-opacity duration-700 ease-out"
         style={{
           filter: "drop-shadow(0 8px 24px rgba(79, 70, 229, 0.18))",
+          opacity: isVisible ? 1 : 0,
         }}
       >
         <Lottie
@@ -123,7 +128,7 @@ export function ScrollLottie({
           autoplay={false}
           style={{
             width: "100%",
-            height: "auto",
+            height: "100%",
           }}
         />
       </div>
