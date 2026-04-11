@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 
@@ -29,6 +29,7 @@ import { buttonVariants } from "@/components/ui/Button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getCurrentLoyaltyStaffSession } from "@/lib/auth/loyaltyStaffSession";
+import { isWAHAEnabled } from "@/lib/waha/client";
 
 const BASE_DOMAINS = ["sbc.om", "localhost", "127.0.0.1"] as const;
 const MAIN_DOMAINS = ["sbc.om", "www.sbc.om", "localhost", "127.0.0.1"] as const;
@@ -256,6 +257,16 @@ export default async function LocaleLayout({
     ? await requireUser(locale as Locale)
     : await getCurrentUser();
 
+  // ── WhatsApp phone verification gate ─────────────────────────────
+  // If WAHA is enabled and the user hasn't verified their phone,
+  // block all authenticated routes except verify-phone.
+  const needsPhoneVerification =
+    !!user && isWAHAEnabled() && !user.isPhoneVerified;
+
+  if (needsPhoneVerification && requiresAuth && routeSection !== "verify-phone") {
+    redirect(`/${locale}/verify-phone`);
+  }
+
   const products = await listStoreProducts();
   // Check if user already has a business (to hide business request menu)
   const userBusiness = user ? await getBusinessByOwnerId(user.id) : null;
@@ -334,6 +345,23 @@ export default async function LocaleLayout({
   // based on `usePathname()`.  No full-page reload required.
 
   if (user) {
+    // If user needs phone verification, render a minimal public shell
+    // without sidebar, mobile nav, or cart – only the verify-phone page.
+    if (needsPhoneVerification) {
+      return (
+        <DictionaryProvider locale={locale as Locale} dict={dict}>
+          <AISearchProvider>
+            <DirectionSync locale={locale as Locale} />
+            <div className="min-h-dvh bg-transparent text-foreground flex flex-col">
+              <Header locale={locale as Locale} dict={dict} />
+              <main className="flex-1"><PageTransition>{children}</PageTransition></main>
+              <Footer locale={locale as Locale} dict={dict} homepageOnlyInstagram={false} />
+            </div>
+          </AISearchProvider>
+        </DictionaryProvider>
+      );
+    }
+
     // Pre-render all chrome on the server, pass as React-node props.
     const sidebarNode = (
       <Sidebar

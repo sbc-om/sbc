@@ -153,6 +153,16 @@ export function RegisterForm({
           <span className="text-sm font-medium text-(--muted-foreground)">
             {dict.auth.phone}
           </span>
+          <div className="flex items-start gap-2 rounded-xl bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="mt-0.5 h-4 w-4 shrink-0">
+              <path d="M12 2C6.48 2 2 6.48 2 12c0 1.77.46 3.43 1.27 4.88L2.05 22l5.22-1.21A9.96 9.96 0 0 0 12 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm5.18 14.12c-.22.62-1.29 1.18-1.78 1.25-.46.07-.89.21-2.99-.62-2.54-1.01-4.16-3.6-4.29-3.77-.13-.17-1.04-1.39-1.04-2.65s.66-1.88.89-2.14c.23-.25.5-.31.67-.31.17 0 .33 0 .48.01.15.01.36-.06.56.43.21.5.71 1.74.78 1.87.06.13.1.28.02.45-.09.17-.13.28-.25.43-.13.15-.27.34-.38.45-.13.13-.26.27-.11.52.15.25.66 1.09 1.42 1.76.97.87 1.79 1.14 2.04 1.27.25.13.4.11.55-.07.15-.17.63-.73.8-.99.17-.25.33-.21.55-.12.23.08 1.43.67 1.67.8.25.12.41.18.47.28.07.1.07.59-.14 1.2z"/>
+            </svg>
+            <span>
+              {locale === "ar"
+                ? "يجب أن يكون واتساب مفعّلاً على هذا الرقم للتحقق من حسابك"
+                : "WhatsApp must be active on this number to verify your account"}
+            </span>
+          </div>
           <PhoneInput
             name="phone"
             required
