@@ -871,5 +871,5 @@ export function StoryEditor({ businessId, locale, onClose, onStoryCreated }: Sto
     </div>
   );
 
-  return typeof window !== "undefined" ? createPortal(content, document.body) : null;
+  return typeof window !== "undefined" ? createPortal(content, document.getElementById("sbc-app-root") ?? document.body) : null;
 }

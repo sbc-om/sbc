@@ -246,7 +246,7 @@ export function StoriesContainer({
           isBusinessOwner={isBusinessOwner}
           isAdmin={isAdmin}
         />,
-        document.body
+        document.getElementById("sbc-app-root") ?? document.body
       )}
     </>
   );

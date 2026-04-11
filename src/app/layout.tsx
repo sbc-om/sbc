@@ -190,6 +190,7 @@ html[data-sidebar-collapsed="true"] .sbc-sidebar .sbc-sidebar-profile-btn{width:
       </head>
       <body
         className={`${sbcSans.className} ${sbcSans.variable} ${sbcMono.variable} font-sbc antialiased`}
+        suppressHydrationWarning
       >
         <PWASplashScreen locale={locale} />
         <div id="sbc-app-root">

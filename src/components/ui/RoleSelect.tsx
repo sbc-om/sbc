@@ -212,7 +212,7 @@ export function RoleSelect({
               })}
             </div>
           </div>,
-          document.body
+          document.getElementById("sbc-app-root") ?? document.body
         )}
     </div>
   );

@@ -209,7 +209,7 @@ export function UserSelect({
             </div>
           </div>
         </div>,
-        document.body
+        document.getElementById("sbc-app-root") ?? document.body
       )}
     </div>
   );

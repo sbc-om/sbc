@@ -664,7 +664,7 @@ export default function AgentWithdrawalsClient({
             <HiOutlineXCircle className="h-4 w-4" />
           </button>
         </div>,
-        document.body
+        document.getElementById("sbc-app-root") ?? document.body
       )}
     </div>
   );

@@ -197,7 +197,7 @@ export function CategorySelect({
             </div>
           </div>
         </div>,
-        document.body
+        document.getElementById("sbc-app-root") ?? document.body
       )}
     </div>
   );

@@ -758,7 +758,7 @@ export function WalletClient({
             <HiOutlineXCircle className="h-4 w-4" />
           </button>
         </div>,
-        document.body
+        document.getElementById("sbc-app-root") ?? document.body
       )}
 
       {(txDetailsLoading || txDetailsError || selectedTransaction) && typeof document !== "undefined" && createPortal(
@@ -770,7 +770,7 @@ export function WalletClient({
           transaction={selectedTransaction}
           onClose={closeTransactionDetails}
         />,
-        document.body
+        document.getElementById("sbc-app-root") ?? document.body
       )}
     </div>
   );

@@ -144,7 +144,7 @@ export function BusinessStoriesStrip({
               isBusinessOwner={isBusinessOwner}
               isAdmin={isAdmin}
             />,
-            document.body,
+            document.getElementById("sbc-app-root") ?? document.body,
           )
         : null}
     </section>
