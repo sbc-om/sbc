@@ -296,7 +296,7 @@ export function OsmLocationPicker({
             </div>
             <div className="mt-1 text-xs text-(--muted-foreground)">
               {ar
-                ? "روی نقشه کلیک کنید یا نشانگر را بکشید. دایره آبی نشان‌دهنده محدوده نوتیفیکیشن است."
+                ? "انقر على الخريطة أو اسحب العلامة. الدائرة الزرقاء تُظهر نطاق الإشعارات."
                 : "Click on the map or drag the marker. The blue circle shows the notification range."}
             </div>
           </div>

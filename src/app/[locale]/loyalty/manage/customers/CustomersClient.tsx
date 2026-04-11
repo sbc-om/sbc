@@ -434,7 +434,7 @@ export function CustomersClient({
               <div className={cn(rtl ? "text-right" : "text-left")}>
                 <div className="text-sm font-semibold">{ar ? "QR للعميل" : "Customer QR"}</div>
                 <div className="mt-1 text-xs text-(--muted-foreground)">
-                  {ar ? "شماره موبایل مشتری در QR" : "Customer phone number in QR"}
+                  {ar ? "رقم هاتف العميل في QR" : "Customer phone number in QR"}
                 </div>
               </div>
               <Button type="button" variant="ghost" size="sm" onClick={closeQr}>

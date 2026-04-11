@@ -158,8 +158,8 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
   const handleApplePreview = async () => {
     if (!template?.id) {
       toast({
-        message: ar ? "ابتدا طراحی را ذخیره کنید" : "Save the design first",
-        description: ar ? "بعد از اولین ذخیره، پیش‌نمایش Apple Wallet ساخته می‌شود." : "Apple Wallet preview becomes available after the first save.",
+        message: ar ? "احفظ التصميم أولاً" : "Save the design first",
+        description: ar ? "بعد الحفظ الأول، ستكون معاينة Apple Wallet متاحة." : "Apple Wallet preview becomes available after the first save.",
         variant: "error",
       });
       return;
@@ -201,19 +201,19 @@ export function LoyaltyCardStudio({ locale, profile, selectedIconUrl, template }
       window.setTimeout(() => window.URL.revokeObjectURL(objectUrl), 250);
 
       toast({
-        message: ar ? "فایل Apple Wallet آماده شد" : "Apple Wallet pass is ready",
-        description: ar ? "برای افزودن مستقیم به Wallet، این دکمه را روی Safari در آیفون یا آیپد باز کنید." : "For direct Wallet import, open this button on Safari on iPhone or iPad.",
+        message: ar ? "ملف Apple Wallet جاهز" : "Apple Wallet pass is ready",
+        description: ar ? "لإضافته مباشرة إلى Wallet، افتح هذا الزر على Safari في iPhone أو iPad." : "For direct Wallet import, open this button on Safari on iPhone or iPad.",
         variant: "success",
       });
     } catch (error) {
       console.error("Apple Wallet preview failed:", error);
       toast({
-        message: ar ? "ساخت Apple Wallet انجام نشد" : "Apple Wallet preview failed",
+        message: ar ? "فشل إنشاء Apple Wallet" : "Apple Wallet preview failed",
         description:
           error instanceof Error
             ? error.message
             : ar
-              ? "لطفاً تنظیمات Apple Wallet را بررسی کنید."
+              ? "يرجى التحقق من إعدادات Apple Wallet."
               : "Please check the Apple Wallet configuration.",
         variant: "error",
       });

@@ -194,20 +194,20 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       const normalized = normalizeUrl(urlValue);
       return normalized
         ? { value: normalized, reason: null }
-        : { value: "", reason: ar ? "لطفاً لینک را وارد کنید." : "Enter a URL first." };
+        : { value: "", reason: ar ? "يرجى إدخال الرابط." : "Enter a URL first." };
     }
 
     if (qrType === "text") {
       const trimmed = textValue.trim();
       return trimmed
         ? { value: textValue, reason: null }
-        : { value: "", reason: ar ? "متن خالی است." : "Text is empty." };
+        : { value: "", reason: ar ? "النص فارغ." : "Text is empty." };
     }
 
     if (qrType === "wifi") {
       const ssid = wifiSsid.trim();
       if (!ssid) {
-        return { value: "", reason: ar ? "نام شبکه Wi-Fi لازم است." : "Wi-Fi SSID is required." };
+        return { value: "", reason: ar ? "اسم شبكة Wi-Fi مطلوب." : "Wi-Fi SSID is required." };
       }
       const parts = [`WIFI:T:${wifiSecurity};`, `S:${escapeWifi(ssid)};`];
       if (wifiSecurity !== "nopass" && wifiPassword.trim()) {
@@ -224,7 +224,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       const normalized = normalizePhone(phoneValue);
       return normalized
         ? { value: `tel:${normalized}`, reason: null }
-        : { value: "", reason: ar ? "شماره موبایل معتبر وارد کنید." : "Enter a valid phone number." };
+        : { value: "", reason: ar ? "أدخل رقم هاتف صالح." : "Enter a valid phone number." };
     }
 
     if (qrType === "sms") {
@@ -232,7 +232,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       if (!normalized) {
         return {
           value: "",
-          reason: ar ? "برای SMS شماره موبایل وارد کنید." : "Enter a phone number for SMS.",
+          reason: ar ? "أدخل رقم هاتف للرسائل القصيرة." : "Enter a phone number for SMS.",
         };
       }
       return { value: `SMSTO:${normalized}:${smsMessage.trim()}`, reason: null };
@@ -241,7 +241,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
     if (qrType === "email") {
       const email = emailAddress.trim();
       if (!email) {
-        return { value: "", reason: ar ? "آدرس ایمیل لازم است." : "Email address is required." };
+        return { value: "", reason: ar ? "البريد الإلكتروني مطلوب." : "Email address is required." };
       }
       const parts: string[] = [];
       if (emailSubject.trim()) parts.push(`subject=${encodeURIComponent(emailSubject.trim())}`);
@@ -255,7 +255,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       if (!normalized) {
         return {
           value: "",
-          reason: ar ? "شماره واتساب را وارد کنید." : "Enter a WhatsApp phone number.",
+          reason: ar ? "أدخل رقم واتساب." : "Enter a WhatsApp phone number.",
         };
       }
       const message = waMessage.trim();
@@ -269,7 +269,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
         return {
           value: "",
-          reason: ar ? "عرض و طول جغرافیایی معتبر وارد کنید." : "Enter valid latitude and longitude.",
+          reason: ar ? "أدخل خط عرض وخط طول صالحين." : "Enter valid latitude and longitude.",
         };
       }
       const hasLabel = locationLabel.trim().length > 0;
@@ -285,7 +285,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       return {
         value: "",
         reason: ar
-          ? "حداقل یک مورد (نام یا تلفن یا ایمیل یا سازمان) وارد کنید."
+          ? "أدخل قيمة واحدة على الأقل (الاسم أو الهاتف أو البريد الإلكتروني أو المؤسسة)."
           : "Enter at least one contact value (name, phone, email, or organization).",
       };
     }
@@ -294,7 +294,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       "BEGIN:VCARD",
       "VERSION:3.0",
       `N:${escapeVCard(vcard.lastName.trim())};${escapeVCard(vcard.firstName.trim())};;;`,
-      `FN:${escapeVCard(fullName || (ar ? "مخاطب" : "Contact"))}`,
+      `FN:${escapeVCard(fullName || (ar ? "جهة اتصال" : "Contact"))}`,
       vcard.organization.trim() ? `ORG:${escapeVCard(vcard.organization.trim())}` : "",
       vcard.title.trim() ? `TITLE:${escapeVCard(vcard.title.trim())}` : "",
       vcard.phone.trim() ? `TEL;TYPE=CELL:${escapeVCard(normalizePhone(vcard.phone))}` : "",
@@ -369,7 +369,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
         if (cancelled) return;
         setPreviewUrl(null);
         setSvgString("");
-        setErrorMessage(ar ? "ساخت QR با خطا مواجه شد." : "Failed to generate QR code.");
+        setErrorMessage(ar ? "فشل في إنشاء رمز QR." : "Failed to generate QR code.");
       } finally {
         if (!cancelled) {
           setIsGenerating(false);
@@ -418,7 +418,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       triggerDownload(dataUrl, `${fileBaseName}-${downloadSize}px.png`, false);
       setErrorMessage(null);
     } catch {
-      setErrorMessage(ar ? "دانلود PNG ناموفق بود." : "PNG download failed.");
+      setErrorMessage(ar ? "فشل تنزيل PNG." : "PNG download failed.");
     } finally {
       setIsDownloadingPng(false);
     }
@@ -445,7 +445,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       triggerDownload(objectUrl, `${fileBaseName}.svg`, true);
       setErrorMessage(null);
     } catch {
-      setErrorMessage(ar ? "دانلود SVG ناموفق بود." : "SVG download failed.");
+      setErrorMessage(ar ? "فشل تنزيل SVG." : "SVG download failed.");
     } finally {
       setIsDownloadingSvg(false);
     }
@@ -463,7 +463,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       }, 1400);
     } catch {
       setCopied(false);
-      setErrorMessage(ar ? "کپی انجام نشد." : "Copy failed.");
+      setErrorMessage(ar ? "فشل النسخ." : "Copy failed.");
     }
   }
 
@@ -471,7 +471,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
     if (qrType === "url") {
       return (
         <div className="space-y-2">
-          <label className="text-sm font-semibold">{ar ? "لینک" : "URL"}</label>
+          <label className="text-sm font-semibold">{ar ? "الرابط" : "URL"}</label>
           <Input
             value={urlValue}
             onChange={(event) => setUrlValue(event.target.value)}
@@ -484,13 +484,13 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
     if (qrType === "text") {
       return (
         <div className="space-y-2">
-          <label className="text-sm font-semibold">{ar ? "متن" : "Text"}</label>
+          <label className="text-sm font-semibold">{ar ? "النص" : "Text"}</label>
           <Textarea
             value={textValue}
             onChange={(event) => setTextValue(event.target.value)}
             placeholder={
               ar
-                ? "متن دلخواه خود را وارد کنید..."
+                ? "اكتب أي نص تريد ترميزه..."
                 : "Write any plain text you want encoded..."
             }
             className="min-h-32"
@@ -503,7 +503,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       return (
         <div className="space-y-3">
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "نام شبکه (SSID)" : "Wi-Fi Name (SSID)"}</label>
+            <label className="text-sm font-semibold">{ar ? "اسم الشبكة (SSID)" : "Wi-Fi Name (SSID)"}</label>
             <Input
               value={wifiSsid}
               onChange={(event) => setWifiSsid(event.target.value)}
@@ -513,7 +513,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-2">
-              <label className="text-sm font-semibold">{ar ? "نوع امنیت" : "Security"}</label>
+              <label className="text-sm font-semibold">{ar ? "نوع الأمان" : "Security"}</label>
               <select
                 value={wifiSecurity}
                 onChange={(event) => setWifiSecurity(event.target.value as WifiSecurity)}
@@ -521,16 +521,16 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               >
                 <option value="WPA">WPA/WPA2</option>
                 <option value="WEP">WEP</option>
-                <option value="nopass">{ar ? "بدون رمز" : "No Password"}</option>
+                <option value="nopass">{ar ? "بدون كلمة مرور" : "No Password"}</option>
               </select>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold">{ar ? "رمز عبور" : "Password"}</label>
+              <label className="text-sm font-semibold">{ar ? "كلمة المرور" : "Password"}</label>
               <Input
                 value={wifiPassword}
                 onChange={(event) => setWifiPassword(event.target.value)}
-                placeholder={ar ? "اختیاری برای شبکه باز" : "Optional for open network"}
+                placeholder={ar ? "اختياري للشبكة المفتوحة" : "Optional for open network"}
                 disabled={wifiSecurity === "nopass"}
               />
             </div>
@@ -543,7 +543,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               onChange={(event) => setWifiHidden(event.target.checked)}
               className="h-4 w-4 rounded border border-(--surface-border)"
             />
-            {ar ? "شبکه مخفی است" : "Hidden network"}
+            {ar ? "شبكة مخفية" : "Hidden network"}
           </label>
         </div>
       );
@@ -552,7 +552,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
     if (qrType === "phone") {
       return (
         <div className="space-y-2">
-          <label className="text-sm font-semibold">{ar ? "شماره موبایل" : "Mobile Number"}</label>
+          <label className="text-sm font-semibold">{ar ? "رقم الهاتف" : "Mobile Number"}</label>
           <Input
             value={phoneValue}
             onChange={(event) => setPhoneValue(event.target.value)}
@@ -566,7 +566,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       return (
         <div className="space-y-3">
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "شماره موبایل" : "Mobile Number"}</label>
+            <label className="text-sm font-semibold">{ar ? "رقم الهاتف" : "Mobile Number"}</label>
             <Input
               value={smsPhone}
               onChange={(event) => setSmsPhone(event.target.value)}
@@ -574,11 +574,11 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "متن پیام" : "SMS Message"}</label>
+            <label className="text-sm font-semibold">{ar ? "نص الرسالة" : "SMS Message"}</label>
             <Textarea
               value={smsMessage}
               onChange={(event) => setSmsMessage(event.target.value)}
-              placeholder={ar ? "متن پیام را وارد کنید..." : "Type SMS body..."}
+              placeholder={ar ? "اكتب نص الرسالة..." : "Type SMS body..."}
               className="min-h-28"
             />
           </div>
@@ -590,7 +590,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       return (
         <div className="space-y-3">
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "ایمیل" : "Email"}</label>
+            <label className="text-sm font-semibold">{ar ? "البريد الإلكتروني" : "Email"}</label>
             <Input
               value={emailAddress}
               onChange={(event) => setEmailAddress(event.target.value)}
@@ -598,19 +598,19 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "موضوع" : "Subject"}</label>
+            <label className="text-sm font-semibold">{ar ? "الموضوع" : "Subject"}</label>
             <Input
               value={emailSubject}
               onChange={(event) => setEmailSubject(event.target.value)}
-              placeholder={ar ? "موضوع ایمیل" : "Email subject"}
+              placeholder={ar ? "موضوع البريد" : "Email subject"}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "متن" : "Body"}</label>
+            <label className="text-sm font-semibold">{ar ? "النص" : "Body"}</label>
             <Textarea
               value={emailBody}
               onChange={(event) => setEmailBody(event.target.value)}
-              placeholder={ar ? "متن ایمیل" : "Email body"}
+              placeholder={ar ? "نص البريد" : "Email body"}
               className="min-h-24"
             />
           </div>
@@ -622,7 +622,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       return (
         <div className="space-y-3">
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "شماره واتساب" : "WhatsApp Number"}</label>
+            <label className="text-sm font-semibold">{ar ? "رقم واتساب" : "WhatsApp Number"}</label>
             <Input
               value={waPhone}
               onChange={(event) => setWaPhone(event.target.value)}
@@ -630,11 +630,11 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "پیام (اختیاری)" : "Message (optional)"}</label>
+            <label className="text-sm font-semibold">{ar ? "رسالة (اختياري)" : "Message (optional)"}</label>
             <Textarea
               value={waMessage}
               onChange={(event) => setWaMessage(event.target.value)}
-              placeholder={ar ? "متن اولیه گفتگو" : "Prefilled message"}
+              placeholder={ar ? "رسالة معبأة مسبقاً" : "Prefilled message"}
               className="min-h-24"
             />
           </div>
@@ -664,11 +664,11 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "عنوان مکان" : "Location Label"}</label>
+            <label className="text-sm font-semibold">{ar ? "عنوان الموقع" : "Location Label"}</label>
             <Input
               value={locationLabel}
               onChange={(event) => setLocationLabel(event.target.value)}
-              placeholder={ar ? "مثال: فروشگاه مرکزی" : "Example: Main Store"}
+              placeholder={ar ? "مثال: المتجر الرئيسي" : "Example: Main Store"}
             />
           </div>
         </div>
@@ -679,45 +679,45 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
       <div className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "نام" : "First Name"}</label>
+            <label className="text-sm font-semibold">{ar ? "الاسم الأول" : "First Name"}</label>
             <Input
               value={vcard.firstName}
               onChange={(event) => setVcard((prev) => ({ ...prev, firstName: event.target.value }))}
-              placeholder={ar ? "نام" : "First name"}
+              placeholder={ar ? "الاسم الأول" : "First name"}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "نام خانوادگی" : "Last Name"}</label>
+            <label className="text-sm font-semibold">{ar ? "اسم العائلة" : "Last Name"}</label>
             <Input
               value={vcard.lastName}
               onChange={(event) => setVcard((prev) => ({ ...prev, lastName: event.target.value }))}
-              placeholder={ar ? "نام خانوادگی" : "Last name"}
+              placeholder={ar ? "اسم العائلة" : "Last name"}
             />
           </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "سازمان" : "Organization"}</label>
+            <label className="text-sm font-semibold">{ar ? "المؤسسة" : "Organization"}</label>
             <Input
               value={vcard.organization}
               onChange={(event) => setVcard((prev) => ({ ...prev, organization: event.target.value }))}
-              placeholder={ar ? "نام شرکت" : "Company"}
+              placeholder={ar ? "اسم الشركة" : "Company"}
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "عنوان شغلی" : "Job Title"}</label>
+            <label className="text-sm font-semibold">{ar ? "المسمى الوظيفي" : "Job Title"}</label>
             <Input
               value={vcard.title}
               onChange={(event) => setVcard((prev) => ({ ...prev, title: event.target.value }))}
-              placeholder={ar ? "عنوان" : "Title"}
+              placeholder={ar ? "المسمى" : "Title"}
             />
           </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "موبایل" : "Phone"}</label>
+            <label className="text-sm font-semibold">{ar ? "الهاتف" : "Phone"}</label>
             <Input
               value={vcard.phone}
               onChange={(event) => setVcard((prev) => ({ ...prev, phone: event.target.value }))}
@@ -725,7 +725,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold">{ar ? "ایمیل" : "Email"}</label>
+            <label className="text-sm font-semibold">{ar ? "البريد الإلكتروني" : "Email"}</label>
             <Input
               value={vcard.email}
               onChange={(event) => setVcard((prev) => ({ ...prev, email: event.target.value }))}
@@ -735,7 +735,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold">{ar ? "وب‌سایت" : "Website"}</label>
+          <label className="text-sm font-semibold">{ar ? "الموقع الإلكتروني" : "Website"}</label>
           <Input
             value={vcard.website}
             onChange={(event) => setVcard((prev) => ({ ...prev, website: event.target.value }))}
@@ -744,20 +744,20 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold">{ar ? "آدرس" : "Address"}</label>
+          <label className="text-sm font-semibold">{ar ? "العنوان" : "Address"}</label>
           <Input
             value={vcard.address}
             onChange={(event) => setVcard((prev) => ({ ...prev, address: event.target.value }))}
-            placeholder={ar ? "نشانی" : "Address"}
+            placeholder={ar ? "العنوان" : "Address"}
           />
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-semibold">{ar ? "یادداشت" : "Note"}</label>
+          <label className="text-sm font-semibold">{ar ? "ملاحظة" : "Note"}</label>
           <Textarea
             value={vcard.note}
             onChange={(event) => setVcard((prev) => ({ ...prev, note: event.target.value }))}
-            placeholder={ar ? "توضیح اضافی" : "Extra notes"}
+            placeholder={ar ? "ملاحظات إضافية" : "Extra notes"}
             className="min-h-20"
           />
         </div>
@@ -768,10 +768,10 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
   const availabilityText = buildResult.reason
     ? buildResult.reason
     : ar
-      ? "QR آماده دانلود با کیفیت بالا"
+      ? "رمز QR جاهز للتنزيل بجودة عالية"
       : "QR ready for high-quality download";
 
-  const payloadLabel = `${ar ? "محتوا" : "Payload"} (${getTypeLabel(qrType, ar)})`;
+  const payloadLabel = `${ar ? "المحتوى" : "Payload"} (${getTypeLabel(qrType, ar)})`;
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -785,11 +785,11 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
             <span>{ar ? "QR Studio" : "QR Studio"}</span>
           </div>
           <h1 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">
-            {ar ? "سازنده حرفه‌ای QR Code" : "Professional QR Code Generator"}
+            {ar ? "منشئ رمز QR الاحترافي" : "Professional QR Code Generator"}
           </h1>
           <p className="mt-2 max-w-3xl text-sm text-(--muted-foreground) sm:text-base">
             {ar
-              ? "لینک، متن، وای‌فای، موبایل، ایمیل، واتساب، لوکیشن و vCard بسازید. خروجی PNG و SVG با رزولوشن بالا دانلود کنید."
+              ? "أنشئ رمز QR للروابط والنصوص وWi-Fi والهاتف والبريد الإلكتروني وواتساب والموقع وvCard. حمّل مخرجات PNG وSVG بدقة عالية."
               : "Create QR for links, text, Wi-Fi, phone, email, WhatsApp, location, and vCard. Download crisp PNG and SVG outputs."}
           </p>
         </div>
@@ -827,7 +827,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
           </div>
 
           <div className="mt-7 rounded-2xl border border-(--surface-border) bg-(--chip-bg) p-4">
-            <h2 className="text-sm font-semibold">{ar ? "تنظیمات کیفیت" : "Quality Settings"}</h2>
+            <h2 className="text-sm font-semibold">{ar ? "إعدادات الجودة" : "Quality Settings"}</h2>
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
@@ -845,7 +845,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "حاشیه" : "Margin"}</label>
+                <label className="text-sm font-medium">{ar ? "الهامش" : "Margin"}</label>
                 <Input
                   type="number"
                   min={0}
@@ -864,14 +864,14 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "رنگ کد" : "Code color"}</label>
+                <label className="text-sm font-medium">{ar ? "لون الرمز" : "Code color"}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={foregroundColor}
                     onChange={(event) => setForegroundColor(event.target.value)}
                     className="h-11 w-14 cursor-pointer rounded-xl border border-(--surface-border) bg-transparent p-1"
-                    aria-label={ar ? "رنگ کد" : "Code color"}
+                    aria-label={ar ? "لون الرمز" : "Code color"}
                   />
                   <Input
                     value={foregroundColor}
@@ -881,14 +881,14 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "رنگ پس‌زمینه" : "Background"}</label>
+                <label className="text-sm font-medium">{ar ? "لون الخلفية" : "Background"}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
                     value={backgroundColor}
                     onChange={(event) => setBackgroundColor(event.target.value)}
                     className="h-11 w-14 cursor-pointer rounded-xl border border-(--surface-border) bg-transparent p-1"
-                    aria-label={ar ? "رنگ پس‌زمینه" : "Background color"}
+                    aria-label={ar ? "لون الخلفية" : "Background color"}
                     disabled={transparentBg}
                   />
                   <Input
@@ -902,7 +902,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "رزولوشن دانلود" : "Download resolution"}</label>
+                <label className="text-sm font-medium">{ar ? "دقة التنزيل" : "Download resolution"}</label>
                 <select
                   value={String(downloadSize)}
                   onChange={(event) => setDownloadSize(Number(event.target.value) as 1024 | 2048 | 4096)}
@@ -915,7 +915,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">{ar ? "شفاف" : "Transparency"}</label>
+                <label className="text-sm font-medium">{ar ? "الشفافية" : "Transparency"}</label>
                 <label className="inline-flex h-11 w-full items-center gap-2 rounded-xl border border-(--surface-border) bg-(--background) px-3 text-sm text-(--muted-foreground)">
                   <input
                     type="checkbox"
@@ -923,7 +923,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
                     onChange={(event) => setTransparentBg(event.target.checked)}
                     className="h-4 w-4 rounded border border-(--surface-border)"
                   />
-                  {ar ? "پس‌زمینه شفاف" : "Transparent background"}
+                  {ar ? "خلفية شفافة" : "Transparent background"}
                 </label>
               </div>
             </div>
@@ -932,7 +932,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
 
         <div className="sbc-card rounded-3xl p-4 sm:p-5 xl:sticky xl:top-24 xl:h-fit">
           <div className={rtl ? "text-right" : "text-left"}>
-            <h2 className="text-base font-semibold">{ar ? "پیش‌نمایش" : "Preview"}</h2>
+            <h2 className="text-base font-semibold">{ar ? "معاينة" : "Preview"}</h2>
             <p className="mt-1 text-xs text-(--muted-foreground)">{availabilityText}</p>
           </div>
 
@@ -959,10 +959,10 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
                 <div className="text-center text-sm text-(--muted-foreground)">
                   {isGenerating
                     ? ar
-                      ? "در حال ساخت QR..."
+                      ? "جارٍ إنشاء رمز QR..."
                       : "Generating QR..."
                     : ar
-                      ? "ابتدا اطلاعات را وارد کنید"
+                      ? "أدخل بياناتك لإنشاء الرمز"
                       : "Enter your data to generate"}
                 </div>
               )}
@@ -980,7 +980,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               <Download className="h-4 w-4" />
               {isDownloadingPng
                 ? ar
-                  ? "آماده‌سازی..."
+                  ? "جارٍ التحضير..."
                   : "Preparing..."
                 : "PNG"}
             </Button>
@@ -993,7 +993,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               className="w-full justify-center"
             >
               <Globe className="h-4 w-4" />
-              {isDownloadingSvg ? (ar ? "آماده‌سازی..." : "Preparing...") : "SVG"}
+              {isDownloadingSvg ? (ar ? "جارٍ التحضير..." : "Preparing...") : "SVG"}
             </Button>
 
             <Button
@@ -1004,7 +1004,7 @@ export function QrCodeGeneratorClient({ locale }: { locale: Locale }) {
               className="w-full justify-center"
             >
               <Copy className="h-4 w-4" />
-              {copied ? (ar ? "کپی شد" : "Copied") : ar ? "کپی" : "Copy"}
+              {copied ? (ar ? "تم النسخ" : "Copied") : ar ? "نسخ" : "Copy"}
             </Button>
           </div>
 
