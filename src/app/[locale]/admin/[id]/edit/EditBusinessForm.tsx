@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -8,13 +7,24 @@ import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Category, Business } from "@/lib/db/types";
 import { updateBusinessAction, deleteBusinessAction } from "@/app/[locale]/admin/actions";
-import { Button, buttonVariants } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CategorySelect } from "@/components/ui/CategorySelect";
 import { UserSelect } from "@/components/ui/UserSelect";
 import { MarkdownEditor } from "@/components/ui/MarkdownEditor";
 import { useToast } from "@/components/ui/Toast";
+import {
+  HiOutlineInformationCircle,
+  HiOutlinePhone,
+  HiOutlineMapPin,
+  HiOutlinePhoto,
+  HiOutlineCog6Tooth,
+  HiOutlineClipboardDocumentCheck,
+  HiOutlineCheckCircle,
+  HiOutlineChevronLeft,
+  HiOutlineChevronRight,
+} from "react-icons/hi2";
 
 const USERNAME_MIN = 2;
 const USERNAME_MAX = 30;
@@ -495,18 +505,26 @@ export function EditBusinessForm({
       });
     }
     
-    // Call the action
-    await updateBusinessAction(locale, business.id, formData);
+    try {
+      await updateBusinessAction(locale, business.id, formData);
+    } catch (error) {
+      toast({
+        message: ar
+          ? `فشل حفظ التعديلات: ${error instanceof Error ? error.message : "خطأ غير معروف"}`
+          : `Failed to save: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "error",
+      });
+    }
   };
 
   const steps = [
-    { id: "info", label: ar ? "المعلومات" : "Info" },
-    { id: "contact", label: ar ? "التواصل" : "Contact" },
-    { id: "location", label: ar ? "الموقع" : "Location" },
-    { id: "media", label: ar ? "الصور" : "Media" },
-    { id: "settings", label: ar ? "الإعدادات" : "Settings" },
-    { id: "review", label: ar ? "المراجعة" : "Review" },
-  ] as const;
+    { id: "info", label: ar ? "المعلومات" : "Info", icon: <HiOutlineInformationCircle className="h-5 w-5" /> },
+    { id: "contact", label: ar ? "التواصل" : "Contact", icon: <HiOutlinePhone className="h-5 w-5" /> },
+    { id: "location", label: ar ? "الموقع" : "Location", icon: <HiOutlineMapPin className="h-5 w-5" /> },
+    { id: "media", label: ar ? "الصور" : "Media", icon: <HiOutlinePhoto className="h-5 w-5" /> },
+    { id: "settings", label: ar ? "الإعدادات" : "Settings", icon: <HiOutlineCog6Tooth className="h-5 w-5" /> },
+    { id: "review", label: ar ? "المراجعة" : "Review", icon: <HiOutlineClipboardDocumentCheck className="h-5 w-5" /> },
+  ];
 
   const validateStep = (step: number) => {
     switch (steps[step].id) {
@@ -642,15 +660,18 @@ export function EditBusinessForm({
                     setCurrentStep(idx);
                   }}
                   disabled={idx > currentStep}
-                  className={`w-full rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 w-full rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
                     isActive
-                      ? "bg-accent text-(--accent-foreground)"
+                      ? "bg-accent text-(--accent-foreground) shadow-sm"
                       : isDone
                         ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
                         : "bg-(--chip-bg) text-(--muted-foreground)"
-                  } ${idx > currentStep ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  } ${idx > currentStep ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:opacity-90"}`}
                 >
-                  {step.label}
+                  <span className={`shrink-0 ${isDone && !isActive ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
+                    {isDone && !isActive ? <HiOutlineCheckCircle className="h-5 w-5" /> : step.icon}
+                  </span>
+                  <span className="truncate">{step.label}</span>
                 </button>
               </li>
             );
@@ -1256,12 +1277,18 @@ export function EditBusinessForm({
             </div>
           </div>
 
-        {/* Submit Button */}
+        {/* Footer Navigation */}
         <div className="flex items-center justify-between border-t border-(--surface-border) pt-6">
           <div className="flex items-center gap-3">
-            <Button type="button" variant="ghost" onClick={currentStep === 0 ? () => router.push(`/${locale}/admin`) : goPrev}>
-              {currentStep === 0 ? (ar ? "إلغاء" : "Cancel") : (ar ? "السابق" : "Previous")}
+            <Button type="button" variant="ghost" onClick={currentStep === 0 ? () => router.push(`/${locale}/admin/businesses`) : goPrev}>
+              <span className="flex items-center gap-1.5">
+                {ar ? <HiOutlineChevronRight className="h-4 w-4" /> : <HiOutlineChevronLeft className="h-4 w-4" />}
+                {currentStep === 0 ? (ar ? "إلغاء" : "Cancel") : (ar ? "السابق" : "Previous")}
+              </span>
             </Button>
+          </div>
+
+          <div className="flex items-center gap-3">
             <ConfirmDialog
               title={ar ? "تأكيد الحذف" : "Confirm Delete"}
               message={ar ? "هل تريد حذف هذا النشاط؟ لا يمكن التراجع عن هذا الإجراء." : "Delete this business? This action cannot be undone."}
@@ -1271,23 +1298,21 @@ export function EditBusinessForm({
               variant="destructive"
               trigger={
                 <Button variant="destructive" size="sm" disabled={deleting} type="button">
-                  {deleting ? (ar ? "جارٍ الحذف..." : "Deleting...") : (ar ? "حذف النشاط" : "Delete Business")}
+                  {deleting ? "..." : (ar ? "حذف" : "Delete")}
                 </Button>
               }
             />
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Link href={`/${locale}/admin`} className={buttonVariants({ variant: "ghost" })}>
-              {ar ? "إلغاء" : "Cancel"}
-            </Link>
             {currentStep < steps.length - 1 ? (
-              <Button type="button" onClick={goNext} className="min-w-32">
-                {ar ? "التالي" : "Next"}
+              <Button type="button" variant="primary" onClick={goNext} className="min-w-32">
+                <span className="flex items-center gap-1.5">
+                  {ar ? "التالي" : "Next"}
+                  {ar ? <HiOutlineChevronLeft className="h-4 w-4" /> : <HiOutlineChevronRight className="h-4 w-4" />}
+                </span>
               </Button>
             ) : (
               <Button
                 type="submit"
+                variant="primary"
                 className="min-w-45"
                 data-submit-intent="final-save"
                 onClick={() => setSubmitArmed(true)}

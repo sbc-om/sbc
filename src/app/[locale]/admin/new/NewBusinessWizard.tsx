@@ -847,12 +847,48 @@ export function NewBusinessWizard({
             />
             <div className="sbc-card p-6 space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isApproved} onChange={(e) => setIsApproved(e.target.checked)} className="h-4 w-4" />{ar ? "معتمد" : "Approved"}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isVerified} onChange={(e) => setIsVerified(e.target.checked)} className="h-4 w-4" />{ar ? "موثّق" : "Verified"}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={isSpecial} onChange={(e) => setIsSpecial(e.target.checked)} className="h-4 w-4" />{ar ? "مميز" : "Special"}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={homepageFeatured} onChange={(e) => setHomepageFeatured(e.target.checked)} className="h-4 w-4" />{ar ? "ضمن Featured" : "Homepage featured"}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={homepageTop} onChange={(e) => { const next = e.target.checked; setHomepageTop(next); if (next) setHomepageFeatured(true); }} className="h-4 w-4" />{ar ? "ضمن Top 3" : "Homepage top"}</label>
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={showSimilarBusinesses} onChange={(e) => setShowSimilarBusinesses(e.target.checked)} className="h-4 w-4" />{ar ? "إظهار الأنشطة المشابهة" : "Show similar businesses"}</label>
+                <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4 cursor-pointer">
+                  <input type="checkbox" checked={isApproved} onChange={(e) => setIsApproved(e.target.checked)} className="mt-1 h-4 w-4 accent-emerald-600" />
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{ar ? "معتمد للظهور" : "Approved"}</div>
+                    <div className="mt-1 text-xs text-(--muted-foreground)">{ar ? "السماح بظهور النشاط في القوائم العامة" : "Allow business to appear in public listings"}</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4 cursor-pointer">
+                  <input type="checkbox" checked={isVerified} onChange={(e) => setIsVerified(e.target.checked)} className="mt-1 h-4 w-4 accent-blue-600" />
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{ar ? "موثّق (تِك أزرق)" : "Verified (blue check)"}</div>
+                    <div className="mt-1 text-xs text-(--muted-foreground)">{ar ? "يظهر بجانب اسم النشاط" : "Shown next to the business name"}</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4 cursor-pointer">
+                  <input type="checkbox" checked={isSpecial} onChange={(e) => setIsSpecial(e.target.checked)} className="mt-1 h-4 w-4 accent-amber-500" />
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{ar ? "مميز / VIP" : "Special / VIP"}</div>
+                    <div className="mt-1 text-xs text-(--muted-foreground)">{ar ? "تمييز خاص في القوائم" : "Special highlight in listings"}</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4 cursor-pointer">
+                  <input type="checkbox" checked={homepageFeatured} onChange={(e) => setHomepageFeatured(e.target.checked)} className="mt-1 h-4 w-4 accent-emerald-500" />
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{ar ? "ضمن قائمة 12 الرئيسية" : "Homepage featured 12"}</div>
+                    <div className="mt-1 text-xs text-(--muted-foreground)">{ar ? "يظهر في الصفحة الرئيسية" : "Show in homepage featured list"}</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4 cursor-pointer">
+                  <input type="checkbox" checked={homepageTop} onChange={(e) => { const next = e.target.checked; setHomepageTop(next); if (next) setHomepageFeatured(true); }} className="mt-1 h-4 w-4 accent-emerald-500" />
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{ar ? "أفضل 3 في الرئيسية" : "Homepage top 3"}</div>
+                    <div className="mt-1 text-xs text-(--muted-foreground)">{ar ? "يظهر ضمن أول 3 أنشطة" : "Show in top 3 slot on homepage"}</div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 rounded-xl border border-(--surface-border) bg-(--surface) p-4 cursor-pointer">
+                  <input type="checkbox" checked={showSimilarBusinesses} onChange={(e) => setShowSimilarBusinesses(e.target.checked)} className="mt-1 h-4 w-4 accent-blue-500" />
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{ar ? "عرض المشابهات" : "Show similar"}</div>
+                    <div className="mt-1 text-xs text-(--muted-foreground)">{ar ? "اقتراحات أنشطة مشابهة بالذكاء الاصطناعي" : "AI-powered similar business suggestions"}</div>
+                  </div>
+                </label>
               </div>
 
               <div className="pt-2">
@@ -931,16 +967,42 @@ export function NewBusinessWizard({
               title={ar ? "مراجعة وإنشاء" : "Review & Create"}
               desc={ar ? "راجع البيانات قبل الإنشاء" : "Review your data before creating"}
             />
-            <div className="sbc-card p-6 space-y-3 text-sm">
-              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "الاسم" : "Name"}</span><span>{formData.name_en || "—"}</span></div>
-              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "التصنيف" : "Category"}</span><span>{selectedCategory ? (ar ? selectedCategory.name.ar : selectedCategory.name.en) : "—"}</span></div>
-              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "المالك" : "Owner"}</span><span>{selectedOwner?.fullName || selectedOwner?.email || "—"}</span></div>
-              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "المدينة" : "City"}</span><span>{formData.city || "—"}</span></div>
-              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "الدومين" : "Domain"}</span><span>{domainValue || "—"}</span></div>
-              {domainPreview ? (
-                <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "الرابط" : "URL"}</span><span dir="ltr">{domainPreview}</span></div>
-              ) : null}
-              <div className="flex justify-between"><span className="text-(--muted-foreground)">{ar ? "الصور" : "Media"}</span><span>{logoPreview.length + coverPreview.length + bannerPreview.length + galleryPreview.length > 0 ? (ar ? "مضاف" : "Added") : "—"}</span></div>
+            <div className="sbc-card p-6 space-y-4 text-sm">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الاسم (EN)" : "Name (EN)"}</span><span className="text-end">{formData.name_en || "—"}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الاسم (AR)" : "Name (AR)"}</span><span className="text-end">{formData.name_ar || "—"}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "المسار" : "Slug"}</span><span dir="ltr">{formData.slug || "—"}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "اسم المستخدم" : "Username"}</span><span dir="ltr">{formData.username ? `@${formData.username}` : "—"}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "التصنيف" : "Category"}</span><span className="text-end">{selectedCategory ? (ar ? selectedCategory.name.ar : selectedCategory.name.en) : "—"}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "المالك" : "Owner"}</span><span className="text-end">{selectedOwner?.fullName || selectedOwner?.email || "—"}</span></div>
+              </div>
+
+              <div className="h-px bg-(--surface-border)" />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "المدينة" : "City"}</span><span>{formData.city || "—"}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الهاتف" : "Phone"}</span><span dir="ltr">{formData.phone || "—"}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "البريد" : "Email"}</span><span dir="ltr">{formData.email || "—"}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الموقع" : "Website"}</span><span dir="ltr">{formData.website || "—"}</span></div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "العنوان" : "Address"}</span><span className="text-end">{formData.address || "—"}</span></div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الوسوم" : "Tags"}</span><span className="text-end">{formData.tags || "—"}</span></div>
+              </div>
+
+              <div className="h-px bg-(--surface-border)" />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "معتمد" : "Approved"}</span><span>{isApproved ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "موثّق" : "Verified"}</span><span>{isVerified ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "مميز" : "Special"}</span><span>{isSpecial ? (ar ? "نعم" : "Yes") : (ar ? "لا" : "No")}</span></div>
+                <div className="flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الدومين" : "Domain"}</span><span dir="ltr">{domainValue || "—"}</span></div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "الوسائط" : "Media"}</span><span>{[
+                  coverPreview.length > 0 && `Cover: ${ar ? "نعم" : "Yes"}`,
+                  logoPreview.length > 0 && `Logo: ${ar ? "نعم" : "Yes"}`,
+                  bannerPreview.length > 0 && `Banner: ${ar ? "نعم" : "Yes"}`,
+                  galleryPreview.length > 0 && `Gallery: ${galleryPreview.length}`,
+                ].filter(Boolean).join(" • ") || "—"}</span></div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-4"><span className="text-(--muted-foreground)">{ar ? "طول الوصف" : "Desc. length"}</span><span>{`EN: ${formData.desc_en.trim().length} • AR: ${formData.desc_ar.trim().length}`}</span></div>
+              </div>
             </div>
           </div>
         )}

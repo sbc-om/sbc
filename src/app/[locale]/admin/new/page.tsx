@@ -32,11 +32,6 @@ export default async function AdminNewBusinessPage({
   return (
     <AppPage>
       <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-      <p className="mt-1 text-sm text-(--muted-foreground)">
-        {locale === "ar"
-          ? "املأ البيانات باللغتين لعرضها بشكل ممتاز." 
-          : "Fill in both languages for a polished bilingual directory."}
-      </p>
 
       <NewBusinessWizard
         locale={locale as Locale}
