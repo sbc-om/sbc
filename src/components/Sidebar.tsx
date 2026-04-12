@@ -439,14 +439,13 @@ export function Sidebar({ locale, dict, user }: SidebarProps) {
       Icon: IoWallet,
       IconOutline: IoWalletOutline,
     },
-    // Only show business request if user doesn't have a business
-    ...(!user.hasBusiness ? [{
-      key: "businessRequest",
-      label: dict.nav.businessRequest ?? (locale === "ar" ? "طلب إضافة عمل" : "Request Listing"),
-      path: "/business-request",
-      Icon: HiPlus,
-      IconOutline: HiOutlinePlus,
-    }] : []),
+    {
+      key: "myBusinesses",
+      label: locale === "ar" ? "أعمالي" : "My Businesses",
+      path: "/profile/businesses",
+      Icon: HiBriefcase,
+      IconOutline: HiOutlineBriefcase,
+    },
   ];
 
   const navItems: NavItem[] =

@@ -145,6 +145,14 @@ export async function listBusinessRequestsByAgent(agentUserId: string): Promise<
   return result.rows.map(rowToRequest);
 }
 
+export async function listBusinessRequestsByUser(userId: string): Promise<BusinessRequest[]> {
+  const result = await query<BusinessRequestRow>(
+    `SELECT * FROM business_requests WHERE user_id = $1 ORDER BY created_at DESC`,
+    [userId]
+  );
+  return result.rows.map(rowToRequest);
+}
+
 export async function listPendingBusinessRequests(): Promise<BusinessRequest[]> {
   const result = await query<BusinessRequestRow>(`SELECT * FROM business_requests WHERE status = 'pending' ORDER BY created_at DESC`);
   return result.rows.map(rowToRequest);

@@ -73,19 +73,95 @@ export function BusinessRequestForm({
   const { toast } = useToast();
   const ar = locale === "ar";
 
+  /* ── Slide icon components ──────────────────────────────── */
+  const slideIcons: Record<SlideId, React.ReactNode> = useMemo(
+    () => ({
+      name_en: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+        </svg>
+      ),
+      name_ar: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 19l7-7 3 3-7 7-3-3z" />
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+          <path d="M2 2l7.586 7.586" />
+          <circle cx="11" cy="11" r="2" />
+        </svg>
+      ),
+      category: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
+      ),
+      desc: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      ),
+      contact: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+        </svg>
+      ),
+      location: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+          <circle cx="12" cy="10" r="3" />
+        </svg>
+      ),
+      logo: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+          <line x1="9" y1="9" x2="9.01" y2="9" />
+          <line x1="15" y1="9" x2="15.01" y2="9" />
+        </svg>
+      ),
+      cover: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#f97316" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+      ),
+      gallery: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <circle cx="12" cy="13" r="4" />
+        </svg>
+      ),
+      review: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      ),
+    }),
+    [],
+  );
+
   /* ── Slide definitions ───────────────────────────────────── */
   const slides = useMemo(
     () => [
-      { id: "name_en" as SlideId, emoji: "✏️", required: true },
-      { id: "name_ar" as SlideId, emoji: "🪶", required: true },
-      { id: "category" as SlideId, emoji: "📂", required: true },
-      { id: "desc" as SlideId, emoji: "📝", required: false },
-      { id: "contact" as SlideId, emoji: "📱", required: false },
-      { id: "location" as SlideId, emoji: "📍", required: false },
-      { id: "logo" as SlideId, emoji: "🎨", required: false },
-      { id: "cover" as SlideId, emoji: "🖼️", required: false },
-      { id: "gallery" as SlideId, emoji: "📸", required: false },
-      { id: "review" as SlideId, emoji: "🚀", required: false },
+      { id: "name_en" as SlideId, required: true },
+      { id: "name_ar" as SlideId, required: true },
+      { id: "category" as SlideId, required: true },
+      { id: "desc" as SlideId, required: false },
+      { id: "contact" as SlideId, required: false },
+      { id: "location" as SlideId, required: false },
+      { id: "logo" as SlideId, required: false },
+      { id: "cover" as SlideId, required: false },
+      { id: "gallery" as SlideId, required: false },
+      { id: "review" as SlideId, required: false },
     ],
     [],
   );
@@ -331,7 +407,7 @@ export function BusinessRequestForm({
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="text-lg">{currentSlide.emoji}</span>
+            {slideIcons[currentSlide.id]}
             <span className="text-xs font-medium text-(--muted-foreground)">
               {idx + 1} / {slides.length}
             </span>
