@@ -93,11 +93,15 @@ export default async function AdminRequestsPage({
 
       {/* Pending Requests */}
       {pendingRequests.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">
-            {ar ? "الطلبات المعلقة" : "Pending Requests"}
-          </h2>
-          <div className="grid gap-4">
+        <div className="mb-10">
+          <div className="flex items-center gap-2.5 mb-5">
+            <span className="h-2.5 w-2.5 rounded-full bg-yellow-500" />
+            <h2 className="text-lg font-semibold">
+              {ar ? "الطلبات المعلقة" : "Pending Requests"}
+            </h2>
+            <span className="text-sm text-(--muted-foreground)">({pendingRequests.length})</span>
+          </div>
+          <div className="grid gap-6 xl:grid-cols-2">
             {pendingRequests.map((req) => {
               const user = req.userId ? usersById.get(req.userId) : undefined;
               const agent = req.agentUserId ? usersById.get(req.agentUserId) : undefined;
@@ -119,11 +123,15 @@ export default async function AdminRequestsPage({
 
       {/* Revision Requested */}
       {revisionRequests.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">
-            {ar ? "بانتظار تعديل المستخدم" : "Awaiting User Revision"}
-          </h2>
-          <div className="grid gap-4">
+        <div className="mb-10">
+          <div className="flex items-center gap-2.5 mb-5">
+            <span className="h-2.5 w-2.5 rounded-full bg-orange-500" />
+            <h2 className="text-lg font-semibold">
+              {ar ? "بانتظار تعديل المستخدم" : "Awaiting User Revision"}
+            </h2>
+            <span className="text-sm text-(--muted-foreground)">({revisionRequests.length})</span>
+          </div>
+          <div className="grid gap-6 xl:grid-cols-2">
             {revisionRequests.map((req) => {
               const user = req.userId ? usersById.get(req.userId) : undefined;
               const agent = req.agentUserId ? usersById.get(req.agentUserId) : undefined;
@@ -145,11 +153,15 @@ export default async function AdminRequestsPage({
 
       {/* Approved Requests */}
       {approvedRequests.length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4">
-            {ar ? "الطلبات الموافق عليها" : "Approved Requests"}
-          </h2>
-          <div className="grid gap-4">
+        <div className="mb-10">
+          <div className="flex items-center gap-2.5 mb-5">
+            <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+            <h2 className="text-lg font-semibold">
+              {ar ? "الطلبات الموافق عليها" : "Approved Requests"}
+            </h2>
+            <span className="text-sm text-(--muted-foreground)">({approvedRequests.length})</span>
+          </div>
+          <div className="grid gap-6 xl:grid-cols-2">
             {approvedRequests.map((req) => {
               const user = req.userId ? usersById.get(req.userId) : undefined;
               const agent = req.agentUserId ? usersById.get(req.agentUserId) : undefined;
@@ -171,11 +183,15 @@ export default async function AdminRequestsPage({
 
       {/* Rejected Requests */}
       {rejectedRequests.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-4">
-            {ar ? "الطلبات المرفوضة" : "Rejected Requests"}
-          </h2>
-          <div className="grid gap-4">
+        <div className="mb-10">
+          <div className="flex items-center gap-2.5 mb-5">
+            <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+            <h2 className="text-lg font-semibold">
+              {ar ? "الطلبات المرفوضة" : "Rejected Requests"}
+            </h2>
+            <span className="text-sm text-(--muted-foreground)">({rejectedRequests.length})</span>
+          </div>
+          <div className="grid gap-6 xl:grid-cols-2">
             {rejectedRequests.map((req) => {
               const user = req.userId ? usersById.get(req.userId) : undefined;
               const agent = req.agentUserId ? usersById.get(req.agentUserId) : undefined;

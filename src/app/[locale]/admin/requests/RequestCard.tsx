@@ -4,13 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   HiOutlineUser,
-  HiOutlineBuildingOffice2,
   HiOutlineMapPin,
   HiOutlinePhone,
   HiOutlineEnvelope,
   HiOutlineGlobeAlt,
-  HiOutlineTag,
-  HiOutlineDocumentText,
   HiOutlineClock,
   HiOutlineCheckCircle,
   HiOutlineXCircle,
@@ -18,7 +15,10 @@ import {
   HiOutlineChevronDown,
   HiOutlineChevronUp,
   HiOutlineMap,
-  HiOutlinePhoto,
+  HiOutlineTrash,
+  HiOutlineArrowPath,
+  HiOutlineChatBubbleLeftRight,
+  HiOutlineRocketLaunch,
 } from "react-icons/hi2";
 
 import type { BusinessRequest } from "@/lib/db/businessRequests";
@@ -35,62 +35,41 @@ import {
 } from "./actions";
 
 /* ------------------------------------------------------------------ */
-/*  Tiny helpers                                                       */
+/*  Contact row                                                        */
 /* ------------------------------------------------------------------ */
 
-function Field({
-  label,
-  value,
-  missing,
-  href,
-}: {
-  label: string;
-  value?: string | null;
-  missing?: string;
-  href?: string;
-}) {
-  if (!value)
-    return missing ? (
-      <div className="flex items-start gap-2 text-sm">
-        <span className="text-(--muted-foreground) shrink-0">{label}</span>
-        <span className="italic text-amber-600 dark:text-amber-400">{missing}</span>
-      </div>
-    ) : null;
-
-  return (
-    <div className="flex items-start gap-2 text-sm">
-      <span className="text-(--muted-foreground) shrink-0">{label}</span>
-      {href ? (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-accent hover:underline break-all"
-        >
-          {value}
-        </a>
-      ) : (
-        <span className="font-medium break-all">{value}</span>
-      )}
-    </div>
-  );
-}
-
-function SectionHeader({
+function ContactRow({
   icon: Icon,
-  title,
+  value,
+  href,
+  color,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  title: string;
+  value: string;
+  href?: string;
+  color: string;
 }) {
-  return (
-    <div className="flex items-center gap-2 mb-3">
-      <Icon className="h-4 w-4 text-(--muted-foreground)" />
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-(--muted-foreground)">
-        {title}
-      </h4>
+  const content = (
+    <div className="flex items-center gap-3 text-sm group/row">
+      <span
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${color}`}
+      >
+        <Icon className="h-4 w-4" />
+      </span>
+      <span className="truncate font-medium group-hover/row:text-accent transition-colors">
+        {value}
+      </span>
     </div>
   );
+
+  if (href) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer">
+        {content}
+      </a>
+    );
+  }
+  return content;
 }
 
 /* ------------------------------------------------------------------ */
@@ -188,25 +167,29 @@ export function RequestCard({
     }
   };
 
-  /* ---- Status badge styles ---- */
+  /* ---- Status config ---- */
   const statusCfg = {
     pending: {
       bg: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300",
+      dot: "bg-yellow-500",
       Icon: HiOutlineClock,
       label: ar ? "معلقة" : "Pending",
     },
     approved: {
       bg: "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300",
+      dot: "bg-green-500",
       Icon: HiOutlineCheckCircle,
       label: ar ? "موافق عليها" : "Approved",
     },
     rejected: {
       bg: "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300",
+      dot: "bg-red-500",
       Icon: HiOutlineXCircle,
       label: ar ? "مرفوضة" : "Rejected",
     },
     revision_requested: {
       bg: "bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300",
+      dot: "bg-orange-500",
       Icon: HiOutlineExclamationTriangle,
       label: ar ? "بانتظار تعديل" : "Revision Requested",
     },
@@ -215,479 +198,559 @@ export function RequestCard({
   const st = statusCfg[request.status];
   const StatusIcon = st.Icon;
 
+  const heroImage = request.coverUrl || request.bannerUrl;
   const hasLocation = request.latitude != null && request.longitude != null;
   const mapsUrl = hasLocation
     ? `https://www.google.com/maps?q=${request.latitude},${request.longitude}`
     : null;
-
-  const missingText = ar ? "— غير مُدخل" : "— not provided";
+  const categoryLabel = category
+    ? ar
+      ? category.name.ar
+      : category.name.en
+    : request.category;
+  const dateStr = new Date(request.createdAt).toLocaleDateString(
+    ar ? "ar-OM" : "en-OM",
+    { day: "numeric", month: "short", year: "numeric" },
+  );
 
   return (
-    <div className="sbc-card !border-0 overflow-hidden">
-      {/* ====== Collapsed header (always visible) ====== */}
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between gap-4 p-5 text-start hover:bg-(--chip-bg)/40 transition-colors"
-      >
-        <div className="flex items-center gap-3 min-w-0">
-          <h3 className="text-base font-semibold truncate">
-            {request.name.en}
-            {request.name.ar && request.name.ar !== request.name.en && (
-              <span className="ms-2 text-(--muted-foreground) font-normal text-sm">
-                ({request.name.ar})
-              </span>
-            )}
-          </h3>
+    <article
+      className="overflow-hidden rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
+      style={{
+        background: "var(--business-card-bg, var(--card))",
+        border: "1px solid var(--surface-border, var(--border))",
+      }}
+    >
+      {/* ══════ Hero banner/cover ══════ */}
+      <div className="relative h-40 sm:h-48 w-full overflow-hidden bg-linear-to-br from-accent/10 to-accent-2/10">
+        {heroImage ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={heroImage}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-black/20 to-transparent" />
+          </>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-7xl font-black bg-linear-to-br from-accent to-accent-2 bg-clip-text text-transparent opacity-15">
+              {request.name.en.charAt(0)}
+            </div>
+          </div>
+        )}
+
+        {/* Status badge on hero */}
+        <div className="absolute top-3 end-3">
           <span
-            className={`inline-flex items-center gap-1 shrink-0 px-2 py-0.5 text-xs font-medium rounded-full ${st.bg}`}
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full backdrop-blur-md ${st.bg}`}
           >
             <StatusIcon className="h-3.5 w-3.5" />
             {st.label}
           </span>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0 text-xs text-(--muted-foreground)">
-          <span>
-            {new Date(request.createdAt).toLocaleDateString(
-              ar ? "ar-OM" : "en-OM",
-              { day: "numeric", month: "short", year: "numeric" },
-            )}
-          </span>
-          {expanded ? (
-            <HiOutlineChevronUp className="h-4 w-4" />
+        {/* Date on hero */}
+        <div className="absolute bottom-3 end-3 text-[11px] text-white/80 backdrop-blur-sm bg-black/20 px-2 py-0.5 rounded-md">
+          {dateStr}
+        </div>
+      </div>
+
+      {/* ══════ Content below hero ══════ */}
+      <div className="relative px-5 pb-5">
+        {/* Logo overlapping hero */}
+        <div
+          className="absolute -top-8 start-5 flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl shadow-lg"
+          style={{
+            background: "var(--background)",
+            border: "2.5px solid var(--surface-border, var(--border))",
+          }}
+        >
+          {request.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={request.logoUrl}
+              alt="Logo"
+              className="h-full w-full object-cover"
+            />
           ) : (
-            <HiOutlineChevronDown className="h-4 w-4" />
+            <div className="text-2xl font-bold bg-linear-to-br from-accent to-accent-2 bg-clip-text text-transparent">
+              {request.name.en.charAt(0)}
+            </div>
           )}
         </div>
-      </button>
 
-      {/* ====== Expanded detail ====== */}
-      {expanded && (
-        <div className="border-t border-(--border) px-5 pb-5">
-          <div className="grid gap-6 md:grid-cols-2 pt-5">
-            {/* ── 1. Requester Info ── */}
-            <section>
-              <SectionHeader
-                icon={HiOutlineUser}
-                title={ar ? "معلومات مقدّم الطلب" : "Requester Info"}
-              />
-              <div className="space-y-1.5">
-                <Field
-                  label={ar ? "المستخدم:" : "User:"}
-                  value={
-                    user
-                      ? `${user.fullName || ""} (${user.email})`.trim()
-                      : undefined
-                  }
-                  missing={missingText}
-                />
-                {agent && (
-                  <Field
-                    label={ar ? "الوكيل:" : "Agent:"}
-                    value={`${agent.fullName || ""} (${agent.email})`.trim()}
-                  />
-                )}
-                <Field
-                  label={ar ? "تاريخ الإرسال:" : "Submitted:"}
-                  value={new Date(request.createdAt).toLocaleString(
-                    ar ? "ar-OM" : "en-OM",
-                    {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    },
-                  )}
-                />
-                {request.updatedAt !== request.createdAt && (
-                  <Field
-                    label={ar ? "آخر تحديث:" : "Last updated:"}
-                    value={new Date(request.updatedAt).toLocaleString(
-                      ar ? "ar-OM" : "en-OM",
-                      {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      },
-                    )}
-                  />
-                )}
-              </div>
-            </section>
-
-            {/* ── 2. Business Identity ── */}
-            <section>
-              <SectionHeader
-                icon={HiOutlineBuildingOffice2}
-                title={ar ? "هوية النشاط" : "Business Identity"}
-              />
-              <div className="space-y-1.5">
-                <Field
-                  label={ar ? "الاسم (EN):" : "Name (EN):"}
-                  value={request.name.en}
-                  missing={missingText}
-                />
-                <Field
-                  label={ar ? "الاسم (AR):" : "Name (AR):"}
-                  value={request.name.ar}
-                  missing={missingText}
-                />
-                <Field
-                  label={ar ? "التصنيف:" : "Category:"}
-                  value={
-                    category
-                      ? `${category.name.en} / ${category.name.ar}`
-                      : request.category
-                  }
-                  missing={missingText}
-                />
-                {request.tags && (
-                  <div className="pt-1 flex flex-wrap gap-1.5">
-                    {request.tags.split(",").map((t) => (
-                      <span
-                        key={t.trim()}
-                        className="inline-block rounded-full bg-(--chip-bg) px-2 py-0.5 text-xs"
-                      >
-                        {t.trim()}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {!request.tags && (
-                  <Field label={ar ? "الوسوم:" : "Tags:"} missing={missingText} />
-                )}
-              </div>
-            </section>
-
-            {/* ── 3. Descriptions ── */}
-            <section className="md:col-span-2">
-              <SectionHeader
-                icon={HiOutlineDocumentText}
-                title={ar ? "الوصف" : "Description"}
-              />
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <div className="text-xs font-medium text-(--muted-foreground) mb-1">
-                    English
-                  </div>
-                  {request.descEn || request.description ? (
-                    <p className="text-sm whitespace-pre-line rounded-lg bg-(--chip-bg) p-3">
-                      {request.descEn || request.description}
-                    </p>
-                  ) : (
-                    <p className="text-sm italic text-amber-600 dark:text-amber-400">
-                      {missingText}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <div className="text-xs font-medium text-(--muted-foreground) mb-1">
-                    العربية
-                  </div>
-                  {request.descAr ? (
-                    <p className="text-sm whitespace-pre-line rounded-lg bg-(--chip-bg) p-3" dir="rtl">
-                      {request.descAr}
-                    </p>
-                  ) : (
-                    <p className="text-sm italic text-amber-600 dark:text-amber-400">
-                      {missingText}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </section>
-
-            {/* ── 4. Location ── */}
-            <section>
-              <SectionHeader
-                icon={HiOutlineMapPin}
-                title={ar ? "الموقع" : "Location"}
-              />
-              <div className="space-y-1.5">
-                <Field
-                  label={ar ? "المدينة:" : "City:"}
-                  value={request.city}
-                  missing={missingText}
-                />
-                <Field
-                  label={ar ? "العنوان:" : "Address:"}
-                  value={request.address}
-                  missing={missingText}
-                />
-                {hasLocation ? (
-                  <div className="flex items-start gap-2 text-sm">
-                    <span className="text-(--muted-foreground) shrink-0">
-                      {ar ? "الإحداثيات:" : "Coordinates:"}
-                    </span>
-                    <a
-                      href={mapsUrl!}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
-                    >
-                      <HiOutlineMap className="h-3.5 w-3.5" />
-                      {request.latitude!.toFixed(6)}, {request.longitude!.toFixed(6)}
-                    </a>
-                  </div>
-                ) : (
-                  <Field
-                    label={ar ? "الإحداثيات:" : "Coordinates:"}
-                    missing={missingText}
-                  />
-                )}
-              </div>
-            </section>
-
-            {/* ── 5. Contact Details ── */}
-            <section>
-              <SectionHeader
-                icon={HiOutlinePhone}
-                title={ar ? "بيانات التواصل" : "Contact Details"}
-              />
-              <div className="space-y-1.5">
-                <Field
-                  label={ar ? "الهاتف:" : "Phone:"}
-                  value={request.phone}
-                  missing={missingText}
-                />
-                <Field
-                  label={ar ? "البريد:" : "Email:"}
-                  value={request.email}
-                  missing={missingText}
-                />
-                <Field
-                  label={ar ? "الموقع الإلكتروني:" : "Website:"}
-                  value={request.website}
-                  href={request.website ?? undefined}
-                  missing={missingText}
-                />
-                {(request.contactPhone || request.contactEmail) && (
-                  <>
-                    {request.contactPhone && (
-                      <Field
-                        label={ar ? "هاتف التواصل:" : "Contact Phone:"}
-                        value={request.contactPhone}
-                      />
-                    )}
-                    {request.contactEmail && (
-                      <Field
-                        label={ar ? "بريد التواصل:" : "Contact Email:"}
-                        value={request.contactEmail}
-                      />
-                    )}
-                  </>
-                )}
-              </div>
-            </section>
+        {/* Name + meta row */}
+        <div className="mt-10">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="text-lg font-bold truncate">
+                {request.name.en}
+              </h3>
+              {request.name.ar && request.name.ar !== request.name.en && (
+                <p className="text-sm text-(--muted-foreground) truncate" dir="rtl">
+                  {request.name.ar}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="shrink-0 mt-1 p-1.5 rounded-lg hover:bg-(--chip-bg) transition-colors text-(--muted-foreground)"
+              aria-label={expanded ? "Collapse" : "Expand"}
+            >
+              {expanded ? (
+                <HiOutlineChevronUp className="h-4 w-4" />
+              ) : (
+                <HiOutlineChevronDown className="h-4 w-4" />
+              )}
+            </button>
           </div>
 
-          {/* ── 6. Media ── */}
-          {(request.logoUrl || request.coverUrl || request.bannerUrl || (request.galleryUrls && request.galleryUrls.length > 0)) && (
-            <div className="pt-5">
-              <SectionHeader
-                icon={HiOutlinePhoto}
-                title={ar ? "الوسائط" : "Media"}
-              />
-              <div className="flex flex-wrap gap-3">
-                {request.logoUrl && (
-                  <div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-1">
-                      {ar ? "الشعار" : "Logo"}
-                    </div>
-                    <a href={request.logoUrl} target="_blank" rel="noopener noreferrer">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={request.logoUrl}
-                        alt="Logo"
-                        className="h-20 w-20 rounded-xl object-cover ring-1 ring-(--border) hover:ring-accent transition-all"
-                      />
-                    </a>
-                  </div>
-                )}
-                {request.coverUrl && (
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-1">
-                      {ar ? "الغلاف" : "Cover"}
-                    </div>
-                    <a href={request.coverUrl} target="_blank" rel="noopener noreferrer">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={request.coverUrl}
-                        alt="Cover"
-                        className="w-full h-24 rounded-xl object-cover ring-1 ring-(--border) hover:ring-accent transition-all"
-                      />
-                    </a>
-                  </div>
-                )}
-                {request.bannerUrl && (
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-1">
-                      {ar ? "البانر" : "Banner"}
-                    </div>
-                    <a href={request.bannerUrl} target="_blank" rel="noopener noreferrer">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={request.bannerUrl}
-                        alt="Banner"
-                        className="w-full h-24 rounded-xl object-cover ring-1 ring-(--border) hover:ring-accent transition-all"
-                      />
-                    </a>
-                  </div>
-                )}
-              </div>
-              {request.galleryUrls && request.galleryUrls.length > 0 && (
-                <div className="mt-3">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-1">
-                    {ar ? `المعرض (${request.galleryUrls.length})` : `Gallery (${request.galleryUrls.length})`}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {request.galleryUrls.map((url, i) => (
-                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={url}
-                          alt={`Gallery ${i + 1}`}
-                          className="h-16 w-16 rounded-lg object-cover ring-1 ring-(--border) hover:ring-accent transition-all"
-                        />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* Category + City row */}
+          <div className="mt-1.5 flex items-center gap-3 text-xs text-(--muted-foreground) flex-wrap">
+            {categoryLabel && (
+              <span className="inline-flex items-center gap-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                {categoryLabel}
+              </span>
+            )}
+            {request.city && (
+              <span className="inline-flex items-center gap-1">
+                <HiOutlineMapPin className="h-3 w-3" />
+                {request.city}
+              </span>
+            )}
+            {user && (
+              <span className="inline-flex items-center gap-1">
+                <HiOutlineUser className="h-3 w-3" />
+                {user.fullName || user.email}
+              </span>
+            )}
+          </div>
+
+          {/* Description preview (always visible) */}
+          {(request.descEn || request.description) && (
+            <p className="mt-3 text-sm text-(--muted-foreground) line-clamp-2">
+              {request.descEn || request.description}
+            </p>
           )}
 
-          {/* ── Admin Response (existing) ── */}
-          {(request.adminResponse || request.adminNotes) && (
-            <div className="mt-6 p-4 bg-(--muted) rounded-xl">
-              <div className="text-sm font-semibold mb-1">
-                {ar ? "رد الإدارة:" : "Admin Response:"}
+          {/* Tags */}
+          {request.tags && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {request.tags.split(",").map((t) => (
+                <span
+                  key={t.trim()}
+                  className="inline-block rounded-full bg-(--chip-bg) px-2.5 py-0.5 text-[11px] font-medium"
+                >
+                  {t.trim()}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ══════ Expanded details ══════ */}
+        {expanded && (
+          <div className="mt-5 pt-5 border-t border-(--border)">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(240px,280px)]">
+              {/* ── Left column: details ── */}
+              <div className="space-y-5">
+                {/* Descriptions EN/AR */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-1.5">
+                      English
+                    </div>
+                    {request.descEn || request.description ? (
+                      <p className="text-sm whitespace-pre-line rounded-xl bg-(--chip-bg) p-3 leading-relaxed">
+                        {request.descEn || request.description}
+                      </p>
+                    ) : (
+                      <p className="text-sm italic text-(--muted-foreground)">
+                        {ar ? "— غير مُدخل" : "— not provided"}
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-1.5">
+                      العربية
+                    </div>
+                    {request.descAr ? (
+                      <p className="text-sm whitespace-pre-line rounded-xl bg-(--chip-bg) p-3 leading-relaxed" dir="rtl">
+                        {request.descAr}
+                      </p>
+                    ) : (
+                      <p className="text-sm italic text-(--muted-foreground)">
+                        {ar ? "— غير مُدخل" : "— not provided"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Names row */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl bg-(--chip-bg) p-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-1">
+                      {ar ? "الاسم (EN)" : "Name (EN)"}
+                    </div>
+                    <div className="text-sm font-medium">{request.name.en || "—"}</div>
+                  </div>
+                  <div className="rounded-xl bg-(--chip-bg) p-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-1">
+                      {ar ? "الاسم (AR)" : "Name (AR)"}
+                    </div>
+                    <div className="text-sm font-medium" dir="rtl">{request.name.ar || "—"}</div>
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div className="rounded-xl bg-(--chip-bg) p-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-2">
+                    {ar ? "الموقع" : "Location"}
+                  </div>
+                  <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
+                    {request.city && (
+                      <span>
+                        <span className="text-(--muted-foreground)">{ar ? "المدينة:" : "City:"} </span>
+                        <span className="font-medium">{request.city}</span>
+                      </span>
+                    )}
+                    {request.address && (
+                      <span>
+                        <span className="text-(--muted-foreground)">{ar ? "العنوان:" : "Address:"} </span>
+                        <span className="font-medium">{request.address}</span>
+                      </span>
+                    )}
+                    {hasLocation && (
+                      <a
+                        href={mapsUrl!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 font-medium text-accent hover:underline"
+                      >
+                        <HiOutlineMap className="h-3.5 w-3.5" />
+                        {request.latitude!.toFixed(5)}, {request.longitude!.toFixed(5)}
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Gallery */}
+                {request.galleryUrls && request.galleryUrls.length > 0 && (
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-2">
+                      {ar ? `المعرض (${request.galleryUrls.length})` : `Gallery (${request.galleryUrls.length})`}
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {request.galleryUrls.map((url, i) => (
+                        <a
+                          key={i}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={url}
+                            alt={`Gallery ${i + 1}`}
+                            className="h-20 w-20 rounded-xl object-cover ring-1 ring-(--border) hover:ring-accent hover:scale-105 transition-all"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Requester info */}
+                <div className="rounded-xl bg-(--chip-bg) p-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground) mb-2">
+                    {ar ? "معلومات مقدّم الطلب" : "Requester"}
+                  </div>
+                  <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+                    {user && (
+                      <span>
+                        <span className="text-(--muted-foreground)">{ar ? "المستخدم:" : "User:"} </span>
+                        <span className="font-medium">{user.fullName || user.email}</span>
+                      </span>
+                    )}
+                    {agent && (
+                      <span>
+                        <span className="text-(--muted-foreground)">{ar ? "الوكيل:" : "Agent:"} </span>
+                        <span className="font-medium">{agent.fullName || agent.email}</span>
+                      </span>
+                    )}
+                    <span>
+                      <span className="text-(--muted-foreground)">{ar ? "بتاريخ:" : "On:"} </span>
+                      <span className="font-medium">
+                        {new Date(request.createdAt).toLocaleString(
+                          ar ? "ar-OM" : "en-OM",
+                          { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" },
+                        )}
+                      </span>
+                    </span>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm whitespace-pre-line">
-                {request.adminResponse || request.adminNotes}
-              </p>
-              {request.respondedAt && (
-                <div className="mt-2 text-xs text-(--muted-foreground)">
-                  {ar ? "تم الرد في:" : "Responded:"}{" "}
-                  {new Date(request.respondedAt).toLocaleString(
-                    ar ? "ar-OM" : "en-OM",
-                    {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    },
+
+              {/* ── Right column: contact sidebar + media thumbnails ── */}
+              <div className="space-y-4">
+                {/* Contact card */}
+                <div className="rounded-xl bg-(--chip-bg) p-4 space-y-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
+                    {ar ? "التواصل" : "Contact"}
+                  </div>
+                  {request.phone && (
+                    <ContactRow
+                      icon={HiOutlinePhone}
+                      value={request.phone}
+                      href={`tel:${request.phone}`}
+                      color="bg-green-500/15 text-green-600 dark:text-green-400"
+                    />
+                  )}
+                  {request.contactPhone && request.contactPhone !== request.phone && (
+                    <ContactRow
+                      icon={HiOutlinePhone}
+                      value={request.contactPhone}
+                      href={`tel:${request.contactPhone}`}
+                      color="bg-green-500/15 text-green-600 dark:text-green-400"
+                    />
+                  )}
+                  {request.email && (
+                    <ContactRow
+                      icon={HiOutlineEnvelope}
+                      value={request.email}
+                      href={`mailto:${request.email}`}
+                      color="bg-red-500/15 text-red-600 dark:text-red-400"
+                    />
+                  )}
+                  {request.contactEmail && request.contactEmail !== request.email && (
+                    <ContactRow
+                      icon={HiOutlineEnvelope}
+                      value={request.contactEmail}
+                      href={`mailto:${request.contactEmail}`}
+                      color="bg-red-500/15 text-red-600 dark:text-red-400"
+                    />
+                  )}
+                  {request.website && (
+                    <ContactRow
+                      icon={HiOutlineGlobeAlt}
+                      value={request.website.replace(/^https?:\/\//, "")}
+                      href={request.website}
+                      color="bg-blue-500/15 text-blue-600 dark:text-blue-400"
+                    />
+                  )}
+                  {request.address && (
+                    <ContactRow
+                      icon={HiOutlineMapPin}
+                      value={request.address}
+                      href={mapsUrl ?? undefined}
+                      color="bg-rose-500/15 text-rose-600 dark:text-rose-400"
+                    />
+                  )}
+                  {!request.phone && !request.email && !request.website && !request.address && (
+                    <p className="text-sm italic text-(--muted-foreground)">
+                      {ar ? "لا توجد بيانات تواصل" : "No contact info"}
+                    </p>
                   )}
                 </div>
-              )}
-            </div>
-          )}
 
-          {/* ── Response Form ── */}
-          {showResponse &&
-            (request.status === "pending" ||
-              request.status === "revision_requested") && (
-              <div className="mt-5 p-4 rounded-xl bg-(--chip-bg)">
-                <label className="block text-sm font-medium mb-2">
-                  {ar ? "رد على الطلب" : "Response to Request"}
-                </label>
-                <Textarea
-                  value={response}
-                  onChange={(e) => setResponse(e.target.value)}
-                  placeholder={
-                    ar
-                      ? "اكتب ملاحظاتك وحدد البنود التي تحتاج تعديل..."
-                      : "Write your notes and specify which fields need revision..."
-                  }
-                  rows={4}
-                  className="mb-3"
-                />
-                <div className="flex flex-wrap gap-2">
+                {/* Media thumbnails */}
+                {(request.logoUrl || request.coverUrl || request.bannerUrl) && (
+                  <div className="rounded-xl bg-(--chip-bg) p-4 space-y-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-(--muted-foreground)">
+                      {ar ? "الوسائط" : "Media"}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {request.logoUrl && (
+                        <a href={request.logoUrl} target="_blank" rel="noopener noreferrer" className="group/media">
+                          <div className="text-[9px] font-semibold uppercase text-(--muted-foreground) mb-0.5 text-center">
+                            {ar ? "شعار" : "Logo"}
+                          </div>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={request.logoUrl}
+                            alt="Logo"
+                            className="w-full aspect-square rounded-lg object-cover ring-1 ring-(--border) group-hover/media:ring-accent transition-all"
+                          />
+                        </a>
+                      )}
+                      {request.coverUrl && (
+                        <a href={request.coverUrl} target="_blank" rel="noopener noreferrer" className="group/media">
+                          <div className="text-[9px] font-semibold uppercase text-(--muted-foreground) mb-0.5 text-center">
+                            {ar ? "غلاف" : "Cover"}
+                          </div>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={request.coverUrl}
+                            alt="Cover"
+                            className="w-full aspect-square rounded-lg object-cover ring-1 ring-(--border) group-hover/media:ring-accent transition-all"
+                          />
+                        </a>
+                      )}
+                      {request.bannerUrl && (
+                        <a href={request.bannerUrl} target="_blank" rel="noopener noreferrer" className="group/media">
+                          <div className="text-[9px] font-semibold uppercase text-(--muted-foreground) mb-0.5 text-center">
+                            {ar ? "بانر" : "Banner"}
+                          </div>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={request.bannerUrl}
+                            alt="Banner"
+                            className="w-full aspect-square rounded-lg object-cover ring-1 ring-(--border) group-hover/media:ring-accent transition-all"
+                          />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ── Admin Response (existing) ── */}
+            {(request.adminResponse || request.adminNotes) && (
+              <div className="mt-5 p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/30">
+                <div className="flex items-center gap-2 text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">
+                  <HiOutlineChatBubbleLeftRight className="h-4 w-4" />
+                  {ar ? "رد الإدارة" : "Admin Response"}
+                </div>
+                <p className="text-sm whitespace-pre-line text-amber-900 dark:text-amber-200">
+                  {request.adminResponse || request.adminNotes}
+                </p>
+                {request.respondedAt && (
+                  <div className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                    {new Date(request.respondedAt).toLocaleString(
+                      ar ? "ar-OM" : "en-OM",
+                      { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" },
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Response Form ── */}
+            {showResponse &&
+              (request.status === "pending" ||
+                request.status === "revision_requested") && (
+                <div className="mt-5 p-4 rounded-xl bg-(--chip-bg) border border-(--border)">
+                  <label className="block text-sm font-semibold mb-2">
+                    {ar ? "رد على الطلب" : "Response to Request"}
+                  </label>
+                  <Textarea
+                    value={response}
+                    onChange={(e) => setResponse(e.target.value)}
+                    placeholder={
+                      ar
+                        ? "اكتب ملاحظاتك وحدد البنود التي تحتاج تعديل..."
+                        : "Write your notes and specify which fields need revision..."
+                    }
+                    rows={4}
+                    className="mb-3"
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      onClick={() => handleRespond("approved")}
+                      disabled={loading}
+                      variant="primary"
+                      size="sm"
+                    >
+                      {loading
+                        ? ar
+                          ? "جاري الموافقة..."
+                          : "Approving..."
+                        : ar
+                          ? "موافقة"
+                          : "Approve"}
+                    </Button>
+                    <Button
+                      onClick={() => handleRespond("revision_requested")}
+                      disabled={loading}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      {loading
+                        ? ar
+                          ? "جاري الإرسال..."
+                          : "Sending..."
+                        : ar
+                          ? "طلب تعديل"
+                          : "Request Revision"}
+                    </Button>
+                    <Button
+                      onClick={() => handleRespond("rejected")}
+                      disabled={loading}
+                      variant="secondary"
+                      size="sm"
+                    >
+                      {loading
+                        ? ar
+                          ? "جاري الرفض..."
+                          : "Rejecting..."
+                        : ar
+                          ? "رفض"
+                          : "Reject"}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setShowResponse(false);
+                        setResponse("");
+                      }}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      {ar ? "إلغاء" : "Cancel"}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+            {/* ── Action buttons ── */}
+            <div className="mt-5 flex flex-wrap items-center gap-2 pt-4 border-t border-(--border)">
+              {(request.status === "pending" ||
+                request.status === "revision_requested") && (
+                <>
                   <Button
-                    onClick={() => handleRespond("approved")}
-                    disabled={loading}
+                    onClick={() => setShowResponse(!showResponse)}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    <HiOutlineChatBubbleLeftRight className="h-4 w-4 me-1.5" />
+                    {showResponse
+                      ? ar
+                        ? "إخفاء"
+                        : "Hide"
+                      : ar
+                        ? "الرد"
+                        : "Respond"}
+                  </Button>
+                  <Button
+                    onClick={handleConvert}
+                    disabled={converting}
                     variant="primary"
                     size="sm"
                   >
-                    {loading
+                    <HiOutlineRocketLaunch className="h-4 w-4 me-1.5" />
+                    {converting
                       ? ar
-                        ? "جاري الموافقة..."
-                        : "Approving..."
+                        ? "جاري التحويل..."
+                        : "Converting..."
                       : ar
-                        ? "موافقة"
-                        : "Approve"}
+                        ? "تحويل إلى نشاط"
+                        : "Convert to Business"}
                   </Button>
-                  <Button
-                    onClick={() => handleRespond("revision_requested")}
-                    disabled={loading}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    {loading
-                      ? ar
-                        ? "جاري الإرسال..."
-                        : "Sending..."
-                      : ar
-                        ? "طلب تعديل"
-                        : "Request Revision"}
-                  </Button>
-                  <Button
-                    onClick={() => handleRespond("rejected")}
-                    disabled={loading}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    {loading
-                      ? ar
-                        ? "جاري الرفض..."
-                        : "Rejecting..."
-                      : ar
-                        ? "رفض"
-                        : "Reject"}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setShowResponse(false);
-                      setResponse("");
-                    }}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    {ar ? "إلغاء" : "Cancel"}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-          {/* ── Action buttons ── */}
-          <div className="mt-5 flex flex-wrap gap-2">
-            {(request.status === "pending" ||
-              request.status === "revision_requested") && (
-              <>
-                <Button
-                  onClick={() => setShowResponse(!showResponse)}
-                  variant="secondary"
-                  size="sm"
-                >
-                  {showResponse
-                    ? ar
-                      ? "إخفاء النموذج"
-                      : "Hide Form"
-                    : ar
-                      ? "الرد"
-                      : "Respond"}
-                </Button>
+                </>
+              )}
+              {request.status === "approved" && (
                 <Button
                   onClick={handleConvert}
                   disabled={converting}
                   variant="primary"
                   size="sm"
                 >
+                  <HiOutlineRocketLaunch className="h-4 w-4 me-1.5" />
                   {converting
                     ? ar
                       ? "جاري التحويل..."
@@ -696,30 +759,16 @@ export function RequestCard({
                       ? "تحويل إلى نشاط"
                       : "Convert to Business"}
                 </Button>
-              </>
-            )}
-            {request.status === "approved" && (
-              <Button
-                onClick={handleConvert}
-                disabled={converting}
-                variant="primary"
-                size="sm"
-              >
-                {converting
-                  ? ar
-                    ? "جاري التحويل..."
-                    : "Converting..."
-                  : ar
-                    ? "تحويل إلى نشاط"
-                    : "Convert to Business"}
+              )}
+              <div className="flex-1" />
+              <Button onClick={handleDelete} variant="ghost" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-500/10">
+                <HiOutlineTrash className="h-4 w-4 me-1" />
+                {ar ? "حذف" : "Delete"}
               </Button>
-            )}
-            <Button onClick={handleDelete} variant="ghost" size="sm">
-              {ar ? "حذف" : "Delete"}
-            </Button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </article>
   );
 }
