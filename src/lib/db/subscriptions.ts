@@ -402,3 +402,15 @@ export async function ensureActiveProgramSubscription(userId: string, program?: 
 export async function listProgramSubscriptionsByUser(userId: string): Promise<ProgramSubscription[]> {
   return listUserProgramSubscriptions(userId);
 }
+
+/**
+ * Count total purchased subscriptions for a specific program (active + expired).
+ * Useful for enforcing "one package per business" limits.
+ */
+export async function countProgramSubscriptions(userId: string, program: string): Promise<number> {
+  const result = await query<{ count: string }>(`
+    SELECT COUNT(*) AS count FROM program_subscriptions
+    WHERE user_id = $1 AND program = $2
+  `, [userId, program]);
+  return parseInt(result.rows[0]?.count ?? "0", 10);
+}

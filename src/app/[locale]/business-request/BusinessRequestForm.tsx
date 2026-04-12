@@ -55,6 +55,7 @@ type SlideId =
   | "location"
   | "logo"
   | "cover"
+  | "banner"
   | "gallery"
   | "review";
 
@@ -65,13 +66,20 @@ type SlideId =
 export function BusinessRequestForm({
   locale,
   categories,
+  editRequestId,
+  initialData,
 }: {
   locale: Locale;
   categories: Category[];
+  /** If provided, form is in edit mode for this request */
+  editRequestId?: string;
+  /** Pre-filled values when editing an existing request */
+  initialData?: Partial<FormData> & { latitude?: number; longitude?: number; logoUrl?: string; coverUrl?: string; bannerUrl?: string; galleryUrls?: string[] };
 }) {
   const router = useRouter();
   const { toast } = useToast();
   const ar = locale === "ar";
+  const isEdit = !!editRequestId;
 
   /* ── Slide icon components ──────────────────────────────── */
   const slideIcons: Record<SlideId, React.ReactNode> = useMemo(
@@ -133,6 +141,14 @@ export function BusinessRequestForm({
           <polyline points="21 15 16 10 5 21" />
         </svg>
       ),
+      banner: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="6" width="20" height="12" rx="2" />
+          <path d="M12 6V4" />
+          <path d="M8 6V3" />
+          <path d="M16 6V3" />
+        </svg>
+      ),
       gallery: (
         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
           <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
@@ -160,6 +176,7 @@ export function BusinessRequestForm({
       { id: "location" as SlideId, required: false },
       { id: "logo" as SlideId, required: false },
       { id: "cover" as SlideId, required: false },
+      { id: "banner" as SlideId, required: false },
       { id: "gallery" as SlideId, required: false },
       { id: "review" as SlideId, required: false },
     ],
@@ -169,27 +186,44 @@ export function BusinessRequestForm({
   const [idx, setIdx] = useState(0);
   const [dir, setDir] = useState<"next" | "prev">("next");
   const [loading, setLoading] = useState(false);
-  const [location, setLocation] = useState<OsmLocationValue | null>(null);
+  const [location, setLocation] = useState<OsmLocationValue | null>(
+    initialData?.latitude && initialData?.longitude
+      ? { lat: initialData.latitude, lng: initialData.longitude, radiusMeters: 0 }
+      : null,
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   /* ── Media state ──────────────────────────────────────────── */
-  const [logoPreview, setLogoPreview] = useState<string[]>([]);
-  const [coverPreview, setCoverPreview] = useState<string[]>([]);
-  const [galleryPreview, setGalleryPreview] = useState<string[]>([]);
+  const [logoPreview, setLogoPreview] = useState<string[]>(
+    initialData?.logoUrl ? [initialData.logoUrl] : [],
+  );
+  const [coverPreview, setCoverPreview] = useState<string[]>(
+    initialData?.coverUrl ? [initialData.coverUrl] : [],
+  );
+  const [bannerPreview, setBannerPreview] = useState<string[]>(
+    initialData?.bannerUrl ? [initialData.bannerUrl] : [],
+  );
+  const [galleryPreview, setGalleryPreview] = useState<string[]>(
+    initialData?.galleryUrls ?? [],
+  );
+  const logoFileRef = useRef<File | null>(null);
+  const coverFileRef = useRef<File | null>(null);
+  const bannerFileRef = useRef<File | null>(null);
+  const galleryFilesRef = useRef<File[]>([]);
 
   /* ── Form data ────────────────────────────────────────────── */
   const [formData, setFormData] = useState<FormData>({
-    name_en: "",
-    name_ar: "",
-    desc_en: "",
-    desc_ar: "",
-    categoryId: "",
-    city: "",
-    address: "",
-    phone: "",
-    email: "",
-    website: "",
-    tags: "",
+    name_en: initialData?.name_en ?? "",
+    name_ar: initialData?.name_ar ?? "",
+    desc_en: initialData?.desc_en ?? "",
+    desc_ar: initialData?.desc_ar ?? "",
+    categoryId: initialData?.categoryId ?? "",
+    city: initialData?.city ?? "",
+    address: initialData?.address ?? "",
+    phone: initialData?.phone ?? "",
+    email: initialData?.email ?? "",
+    website: initialData?.website ?? "",
+    tags: initialData?.tags ?? "",
   });
 
   const set = useCallback(
@@ -209,18 +243,28 @@ export function BusinessRequestForm({
     files: FileList | null,
     setter: React.Dispatch<React.SetStateAction<string[]>>,
     multiple = false,
+    fileRef?: React.MutableRefObject<File | null>,
+    filesRef?: React.MutableRefObject<File[]>,
   ) => {
     if (!files) return;
-    const urls = Array.from(files).map((f) => URL.createObjectURL(f));
+    const arr = Array.from(files);
+    const urls = arr.map((f) => URL.createObjectURL(f));
     setter(multiple ? (prev) => [...prev, ...urls] : [urls[0]]);
+    if (fileRef) fileRef.current = arr[0];
+    if (filesRef) filesRef.current = [...filesRef.current, ...arr];
   };
 
   const handleRemovePreview = (
     url: string,
     setter: React.Dispatch<React.SetStateAction<string[]>>,
+    fileRef?: React.MutableRefObject<File | null>,
+    filesRef?: React.MutableRefObject<File[]>,
+    index?: number,
   ) => {
-    URL.revokeObjectURL(url);
+    if (url.startsWith("blob:")) URL.revokeObjectURL(url);
     setter((prev) => prev.filter((u) => u !== url));
+    if (fileRef) fileRef.current = null;
+    if (filesRef && index != null) filesRef.current = filesRef.current.filter((_, i) => i !== index);
   };
 
   /* ── Validation for current slide ─────────────────────────── */
@@ -283,16 +327,38 @@ export function BusinessRequestForm({
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const payload = {
-        ...formData,
-        latitude: location?.lat,
-        longitude: location?.lng,
-      };
-      const res = await fetch("/api/business-request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const fd = new FormData();
+      // Text fields
+      Object.entries(formData).forEach(([k, v]) => {
+        if (v) fd.append(k, v);
       });
+      if (location?.lat != null) fd.append("latitude", String(location.lat));
+      if (location?.lng != null) fd.append("longitude", String(location.lng));
+      // Files — new uploads
+      if (logoFileRef.current) fd.append("logo", logoFileRef.current);
+      if (coverFileRef.current) fd.append("cover", coverFileRef.current);
+      if (bannerFileRef.current) fd.append("banner", bannerFileRef.current);
+      for (const gf of galleryFilesRef.current) {
+        fd.append("gallery", gf);
+      }
+      // Existing server URLs (kept when editing)
+      const existingLogo = logoPreview.find((u) => u.startsWith("/media/"));
+      if (existingLogo && !logoFileRef.current) fd.append("existingLogoUrl", existingLogo);
+      const existingCover = coverPreview.find((u) => u.startsWith("/media/"));
+      if (existingCover && !coverFileRef.current) fd.append("existingCoverUrl", existingCover);
+      const existingBanner = bannerPreview.find((u) => u.startsWith("/media/"));
+      if (existingBanner && !bannerFileRef.current) fd.append("existingBannerUrl", existingBanner);
+      const existingGallery = galleryPreview.filter((u) => u.startsWith("/media/"));
+      for (const gu of existingGallery) {
+        fd.append("existingGalleryUrls", gu);
+      }
+
+      const url = isEdit
+        ? `/api/business-request/${editRequestId}`
+        : "/api/business-request";
+      const method = isEdit ? "PUT" : "POST";
+
+      const res = await fetch(url, { method, body: fd });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || "Failed to submit request");
@@ -378,6 +444,12 @@ export function BusinessRequestForm({
         sub: ar
           ? "اختياري — صورة عريضة تظهر أعلى الصفحة"
           : "Optional — A wide image shown at the top of your listing",
+      },
+      banner: {
+        title: ar ? "أضف بانر لنشاطك" : "Add a banner image",
+        sub: ar
+          ? "اختياري — صورة بانر عريضة للعرض الترويجي"
+          : "Optional — A wide promotional banner for your business",
       },
       gallery: {
         title: ar ? "أضف صور لنشاطك" : "Show off your business",
@@ -618,8 +690,8 @@ export function BusinessRequestForm({
             ar={ar}
             previews={logoPreview}
             setter={setLogoPreview}
-            onSelect={handleFileSelect}
-            onRemove={handleRemovePreview}
+            onSelect={(files, setter) => handleFileSelect(files, setter, false, logoFileRef)}
+            onRemove={(url, setter) => handleRemovePreview(url, setter, logoFileRef)}
             aspect="square"
             emptyLabel={ar ? "اضغط لاختيار الشعار" : "Tap to choose a logo"}
             emptyHint={ar ? "400×400 مربع" : "400×400 square"}
@@ -631,11 +703,26 @@ export function BusinessRequestForm({
             ar={ar}
             previews={coverPreview}
             setter={setCoverPreview}
-            onSelect={handleFileSelect}
-            onRemove={handleRemovePreview}
+            onSelect={(files, setter) => handleFileSelect(files, setter, false, coverFileRef)}
+            onRemove={(url, setter) => handleRemovePreview(url, setter, coverFileRef)}
             aspect="wide"
             emptyLabel={
               ar ? "اضغط لاختيار صورة الغلاف" : "Tap to choose a cover image"
+            }
+            emptyHint={ar ? "1200×400 عريضة" : "1200×400 wide"}
+          />
+        )}
+
+        {currentSlide.id === "banner" && (
+          <MediaSlide
+            ar={ar}
+            previews={bannerPreview}
+            setter={setBannerPreview}
+            onSelect={(files, setter) => handleFileSelect(files, setter, false, bannerFileRef)}
+            onRemove={(url, setter) => handleRemovePreview(url, setter, bannerFileRef)}
+            aspect="wide"
+            emptyLabel={
+              ar ? "اضغط لاختيار صورة البانر" : "Tap to choose a banner image"
             }
             emptyHint={ar ? "1200×400 عريضة" : "1200×400 wide"}
           />
@@ -660,7 +747,7 @@ export function BusinessRequestForm({
                     <button
                       type="button"
                       onClick={() =>
-                        handleRemovePreview(url, setGalleryPreview)
+                        handleRemovePreview(url, setGalleryPreview, undefined, galleryFilesRef, i)
                       }
                       className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                     >
@@ -698,7 +785,7 @@ export function BusinessRequestForm({
                 multiple
                 className="hidden"
                 onChange={(e) =>
-                  handleFileSelect(e.target.files, setGalleryPreview, true)
+                  handleFileSelect(e.target.files, setGalleryPreview, true, undefined, galleryFilesRef)
                 }
               />
             </label>
@@ -713,6 +800,7 @@ export function BusinessRequestForm({
             selectedCategory={selectedCategory}
             logoPreview={logoPreview}
             coverPreview={coverPreview}
+            bannerPreview={bannerPreview}
             galleryPreview={galleryPreview}
             goTo={goTo}
           />
@@ -773,7 +861,9 @@ export function BusinessRequestForm({
           >
             {loading
               ? (ar ? "جاري الإرسال..." : "Submitting...")
-              : (ar ? "إرسال الطلب" : "Submit Request")}
+              : isEdit
+                ? (ar ? "حفظ التعديلات" : "Save Changes")
+                : (ar ? "إرسال الطلب" : "Submit Request")}
           </Button>
         )}
       </div>
@@ -821,7 +911,6 @@ function MediaSlide({
   onSelect: (
     files: FileList | null,
     setter: React.Dispatch<React.SetStateAction<string[]>>,
-    multiple?: boolean,
   ) => void;
   onRemove: (
     url: string,
@@ -885,7 +974,7 @@ function MediaSlide({
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={(e) => onSelect(e.target.files, setter, false)}
+        onChange={(e) => onSelect(e.target.files, setter)}
       />
     </label>
   );
@@ -902,6 +991,7 @@ function ReviewSlide({
   selectedCategory,
   logoPreview,
   coverPreview,
+  bannerPreview,
   galleryPreview,
   goTo,
 }: {
@@ -911,6 +1001,7 @@ function ReviewSlide({
   selectedCategory: Category | undefined;
   logoPreview: string[];
   coverPreview: string[];
+  bannerPreview: string[];
   galleryPreview: string[];
   goTo: (idx: number) => void;
 }) {
@@ -972,12 +1063,17 @@ function ReviewSlide({
       step: 7,
     },
     {
+      label: ar ? "البانر" : "Banner",
+      value: bannerPreview.length > 0 ? "✓" : "—",
+      step: 8,
+    },
+    {
       label: ar ? "المعرض" : "Gallery",
       value:
         galleryPreview.length > 0
           ? `${galleryPreview.length} ${ar ? "صورة" : "images"}`
           : "—",
-      step: 8,
+      step: 9,
     },
   ];
 

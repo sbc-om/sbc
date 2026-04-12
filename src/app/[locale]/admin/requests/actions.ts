@@ -11,14 +11,14 @@ import {
   updateBusinessRequestStatus,
   deleteBusinessRequest,
 } from "@/lib/db/businessRequests";
-import { createBusiness } from "@/lib/db/businesses";
+import { createBusiness, setBusinessMedia } from "@/lib/db/businesses";
 import { getUserById } from "@/lib/db/users";
 import { getCategoryById } from "@/lib/db/categories";
 
 export async function respondToRequestAction(
   locale: Locale,
   requestId: string,
-  status: "approved" | "rejected",
+  status: "approved" | "rejected" | "revision_requested",
   response: string
 ) {
   const admin = await requireAdmin(locale);
@@ -88,19 +88,39 @@ export async function convertRequestToBusinessAction(
           en: request.name.en,
           ar: request.name.ar,
         },
-        description: request.description
+        description: (request.descEn || request.descAr)
           ? {
-              en: request.description,
-              ar: request.description,
+              en: request.descEn || request.descAr || "",
+              ar: request.descAr || request.descEn || "",
             }
-          : undefined,
+          : request.description
+            ? { en: request.description, ar: request.description }
+            : undefined,
         category,
         categoryId: request.categoryId,
         city: request.city,
+        address: request.address,
         phone: request.phone,
         email: request.email,
         website: request.website,
+        latitude: request.latitude,
+        longitude: request.longitude,
+        tags: request.tags ? request.tags.split(",").map((t: string) => t.trim()).filter(Boolean) : undefined,
       });
+
+      // Transfer media from request to business
+      if (request.logoUrl) {
+        await setBusinessMedia(business.id, "logo", request.logoUrl);
+      }
+      if (request.coverUrl) {
+        await setBusinessMedia(business.id, "cover", request.coverUrl);
+      }
+      if (request.bannerUrl) {
+        await setBusinessMedia(business.id, "banner", request.bannerUrl);
+      }
+      if (request.galleryUrls && request.galleryUrls.length > 0) {
+        await setBusinessMedia(business.id, "gallery", request.galleryUrls);
+      }
 
       // Success! Update request status if not already approved
       if (request.status !== "approved") {

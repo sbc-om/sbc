@@ -30,6 +30,7 @@ export default async function AdminRequestsPage({
   const categoriesById = new Map(categories.map((c) => [c.id, c] as const));
 
   const pendingRequests = requests.filter((r) => r.status === "pending");
+  const revisionRequests = requests.filter((r) => r.status === "revision_requested");
   const approvedRequests = requests.filter((r) => r.status === "approved");
   const rejectedRequests = requests.filter((r) => r.status === "rejected");
 
@@ -44,8 +45,8 @@ export default async function AdminRequestsPage({
           </h1>
           <p className="mt-1 text-sm text-(--muted-foreground)">
             {ar
-              ? `${pendingRequests.length} طلب معلق، ${requests.length} طلب إجمالي`
-              : `${pendingRequests.length} pending, ${requests.length} total`}
+              ? `${pendingRequests.length} طلب معلق، ${revisionRequests.length} بانتظار تعديل، ${requests.length} طلب إجمالي`
+              : `${pendingRequests.length} pending, ${revisionRequests.length} revision, ${requests.length} total`}
           </p>
         </div>
         <Link
@@ -57,12 +58,20 @@ export default async function AdminRequestsPage({
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3 mb-8">
+      <div className="grid gap-4 md:grid-cols-4 mb-8">
         <div className="sbc-card !border-0 p-4">
           <div className="text-sm font-medium text-(--muted-foreground)">
             {ar ? "معلقة" : "Pending"}
           </div>
           <div className="mt-2 text-2xl font-bold">{pendingRequests.length}</div>
+        </div>
+        <div className="sbc-card !border-0 p-4">
+          <div className="text-sm font-medium text-(--muted-foreground)">
+            {ar ? "بانتظار تعديل" : "Revision"}
+          </div>
+          <div className="mt-2 text-2xl font-bold text-orange-600 dark:text-orange-400">
+            {revisionRequests.length}
+          </div>
         </div>
         <div className="sbc-card !border-0 p-4">
           <div className="text-sm font-medium text-(--muted-foreground)">
@@ -90,6 +99,32 @@ export default async function AdminRequestsPage({
           </h2>
           <div className="grid gap-4">
             {pendingRequests.map((req) => {
+              const user = req.userId ? usersById.get(req.userId) : undefined;
+              const agent = req.agentUserId ? usersById.get(req.agentUserId) : undefined;
+              const category = req.categoryId ? categoriesById.get(req.categoryId) : null;
+              return (
+                <RequestCard
+                  key={req.id}
+                  request={req}
+                  user={user}
+                  agent={agent}
+                  category={category}
+                  locale={locale as Locale}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Revision Requested */}
+      {revisionRequests.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-lg font-semibold mb-4">
+            {ar ? "بانتظار تعديل المستخدم" : "Awaiting User Revision"}
+          </h2>
+          <div className="grid gap-4">
+            {revisionRequests.map((req) => {
               const user = req.userId ? usersById.get(req.userId) : undefined;
               const agent = req.agentUserId ? usersById.get(req.agentUserId) : undefined;
               const category = req.categoryId ? categoriesById.get(req.categoryId) : null;

@@ -24,7 +24,7 @@ export default async function DirectoryBusinessEditPage({
 
   await getProgramSubscriptionByUser(user.id);
   if (!(await hasActiveSubscription(user.id, "directory"))) {
-    redirect(`/${locale}/directory`);
+    redirect(`/${locale}/profile/businesses`);
   }
 
   const business = await getBusinessById(id);
@@ -53,7 +53,7 @@ export default async function DirectoryBusinessEditPage({
           >
             {ar ? "بطاقات الأعمال" : "Business Cards"}
           </Link>
-          <Link href={`/${locale}/directory`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
+          <Link href={`/${locale}/profile/businesses`} className={buttonVariants({ variant: "ghost", size: "sm" })}>
             {ar ? "رجوع" : "Back"}
           </Link>
         </div>

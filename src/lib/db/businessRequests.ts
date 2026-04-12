@@ -14,13 +14,23 @@ export type BusinessRequest = {
   category?: string;
   categoryId?: string;
   description?: string;
+  descEn?: string;
+  descAr?: string;
   city?: string;
+  address?: string;
   phone?: string;
   email?: string;
   website?: string;
   contactEmail?: string;
   contactPhone?: string;
-  status: "pending" | "approved" | "rejected";
+  tags?: string;
+  latitude?: number;
+  longitude?: number;
+  logoUrl?: string;
+  coverUrl?: string;
+  bannerUrl?: string;
+  galleryUrls?: string[];
+  status: "pending" | "approved" | "rejected" | "revision_requested";
   adminNotes?: string;
   adminResponse?: string;
   respondedAt?: string;
@@ -69,6 +79,16 @@ type BusinessRequestRow = {
   website: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  address: string | null;
+  desc_en: string | null;
+  desc_ar: string | null;
+  tags: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  logo_url: string | null;
+  cover_url: string | null;
+  banner_url: string | null;
+  gallery_urls: string[] | string | null;
   status: BusinessRequest["status"];
   admin_notes: string | null;
   admin_response: string | null;
@@ -97,6 +117,18 @@ function rowToRequest(r: BusinessRequestRow): BusinessRequest {
     website: r.website ?? undefined,
     contactEmail: r.contact_email ?? undefined,
     contactPhone: r.contact_phone ?? undefined,
+    address: r.address ?? undefined,
+    descEn: r.desc_en ?? undefined,
+    descAr: r.desc_ar ?? undefined,
+    tags: r.tags ?? undefined,
+    latitude: r.latitude ?? undefined,
+    longitude: r.longitude ?? undefined,
+    logoUrl: r.logo_url ?? undefined,
+    coverUrl: r.cover_url ?? undefined,
+    bannerUrl: r.banner_url ?? undefined,
+    galleryUrls: r.gallery_urls
+      ? (typeof r.gallery_urls === "string" ? JSON.parse(r.gallery_urls) : r.gallery_urls)
+      : undefined,
     status: r.status,
     adminNotes: r.admin_notes ?? undefined,
     adminResponse: r.admin_response ?? undefined,
@@ -160,7 +192,7 @@ export async function listPendingBusinessRequests(): Promise<BusinessRequest[]> 
 
 export async function updateBusinessRequestStatus(
   id: string,
-  status: "approved" | "rejected",
+  status: "approved" | "rejected" | "revision_requested",
   adminNotes?: string,
   adminResponse?: string
 ): Promise<BusinessRequest> {
@@ -180,9 +212,95 @@ export async function updateBusinessRequestStatus(
   return rowToRequest(result.rows[0]);
 }
 
+/** Update a business request's content (user-editable fields). Resets status to pending. */
+export async function updateBusinessRequest(
+  id: string,
+  data: Partial<BusinessRequestInput>,
+): Promise<BusinessRequest> {
+  const now = new Date();
+  const result = await query<BusinessRequestRow>(`
+    UPDATE business_requests SET
+      business_name = COALESCE($1, business_name),
+      name_en = COALESCE($2, name_en),
+      name_ar = COALESCE($3, name_ar),
+      desc_en = COALESCE($4, desc_en),
+      desc_ar = COALESCE($5, desc_ar),
+      category_id = COALESCE($6, category_id),
+      city = COALESCE($7, city),
+      address = COALESCE($8, address),
+      phone = COALESCE($9, phone),
+      email = COALESCE($10, email),
+      website = COALESCE($11, website),
+      tags = COALESCE($12, tags),
+      latitude = COALESCE($13, latitude),
+      longitude = COALESCE($14, longitude),
+      status = 'pending',
+      updated_at = $15
+    WHERE id = $16
+    RETURNING *
+  `, [
+    data.businessName ?? data.nameEn, data.nameEn, data.nameAr,
+    data.descEn, data.descAr, data.categoryId,
+    data.city, data.address, data.phone,
+    data.email || null, data.website || null, data.tags,
+    data.latitude, data.longitude, now, id,
+  ]);
+
+  if (result.rows.length === 0) throw new Error("NOT_FOUND");
+  return rowToRequest(result.rows[0]);
+}
+
 export async function deleteBusinessRequest(id: string): Promise<boolean> {
   const result = await query(`DELETE FROM business_requests WHERE id = $1`, [id]);
   return (result.rowCount ?? 0) > 0;
+}
+
+/** Update media URLs on a business request (merge — keeps existing if new value is undefined) */
+export async function updateBusinessRequestMedia(
+  id: string,
+  media: { logoUrl?: string; coverUrl?: string; bannerUrl?: string; galleryUrls?: string[] },
+): Promise<void> {
+  const now = new Date();
+  await query(`
+    UPDATE business_requests SET
+      logo_url = COALESCE($1, logo_url),
+      cover_url = COALESCE($2, cover_url),
+      banner_url = COALESCE($3, banner_url),
+      gallery_urls = COALESCE($4::jsonb, gallery_urls),
+      updated_at = $5
+    WHERE id = $6
+  `, [
+    media.logoUrl ?? null,
+    media.coverUrl ?? null,
+    media.bannerUrl ?? null,
+    media.galleryUrls ? JSON.stringify(media.galleryUrls) : null,
+    now,
+    id,
+  ]);
+}
+
+/** Replace media URLs on a business request (overwrites — clears if null) */
+export async function setBusinessRequestMedia(
+  id: string,
+  media: { logoUrl: string | null; coverUrl: string | null; bannerUrl: string | null; galleryUrls: string[] },
+): Promise<void> {
+  const now = new Date();
+  await query(`
+    UPDATE business_requests SET
+      logo_url = $1,
+      cover_url = $2,
+      banner_url = $3,
+      gallery_urls = $4::jsonb,
+      updated_at = $5
+    WHERE id = $6
+  `, [
+    media.logoUrl,
+    media.coverUrl,
+    media.bannerUrl,
+    JSON.stringify(media.galleryUrls),
+    now,
+    id,
+  ]);
 }
 
 /** Return a map of userId → request status for users that have at least one business request */

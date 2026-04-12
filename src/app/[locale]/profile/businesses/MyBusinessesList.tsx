@@ -45,10 +45,12 @@ const texts = {
     emptyTitle: "No businesses yet",
     emptyDesc: "Register your first business to get started",
     pendingRequests: "Pending Requests",
+    editRequest: "Edit Request",
     requestStatus: {
       pending: "Pending Review",
       approved: "Approved",
       rejected: "Rejected",
+      revision_requested: "Revision Requested",
     },
   },
   ar: {
@@ -72,10 +74,12 @@ const texts = {
     emptyTitle: "لا توجد أعمال بعد",
     emptyDesc: "سجّل عملك الأول للبدء",
     pendingRequests: "الطلبات المعلقة",
+    editRequest: "تعديل الطلب",
     requestStatus: {
       pending: "قيد المراجعة",
       approved: "مقبول",
       rejected: "مرفوض",
+      revision_requested: "بانتظار تعديل",
     },
   },
 };
@@ -111,7 +115,7 @@ export function MyBusinessesList({
     );
   }, [businesses, search]);
 
-  const pendingRequests = requests.filter((r) => r.status === "pending");
+  const pendingRequests = requests.filter((r) => r.status === "pending" || r.status === "revision_requested");
   const rejectedRequests = requests.filter((r) => r.status === "rejected");
 
   const formatDate = (iso: string) => {
@@ -177,50 +181,73 @@ export function MyBusinessesList({
         </Link>
       </div>
 
-      {/* Pending / Rejected requests */}
+      {/* Pending / Revision / Rejected requests */}
       {(pendingRequests.length > 0 || rejectedRequests.length > 0) && (
         <div className="space-y-3">
-          {[...pendingRequests, ...rejectedRequests].map((req) => (
-            <div
-              key={req.id}
-              className="sbc-card rounded-2xl p-4 flex items-center gap-4"
-            >
+          {[...pendingRequests, ...rejectedRequests].map((req) => {
+            const isRevision = req.status === "revision_requested";
+            const isPending = req.status === "pending";
+            const canEdit = isPending || isRevision;
+
+            const iconBg = isRevision
+              ? "bg-orange-100 dark:bg-orange-900/30"
+              : isPending
+                ? "bg-amber-100 dark:bg-amber-900/30"
+                : "bg-red-100 dark:bg-red-900/30";
+
+            const badgeCls = isRevision
+              ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+              : isPending
+                ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300";
+
+            return (
               <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                  req.status === "pending"
-                    ? "bg-amber-100 dark:bg-amber-900/30"
-                    : "bg-red-100 dark:bg-red-900/30"
-                }`}
+                key={req.id}
+                className={`sbc-card rounded-2xl p-4 ${isRevision ? "ring-2 ring-orange-400/50 dark:ring-orange-500/30" : ""}`}
               >
-                {req.status === "pending" ? (
-                  <HiOutlineClock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                ) : (
-                  <HiOutlineXCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium truncate">
-                    {ar ? req.name.ar : req.name.en}
-                  </span>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                      req.status === "pending"
-                        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-                        : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                    }`}
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${iconBg}`}
                   >
-                    {t.requestStatus[req.status as keyof typeof t.requestStatus]}
-                  </span>
+                    {isRevision ? (
+                      <HiOutlinePencil className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    ) : isPending ? (
+                      <HiOutlineClock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                    ) : (
+                      <HiOutlineXCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">
+                        {ar ? req.name.ar : req.name.en}
+                      </span>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${badgeCls}`}
+                      >
+                        {t.requestStatus[req.status as keyof typeof t.requestStatus]}
+                      </span>
+                    </div>
+                    {req.adminResponse && (
+                      <p className="mt-1 text-xs text-(--muted-foreground)">
+                        {req.adminResponse}
+                      </p>
+                    )}
+                  </div>
+                  {canEdit && (
+                    <Link
+                      href={`/${locale}/business-request/${req.id}`}
+                      className="shrink-0 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium bg-accent text-(--accent-foreground) hover:opacity-90 transition-opacity"
+                    >
+                      <HiOutlinePencil className="h-3.5 w-3.5" />
+                      {t.editRequest}
+                    </Link>
+                  )}
                 </div>
-                {req.adminResponse && (
-                  <p className="mt-1 text-xs text-(--muted-foreground)">
-                    {req.adminResponse}
-                  </p>
-                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -380,7 +407,7 @@ export function MyBusinessesList({
                         />
                         <div className="absolute end-0 top-full z-50 mt-1 w-44 rounded-xl bg-(--card) border border-(--border) shadow-lg overflow-hidden">
                           <Link
-                            href={`/${locale}/directory/businesses/${biz.slug || biz.id}`}
+                            href={`/${locale}/businesses/${biz.slug}`}
                             className="flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-(--chip-bg) transition-colors"
                             onClick={() => setMenuOpenId(null)}
                           >

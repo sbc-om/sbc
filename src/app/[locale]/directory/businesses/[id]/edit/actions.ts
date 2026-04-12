@@ -108,6 +108,7 @@ export async function updateOwnerBusinessAction(
 
   revalidatePath(`/${locale}/directory/businesses/${business.id}/edit`);
   revalidatePath(`/${locale}/directory`);
+  revalidatePath(`/${locale}/profile/businesses`);
   revalidatePath(`/${locale}/businesses/${next.slug}`);
   redirect(`/${locale}/directory/businesses/${business.id}/edit?pending=1`);
 }

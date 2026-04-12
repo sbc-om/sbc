@@ -5,7 +5,9 @@ import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listCategories } from "@/lib/db/categories";
-import { isProgramSubscriptionActive } from "@/lib/db/subscriptions";
+import { countProgramSubscriptions } from "@/lib/db/subscriptions";
+import { listBusinessesByOwner } from "@/lib/db/businesses";
+import { listBusinessRequestsByUser } from "@/lib/db/businessRequests";
 import { AppPage } from "@/components/AppPage";
 import { BusinessRequestForm } from "./BusinessRequestForm";
 import Link from "next/link";
@@ -26,9 +28,17 @@ export default async function BusinessRequestPage({
   const sp = await searchParams;
   const success = sp.success === "1";
 
-  const active = await isProgramSubscriptionActive(user.id);
+  const [totalPackages, ownedBusinesses, requests, categories] =
+    await Promise.all([
+      countProgramSubscriptions(user.id, "directory"),
+      listBusinessesByOwner(user.id),
+      listBusinessRequestsByUser(user.id),
+      listCategories(),
+    ]);
 
-  const categories = await listCategories();
+  const pendingRequests = requests.filter((r) => r.status === "pending");
+  const used = ownedBusinesses.length + pendingRequests.length;
+  const canRegister = totalPackages > 0 && used < totalPackages;
 
   const ar = locale === "ar";
 
@@ -64,7 +74,7 @@ export default async function BusinessRequestPage({
               </Link>
             </div>
           </div>
-        ) : !active ? (
+        ) : !canRegister ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 mb-6">
               <svg className="h-10 w-10 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -72,12 +82,18 @@ export default async function BusinessRequestPage({
               </svg>
             </div>
             <h1 className="text-2xl font-bold tracking-tight mb-2">
-              {ar ? "تحتاج إلى باقة دليل الأعمال" : "Directory Package Required"}
+              {totalPackages === 0
+                ? (ar ? "تحتاج إلى باقة دليل الأعمال" : "Directory Package Required")
+                : (ar ? "تحتاج إلى باقة إضافية" : "Additional Package Required")}
             </h1>
             <p className="text-sm text-(--muted-foreground) max-w-md">
-              {ar
-                ? "لإرسال طلب إضافة أو ربط نشاطك التجاري، يرجى شراء باقة (عضوية) من دليل الأعمال أولاً."
-                : "To submit a business listing request, please purchase a Business Directory package first."}
+              {totalPackages === 0
+                ? (ar
+                    ? "لإرسال طلب إضافة أو ربط نشاطك التجاري، يرجى شراء باقة (عضوية) من دليل الأعمال أولاً."
+                    : "To submit a business listing request, please purchase a Business Directory package first.")
+                : (ar
+                    ? `لديك ${totalPackages} باقة وقد استخدمت ${used} منها. لتسجيل عمل جديد، يرجى شراء باقة إضافية.`
+                    : `You have ${totalPackages} package${totalPackages > 1 ? "s" : ""} and used ${used}. To register a new business, please purchase an additional package.`)}
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link
@@ -87,7 +103,7 @@ export default async function BusinessRequestPage({
                 {ar ? "اذهب للمتجر" : "Go to Store"}
               </Link>
               <Link
-                href={`/${locale}/directory`}
+                href={`/${locale}/profile/businesses`}
                 className="inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold bg-(--chip-bg) text-foreground"
               >
                 {ar ? "إدارة الاشتراك" : "Manage Subscription"}

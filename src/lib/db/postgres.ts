@@ -1205,6 +1205,18 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'longitude') THEN
         ALTER TABLE business_requests ADD COLUMN longitude DOUBLE PRECISION;
       END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'logo_url') THEN
+        ALTER TABLE business_requests ADD COLUMN logo_url TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'cover_url') THEN
+        ALTER TABLE business_requests ADD COLUMN cover_url TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'gallery_urls') THEN
+        ALTER TABLE business_requests ADD COLUMN gallery_urls JSONB DEFAULT '[]';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'banner_url') THEN
+        ALTER TABLE business_requests ADD COLUMN banner_url TEXT;
+      END IF;
     END $$;
     CREATE INDEX IF NOT EXISTS idx_business_requests_agent ON business_requests(agent_user_id);
 

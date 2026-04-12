@@ -62,7 +62,7 @@ export default async function DashboardPage({
   const programMeta = {
     directory: {
       title: ar ? "دليل الأعمال" : "Business Directory",
-      href: `/${locale}/directory`,
+      href: `/${locale}/profile/businesses`,
       storeHref: `/${locale}/store?q=directory`,
       subtitle: ar ? "خلّي العملاء يكتشفون نشاطك بسهولة" : "Get discovered by nearby customers",
       Icon: HiOutlineBuildingOffice2,

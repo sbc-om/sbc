@@ -213,6 +213,43 @@ export async function storeUpload(params: {
   };
 }
 
+/** Store an upload for a business *request* (before a business entity exists). */
+export async function storeRequestUpload(params: {
+  requestId: string;
+  kind: UploadKind;
+  file: File;
+}) {
+  const { requestId, kind, file } = params;
+
+  validateUpload({ kind, file });
+
+  const mime = file.type || "application/octet-stream";
+  const originalExt = path.extname(file.name || "");
+  const ext = (originalExt && originalExt.length <= 10 ? originalExt : "") || extFromMime(mime);
+
+  const now = new Date();
+  const yyyy = String(now.getUTCFullYear());
+  const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
+
+  const filename = `${nanoid()}${ext}`;
+  const relDir = path.posix.join("requests", requestId, kind, yyyy, mm);
+  const relPath = path.posix.join(relDir, filename);
+
+  const root = resolveUploadsRoot();
+  const absDir = path.join(root, relDir);
+  const absPath = path.join(root, relPath);
+
+  await fs.mkdir(absDir, { recursive: true });
+
+  const webStream = file.stream();
+  const nodeReadable = Readable.fromWeb(webStream as unknown as NodeReadableStream);
+  const nodeWritable = fssync.createWriteStream(absPath, { flags: "wx" });
+
+  await pipeline(nodeReadable, nodeWritable);
+
+  return { url: mediaUrlFromRelativePath(relPath) };
+}
+
 export function validateUpload(params: {
   kind: UploadKind;
   file: File;

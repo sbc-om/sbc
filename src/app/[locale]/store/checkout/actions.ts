@@ -32,4 +32,5 @@ export async function finalizeCheckoutAction(locale: Locale, slugs: string[]) {
   revalidatePath(`/${locale}/loyalty`);
   revalidatePath(`/${locale}/services`);
   revalidatePath(`/${locale}/directory`);
+  revalidatePath(`/${locale}/profile/businesses`);
 }
