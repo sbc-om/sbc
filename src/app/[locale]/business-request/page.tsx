@@ -95,19 +95,7 @@ export default async function BusinessRequestPage({
             </div>
           </div>
         ) : (
-          <>
-            <div className="mb-2">
-              <h1 className="text-2xl font-bold tracking-tight">
-                {ar ? "طلب إضافة نشاط تجاري" : "Request a Business Listing"}
-              </h1>
-              <p className="mt-1 text-sm text-(--muted-foreground)">
-                {ar
-                  ? "أكمل الخطوات التالية لتسجيل نشاطك التجاري في المنصة"
-                  : "Complete the steps below to register your business on the platform"}
-              </p>
-            </div>
-            <BusinessRequestForm locale={locale as Locale} categories={categories} />
-          </>
+          <BusinessRequestForm locale={locale as Locale} categories={categories} />
         )}
     </AppPage>
   );

@@ -54,50 +54,48 @@ const categories: Category[] = [
   },
 ];
 
-describe("BusinessRequestForm category step", () => {
+describe("BusinessRequestForm conversational flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("shows validation toast when category is not selected", async () => {
+  it("shows validation toast when name is empty and Continue is clicked", async () => {
     render(<BusinessRequestForm locale="en" categories={categories} />);
 
-    fireEvent.change(screen.getByPlaceholderText("e.g. Coffee Paradise"), {
-      target: { value: "Coffee House" },
-    });
-    fireEvent.change(screen.getByPlaceholderText("مثال: جنة القهوة"), {
-      target: { value: "بيت القهوة" },
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: /Next/i }));
+    // First slide asks for English name
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
 
     await waitFor(() => {
       expect(toastMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: "Please select a category",
+          message: "Please enter business name",
           variant: "error",
         }),
       );
     });
   });
 
-  it("goes to contact step after selecting a category", async () => {
+  it("advances through name slides to category", async () => {
     render(<BusinessRequestForm locale="en" categories={categories} />);
 
+    // Slide 1: English name
     fireEvent.change(screen.getByPlaceholderText("e.g. Coffee Paradise"), {
       target: { value: "Coffee House" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
+
+    // Slide 2: Arabic name
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("مثال: جنة القهوة")).toBeInTheDocument();
     });
     fireEvent.change(screen.getByPlaceholderText("مثال: جنة القهوة"), {
       target: { value: "بيت القهوة" },
     });
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
 
-    fireEvent.click(screen.getByRole("button", { name: /Choose a category/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Coffee/i }));
-
-    fireEvent.click(screen.getByRole("button", { name: /Next/i }));
-
+    // Slide 3: Category
     await waitFor(() => {
-      expect(screen.getByText("Contact Information")).toBeInTheDocument();
+      expect(screen.getByText("What type of business is it?")).toBeInTheDocument();
     });
   });
 });

@@ -515,8 +515,44 @@ export function PublicBusinessView({
                     <div className="mt-0.5 text-sm font-medium text-foreground">
                       {[business.address, business.city].filter(Boolean).join(", ")}
                     </div>
+                    {business.latitude != null && business.longitude != null ? (
+                      <a
+                        href={`https://www.google.com/maps?q=${business.latitude},${business.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1.5 inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:underline"
+                      >
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 0115 0z" />
+                        </svg>
+                        {locale === "ar" ? "فتح في خرائط جوجل" : "Open in Google Maps"}
+                        <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                        </svg>
+                      </a>
+                    ) : null}
                   </div>
                 </div>
+              ) : business.latitude != null && business.longitude != null ? (
+                <a
+                  href={`https://www.google.com/maps?q=${business.latitude},${business.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-accent/5 transition-colors group"
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center">
+                    <FiMapPin className="h-4 w-4 text-purple-500" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {locale === "ar" ? "الموقع" : "Location"}
+                    </div>
+                    <div className="mt-0.5 text-sm font-medium text-accent transition-colors group-hover:underline">
+                      {locale === "ar" ? "فتح في خرائط جوجل" : "Open in Google Maps"}
+                    </div>
+                  </div>
+                </a>
               ) : null}
               {categoryLabel ? (
                 <div className="flex items-center gap-2.5 p-2 rounded-lg">
