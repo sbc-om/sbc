@@ -58,6 +58,7 @@ export async function POST(req: Request) {
 
     const request = await createBusinessRequest({
       userId: user.id,
+      username: username || undefined,
       businessName: str("name_en") || str("businessName") || str("name"),
       nameEn: str("name_en") || str("nameEn"),
       nameAr: str("name_ar") || str("nameAr"),

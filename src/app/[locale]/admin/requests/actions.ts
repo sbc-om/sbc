@@ -83,6 +83,7 @@ export async function convertRequestToBusinessAction(
 
       const business = await createBusiness({
         slug,
+        username: request.username,
         ownerId: request.userId,
         name: {
           en: request.name.en,

@@ -93,6 +93,14 @@ describe("BusinessRequestForm conversational flow", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
 
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText("your-business")).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByPlaceholderText("your-business"), {
+      target: { value: "coffee-house" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Continue/i }));
+
     // Slide 3: Category
     await waitFor(() => {
       expect(screen.getByText("What type of business is it?")).toBeInTheDocument();

@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 
+import { AppPage } from "@/components/AppPage";
 import { PublicPage } from "@/components/PublicPage";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { getBusinessBySlug, getBusinessByUsername } from "@/lib/db/businesses";
@@ -132,6 +133,7 @@ export default async function BusinessDetailPage({
   const isDevTunnel = hostname.endsWith(".ngrok-free.app") || hostname.endsWith(".ngrok.io");
   const standaloneBusinessView = isSubdomainHost || (!isMainHost && !isDevTunnel && !!hostname);
   const shareHandlePath = isSubdomainHost ? "/" : handlePath;
+  const listHref = user ? `/${locale}/explorer` : `/${locale}/businesses`;
 
   const publicCards = await listPublicBusinessCardsByBusiness(business.id);
   const canShowInstagramPosts = !!business.instagramUsername && (isOwner || business.instagramModerationStatus === "approved");
@@ -151,17 +153,23 @@ export default async function BusinessDetailPage({
     isOwner ? getStoriesByBusinessForOwner(business.id) : getActiveStoriesByBusiness(business.id),
   ]);
 
-  return (
-    <PublicPage compactTop={!!user || standaloneBusinessView}>
+  const pageContent = (
+    <>
       {!standaloneBusinessView ? (
         <div className="flex items-start justify-between gap-6">
           <div className="min-w-0" />
 
           <Link
-            href={`/${locale}/businesses`}
+            href={listHref}
             className={buttonVariants({ variant: "ghost", size: "sm" })}
           >
-            {locale === "ar" ? "كل الأعمال" : "All businesses"}
+            {user
+              ? locale === "ar"
+                ? "العودة إلى المستكشف"
+                : "Back to Explorer"
+              : locale === "ar"
+                ? "كل الأعمال"
+                : "All businesses"}
           </Link>
         </div>
       ) : null}
@@ -250,6 +258,12 @@ export default async function BusinessDetailPage({
           />
         </Suspense>
       </div>
-    </PublicPage>
+    </>
   );
+
+  if (user) {
+    return <AppPage>{pageContent}</AppPage>;
+  }
+
+  return <PublicPage compactTop={standaloneBusinessView}>{pageContent}</PublicPage>;
 }

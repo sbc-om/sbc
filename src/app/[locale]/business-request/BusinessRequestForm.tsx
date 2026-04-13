@@ -33,6 +33,7 @@ const DynamicOsmLocationPicker = dynamic(
 /* ================================================================== */
 
 interface FormData {
+  username: string;
   name_en: string;
   name_ar: string;
   desc_en: string;
@@ -49,6 +50,7 @@ interface FormData {
 type SlideId =
   | "name_en"
   | "name_ar"
+  | "username"
   | "category"
   | "desc"
   | "contact"
@@ -96,6 +98,14 @@ export function BusinessRequestForm({
           <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
           <path d="M2 2l7.586 7.586" />
           <circle cx="11" cy="11" r="2" />
+        </svg>
+      ),
+      username: (
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="#14b8a6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       ),
       category: (
@@ -170,6 +180,7 @@ export function BusinessRequestForm({
     () => [
       { id: "name_en" as SlideId, required: true },
       { id: "name_ar" as SlideId, required: true },
+      { id: "username" as SlideId, required: true },
       { id: "category" as SlideId, required: true },
       { id: "desc" as SlideId, required: false },
       { id: "contact" as SlideId, required: false },
@@ -215,6 +226,7 @@ export function BusinessRequestForm({
   const [formData, setFormData] = useState<FormData>({
     name_en: initialData?.name_en ?? "",
     name_ar: initialData?.name_ar ?? "",
+    username: initialData?.username ?? "",
     desc_en: initialData?.desc_en ?? "",
     desc_ar: initialData?.desc_ar ?? "",
     categoryId: initialData?.categoryId ?? "",
@@ -274,6 +286,18 @@ export function BusinessRequestForm({
       return ar ? "الاسم بالإنجليزية مطلوب" : "Please enter business name";
     if (s === "name_ar" && !formData.name_ar.trim())
       return ar ? "الاسم بالعربية مطلوب" : "Please enter Arabic name";
+    if (s === "username") {
+      const username = formData.username.trim().toLowerCase();
+      if (!username) {
+        return ar ? "اسم المستخدم مطلوب" : "Please enter a username";
+      }
+      if (username.length <= 5) {
+        return ar ? "اسم المستخدم يجب أن يكون 6 أحرف على الأقل" : "Username must be at least 6 characters";
+      }
+      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(username)) {
+        return ar ? "اسم المستخدم يقبل الأحرف الإنجليزية الصغيرة والأرقام والشرطة فقط" : "Username can only contain lowercase letters, numbers, and hyphens";
+      }
+    }
     if (s === "category" && !formData.categoryId)
       return ar ? "يرجى اختيار التصنيف" : "Please select a category";
     if (
@@ -300,6 +324,28 @@ export function BusinessRequestForm({
     setDir("prev");
     setIdx((i) => Math.max(i - 1, 0));
   }, []);
+
+  const getSubmitErrorMessage = useCallback(
+    (message: string) => {
+      if (message === "USERNAME_TOO_SHORT") {
+        return ar
+          ? "اسم المستخدم يجب أن يكون 6 أحرف على الأقل"
+          : "Username must be at least 6 characters";
+      }
+      if (message === "USERNAME_INVALID") {
+        return ar
+          ? "اسم المستخدم غير صالح. استخدم أحرفًا إنجليزية صغيرة وأرقامًا وشرطة فقط"
+          : "Invalid username. Use lowercase letters, numbers, and hyphens only";
+      }
+      if (message === "USERNAME_TAKEN") {
+        return ar
+          ? "اسم المستخدم مستخدم بالفعل، اختر اسمًا آخر"
+          : "This username is already taken. Please choose another one";
+      }
+      return ar ? `خطأ: ${message}` : `Error: ${message}`;
+    },
+    [ar],
+  );
 
   const goTo = useCallback(
     (target: number) => {
@@ -369,7 +415,7 @@ export function BusinessRequestForm({
       const message =
         error instanceof Error ? error.message : "Failed to submit request";
       toast({
-        message: ar ? `خطأ: ${message}` : `Error: ${message}`,
+        message: getSubmitErrorMessage(message),
         variant: "error",
       });
     } finally {
@@ -402,6 +448,12 @@ export function BusinessRequestForm({
         sub: ar
           ? "الاسم بالعربية كما تريده أن يظهر"
           : "Arabic name as it appears to Arabic speakers",
+      },
+      username: {
+        title: ar ? "اختر اسم المستخدم لنشاطك" : "Choose your business username",
+        sub: ar
+          ? "سيُستخدم في الرابط العام مثل @your-business"
+          : "It will be used in the public handle, for example @your-business",
       },
       category: {
         title: ar ? "ما نوع نشاطك التجاري؟" : "What type of business is it?",
@@ -550,6 +602,27 @@ export function BusinessRequestForm({
             dir="rtl"
             className="!text-lg !py-4"
           />
+        )}
+
+        {currentSlide.id === "username" && (
+          <div className="space-y-3">
+            <Input
+              ref={inputRef}
+              value={formData.username}
+              onChange={(e) => set("username", e.target.value.trim().toLowerCase())}
+              placeholder="your-business"
+              dir="ltr"
+              className="!text-lg !py-4"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+            <p className="text-xs text-(--muted-foreground)">
+              {ar
+                ? "استخدم أحرفًا إنجليزية صغيرة وأرقامًا وشرطة فقط. الحد الأدنى 6 أحرف."
+                : "Use lowercase letters, numbers, and hyphens only. Minimum 6 characters."}
+            </p>
+          </div>
         )}
 
         {currentSlide.id === "category" && (
@@ -815,6 +888,13 @@ export function BusinessRequestForm({
         </div>
       )}
 
+      {!isLast && formData.username && currentSlide.id === "category" && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-(--muted-foreground)">
+          <span className="text-emerald-500">✓</span>
+          <span>@{formData.username}</span>
+        </div>
+      )}
+
       {/* ── Navigation ───────────────────────────────────────── */}
       <div className="mt-8 flex items-center justify-between">
         <Button
@@ -1017,55 +1097,60 @@ function ReviewSlide({
       step: 1,
     },
     {
+      label: ar ? "اسم المستخدم" : "Username",
+      value: formData.username ? `@${formData.username}` : "—",
+      step: 2,
+    },
+    {
       label: ar ? "التصنيف" : "Category",
       value: selectedCategory
         ? ar
           ? selectedCategory.name.ar || selectedCategory.name.en
           : selectedCategory.name.en
         : "—",
-      step: 2,
+      step: 3,
     },
     {
       label: ar ? "الوصف" : "Description",
       value: formData.desc_en || formData.desc_ar ? "✓" : "—",
-      step: 3,
+      step: 4,
     },
     {
       label: ar ? "الهاتف" : "Phone",
       value: formData.phone || "—",
-      step: 4,
+      step: 5,
     },
     {
       label: ar ? "البريد" : "Email",
       value: formData.email || "—",
-      step: 4,
+      step: 5,
     },
     {
       label: ar ? "المدينة" : "City",
       value: formData.city || "—",
-      step: 4,
+      step: 5,
     },
     {
       label: ar ? "الموقع" : "Location",
       value: location
         ? `${location.lat.toFixed(4)}, ${location.lng.toFixed(4)}`
         : "—",
-      step: 5,
+      step: 6,
     },
     {
       label: ar ? "الشعار" : "Logo",
       value: logoPreview.length > 0 ? "✓" : "—",
-      step: 6,
+      step: 7,
     },
     {
       label: ar ? "الغلاف" : "Cover",
       value: coverPreview.length > 0 ? "✓" : "—",
-      step: 7,
+      step: 8,
     },
     {
       label: ar ? "البانر" : "Banner",
       value: bannerPreview.length > 0 ? "✓" : "—",
-      step: 8,
+      step: 9,
     },
     {
       label: ar ? "المعرض" : "Gallery",
@@ -1073,7 +1158,7 @@ function ReviewSlide({
         galleryPreview.length > 0
           ? `${galleryPreview.length} ${ar ? "صورة" : "images"}`
           : "—",
-      step: 9,
+      step: 10,
     },
   ];
 

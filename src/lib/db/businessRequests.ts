@@ -7,6 +7,7 @@ export type BusinessRequest = {
   id: string;
   userId?: string;
   agentUserId?: string;
+  username?: string;
   /** Business name for the request (bilingual object) */
   name: { en: string; ar: string };
   /** Legacy single string business name - deprecated */
@@ -41,6 +42,7 @@ export type BusinessRequest = {
 const businessRequestSchema = z.object({
   userId: z.string().optional(),
   agentUserId: z.string().optional(),
+  username: z.string().trim().toLowerCase().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).min(6).max(30).optional(),
   businessName: z.string().trim().min(1).max(200),
   nameEn: z.string().trim().max(200).optional(),
   nameAr: z.string().trim().max(200).optional(),
@@ -67,6 +69,7 @@ type BusinessRequestRow = {
   id: string;
   user_id: string | null;
   agent_user_id: string | null;
+  username: string | null;
   business_name: string | null;
   name_en: string | null;
   name_ar: string | null;
@@ -103,6 +106,7 @@ function rowToRequest(r: BusinessRequestRow): BusinessRequest {
     id: r.id,
     userId: r.user_id ?? undefined,
     agentUserId: r.agent_user_id || undefined,
+    username: r.username ?? undefined,
     name: { 
       en: r.name_en || businessName, 
       ar: r.name_ar || businessName 
@@ -145,12 +149,12 @@ export async function createBusinessRequest(input: BusinessRequestInput): Promis
 
   const result = await query<BusinessRequestRow>(`
     INSERT INTO business_requests (
-      id, user_id, agent_user_id, business_name, name_en, name_ar, desc_en, desc_ar, category, category_id, description, 
+      id, user_id, agent_user_id, username, business_name, name_en, name_ar, desc_en, desc_ar, category, category_id, description, 
       city, address, phone, email, website, contact_email, contact_phone, tags, latitude, longitude, status, created_at, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, 'pending', $22, $22)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, 'pending', $23, $23)
     RETURNING *
   `, [
-    id, data.userId, data.agentUserId || null, data.businessName, data.nameEn || data.businessName, data.nameAr || data.businessName,
+    id, data.userId, data.agentUserId || null, data.username || null, data.businessName, data.nameEn || data.businessName, data.nameAr || data.businessName,
     data.descEn, data.descAr, data.category, data.categoryId, data.description, data.city, data.address,
     data.phone, data.email || null, data.website || null, data.contactEmail, data.contactPhone, data.tags,
     data.latitude, data.longitude, now
@@ -220,26 +224,27 @@ export async function updateBusinessRequest(
   const now = new Date();
   const result = await query<BusinessRequestRow>(`
     UPDATE business_requests SET
-      business_name = COALESCE($1, business_name),
-      name_en = COALESCE($2, name_en),
-      name_ar = COALESCE($3, name_ar),
-      desc_en = COALESCE($4, desc_en),
-      desc_ar = COALESCE($5, desc_ar),
-      category_id = COALESCE($6, category_id),
-      city = COALESCE($7, city),
-      address = COALESCE($8, address),
-      phone = COALESCE($9, phone),
-      email = COALESCE($10, email),
-      website = COALESCE($11, website),
-      tags = COALESCE($12, tags),
-      latitude = COALESCE($13, latitude),
-      longitude = COALESCE($14, longitude),
+      username = COALESCE($1, username),
+      business_name = COALESCE($2, business_name),
+      name_en = COALESCE($3, name_en),
+      name_ar = COALESCE($4, name_ar),
+      desc_en = COALESCE($5, desc_en),
+      desc_ar = COALESCE($6, desc_ar),
+      category_id = COALESCE($7, category_id),
+      city = COALESCE($8, city),
+      address = COALESCE($9, address),
+      phone = COALESCE($10, phone),
+      email = COALESCE($11, email),
+      website = COALESCE($12, website),
+      tags = COALESCE($13, tags),
+      latitude = COALESCE($14, latitude),
+      longitude = COALESCE($15, longitude),
       status = 'pending',
-      updated_at = $15
-    WHERE id = $16
+      updated_at = $16
+    WHERE id = $17
     RETURNING *
   `, [
-    data.businessName ?? data.nameEn, data.nameEn, data.nameAr,
+    data.username, data.businessName ?? data.nameEn, data.nameEn, data.nameAr,
     data.descEn, data.descAr, data.categoryId,
     data.city, data.address, data.phone,
     data.email || null, data.website || null, data.tags,

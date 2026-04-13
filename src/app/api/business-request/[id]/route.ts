@@ -6,6 +6,7 @@ import {
   updateBusinessRequest,
   setBusinessRequestMedia,
 } from "@/lib/db/businessRequests";
+import { checkBusinessUsernameAvailability } from "@/lib/db/businesses";
 import { storeRequestUpload } from "@/lib/uploads/storage";
 
 export const runtime = "nodejs";
@@ -76,7 +77,22 @@ export async function PUT(
       return undefined;
     };
 
+    const username = str("username").trim().toLowerCase();
+    if (username) {
+      if (username.length <= 5) {
+        return NextResponse.json({ error: "USERNAME_TOO_SHORT" }, { status: 400 });
+      }
+      const availability = await checkBusinessUsernameAvailability(username);
+      if (!availability.available) {
+        return NextResponse.json(
+          { error: availability.reason === "INVALID" ? "USERNAME_INVALID" : "USERNAME_TAKEN" },
+          { status: 400 },
+        );
+      }
+    }
+
     const updated = await updateBusinessRequest(id, {
+      username: username || undefined,
       businessName: str("name_en") || str("businessName"),
       nameEn: str("name_en") || str("nameEn"),
       nameAr: str("name_ar") || str("nameAr"),

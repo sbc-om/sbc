@@ -528,6 +528,7 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     CREATE TABLE IF NOT EXISTS business_requests (
       id TEXT PRIMARY KEY,
       user_id TEXT REFERENCES users(id),
+      username TEXT,
       business_name TEXT NOT NULL,
       name_en TEXT,
       name_ar TEXT,
@@ -1186,6 +1187,9 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     BEGIN 
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'agent_user_id') THEN
         ALTER TABLE business_requests ADD COLUMN agent_user_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'username') THEN
+        ALTER TABLE business_requests ADD COLUMN username TEXT;
       END IF;
       IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'business_requests' AND column_name = 'desc_en') THEN
         ALTER TABLE business_requests ADD COLUMN desc_en TEXT;

@@ -68,6 +68,7 @@ export default async function EditBusinessRequestPage({
         categories={categories}
         editRequestId={id}
         initialData={{
+          username: request.username ?? "",
           name_en: request.name.en,
           name_ar: request.name.ar,
           desc_en: request.descEn ?? "",

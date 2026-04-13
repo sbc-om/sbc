@@ -23,7 +23,6 @@ const ALWAYS_PUBLIC_SECTIONS = new Set([
   "loyalty",
   "email",
   "domain",
-  "u",
 ]);
 
 function getRouteSection(pathname: string): string {
@@ -33,13 +32,37 @@ function getRouteSection(pathname: string): string {
 
 function isAlwaysPublicPath(pathname: string): boolean {
   const segments = pathname.split("/").filter(Boolean);
+  const first = segments[0] ?? "";
   const section = segments.length > 1 ? segments[1] : "";
   const subSection = segments.length > 2 ? segments[2] : "";
+
+  // Proxy rewrites /@handle to /{locale}/u/{handle} while the browser URL stays
+  // on the original handle path, so the client shell must treat that path as app-shell.
+  if (first.startsWith("@")) {
+    return false;
+  }
+
+  // Locale-prefixed handles such as /en/@handle should also stay in app shell.
+  if ((first === "en" || first === "ar") && section.startsWith("@")) {
+    return false;
+  }
 
   // Bare /{locale} route — always show public shell (homepage)
   if (section === "") return true;
 
   if (section === "loyalty" && subSection === "manage") {
+    return false;
+  }
+
+  // Logged-in users should view business detail pages inside the app shell.
+  // Keep the index page public, but switch nested business routes to dashboard chrome.
+  if (section === "businesses" && segments.length > 2) {
+    return false;
+  }
+
+  // Handle pages (/@name -> /{locale}/u/{handle}) should also use the app shell
+  // for authenticated sessions so business handles and profiles stay inside the app.
+  if (section === "u" && segments.length > 2) {
     return false;
   }
 
