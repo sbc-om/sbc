@@ -8,6 +8,7 @@ import {
   HiOutlinePencil,
   HiOutlineTrash,
   HiOutlineExternalLink,
+  HiOutlineGlobeAlt,
   HiOutlinePlus,
   HiOutlineSearch,
   HiOutlineClock,
@@ -19,7 +20,7 @@ import type { Business } from "@/lib/db/types";
 import type { Category } from "@/lib/db/types";
 import type { BusinessRequest } from "@/lib/db/businessRequests";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { buttonVariants } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useModalDialogs } from "@/components/ui/useModalDialogs";
 
@@ -32,6 +33,7 @@ const texts = {
     approved: "Approved",
     pending: "Pending",
     edit: "Edit",
+    customDomain: "Custom Domain",
     delete: "Delete",
     view: "View",
     category: "Category",
@@ -61,6 +63,7 @@ const texts = {
     approved: "معتمد",
     pending: "قيد المراجعة",
     edit: "تعديل",
+    customDomain: "الدومين المخصص",
     delete: "حذف",
     view: "عرض",
     category: "التصنيف",
@@ -214,7 +217,7 @@ export function MyBusinessesList({
             return (
               <div
                 key={req.id}
-                className={`sbc-card rounded-2xl p-4 ${isRevision ? "ring-2 ring-orange-400/50 dark:ring-orange-500/30" : ""}`}
+                className={`sbc-card !border-0 rounded-2xl p-4 ${isRevision ? "ring-2 ring-orange-400/50 dark:ring-orange-500/30" : ""}`}
               >
                 <div className="flex items-center gap-4">
                   <div
@@ -263,20 +266,44 @@ export function MyBusinessesList({
 
       {/* Search */}
       {businesses.length > 0 && (
-        <div className="relative">
-          <HiOutlineSearch className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-(--muted-foreground)" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t.search}
-            className="ps-10"
-          />
+        <div className="sbc-card rounded-2xl p-4 !border-0">
+          <div className="flex items-center gap-3">
+            <svg
+              className="h-5 w-5 text-(--muted-foreground)"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t.search}
+              className="flex-1 bg-transparent outline-none"
+            />
+            {search ? (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className={buttonVariants({ variant: "ghost", size: "xs" })}
+              >
+                {ar ? "مسح" : "Clear"}
+              </button>
+            ) : null}
+          </div>
         </div>
       )}
 
       {/* Business cards */}
       {businesses.length === 0 && pendingRequests.length === 0 ? (
-        <div className="sbc-card rounded-2xl p-12 text-center">
+        <div className="sbc-card !border-0 rounded-2xl p-12 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-(--chip-bg)">
             <svg
               className="h-8 w-8 text-(--muted-foreground)"
@@ -317,7 +344,7 @@ export function MyBusinessesList({
             return (
               <div
                 key={biz.id}
-                className={`sbc-card rounded-2xl p-5 transition-opacity ${isDeleting ? "opacity-50 pointer-events-none" : ""}`}
+                className={`sbc-card !border-0 rounded-2xl p-5 transition-opacity ${isDeleting ? "opacity-50 pointer-events-none" : ""}`}
               >
                 <div className="flex flex-col gap-4 sm:flex-row">
                   {/* Logo / placeholder */}
@@ -328,10 +355,10 @@ export function MyBusinessesList({
                         alt={ar ? biz.name.ar : biz.name.en}
                         width={64}
                         height={64}
-                        className="h-16 w-16 rounded-xl object-cover ring-1 ring-(--border)"
+                        className="h-16 w-16 rounded-xl object-cover"
                       />
                     ) : (
-                      <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-(--chip-bg) ring-1 ring-(--border)">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-(--chip-bg)">
                         <svg
                           className="h-7 w-7 text-(--muted-foreground)"
                           fill="none"
@@ -378,7 +405,7 @@ export function MyBusinessesList({
                             href={`/${locale}/businesses/${biz.slug}`}
                             aria-label={t.view}
                             title={t.view}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-(--surface-border) bg-(--surface) text-foreground transition-colors hover:bg-(--chip-bg)"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-(--surface) text-foreground transition-colors hover:bg-(--chip-bg)"
                           >
                             <HiOutlineExternalLink className="h-4 w-4 text-(--muted-foreground)" />
                           </Link>
@@ -387,9 +414,17 @@ export function MyBusinessesList({
                           href={`/${locale}/directory/businesses/${biz.id}/edit`}
                           aria-label={t.edit}
                           title={t.edit}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-(--surface-border) bg-(--surface) text-foreground transition-colors hover:bg-(--chip-bg)"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-(--surface) text-foreground transition-colors hover:bg-(--chip-bg)"
                         >
                           <HiOutlinePencil className="h-4 w-4 text-(--muted-foreground)" />
+                        </Link>
+                        <Link
+                          href={`/${locale}/directory/businesses/${biz.id}/domain`}
+                          aria-label={t.customDomain}
+                          title={t.customDomain}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-(--surface) text-foreground transition-colors hover:bg-(--chip-bg)"
+                        >
+                          <HiOutlineGlobeAlt className="h-4 w-4 text-(--muted-foreground)" />
                         </Link>
                         <Button
                           type="button"
@@ -398,7 +433,7 @@ export function MyBusinessesList({
                           size="sm"
                           aria-label={t.delete}
                           title={t.delete}
-                          className="h-9 w-9 rounded-xl border border-red-200 px-0 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/20"
+                          className="h-9 w-9 rounded-xl px-0 text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                         >
                           <HiOutlineTrash className="h-4 w-4" />
                         </Button>

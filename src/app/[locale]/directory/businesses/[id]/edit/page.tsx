@@ -48,6 +48,12 @@ export default async function DirectoryBusinessEditPage({
 
         <div className="flex flex-wrap items-center gap-2">
           <Link
+            href={`/${locale}/directory/businesses/${business.id}/domain`}
+            className={buttonVariants({ variant: "secondary", size: "sm" })}
+          >
+            {ar ? "الدومين المخصص" : "Custom Domain"}
+          </Link>
+          <Link
             href={`/${locale}/directory/businesses/${business.id}/cards`}
             className={buttonVariants({ variant: "secondary", size: "sm" })}
           >
