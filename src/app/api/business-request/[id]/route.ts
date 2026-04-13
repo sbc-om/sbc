@@ -7,6 +7,8 @@ import {
   setBusinessRequestMedia,
 } from "@/lib/db/businessRequests";
 import { checkBusinessUsernameAvailability } from "@/lib/db/businesses";
+import { isBusinessRequestAutoApprovalEnabled } from "@/lib/db/settings";
+import { convertBusinessRequestToBusiness } from "@/lib/businessRequests/convertRequestToBusiness";
 import { storeRequestUpload } from "@/lib/uploads/storage";
 
 export const runtime = "nodejs";
@@ -161,6 +163,19 @@ export async function PUT(
       bannerUrl: bannerUrl ?? null,
       galleryUrls,
     });
+
+    if (await isBusinessRequestAutoApprovalEnabled()) {
+      const business = await convertBusinessRequestToBusiness(id, {
+        actorUserId: user.id,
+        locale: "en",
+      });
+      return NextResponse.json({
+        ok: true,
+        request: { ...updated, status: "approved" },
+        autoApproved: true,
+        businessId: business.id,
+      });
+    }
 
     return NextResponse.json({ ok: true, request: updated });
   } catch (error) {

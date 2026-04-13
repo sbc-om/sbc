@@ -14,6 +14,7 @@ const texts = {
   en: {
     tabs: {
       general: "General",
+      moderation: "Moderation",
       whatsapp: "WhatsApp",
       preview: "Login Preview",
     },
@@ -21,6 +22,22 @@ const texts = {
     generalDescription: "Configure general authentication options",
     requireApproval: "Require Admin Approval",
     requireApprovalDesc: "New user registrations must be approved by an admin before they can login",
+    moderationSection: "Business Auto Approval",
+    moderationDescription: "Control which business actions bypass admin review and go live immediately.",
+    autoApproveBusinessRequests: "Auto-approve new business requests",
+    autoApproveBusinessRequestsDesc: "Automatically create and approve businesses when users submit a new business request.",
+    autoApproveBusinessUpdates: "Auto-approve business profile changes",
+    autoApproveBusinessUpdatesDesc: "Business edit changes are applied immediately without hiding the listing for admin review.",
+    autoApproveBusinessStories: "Auto-approve stories",
+    autoApproveBusinessStoriesDesc: "New stories become visible immediately without admin moderation.",
+    autoApproveBusinessNews: "Auto-approve news posts",
+    autoApproveBusinessNewsDesc: "Business news goes live immediately without entering the moderation queue.",
+    autoApproveBusinessProducts: "Auto-approve products",
+    autoApproveBusinessProductsDesc: "New and edited products become available immediately without admin review.",
+    autoApproveBusinessCards: "Auto-approve business cards",
+    autoApproveBusinessCardsDesc: "New business cards become public immediately when owners create them.",
+    autoApproveBusinessInstagram: "Auto-approve Instagram changes",
+    autoApproveBusinessInstagramDesc: "Instagram username updates are approved immediately without admin moderation.",
     whatsappSection: "WhatsApp Authentication",
     whatsappDescription: "Configure WhatsApp-based authentication options",
     notConfigured: "WhatsApp is not configured. Add WAHA_API_URL, WAHA_API_KEY, and WAHA_ENABLED=true to your .env file.",
@@ -41,6 +58,7 @@ const texts = {
   ar: {
     tabs: {
       general: "عام",
+      moderation: "المراجعة",
       whatsapp: "واتساب",
       preview: "معاينة الدخول",
     },
@@ -48,6 +66,22 @@ const texts = {
     generalDescription: "إعداد خيارات المصادقة العامة",
     requireApproval: "طلب موافقة المدير",
     requireApprovalDesc: "يجب موافقة المدير على تسجيلات المستخدمين الجدد قبل أن يتمكنوا من تسجيل الدخول",
+    moderationSection: "الموافقة التلقائية للأعمال",
+    moderationDescription: "تحكم في الإجراءات التي تتجاوز مراجعة الإدارة وتُعتمد مباشرة.",
+    autoApproveBusinessRequests: "الموافقة التلقائية على طلبات الأعمال الجديدة",
+    autoApproveBusinessRequestsDesc: "إنشاء واعتماد النشاط تلقائياً عند إرسال طلب نشاط جديد.",
+    autoApproveBusinessUpdates: "الموافقة التلقائية على تغييرات بيانات النشاط",
+    autoApproveBusinessUpdatesDesc: "تُطبق تعديلات النشاط مباشرة دون إخفائه بانتظار مراجعة الإدارة.",
+    autoApproveBusinessStories: "الموافقة التلقائية على الستوري",
+    autoApproveBusinessStoriesDesc: "تظهر الستوري الجديدة مباشرة دون انتظار مراجعة الإدارة.",
+    autoApproveBusinessNews: "الموافقة التلقائية على الأخبار",
+    autoApproveBusinessNewsDesc: "تُنشر أخبار النشاط مباشرة دون دخول قائمة المراجعة.",
+    autoApproveBusinessProducts: "الموافقة التلقائية على المنتجات",
+    autoApproveBusinessProductsDesc: "تصبح المنتجات الجديدة والمعدلة متاحة مباشرة دون مراجعة الإدارة.",
+    autoApproveBusinessCards: "الموافقة التلقائية على بطاقات الأعمال",
+    autoApproveBusinessCardsDesc: "تصبح بطاقات الأعمال الجديدة عامة مباشرة عند إنشائها.",
+    autoApproveBusinessInstagram: "الموافقة التلقائية على تغييرات إنستاغرام",
+    autoApproveBusinessInstagramDesc: "يتم اعتماد تعديل اسم مستخدم إنستاغرام مباشرة دون مراجعة الإدارة.",
     whatsappSection: "المصادقة عبر واتساب",
     whatsappDescription: "إعداد خيارات المصادقة عبر واتساب",
     notConfigured: "واتساب غير مُعد. أضف WAHA_API_URL و WAHA_API_KEY و WAHA_ENABLED=true إلى ملف .env",
@@ -67,7 +101,7 @@ const texts = {
   },
 };
 
-type TabId = "general" | "whatsapp" | "preview";
+type TabId = "general" | "moderation" | "whatsapp" | "preview";
 
 export function SettingsForm({
   locale,
@@ -82,6 +116,13 @@ export function SettingsForm({
     whatsapp_login_enabled: initialSettings.whatsapp_login_enabled === true,
     whatsapp_registration_verification: initialSettings.whatsapp_registration_verification === true,
     whatsapp_login_notification: initialSettings.whatsapp_login_notification === true,
+    auto_approve_business_requests: initialSettings.auto_approve_business_requests === true,
+    auto_approve_business_updates: initialSettings.auto_approve_business_updates === true,
+    auto_approve_business_stories: initialSettings.auto_approve_business_stories === true,
+    auto_approve_business_news: initialSettings.auto_approve_business_news === true,
+    auto_approve_business_products: initialSettings.auto_approve_business_products === true,
+    auto_approve_business_cards: initialSettings.auto_approve_business_cards === true,
+    auto_approve_business_instagram: initialSettings.auto_approve_business_instagram === true,
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -121,6 +162,11 @@ export function SettingsForm({
       id: "general",
       label: t.tabs.general,
       icon: <SettingsIcon className="h-4 w-4" />,
+    },
+    {
+      id: "moderation",
+      label: t.tabs.moderation,
+      icon: <ShieldCheckIcon className="h-4 w-4" />,
     },
     {
       id: "whatsapp",
@@ -175,6 +221,63 @@ export function SettingsForm({
                 onToggle={() => handleToggle("require_approval")}
                 label={t.requireApproval}
                 description={t.requireApprovalDesc}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === "moderation" && (
+          <div className="rounded-xl border border-(--surface-border) bg-(--surface) p-6">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <ShieldCheckIcon className="h-5 w-5" />
+                {t.moderationSection}
+              </h2>
+              <p className="text-sm text-(--muted-foreground)">{t.moderationDescription}</p>
+            </div>
+
+            <div className="space-y-4">
+              <ToggleSetting
+                enabled={settings.auto_approve_business_requests}
+                onToggle={() => handleToggle("auto_approve_business_requests")}
+                label={t.autoApproveBusinessRequests}
+                description={t.autoApproveBusinessRequestsDesc}
+              />
+              <ToggleSetting
+                enabled={settings.auto_approve_business_updates}
+                onToggle={() => handleToggle("auto_approve_business_updates")}
+                label={t.autoApproveBusinessUpdates}
+                description={t.autoApproveBusinessUpdatesDesc}
+              />
+              <ToggleSetting
+                enabled={settings.auto_approve_business_stories}
+                onToggle={() => handleToggle("auto_approve_business_stories")}
+                label={t.autoApproveBusinessStories}
+                description={t.autoApproveBusinessStoriesDesc}
+              />
+              <ToggleSetting
+                enabled={settings.auto_approve_business_news}
+                onToggle={() => handleToggle("auto_approve_business_news")}
+                label={t.autoApproveBusinessNews}
+                description={t.autoApproveBusinessNewsDesc}
+              />
+              <ToggleSetting
+                enabled={settings.auto_approve_business_products}
+                onToggle={() => handleToggle("auto_approve_business_products")}
+                label={t.autoApproveBusinessProducts}
+                description={t.autoApproveBusinessProductsDesc}
+              />
+              <ToggleSetting
+                enabled={settings.auto_approve_business_cards}
+                onToggle={() => handleToggle("auto_approve_business_cards")}
+                label={t.autoApproveBusinessCards}
+                description={t.autoApproveBusinessCardsDesc}
+              />
+              <ToggleSetting
+                enabled={settings.auto_approve_business_instagram}
+                onToggle={() => handleToggle("auto_approve_business_instagram")}
+                label={t.autoApproveBusinessInstagram}
+                description={t.autoApproveBusinessInstagramDesc}
               />
             </div>
           </div>
@@ -377,6 +480,15 @@ function SettingsIcon({ className }: { className?: string }) {
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
       <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function ShieldCheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l7 4v5c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V7l7-4z" />
+      <path d="m9 12 2 2 4-4" />
     </svg>
   );
 }

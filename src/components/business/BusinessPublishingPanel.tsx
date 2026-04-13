@@ -89,6 +89,7 @@ export function BusinessPublishingPanel({
   const [instagramSaving, setInstagramSaving] = useState(false);
   const [message, setMessage] = useState<string>("");
   const [composerTab, setComposerTab] = useState<"news" | "products" | "instagram">("news");
+  const [publishingOpen, setPublishingOpen] = useState(false);
 
   const [instagramUsername, setInstagramUsername] = useState(initialInstagramUsername || "");
   const [instagramModerationStatus, setInstagramModerationStatus] = useState<"pending" | "approved" | "rejected">(
@@ -607,17 +608,35 @@ export function BusinessPublishingPanel({
   return (
     <div className="mt-6 space-y-6">
       {isOwner && showComposer ? (
-        <section className="sbc-card rounded-2xl p-5 sm:p-6 space-y-5">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight">
-              {ar ? "النشر الاحترافي" : "Professional Publishing"}
-            </h2>
-            <p className="mt-1 text-sm text-(--muted-foreground)">
-              {ar
-                ? "انشر أخبار نشاطك ومنتجاتك مباشرة من هذه الصفحة."
-                : "Publish business news and products directly from this page."}
-            </p>
-          </div>
+        <section className="rounded-2xl bg-(--chip-bg) p-5 sm:p-6">
+          <button
+            type="button"
+            onClick={() => setPublishingOpen((v) => !v)}
+            className="flex w-full items-center justify-between gap-3 text-left"
+          >
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">
+                {ar ? "النشر الاحترافي" : "Professional Publishing"}
+              </h2>
+              <p className="mt-1 text-sm text-(--muted-foreground)">
+                {ar
+                  ? "انشر أخبار نشاطك ومنتجاتك مباشرة من هذه الصفحة."
+                  : "Publish business news and products directly from this page."}
+              </p>
+            </div>
+            <svg
+              className={`h-5 w-5 flex-shrink-0 text-(--muted-foreground) transition-transform duration-200 ${publishingOpen ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {publishingOpen ? (
+          <div className="mt-5 space-y-5">
 
           {infoText}
 
@@ -829,6 +848,9 @@ export function BusinessPublishingPanel({
               </form>
             )}
           </div>
+
+          </div>
+          ) : null}
         </section>
       ) : null}
 

@@ -131,12 +131,14 @@ export async function POST(
       sortOrder: 0,
     });
 
-    await notifyAdminsAboutSubmission({
-      kind: "product",
-      businessId,
-      businessName: business.name,
-      actorUserId: user.id,
-    });
+    if (created.moderationStatus === "pending") {
+      await notifyAdminsAboutSubmission({
+        kind: "product",
+        businessId,
+        businessName: business.name,
+        actorUserId: user.id,
+      });
+    }
 
     return NextResponse.json({ ok: true, data: created }, { status: 201 });
   } catch (error: unknown) {

@@ -9,6 +9,7 @@ import { buttonVariants } from "@/components/ui/Button";
 import { ShareActionButton } from "@/components/ShareActionButton";
 import { FollowBusinessButton } from "@/components/business/FollowBusinessButton";
 import { BusinessStoriesStrip } from "@/components/stories/BusinessStoriesStrip";
+import { StoryUpload } from "@/components/stories/StoryUpload";
 import { renderCategoryIcon } from "@/lib/icons/categoryIcons";
 import { MarkdownRenderer } from "@/components/ui/MarkdownEditor";
 import type { Business, Category } from "@/lib/db/types";
@@ -410,6 +411,16 @@ export function PublicBusinessView({
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]">
         {/* Main */}
         <div className="min-w-0">
+          {isOwner ? (
+            <div className="mb-6">
+              <StoryUpload
+                businessId={business.id}
+                locale={locale}
+                existingStories={stories}
+              />
+            </div>
+          ) : null}
+
           {description ? (
             <section className="sbc-card rounded-2xl p-6">
               <div className="text-sm leading-7 text-foreground">

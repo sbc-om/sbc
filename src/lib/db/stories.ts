@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import { query } from "./postgres";
+import { isBusinessStoryAutoApprovalEnabled } from "./settings";
 
 let storiesSchemaPromise: Promise<void> | null = null;
 
@@ -160,6 +161,7 @@ export async function createStory(input: {
   const id = nanoid();
   const now = new Date();
   const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+  const autoApprove = await isBusinessStoryAutoApprovalEnabled();
 
   const result = await query<StoryRow>(`
     INSERT INTO stories (
@@ -167,9 +169,20 @@ export async function createStory(input: {
       moderation_status, reviewed_by_user_id, reviewed_at,
       created_at, expires_at, view_count
     )
-    VALUES ($1, $2, $3, $4, $5, $6, 'pending', NULL, NULL, $7, $8, 0)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, $8, $9, $10, 0)
     RETURNING *
-  `, [id, input.businessId, input.mediaUrl, input.mediaType, input.caption || null, input.overlays ? JSON.stringify(input.overlays) : null, now, expiresAt]);
+  `, [
+    id,
+    input.businessId,
+    input.mediaUrl,
+    input.mediaType,
+    input.caption || null,
+    input.overlays ? JSON.stringify(input.overlays) : null,
+    autoApprove ? "approved" : "pending",
+    autoApprove ? now : null,
+    now,
+    expiresAt,
+  ]);
 
   return rowToStory(result.rows[0]);
 }

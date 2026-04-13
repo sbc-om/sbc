@@ -11,6 +11,7 @@ import {
   updateBusiness,
 } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
+import { isBusinessUpdateAutoApprovalEnabled } from "@/lib/db/settings";
 import { storeUpload } from "@/lib/uploads/storage";
 
 async function deriveLegacyCategoryText(categoryId: string | null) {
@@ -58,6 +59,7 @@ export async function updateOwnerBusinessAction(
 
   const usernameRaw = String(formData.get("username") || "").trim();
   const username = usernameRaw ? usernameRaw.toLowerCase() : undefined;
+  const autoApproveUpdates = await isBusinessUpdateAutoApprovalEnabled();
 
   let next = await updateBusiness(business.id, {
     slug: String(formData.get("slug") || "").trim() || undefined,
@@ -75,7 +77,7 @@ export async function updateOwnerBusinessAction(
     tags,
     avatarMode,
     showSimilarBusinesses,
-    isApproved: false,
+    isApproved: autoApproveUpdates,
   });
 
   const coverFile = formData.get("coverImage") as File | null;
@@ -110,5 +112,5 @@ export async function updateOwnerBusinessAction(
   revalidatePath(`/${locale}/directory`);
   revalidatePath(`/${locale}/profile/businesses`);
   revalidatePath(`/${locale}/businesses/${next.slug}`);
-  redirect(`/${locale}/directory/businesses/${business.id}/edit?pending=1`);
+  redirect(`/${locale}/directory/businesses/${business.id}/edit?pending=${autoApproveUpdates ? 0 : 1}`);
 }

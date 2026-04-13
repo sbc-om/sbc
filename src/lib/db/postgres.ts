@@ -1015,6 +1015,42 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     VALUES ('whatsapp_registration_verification', 'true'::jsonb)
     ON CONFLICT (key) DO NOTHING;
 
+    INSERT INTO app_settings (key, value)
+    VALUES ('require_approval', 'false'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
+
+    INSERT INTO app_settings (key, value)
+    VALUES ('whatsapp_login_notification', 'false'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
+
+    INSERT INTO app_settings (key, value)
+    VALUES ('auto_approve_business_requests', 'false'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
+
+    INSERT INTO app_settings (key, value)
+    VALUES ('auto_approve_business_updates', 'false'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
+
+    INSERT INTO app_settings (key, value)
+    VALUES ('auto_approve_business_stories', 'false'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
+
+    INSERT INTO app_settings (key, value)
+    VALUES ('auto_approve_business_news', 'false'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
+
+    INSERT INTO app_settings (key, value)
+    VALUES ('auto_approve_business_products', 'false'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
+
+    INSERT INTO app_settings (key, value)
+    VALUES ('auto_approve_business_cards', 'false'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
+
+    INSERT INTO app_settings (key, value)
+    VALUES ('auto_approve_business_instagram', 'false'::jsonb)
+    ON CONFLICT (key) DO NOTHING;
+
     -- Loyalty card templates table
     CREATE TABLE IF NOT EXISTS loyalty_card_templates (
       id TEXT PRIMARY KEY,

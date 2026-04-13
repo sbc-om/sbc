@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { query, transaction } from "./postgres";
+import { isBusinessInstagramAutoApprovalEnabled } from "./settings";
 import type { Business, Locale } from "./types";
 
 let businessInstagramSchemaPromise: Promise<void> | null = null;
@@ -738,18 +739,26 @@ export async function setBusinessCustomDomain(id: string, customDomain: string |
 export async function setBusinessInstagramUsername(id: string, instagramUsername: string | null): Promise<Business> {
   await ensureBusinessInstagramSchema();
   const normalized = instagramUsername?.trim() ? instagramUsernameSchema.parse(instagramUsername) : null;
+  const autoApprove = normalized ? await isBusinessInstagramAutoApprovalEnabled() : true;
+  const now = new Date();
 
   const result = await query<BusinessRow>(`
     UPDATE businesses
     SET
       instagram_username = $1::text,
-      instagram_moderation_status = CASE WHEN $1::text IS NULL THEN 'approved' ELSE 'pending' END,
+      instagram_moderation_status = $2,
       instagram_reviewed_by_user_id = NULL,
-      instagram_reviewed_at = NULL,
-      updated_at = $2
-    WHERE id = $3
+      instagram_reviewed_at = $3,
+      updated_at = $4
+    WHERE id = $5
     RETURNING *
-  `, [normalized, new Date(), id]);
+  `, [
+    normalized,
+    normalized ? (autoApprove ? "approved" : "pending") : "approved",
+    normalized && autoApprove ? now : null,
+    now,
+    id,
+  ]);
 
   if (result.rows.length === 0) throw new Error("NOT_FOUND");
   return rowToBusiness(result.rows[0]);

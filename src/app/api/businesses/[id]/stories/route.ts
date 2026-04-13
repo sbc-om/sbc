@@ -177,12 +177,14 @@ export async function POST(
       overlays,
     });
 
-    await notifyAdminsAboutSubmission({
-      kind: "story",
-      businessId,
-      businessName: business.name,
-      actorUserId: user.id,
-    });
+    if (story.moderationStatus === "pending") {
+      await notifyAdminsAboutSubmission({
+        kind: "story",
+        businessId,
+        businessName: business.name,
+        actorUserId: user.id,
+      });
+    }
 
     return NextResponse.json({ ok: true, data: story }, { status: 201 });
   } catch (error: unknown) {

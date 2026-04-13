@@ -416,6 +416,16 @@ export function ExplorerBusinessView({
       <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,360px)]">
         {/* Main */}
         <div className="min-w-0">
+          {isOwner ? (
+            <div className="mb-6">
+              <StoryUpload
+                businessId={business.id}
+                locale={locale}
+                existingStories={stories}
+              />
+            </div>
+          ) : null}
+
           {description ? (
             <section className="sbc-card rounded-2xl p-6">
               <div className="text-sm leading-7 text-foreground">
@@ -441,17 +451,6 @@ export function ExplorerBusinessView({
               usersById={usersById}
             />
           </div>
-
-          {/* Story Upload for Business Owners */}
-          {isOwner ? (
-            <div className="mt-6">
-              <StoryUpload
-                businessId={business.id}
-                locale={locale}
-                existingStories={stories}
-              />
-            </div>
-          ) : null}
         </div>
 
         {/* Sidebar */}

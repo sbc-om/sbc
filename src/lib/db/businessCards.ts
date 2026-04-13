@@ -2,6 +2,7 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { query } from "./postgres";
+import { isBusinessCardAutoApprovalEnabled } from "./settings";
 import type { BusinessCard } from "./types";
 
 const businessCardSchema = z.object({
@@ -61,17 +62,18 @@ export async function createBusinessCard(input: BusinessCardInput): Promise<Busi
   const data = businessCardSchema.parse(input);
   const id = nanoid();
   const now = new Date();
+  const autoApprove = await isBusinessCardAutoApprovalEnabled();
 
   const result = await query<BusinessCardRow>(`
     INSERT INTO business_cards (
       id, business_id, owner_id, full_name, title, email, phone, website,
-      avatar_url, bio, is_public, is_approved, created_at, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, $12, $12)
+      avatar_url, bio, is_public, is_approved, approved_at, created_at, updated_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $14)
     RETURNING *
   `, [
     id, data.businessId, data.ownerId, data.fullName, data.title,
     data.email, data.phone, data.website, data.avatarUrl, data.bio,
-    data.isPublic, now
+    data.isPublic, autoApprove, autoApprove ? now : null, now
   ]);
 
   return rowToBusinessCard(result.rows[0]);

@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { countProgramSubscriptions } from "@/lib/db/subscriptions";
 import { createBusinessRequest, updateBusinessRequestMedia, listBusinessRequestsByUser } from "@/lib/db/businessRequests";
 import { checkBusinessUsernameAvailability, listBusinessesByOwner } from "@/lib/db/businesses";
+import { isBusinessRequestAutoApprovalEnabled } from "@/lib/db/settings";
+import { convertBusinessRequestToBusiness } from "@/lib/businessRequests/convertRequestToBusiness";
 import { storeRequestUpload } from "@/lib/uploads/storage";
 
 export const runtime = "nodejs";
@@ -106,6 +108,19 @@ export async function POST(req: Request) {
 
     if (logoUrl || coverUrl || bannerUrl || galleryUrls.length > 0) {
       await updateBusinessRequestMedia(request.id, { logoUrl, coverUrl, bannerUrl, galleryUrls: galleryUrls.length > 0 ? galleryUrls : undefined });
+    }
+
+    if (await isBusinessRequestAutoApprovalEnabled()) {
+      const business = await convertBusinessRequestToBusiness(request.id, {
+        actorUserId: user.id,
+        locale: "en",
+      });
+      return NextResponse.json({
+        ...request,
+        status: "approved",
+        autoApproved: true,
+        businessId: business.id,
+      });
     }
 
     return NextResponse.json(request);

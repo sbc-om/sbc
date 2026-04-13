@@ -2,6 +2,10 @@ import { nanoid } from "nanoid";
 import { z } from "zod";
 
 import { query } from "./postgres";
+import {
+  isBusinessNewsAutoApprovalEnabled,
+  isBusinessProductAutoApprovalEnabled,
+} from "./settings";
 import type { BusinessNews, BusinessProduct } from "./types";
 
 type ModerationStatus = "pending" | "approved" | "rejected";
@@ -313,6 +317,8 @@ export async function createBusinessNews(input: BusinessNewsInput): Promise<Busi
   const data = newsInputSchema.parse(input);
   const id = nanoid();
   const now = new Date();
+  const autoApprove = await isBusinessNewsAutoApprovalEnabled();
+  const moderationStatus: ModerationStatus = autoApprove ? "approved" : "pending";
 
   const result = await query<BusinessNewsRow>(
     `
@@ -320,7 +326,7 @@ export async function createBusinessNews(input: BusinessNewsInput): Promise<Busi
         id, business_id, title_en, title_ar, content_en, content_ar, image_url, link_url,
         is_published, moderation_status, reviewed_by_user_id, reviewed_at, created_at, updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false, 'pending', NULL, NULL, $9, $9)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULL, $11, $11, $11)
       RETURNING *
     `,
     [
@@ -332,6 +338,9 @@ export async function createBusinessNews(input: BusinessNewsInput): Promise<Busi
       data.content.ar,
       data.imageUrl ?? null,
       data.linkUrl ?? null,
+      autoApprove ? data.isPublished : false,
+      moderationStatus,
+      autoApprove ? now : null,
       now,
     ]
   );
@@ -356,9 +365,29 @@ export async function updateBusinessNewsByBusiness(
 ): Promise<BusinessNews | null> {
   await ensureBusinessContentSchema();
   const data = newsPatchSchema.parse(input);
+  const currentResult = await query<BusinessNewsRow>(
+    `SELECT * FROM business_news WHERE id = $1 AND business_id = $2`,
+    [newsId, businessId]
+  );
+  if (currentResult.rows.length === 0) {
+    return null;
+  }
+
+  const current = rowToBusinessNews(currentResult.rows[0]);
+  const autoApprove = await isBusinessNewsAutoApprovalEnabled();
   const imageTouched = data.imageUrl !== undefined;
   const linkTouched = data.linkUrl !== undefined;
   const contentEdited = !!(data.title || data.content || imageTouched || linkTouched);
+  const now = new Date();
+  const nextIsPublished = contentEdited
+    ? (autoApprove ? (data.isPublished ?? current.isPublished) : false)
+    : (data.isPublished ?? current.isPublished);
+  const nextModerationStatus: ModerationStatus = contentEdited
+    ? (autoApprove ? "approved" : "pending")
+    : current.moderationStatus;
+  const nextReviewedAt = contentEdited
+    ? (autoApprove ? now : null)
+    : (current.reviewedAt ? new Date(current.reviewedAt) : null);
   const result = await query<BusinessNewsRow>(
     `
       UPDATE business_news
@@ -369,12 +398,12 @@ export async function updateBusinessNewsByBusiness(
         content_ar = COALESCE($4, content_ar),
         image_url = CASE WHEN $5 THEN $6 ELSE image_url END,
         link_url = CASE WHEN $7 THEN $8 ELSE link_url END,
-        is_published = CASE WHEN $9 THEN false ELSE COALESCE($10, is_published) END,
-        moderation_status = CASE WHEN $9 THEN 'pending' ELSE moderation_status END,
-        reviewed_by_user_id = CASE WHEN $9 THEN NULL ELSE reviewed_by_user_id END,
-        reviewed_at = CASE WHEN $9 THEN NULL ELSE reviewed_at END,
-        updated_at = $11
-      WHERE id = $12 AND business_id = $13
+        is_published = $9,
+        moderation_status = $10,
+        reviewed_by_user_id = $11,
+        reviewed_at = $12,
+        updated_at = $13
+      WHERE id = $14 AND business_id = $15
       RETURNING *
     `,
     [
@@ -386,9 +415,11 @@ export async function updateBusinessNewsByBusiness(
       data.imageUrl ?? null,
       linkTouched,
       data.linkUrl ?? null,
-      contentEdited,
-      data.isPublished,
-      new Date(),
+      nextIsPublished,
+      nextModerationStatus,
+      contentEdited ? null : (current.reviewedByUserId ?? null),
+      nextReviewedAt,
+      now,
       newsId,
       businessId,
     ]
@@ -437,6 +468,8 @@ export async function createBusinessProduct(input: BusinessProductInput): Promis
   const data = productInputSchema.parse(input);
   const id = nanoid();
   const now = new Date();
+  const autoApprove = await isBusinessProductAutoApprovalEnabled();
+  const moderationStatus: ModerationStatus = autoApprove ? "approved" : "pending";
 
   const baseSlug = data.slug ?? slugifyEnglish(data.name.en);
   const safeBaseSlug = productSlugSchema.safeParse(baseSlug).success ? baseSlug : `item-${id.slice(0, 8)}`;
@@ -449,7 +482,7 @@ export async function createBusinessProduct(input: BusinessProductInput): Promis
         image_url, link_url, price, currency, is_available, moderation_status, reviewed_by_user_id, reviewed_at,
         sort_order, created_at, updated_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, 'pending', NULL, NULL, $12, $13, $13)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NULL, $14, $15, $16, $16)
       RETURNING *
     `,
     [
@@ -464,6 +497,9 @@ export async function createBusinessProduct(input: BusinessProductInput): Promis
       data.linkUrl ?? null,
       data.price,
       data.currency,
+      autoApprove ? data.isAvailable : false,
+      moderationStatus,
+      autoApprove ? now : null,
       data.sortOrder,
       now,
     ]
@@ -489,9 +525,29 @@ export async function updateBusinessProductByBusiness(
 ): Promise<BusinessProduct | null> {
   await ensureBusinessContentSchema();
   const data = productPatchSchema.parse(input);
+  const currentResult = await query<BusinessProductRow>(
+    `SELECT * FROM business_products WHERE id = $1 AND business_id = $2`,
+    [productId, businessId]
+  );
+  if (currentResult.rows.length === 0) {
+    return null;
+  }
+
+  const current = rowToBusinessProduct(currentResult.rows[0]);
+  const autoApprove = await isBusinessProductAutoApprovalEnabled();
   const imageTouched = data.imageUrl !== undefined;
   const linkTouched = data.linkUrl !== undefined;
   const contentEdited = !!(data.name || data.description || imageTouched || linkTouched || data.price !== undefined || data.currency !== undefined);
+  const now = new Date();
+  const nextIsAvailable = contentEdited
+    ? (autoApprove ? (data.isAvailable ?? current.isAvailable) : false)
+    : (data.isAvailable ?? current.isAvailable);
+  const nextModerationStatus: ModerationStatus = contentEdited
+    ? (autoApprove ? "approved" : "pending")
+    : current.moderationStatus;
+  const nextReviewedAt = contentEdited
+    ? (autoApprove ? now : null)
+    : (current.reviewedAt ? new Date(current.reviewedAt) : null);
   const result = await query<BusinessProductRow>(
     `
       UPDATE business_products
@@ -504,13 +560,13 @@ export async function updateBusinessProductByBusiness(
         link_url = CASE WHEN $7 THEN $8 ELSE link_url END,
         price = COALESCE($9, price),
         currency = COALESCE($10, currency),
-        is_available = CASE WHEN $11 THEN false ELSE COALESCE($12, is_available) END,
-        moderation_status = CASE WHEN $11 THEN 'pending' ELSE moderation_status END,
-        reviewed_by_user_id = CASE WHEN $11 THEN NULL ELSE reviewed_by_user_id END,
-        reviewed_at = CASE WHEN $11 THEN NULL ELSE reviewed_at END,
-        sort_order = COALESCE($13, sort_order),
-        updated_at = $14
-      WHERE id = $15 AND business_id = $16
+        is_available = $11,
+        moderation_status = $12,
+        reviewed_by_user_id = $13,
+        reviewed_at = $14,
+        sort_order = COALESCE($15, sort_order),
+        updated_at = $16
+      WHERE id = $17 AND business_id = $18
       RETURNING *
     `,
     [
@@ -524,10 +580,12 @@ export async function updateBusinessProductByBusiness(
       data.linkUrl ?? null,
       data.price,
       data.currency,
-      contentEdited,
-      data.isAvailable,
+      nextIsAvailable,
+      nextModerationStatus,
+      contentEdited ? null : (current.reviewedByUserId ?? null),
+      nextReviewedAt,
       data.sortOrder,
-      new Date(),
+      now,
       productId,
       businessId,
     ]

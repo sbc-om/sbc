@@ -23,9 +23,27 @@
  *           schema:
  *             type: object
  *             properties:
+ *               require_approval:
+ *                 type: boolean
  *               whatsapp_login_enabled:
  *                 type: boolean
  *               whatsapp_registration_verification:
+ *                 type: boolean
+ *               whatsapp_login_notification:
+ *                 type: boolean
+ *               auto_approve_business_requests:
+ *                 type: boolean
+ *               auto_approve_business_updates:
+ *                 type: boolean
+ *               auto_approve_business_stories:
+ *                 type: boolean
+ *               auto_approve_business_news:
+ *                 type: boolean
+ *               auto_approve_business_products:
+ *                 type: boolean
+ *               auto_approve_business_cards:
+ *                 type: boolean
+ *               auto_approve_business_instagram:
  *                 type: boolean
  *     responses:
  *       200:
@@ -40,9 +58,17 @@ import { getAllSettings, setSetting, type SettingKey } from "@/lib/db/settings";
 import { isWAHAEnabled } from "@/lib/waha/client";
 
 const updateSettingsSchema = z.object({
+  require_approval: z.boolean().optional(),
   whatsapp_login_enabled: z.boolean().optional(),
   whatsapp_registration_verification: z.boolean().optional(),
   whatsapp_login_notification: z.boolean().optional(),
+  auto_approve_business_requests: z.boolean().optional(),
+  auto_approve_business_updates: z.boolean().optional(),
+  auto_approve_business_stories: z.boolean().optional(),
+  auto_approve_business_news: z.boolean().optional(),
+  auto_approve_business_products: z.boolean().optional(),
+  auto_approve_business_cards: z.boolean().optional(),
+  auto_approve_business_instagram: z.boolean().optional(),
 });
 
 export async function GET() {
