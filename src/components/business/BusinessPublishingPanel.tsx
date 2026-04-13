@@ -641,7 +641,7 @@ export function BusinessPublishingPanel({
           {infoText}
 
           <div className="space-y-3">
-            <div className="inline-flex rounded-xl border border-(--surface-border) bg-(--chip-bg) p-1">
+            <div className="inline-flex rounded-xl bg-(--chip-bg) p-1">
               <button
                 type="button"
                 onClick={() => setComposerTab("news")}
@@ -678,7 +678,7 @@ export function BusinessPublishingPanel({
             </div>
 
             {composerTab === "news" ? (
-              <form onSubmit={publishNews} className="rounded-2xl border border-(--surface-border) bg-(--chip-bg) p-4 space-y-3">
+              <form onSubmit={publishNews} className="rounded-2xl bg-(--chip-bg) p-4 space-y-3">
                 <h3 className="text-base font-semibold">{ar ? "نشر خبر" : "Publish News"}</h3>
                 <Input
                   value={newsTitleEn}
@@ -739,7 +739,7 @@ export function BusinessPublishingPanel({
                 </Button>
               </form>
             ) : composerTab === "products" ? (
-              <form onSubmit={publishProduct} className="rounded-2xl border border-(--surface-border) bg-(--chip-bg) p-4 space-y-3">
+              <form onSubmit={publishProduct} className="rounded-2xl bg-(--chip-bg) p-4 space-y-3">
                 <h3 className="text-base font-semibold">{ar ? "نشر منتج" : "Publish Product"}</h3>
                 <Input
                   value={productNameEn}
@@ -816,7 +816,7 @@ export function BusinessPublishingPanel({
                 </Button>
               </form>
             ) : (
-              <form onSubmit={saveInstagramProfile} className="rounded-2xl border border-(--surface-border) bg-(--chip-bg) p-4 space-y-3">
+              <form onSubmit={saveInstagramProfile} className="rounded-2xl bg-(--chip-bg) p-4 space-y-3">
                 <h3 className="text-base font-semibold">{ar ? "ربط إنستاغرام" : "Connect Instagram"}</h3>
                 <p className="text-sm text-(--muted-foreground)">
                   {ar
