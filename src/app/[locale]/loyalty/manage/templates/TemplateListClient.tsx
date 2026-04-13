@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n/locales";
 import type { LoyaltyCardTemplate } from "@/lib/db/types";
 import { useToast } from "@/components/ui/Toast";
+import { useModalDialogs } from "@/components/ui/useModalDialogs";
 
 interface Props {
   locale: Locale;
@@ -17,10 +18,21 @@ export function TemplateListClient({ locale, templates, businessName }: Props) {
   const ar = locale === "ar";
   const router = useRouter();
   const { toast } = useToast();
+  const { confirm, dialog } = useModalDialogs();
   const [deleting, setDeleting] = useState<string | null>(null);
 
   const handleDelete = async (templateId: string) => {
-    if (!confirm(ar ? "هل أنت متأكد من حذف هذا القالب؟" : "Are you sure you want to delete this template?")) {
+    const accepted = await confirm({
+      title: ar ? "حذف القالب" : "Delete Template",
+      message: ar
+        ? "سيتم حذف هذا القالب نهائيًا. هل تريد المتابعة؟"
+        : "This template will be permanently deleted. Do you want to continue?",
+      confirmText: ar ? "حذف" : "Delete",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      variant: "destructive",
+    });
+
+    if (!accepted) {
       return;
     }
 
@@ -47,39 +59,45 @@ export function TemplateListClient({ locale, templates, businessName }: Props) {
 
   if (templates.length === 0) {
     return (
-      <div className="mt-8 sbc-card rounded-2xl p-8 text-center">
-        <div className="text-4xl mb-4">🎨</div>
-        <h3 className="text-lg font-semibold">
-          {ar ? "لا توجد قوالب بعد" : "No templates yet"}
-        </h3>
-        <p className="mt-2 text-sm text-(--muted-foreground) max-w-md mx-auto">
-          {ar
-            ? "قم بإنشاء قالب بطاقة ولاء لتبدأ في إصدار البطاقات لعملائك"
-            : "Create a loyalty card template to start issuing cards to your customers"}
-        </p>
-        <Link
-          href={`/${locale}/loyalty/manage/templates/new`}
-          className="mt-6 inline-flex h-10 items-center justify-center rounded-xl bg-accent px-6 text-sm font-semibold text-accent-foreground hover:opacity-90 transition"
-        >
-          {ar ? "إنشاء قالب جديد" : "Create New Template"}
-        </Link>
-      </div>
+      <>
+        {dialog}
+        <div className="mt-8 sbc-card rounded-2xl p-8 text-center">
+          <div className="text-4xl mb-4">🎨</div>
+          <h3 className="text-lg font-semibold">
+            {ar ? "لا توجد قوالب بعد" : "No templates yet"}
+          </h3>
+          <p className="mt-2 text-sm text-(--muted-foreground) max-w-md mx-auto">
+            {ar
+              ? "قم بإنشاء قالب بطاقة ولاء لتبدأ في إصدار البطاقات لعملائك"
+              : "Create a loyalty card template to start issuing cards to your customers"}
+          </p>
+          <Link
+            href={`/${locale}/loyalty/manage/templates/new`}
+            className="mt-6 inline-flex h-10 items-center justify-center rounded-xl bg-accent px-6 text-sm font-semibold text-accent-foreground hover:opacity-90 transition"
+          >
+            {ar ? "إنشاء قالب جديد" : "Create New Template"}
+          </Link>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {templates.map((template) => (
-        <TemplateCard
-          key={template.id}
-          template={template}
-          locale={locale}
-          businessName={businessName}
-          deleting={deleting === template.id}
-          onDelete={() => handleDelete(template.id)}
-        />
-      ))}
-    </div>
+    <>
+      {dialog}
+      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {templates.map((template) => (
+          <TemplateCard
+            key={template.id}
+            template={template}
+            locale={locale}
+            businessName={businessName}
+            deleting={deleting === template.id}
+            onDelete={() => handleDelete(template.id)}
+          />
+        ))}
+      </div>
+    </>
   );
 }
 

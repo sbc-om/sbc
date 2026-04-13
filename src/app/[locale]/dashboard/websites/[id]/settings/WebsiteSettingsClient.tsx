@@ -12,6 +12,7 @@ import {
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useModalDialogs } from "@/components/ui/useModalDialogs";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Website } from "@/lib/db/types";
 import { WEBSITE_PACKAGE_LIMITS } from "@/lib/db/types";
@@ -24,6 +25,7 @@ interface Props {
 export function WebsiteSettingsClient({ locale, website }: Props) {
   const router = useRouter();
   const ar = locale === "ar";
+  const { confirm, dialog } = useModalDialogs();
   const limits = WEBSITE_PACKAGE_LIMITS[website.package];
 
   const [tab, setTab] = useState<"general" | "branding" | "domain" | "social" | "seo" | "danger">("general");
@@ -94,7 +96,18 @@ export function WebsiteSettingsClient({ locale, website }: Props) {
   };
 
   const handleDelete = async () => {
-    if (!confirm(ar ? "هل أنت متأكد من حذف هذا الموقع نهائيًا؟" : "Permanently delete this website?")) return;
+    const accepted = await confirm({
+      title: ar ? "حذف الموقع" : "Delete Website",
+      message: ar
+        ? "سيتم حذف هذا الموقع وجميع صفحاته ومحتواه نهائيًا. هل تريد المتابعة؟"
+        : "This will permanently delete the website, all pages, and all content. Do you want to continue?",
+      confirmText: ar ? "حذف نهائي" : "Delete Permanently",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      variant: "destructive",
+    });
+
+    if (!accepted) return;
+
     try {
       await fetch(`/api/websites/${website.id}`, { method: "DELETE" });
       router.push(`/${locale}/dashboard/websites`);
@@ -113,7 +126,9 @@ export function WebsiteSettingsClient({ locale, website }: Props) {
   ];
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
+    <>
+      {dialog}
+      <div className="flex flex-col gap-6 lg:flex-row">
       {/* Tabs */}
       <aside className="w-full lg:w-56 shrink-0">
         <nav className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible">
@@ -429,6 +444,7 @@ export function WebsiteSettingsClient({ locale, website }: Props) {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

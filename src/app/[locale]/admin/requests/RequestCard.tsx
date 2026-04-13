@@ -28,6 +28,7 @@ import type { Locale } from "@/lib/i18n/locales";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
+import { useModalDialogs } from "@/components/ui/useModalDialogs";
 import {
   respondToRequestAction,
   convertRequestToBusinessAction,
@@ -92,6 +93,7 @@ export function RequestCard({
   const ar = locale === "ar";
   const router = useRouter();
   const { toast } = useToast();
+  const { confirm, dialog } = useModalDialogs();
   const [expanded, setExpanded] = useState(
     request.status === "pending" || request.status === "revision_requested",
   );
@@ -128,14 +130,17 @@ export function RequestCard({
   };
 
   const handleConvert = async () => {
-    if (
-      !confirm(
-        ar
-          ? "هل تريد تحويل هذا الطلب إلى نشاط تجاري؟"
-          : "Convert this request to a business?",
-      )
-    )
-      return;
+    const accepted = await confirm({
+      title: ar ? "تحويل الطلب إلى نشاط" : "Convert Request to Business",
+      message: ar
+        ? "سيتم إنشاء النشاط التجاري من بيانات هذا الطلب ونقلك مباشرة إلى قائمة الأنشطة. هل تريد المتابعة؟"
+        : "This will create a business from the request details and take you to the businesses list. Do you want to continue?",
+      confirmText: ar ? "تحويل الآن" : "Convert Now",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      variant: "primary",
+    });
+
+    if (!accepted) return;
 
     setConverting(true);
     try {
@@ -153,8 +158,17 @@ export function RequestCard({
   };
 
   const handleDelete = async () => {
-    if (!confirm(ar ? "هل تريد حذف هذا الطلب؟" : "Delete this request?"))
-      return;
+    const accepted = await confirm({
+      title: ar ? "حذف الطلب" : "Delete Request",
+      message: ar
+        ? "سيتم حذف هذا الطلب نهائيًا ولا يمكن التراجع عن العملية. هل تريد المتابعة؟"
+        : "This request will be permanently deleted and cannot be recovered. Do you want to continue?",
+      confirmText: ar ? "حذف" : "Delete",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      variant: "destructive",
+    });
+
+    if (!accepted) return;
 
     try {
       await deleteRequestAction(locale, request.id);
@@ -214,7 +228,9 @@ export function RequestCard({
   );
 
   return (
-    <article
+    <>
+      {dialog}
+      <article
       className="overflow-hidden rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"
       style={{
         background: "var(--business-card-bg, var(--card))",
@@ -723,6 +739,7 @@ export function RequestCard({
           </div>
         )}
       </div>
-    </article>
+      </article>
+    </>
   );
 }

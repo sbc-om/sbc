@@ -6,6 +6,8 @@ import { ArrowLeft, Cloud, CloudOff, Download, Save, Upload } from "lucide-react
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useToast } from "@/components/ui/Toast";
+import { useModalDialogs } from "@/components/ui/useModalDialogs";
 import { useWorkflowStore } from "@/store/agentflow/workflow-store";
 
 export function Toolbar({
@@ -22,6 +24,8 @@ export function Toolbar({
   maxNodes?: number;
 }) {
   const router = useRouter();
+  const { toast } = useToast();
+  const { dialog, prompt } = useModalDialogs();
   const workflowName = useWorkflowStore((state) => state.workflowName);
   const setWorkflowName = useWorkflowStore((state) => state.setWorkflowName);
   const exportWorkflow = useWorkflowStore((state) => state.exportWorkflow);
@@ -33,25 +37,45 @@ export function Toolbar({
   const handleExport = async () => {
     const json = exportWorkflow();
     await navigator.clipboard.writeText(json);
-    alert(locale === "ar" ? "تم نسخ الـ JSON" : "Workflow JSON copied");
+    toast({
+      message: locale === "ar" ? "تم نسخ JSON بنجاح" : "Workflow JSON copied",
+      variant: "success",
+    });
   };
 
-  const handleImport = () => {
-    const raw = window.prompt(locale === "ar" ? "ألصق JSON هنا" : "Paste workflow JSON");
+  const handleImport = async () => {
+    const raw = await prompt({
+      title: locale === "ar" ? "استيراد مخطط الوكيل" : "Import Workflow",
+      message: locale === "ar" ? "ألصق JSON هنا ليتم استيراده إلى المحرر." : "Paste workflow JSON here to import it into the editor.",
+      placeholder: locale === "ar" ? "ألصق JSON هنا" : "Paste workflow JSON",
+      confirmText: locale === "ar" ? "استيراد" : "Import",
+      cancelText: locale === "ar" ? "إلغاء" : "Cancel",
+      multiline: true,
+      validate: (value) => {
+        if (!value.trim()) {
+          return locale === "ar" ? "الرجاء إدخال JSON صالح" : "Please paste workflow JSON";
+        }
+        return null;
+      },
+    });
+
     if (!raw) return;
+
     const result = importWorkflow(raw);
     if (!result.ok) {
-      alert(result.error || "Import failed");
+      toast({ message: result.error || "Import failed", variant: "error" });
     }
   };
 
   const handleSave = async () => {
     if (maxNodes && nodes.length > maxNodes) {
-      alert(
-        locale === "ar"
-          ? `طرحك الحالي يسمح بحد أقصى ${maxNodes} عقدة. قم بالترقية للمزيد.`
-          : `Your current plan allows up to ${maxNodes} nodes. Upgrade for more.`,
-      );
+      toast({
+        message:
+          locale === "ar"
+            ? `خطتك الحالية تسمح بحد أقصى ${maxNodes} عقدة. قم بالترقية للمزيد.`
+            : `Your current plan allows up to ${maxNodes} nodes. Upgrade for more.`,
+        variant: "error",
+      });
       return;
     }
 
@@ -77,7 +101,7 @@ export function Toolbar({
       setLastSaved(new Date());
     } catch (err) {
       console.error("Save error:", err);
-      alert(locale === "ar" ? "فشل الحفظ" : "Save failed");
+      toast({ message: locale === "ar" ? "فشل الحفظ" : "Save failed", variant: "error" });
     } finally {
       setSaving(false);
     }
@@ -86,7 +110,9 @@ export function Toolbar({
   const ar = locale === "ar";
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-(--surface-border) bg-(--surface) p-3">
+    <>
+      {dialog}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-(--surface-border) bg-(--surface) p-3">
       <div className="flex items-center gap-3">
         <Button
           variant="ghost"
@@ -144,6 +170,7 @@ export function Toolbar({
           {saving ? (ar ? "جارٍ الحفظ..." : "Saving...") : (ar ? "حفظ" : "Save")}
         </Button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

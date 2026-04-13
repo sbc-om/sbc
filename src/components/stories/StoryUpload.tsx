@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import type { Story } from "@/lib/db/stories";
 import type { Locale } from "@/lib/i18n/locales";
 import { Button } from "@/components/ui/Button";
+import { useModalDialogs } from "@/components/ui/useModalDialogs";
 import { StoryEditor } from "./StoryEditor";
 
 interface StoryUploadProps {
@@ -19,12 +20,23 @@ interface StoryUploadProps {
 export function StoryUpload({ businessId, locale, existingStories, onStoryAdded }: StoryUploadProps) {
   const ar = locale === "ar";
   const router = useRouter();
+  const { confirm, dialog } = useModalDialogs();
   
   const [showEditor, setShowEditor] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleDeleteStory = async (storyId: string) => {
-    if (!confirm(ar ? "هل تريد حذف هذا الستوري؟" : "Delete this story?")) return;
+    const accepted = await confirm({
+      title: ar ? "حذف الستوري" : "Delete Story",
+      message: ar
+        ? "سيتم حذف هذا الستوري نهائيًا. هل تريد المتابعة؟"
+        : "This story will be permanently deleted. Do you want to continue?",
+      confirmText: ar ? "حذف" : "Delete",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      variant: "destructive",
+    });
+
+    if (!accepted) return;
 
     try {
       const res = await fetch(`/api/businesses/${businessId}/stories`, {
@@ -53,6 +65,7 @@ export function StoryUpload({ businessId, locale, existingStories, onStoryAdded 
 
   return (
     <>
+      {dialog}
       <div className="sbc-card rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div>

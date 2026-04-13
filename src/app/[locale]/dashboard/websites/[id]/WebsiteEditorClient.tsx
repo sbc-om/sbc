@@ -11,6 +11,7 @@ import {
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { useModalDialogs } from "@/components/ui/useModalDialogs";
 import type { Locale } from "@/lib/i18n/locales";
 import type { WebsitePage, WebsiteBlock, WebsitePackage } from "@/lib/db/types";
 import { WEBSITE_PACKAGE_LIMITS } from "@/lib/db/types";
@@ -30,6 +31,7 @@ export function WebsiteEditorClient({
   websitePackage,
 }: Props) {
   const ar = locale === "ar";
+  const { confirm, dialog } = useModalDialogs();
   const limits = WEBSITE_PACKAGE_LIMITS[websitePackage];
   const [pages, setPages] = useState<WebsitePage[]>(initialPages);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(
@@ -89,7 +91,17 @@ export function WebsiteEditorClient({
       setError(ar ? "لا يمكن حذف الصفحة الرئيسية" : "Cannot delete homepage");
       return;
     }
-    if (!confirm(ar ? "هل أنت متأكد من حذف هذه الصفحة?" : "Delete this page?")) return;
+    const accepted = await confirm({
+      title: ar ? "حذف الصفحة" : "Delete Page",
+      message: ar
+        ? "سيتم حذف هذه الصفحة نهائيًا من الموقع. هل تريد المتابعة؟"
+        : "This page will be permanently deleted from the website. Do you want to continue?",
+      confirmText: ar ? "حذف" : "Delete",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      variant: "destructive",
+    });
+
+    if (!accepted) return;
 
     try {
       await fetch(`/api/websites/${websiteId}/pages/${pageId}`, {
@@ -124,7 +136,9 @@ export function WebsiteEditorClient({
   );
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
+    <>
+      {dialog}
+      <div className="flex flex-col gap-6 lg:flex-row">
       {/* Sidebar: Pages list */}
       <aside className="w-full lg:w-64 shrink-0">
         <div className="sbc-card rounded-2xl p-4">
@@ -261,6 +275,7 @@ export function WebsiteEditorClient({
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

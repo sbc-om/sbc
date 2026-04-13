@@ -8,10 +8,12 @@ import type { StoreProduct } from "@/lib/store/types";
 import type { Locale } from "@/lib/i18n/locales";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
+import { useModalDialogs } from "@/components/ui/useModalDialogs";
 
 export function ProductCard({ product, locale }: { product: StoreProduct; locale: Locale }) {
   const router = useRouter();
   const { toast } = useToast();
+  const { confirm, dialog } = useModalDialogs();
   const ar = locale === "ar";
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +31,17 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
   };
 
   const handleToggleActive = async () => {
-    if (!confirm(ar ? "تغيير حالة التفعيل؟" : "Toggle active status?")) return;
+    const accepted = await confirm({
+      title: ar ? "تغيير حالة المنتج" : "Toggle Product Status",
+      message: ar
+        ? "سيتم تحديث حالة تفعيل هذا المنتج مباشرة. هل تريد المتابعة؟"
+        : "This will update the active status of the product immediately. Do you want to continue?",
+      confirmText: ar ? "متابعة" : "Continue",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      variant: "primary",
+    });
+
+    if (!accepted) return;
     
     setLoading(true);
     try {
@@ -53,7 +65,17 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
   };
 
   const handleDelete = async () => {
-    if (!confirm(ar ? "هل تريد حذف هذا المنتج؟" : "Delete this product?")) return;
+    const accepted = await confirm({
+      title: ar ? "حذف المنتج" : "Delete Product",
+      message: ar
+        ? "سيتم حذف هذا المنتج نهائيًا من النظام. هل تريد المتابعة؟"
+        : "This product will be permanently deleted from the system. Do you want to continue?",
+      confirmText: ar ? "حذف" : "Delete",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      variant: "destructive",
+    });
+
+    if (!accepted) return;
 
     setLoading(true);
     try {
@@ -77,7 +99,9 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
   const programLabel = programLabels[product.program] || { en: product.program, ar: product.program };
 
   return (
-    <div className={`sbc-card p-6 ${!product.isActive ? "opacity-60" : ""}`}>
+    <>
+      {dialog}
+      <div className={`sbc-card p-6 ${!product.isActive ? "opacity-60" : ""}`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h3 className="text-lg font-semibold">
@@ -174,6 +198,7 @@ export function ProductCard({ product, locale }: { product: StoreProduct; locale
           {loading ? "..." : (ar ? "حذف" : "Delete")}
         </Button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

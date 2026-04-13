@@ -13,7 +13,6 @@ import {
   HiOutlineClock,
   HiOutlineCheckCircle,
   HiOutlineXCircle,
-  HiOutlineDotsVertical,
 } from "react-icons/hi";
 import type { Locale } from "@/lib/i18n/locales";
 import type { Business } from "@/lib/db/types";
@@ -22,6 +21,7 @@ import type { BusinessRequest } from "@/lib/db/businessRequests";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
+import { useModalDialogs } from "@/components/ui/useModalDialogs";
 
 const texts = {
   en: {
@@ -99,9 +99,9 @@ export function MyBusinessesList({
   const ar = locale === "ar";
   const router = useRouter();
   const { toast } = useToast();
+  const { confirm, dialog } = useModalDialogs();
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -128,7 +128,16 @@ export function MyBusinessesList({
   };
 
   const handleDelete = async (businessId: string) => {
-    if (!confirm(t.confirmDelete)) return;
+    const accepted = await confirm({
+      title: ar ? "حذف النشاط التجاري" : "Delete Business",
+      message: t.confirmDelete,
+      confirmText: ar ? "حذف" : "Delete",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      variant: "destructive",
+    });
+
+    if (!accepted) return;
+
     setDeletingId(businessId);
     try {
       const res = await fetch(`/api/businesses/${businessId}`, {
@@ -145,7 +154,6 @@ export function MyBusinessesList({
       toast({ message: msg, variant: "error" });
     } finally {
       setDeletingId(null);
-      setMenuOpenId(null);
     }
   };
 
@@ -167,7 +175,9 @@ export function MyBusinessesList({
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      {dialog}
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -303,14 +313,13 @@ export function MyBusinessesList({
               ? categoriesById[biz.categoryId]
               : null;
             const isDeleting = deletingId === biz.id;
-            const isMenuOpen = menuOpenId === biz.id;
 
             return (
               <div
                 key={biz.id}
                 className={`sbc-card rounded-2xl p-5 transition-opacity ${isDeleting ? "opacity-50 pointer-events-none" : ""}`}
               >
-                <div className="flex gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row">
                   {/* Logo / placeholder */}
                   <div className="shrink-0">
                     {biz.media?.logo ? (
@@ -342,24 +351,58 @@ export function MyBusinessesList({
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <h3 className="font-semibold truncate text-base">
-                        {ar ? biz.name.ar : biz.name.en}
-                      </h3>
-                      {statusBadge(biz)}
-                      {biz.isVerified && (
-                        <svg
-                          className="h-4 w-4 text-blue-500 shrink-0"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
+                    <div className="mb-0.5 flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <h3 className="font-semibold truncate text-base">
+                          {ar ? biz.name.ar : biz.name.en}
+                        </h3>
+                        {statusBadge(biz)}
+                        {biz.isVerified && (
+                          <svg
+                            className="h-4 w-4 text-blue-500 shrink-0"
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        )}
+                      </div>
+
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {biz.isApproved && (
+                          <Link
+                            href={`/${locale}/businesses/${biz.slug}`}
+                            aria-label={t.view}
+                            title={t.view}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-(--surface-border) bg-(--surface) text-foreground transition-colors hover:bg-(--chip-bg)"
+                          >
+                            <HiOutlineExternalLink className="h-4 w-4 text-(--muted-foreground)" />
+                          </Link>
+                        )}
+                        <Link
+                          href={`/${locale}/directory/businesses/${biz.id}/edit`}
+                          aria-label={t.edit}
+                          title={t.edit}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-(--surface-border) bg-(--surface) text-foreground transition-colors hover:bg-(--chip-bg)"
                         >
-                          <path
-                            fillRule="evenodd"
-                            d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      )}
+                          <HiOutlinePencil className="h-4 w-4 text-(--muted-foreground)" />
+                        </Link>
+                        <Button
+                          type="button"
+                          onClick={() => handleDelete(biz.id)}
+                          variant="ghost"
+                          size="sm"
+                          aria-label={t.delete}
+                          title={t.delete}
+                          className="h-9 w-9 rounded-xl border border-red-200 px-0 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-900/20"
+                        >
+                          <HiOutlineTrash className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     <p className="text-sm text-(--muted-foreground) truncate mb-2">
                       {ar ? biz.name.en : biz.name.ar}
@@ -387,59 +430,13 @@ export function MyBusinessesList({
                     </div>
                   </div>
 
-                  {/* Actions menu */}
-                  <div className="relative shrink-0">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setMenuOpenId(isMenuOpen ? null : biz.id)
-                      }
-                      className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-(--chip-bg) transition-colors"
-                    >
-                      <HiOutlineDotsVertical className="h-5 w-5 text-(--muted-foreground)" />
-                    </button>
-                    {isMenuOpen && (
-                      <>
-                        {/* backdrop */}
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setMenuOpenId(null)}
-                        />
-                        <div className="absolute end-0 top-full z-50 mt-1 w-44 rounded-xl bg-(--card) border border-(--border) shadow-lg overflow-hidden">
-                          <Link
-                            href={`/${locale}/businesses/${biz.slug}`}
-                            className="flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-(--chip-bg) transition-colors"
-                            onClick={() => setMenuOpenId(null)}
-                          >
-                            <HiOutlineExternalLink className="h-4 w-4 text-(--muted-foreground)" />
-                            {t.view}
-                          </Link>
-                          <Link
-                            href={`/${locale}/directory/businesses/${biz.id}/edit`}
-                            className="flex items-center gap-2 px-3 py-2.5 text-sm hover:bg-(--chip-bg) transition-colors"
-                            onClick={() => setMenuOpenId(null)}
-                          >
-                            <HiOutlinePencil className="h-4 w-4 text-(--muted-foreground)" />
-                            {t.edit}
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(biz.id)}
-                            className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                          >
-                            <HiOutlineTrash className="h-4 w-4" />
-                            {isDeleting ? t.deleting : t.delete}
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
                 </div>
               </div>
             );
           })}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

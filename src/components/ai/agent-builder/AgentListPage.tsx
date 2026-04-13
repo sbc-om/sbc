@@ -14,6 +14,8 @@ import {
 
 import { AppPage } from "@/components/AppPage";
 import { Button, buttonVariants } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
+import { useModalDialogs } from "@/components/ui/useModalDialogs";
 import type { BusinessAiAgent } from "@/lib/db/businessAiAgents";
 
 export function AgentListPage({
@@ -32,6 +34,8 @@ export function AgentListPage({
   businessName: string;
 }) {
   const router = useRouter();
+  const { toast } = useToast();
+  const { confirm, dialog } = useModalDialogs();
   const [deleting, setDeleting] = useState<string | null>(null);
   const ar = locale === "ar";
 
@@ -52,15 +56,29 @@ export function AgentListPage({
       if (data.ok && data.agent) {
         router.push(`/${locale}/ai?agent=${data.agent.id}`);
       } else {
-        alert(data.message || data.error || "Error");
+        toast({
+          message: data.message || data.error || (ar ? "حدث خطأ" : "Error"),
+          variant: "error",
+        });
       }
     } catch {
-      alert(ar ? "حدث خطأ" : "An error occurred");
+      toast({ message: ar ? "حدث خطأ" : "An error occurred", variant: "error" });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(ar ? "هل أنت متأكد من حذف هذا الوكيل؟" : "Are you sure you want to delete this agent?")) return;
+    const accepted = await confirm({
+      title: ar ? "حذف الوكيل" : "Delete Agent",
+      message: ar
+        ? "سيتم حذف هذا الوكيل نهائيًا. هل تريد المتابعة؟"
+        : "This agent will be permanently deleted. Do you want to continue?",
+      confirmText: ar ? "حذف" : "Delete",
+      cancelText: ar ? "إلغاء" : "Cancel",
+      variant: "destructive",
+    });
+
+    if (!accepted) return;
+
     setDeleting(id);
     try {
       const res = await fetch(`/api/agent-builder/${id}`, { method: "DELETE" });
@@ -68,10 +86,13 @@ export function AgentListPage({
       if (data.ok) {
         router.refresh();
       } else {
-        alert(data.error || "Error");
+        toast({
+          message: data.error || (ar ? "حدث خطأ" : "Error"),
+          variant: "error",
+        });
       }
     } catch {
-      alert(ar ? "حدث خطأ" : "An error occurred");
+      toast({ message: ar ? "حدث خطأ" : "An error occurred", variant: "error" });
     } finally {
       setDeleting(null);
     }
@@ -91,7 +112,9 @@ export function AgentListPage({
   };
 
   return (
-    <AppPage>
+    <>
+      {dialog}
+      <AppPage>
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
@@ -245,6 +268,7 @@ export function AgentListPage({
           )}
         </div>
       )}
-    </AppPage>
+      </AppPage>
+    </>
   );
 }
