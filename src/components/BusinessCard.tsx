@@ -60,7 +60,7 @@ export async function BusinessCard({ business, locale, noShadow = false, noBorde
       className="group block h-full"
     >
       <article
-        className={`relative h-full overflow-hidden rounded-2xl backdrop-blur-xl transition-all duration-300 ${
+        className={`relative h-full overflow-hidden rounded-2xl backdrop-blur-xl transition-shadow duration-300 ${
           noShadow ? "shadow-none hover:shadow-none" : "shadow-lg hover:shadow-xl"
         }`}
         style={{

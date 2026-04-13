@@ -1131,7 +1131,7 @@ export function BusinessesExplorer({
                 <div className="relative aspect-square w-full overflow-hidden bg-linear-to-br from-accent/12 via-accent-2/10 to-transparent">
                   {img ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={img} alt={name} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" />
+                    <img src={img} alt={name} className="h-full w-full object-cover" />
                   ) : null}
                   <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/20 to-black/0" />
                   <div className="absolute inset-x-0 top-0 h-20 bg-linear-to-b from-black/35 to-transparent" />

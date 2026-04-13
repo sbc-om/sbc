@@ -358,7 +358,6 @@ select {
 
 .sbc-card--interactive {
   transition: box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1), 
-              transform 280ms cubic-bezier(0.22, 1, 0.36, 1), 
               border-color 280ms cubic-bezier(0.22, 1, 0.36, 1),
               background-color 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -511,13 +510,12 @@ html.loaded button {
 .sbc-card--interactive,
 button:not(.leaflet-container button),
 a:not(.leaflet-container a) {
-  transform: translateZ(0);
   will-change: auto;
 }
 
 .sbc-card--interactive:hover,
 button:not(.leaflet-container button):hover {
-  will-change: transform, box-shadow;
+  will-change: box-shadow;
 }
 
 /* Disable focus-visible outlines globally (per request) */
