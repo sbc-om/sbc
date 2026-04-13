@@ -86,7 +86,7 @@ export async function POST(req: Request) {
     // Even if push is not configured or fails, we still store the message.
     if (isWebPushConfigured()) {
       const h = await headers();
-      const proto = h.get("x-forwarded-proto") ?? "http";
+      const proto = (h.get("x-forwarded-proto") ?? "http").split(",")[0].trim();
       const host = h.get("x-forwarded-host") ?? h.get("host");
       const baseUrl = host ? `${proto}://${host}` : "";
 

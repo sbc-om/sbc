@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 async function getBaseUrl() {
   const h = (await headers()) as Headers;
-  const proto = h.get("x-forwarded-proto") ?? "http";
+  const proto = (h.get("x-forwarded-proto") ?? "http").split(",")[0].trim();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   if (host) return `${proto}://${host}`;
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";

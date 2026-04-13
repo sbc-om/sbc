@@ -39,7 +39,7 @@ export async function GET(
   await getLoyaltyProfileByUserId(card.userId);
 
   const h = await headers();
-  const proto = h.get("x-forwarded-proto") ?? "http";
+  const proto = (h.get("x-forwarded-proto") ?? "http").split(",")[0].trim();
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const baseUrl = host ? `${proto}://${host}` : "";
   const publicCardUrl = baseUrl
