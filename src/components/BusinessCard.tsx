@@ -153,7 +153,7 @@ export async function BusinessCard({ business, locale, noShadow = false, noBorde
 
           {/* Description */}
           {description && (
-            <div className="mb-3 text-sm text-foreground opacity-70 [&>p]:m-0 [&>p]:line-clamp-1 [&>p]:overflow-hidden [&>p]:text-ellipsis [&>p]:break-words">
+            <div className="mb-3 line-clamp-2 text-sm text-foreground opacity-70 [&>p]:m-0 [&>p]:overflow-hidden [&>p]:text-ellipsis [&>p]:break-words">
               <MarkdownRenderer content={description} />
             </div>
             )}
