@@ -4,13 +4,11 @@
  */
 
 import fs from "node:fs";
+import { createRequire } from "node:module";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import { PKPass } from "passkit-generator";
-import {
-  type ChildPassData,
-  type ParentPassData,
-} from "sbcwallet";
 
 import {
   defaultLoyaltySettings,
@@ -25,6 +23,9 @@ import { getBusinessCardById } from "@/lib/db/businessCards";
 import type { LoyaltySettings } from "@/lib/db/types";
 import { diskPathFromMediaUrl } from "@/lib/uploads/storage";
 
+type ParentPassData = Record<string, unknown>;
+type ChildPassData = Record<string, unknown>;
+
 type SbcwalletRuntime = {
   GoogleWalletAdapter: new (input: { issuerId: string; serviceAccountPath: string }) => {
     generatePassObject: (data: unknown, profile: unknown, type: "parent" | "child") => Promise<{ saveUrl: string }>;
@@ -33,10 +34,18 @@ type SbcwalletRuntime = {
 };
 
 let sbcwalletRuntimePromise: Promise<SbcwalletRuntime> | null = null;
+const require = createRequire(import.meta.url);
+const runtimeResolve = new Function("req", "name", "return req.resolve(name);") as (
+  req: NodeRequire,
+  name: string,
+) => string;
+const runtimeImport = new Function("href", "return import(href);") as (href: string) => Promise<unknown>;
 
 async function loadSbcwalletRuntime(): Promise<SbcwalletRuntime> {
   if (!sbcwalletRuntimePromise) {
-    sbcwalletRuntimePromise = import("sbcwallet") as Promise<SbcwalletRuntime>;
+    const packageName = ["sbc", "wallet"].join("");
+    const entryPath = runtimeResolve(require, packageName);
+    sbcwalletRuntimePromise = runtimeImport(pathToFileURL(entryPath).href) as Promise<SbcwalletRuntime>;
   }
   return sbcwalletRuntimePromise;
 }

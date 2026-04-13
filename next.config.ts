@@ -10,8 +10,11 @@ const nextConfig: NextConfig = {
     "/*": [
       "node_modules/.pnpm/canvas@*/node_modules/canvas/build/Release/**/*",
       "node_modules/.pnpm/canvas@*/node_modules/canvas/**/*.node",
-      "node_modules/.pnpm/sbcwallet@*/node_modules/sbcwallet/**/*",
+      "node_modules/.pnpm/sbcwallet@*/node_modules/sbcwallet/dist/**/*",
     ],
+  },
+  outputFileTracingExcludes: {
+    "/*": [".venv-pdf/**/*"],
   },
   // Allow dev requests from ngrok tunnels
   allowedDevOrigins: ["*.ngrok-free.app", "*.ngrok.io"],

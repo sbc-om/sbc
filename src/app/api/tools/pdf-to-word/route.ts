@@ -26,12 +26,16 @@ function resolvePdfPythonCommand() {
   return process.env.PDF_TO_DOCX_PYTHON || "python3";
 }
 
+function getPdfVenvDirName() {
+  return process.env.PDF_TO_DOCX_VENV_DIR || [".", "venv", "-pdf"].join("");
+}
+
 function resolvePdfPythonPath() {
   if (process.env.PDF_TO_DOCX_PYTHONPATH) {
     return process.env.PDF_TO_DOCX_PYTHONPATH;
   }
 
-  const libDir = path.join(process.cwd(), ".venv-pdf", "lib");
+  const libDir = path.join(process.cwd(), getPdfVenvDirName(), "lib");
   if (!fs.existsSync(libDir)) return null;
 
   for (const entry of fs.readdirSync(libDir, { withFileTypes: true })) {
@@ -46,7 +50,7 @@ function resolvePdfPythonPath() {
 function resolvePdf2DocxCommand() {
   const candidates = [
     process.env.PDF2DOCX_BIN,
-    path.join(process.cwd(), ".venv-pdf/bin/pdf2docx"),
+    path.join(process.cwd(), getPdfVenvDirName(), "bin", "pdf2docx"),
   ].filter((value): value is string => Boolean(value));
 
   for (const candidate of candidates) {
