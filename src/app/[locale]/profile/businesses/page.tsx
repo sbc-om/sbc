@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth/requireUser";
 import { listBusinessesByOwner } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
 import { listBusinessRequestsByUser } from "@/lib/db/businessRequests";
+import { listUserProgramSubscriptions } from "@/lib/db/subscriptions";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { MyBusinessesList } from "./MyBusinessesList";
 
@@ -21,13 +22,38 @@ export default async function ProfileBusinessesPage({
   if (!isLocale(locale)) notFound();
 
   const auth = await requireUser(locale as Locale);
-  const [businesses, categories, requests] = await Promise.all([
+  const [businesses, categories, requests, subscriptions] = await Promise.all([
     listBusinessesByOwner(auth.id),
     listCategories(),
     listBusinessRequestsByUser(auth.id),
+    listUserProgramSubscriptions(auth.id),
   ]);
 
   const categoriesById = Object.fromEntries(categories.map((c) => [c.id, c]));
+  const now = Date.now();
+  const directoryLicenses = subscriptions.filter((subscription) => subscription.program === "directory");
+  const businessLicensesByBusinessId = Object.fromEntries(
+    directoryLicenses
+      .filter((subscription) => subscription.assignedBusinessId)
+      .map((subscription) => [
+        subscription.assignedBusinessId as string,
+        {
+          expiresAt: subscription.expiresAt,
+          isActive: subscription.isActive && new Date(subscription.expiresAt).getTime() > now,
+        },
+      ]),
+  );
+  const requestLicensesByRequestId = Object.fromEntries(
+    directoryLicenses
+      .filter((subscription) => subscription.assignedRequestId)
+      .map((subscription) => [
+        subscription.assignedRequestId as string,
+        {
+          expiresAt: subscription.expiresAt,
+          isActive: subscription.isActive && new Date(subscription.expiresAt).getTime() > now,
+        },
+      ]),
+  );
 
   return (
     <AppPage>
@@ -46,6 +72,8 @@ export default async function ProfileBusinessesPage({
         businesses={businesses}
         requests={requests}
         categoriesById={categoriesById}
+        businessLicensesByBusinessId={businessLicensesByBusinessId}
+        requestLicensesByRequestId={requestLicensesByRequestId}
       />
     </AppPage>
   );

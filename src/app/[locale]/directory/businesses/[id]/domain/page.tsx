@@ -5,7 +5,7 @@ import { AppPage } from "@/components/AppPage";
 import { buttonVariants } from "@/components/ui/Button";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getBusinessById } from "@/lib/db/businesses";
-import { getProgramSubscriptionByUser, hasActiveSubscription } from "@/lib/db/subscriptions";
+import { getActiveProgramSubscriptionForBusiness } from "@/lib/db/subscriptions";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 
 import { CustomDomainSettings } from "./CustomDomainSettings";
@@ -22,14 +22,14 @@ export default async function DirectoryBusinessDomainPage({
 
   const user = await requireUser(locale as Locale);
 
-  await getProgramSubscriptionByUser(user.id);
-  if (!(await hasActiveSubscription(user.id, "directory"))) {
-    redirect(`/${locale}/profile/businesses`);
-  }
-
   const business = await getBusinessById(id);
   if (!business) notFound();
   if (!business.ownerId || business.ownerId !== user.id) notFound();
+
+  const license = await getActiveProgramSubscriptionForBusiness(user.id, business.id, "directory");
+  if (!license) {
+    redirect(`/${locale}/profile/businesses`);
+  }
 
   const ar = locale === "ar";
   const businessName = ar ? business.name.ar : business.name.en;
@@ -53,6 +53,12 @@ export default async function DirectoryBusinessDomainPage({
       </div>
 
       <CustomDomainSettings locale={locale as Locale} business={business} />
+
+      <div className="mt-4 rounded-2xl border border-(--surface-border) bg-(--surface) p-4 text-sm text-(--muted-foreground)">
+        {ar
+          ? `تنتهي رخصة هذا النشاط في ${new Intl.DateTimeFormat("ar-OM", { year: "numeric", month: "short", day: "2-digit" }).format(new Date(license.expiresAt))}.`
+          : `This business license expires on ${new Intl.DateTimeFormat("en-OM", { year: "numeric", month: "short", day: "2-digit" }).format(new Date(license.expiresAt))}.`}
+      </div>
     </AppPage>
   );
 }

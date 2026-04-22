@@ -24,6 +24,11 @@ import { buttonVariants } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { useModalDialogs } from "@/components/ui/useModalDialogs";
 
+type DirectoryLicenseState = {
+  expiresAt: string;
+  isActive: boolean;
+};
+
 const texts = {
   en: {
     title: "My Businesses",
@@ -40,6 +45,8 @@ const texts = {
     city: "City",
     phone: "Phone",
     created: "Created",
+    expires: "License expires",
+    expired: "License expired",
     confirmDelete: "Are you sure you want to delete this business? This action cannot be undone.",
     deleting: "Deleting...",
     deleted: "Business deleted successfully",
@@ -70,6 +77,8 @@ const texts = {
     city: "المدينة",
     phone: "الهاتف",
     created: "تاريخ الإنشاء",
+    expires: "تنتهي الرخصة",
+    expired: "الرخصة منتهية",
     confirmDelete: "هل أنت متأكد من حذف هذا العمل؟ لا يمكن التراجع عن هذا الإجراء.",
     deleting: "جارٍ الحذف...",
     deleted: "تم حذف العمل بنجاح",
@@ -92,11 +101,15 @@ export function MyBusinessesList({
   businesses,
   requests,
   categoriesById,
+  businessLicensesByBusinessId,
+  requestLicensesByRequestId,
 }: {
   locale: Locale;
   businesses: Business[];
   requests: BusinessRequest[];
   categoriesById: Record<string, Category>;
+  businessLicensesByBusinessId: Record<string, DirectoryLicenseState>;
+  requestLicensesByRequestId: Record<string, DirectoryLicenseState>;
 }) {
   const t = texts[locale];
   const ar = locale === "ar";
@@ -201,6 +214,7 @@ export function MyBusinessesList({
             const isRevision = req.status === "revision_requested";
             const isPending = req.status === "pending";
             const canEdit = isPending || isRevision;
+            const license = requestLicensesByRequestId[req.id];
 
             const iconBg = isRevision
               ? "bg-orange-100 dark:bg-orange-900/30"
@@ -247,6 +261,13 @@ export function MyBusinessesList({
                         {req.adminResponse}
                       </p>
                     )}
+                    {license ? (
+                      <p className="mt-1 text-xs text-(--muted-foreground)">
+                        {license.isActive
+                          ? `${t.expires}: ${formatDate(license.expiresAt)}`
+                          : `${t.expired}: ${formatDate(license.expiresAt)}`}
+                      </p>
+                    ) : null}
                   </div>
                   {canEdit && (
                     <Link
@@ -340,6 +361,7 @@ export function MyBusinessesList({
               ? categoriesById[biz.categoryId]
               : null;
             const isDeleting = deletingId === biz.id;
+            const license = businessLicensesByBusinessId[biz.id];
 
             return (
               <div
@@ -462,6 +484,11 @@ export function MyBusinessesList({
                       <span>
                         {t.created}: {formatDate(biz.createdAt)}
                       </span>
+                      {license ? (
+                        <span>
+                          {license.isActive ? t.expires : t.expired}: {formatDate(license.expiresAt)}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
 

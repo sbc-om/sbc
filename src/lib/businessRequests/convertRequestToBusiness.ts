@@ -6,6 +6,7 @@ import {
 } from "@/lib/db/businessRequests";
 import { createBusiness, setBusinessMedia } from "@/lib/db/businesses";
 import { getCategoryById } from "@/lib/db/categories";
+import { transferProgramSubscriptionFromRequestToBusiness } from "@/lib/db/subscriptions";
 import { getUserById } from "@/lib/db/users";
 
 export async function convertBusinessRequestToBusiness(
@@ -67,6 +68,8 @@ export async function convertBusinessRequestToBusiness(
       if (request.coverUrl) await setBusinessMedia(business.id, "cover", request.coverUrl);
       if (request.bannerUrl) await setBusinessMedia(business.id, "banner", request.bannerUrl);
       if (request.galleryUrls?.length) await setBusinessMedia(business.id, "gallery", request.galleryUrls);
+
+      await transferProgramSubscriptionFromRequestToBusiness(requestId, business.id);
 
       await updateBusinessRequestStatus(
         requestId,

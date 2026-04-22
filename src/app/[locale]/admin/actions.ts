@@ -15,6 +15,7 @@ import {
 } from "@/lib/db/businesses";
 import { requireAdmin } from "@/lib/auth/requireUser";
 import { getCategoryById } from "@/lib/db/categories";
+import { releaseProgramSubscriptionAssignmentByBusiness } from "@/lib/db/subscriptions";
 import { getUserByEmail, getUserById } from "@/lib/db/users";
 import { storeUpload } from "@/lib/uploads/storage";
 
@@ -388,6 +389,7 @@ export async function updateBusinessAction(locale: Locale, id: string, formData:
 
 export async function deleteBusinessAction(locale: Locale, id: string) {
   await requireAdmin(locale);
+  await releaseProgramSubscriptionAssignmentByBusiness(id);
   await deleteBusiness(id);
   revalidatePath(`/${locale}/businesses`);
   revalidatePath(`/${locale}/admin`);

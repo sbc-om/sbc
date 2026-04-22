@@ -5,9 +5,7 @@ import { isLocale } from "@/lib/i18n/locales";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { requireUser } from "@/lib/auth/requireUser";
 import { listCategories } from "@/lib/db/categories";
-import { countProgramSubscriptions } from "@/lib/db/subscriptions";
-import { listBusinessesByOwner } from "@/lib/db/businesses";
-import { listBusinessRequestsByUser } from "@/lib/db/businessRequests";
+import { listActiveUserProgramSubscriptions } from "@/lib/db/subscriptions";
 import { AppPage } from "@/components/AppPage";
 import { BusinessRequestForm } from "./BusinessRequestForm";
 import Link from "next/link";
@@ -28,22 +26,41 @@ export default async function BusinessRequestPage({
   const sp = await searchParams;
   const success = sp.success === "1";
 
-  const [totalPackages, ownedBusinesses, requests, categories] =
-    await Promise.all([
-      countProgramSubscriptions(user.id, "directory"),
-      listBusinessesByOwner(user.id),
-      listBusinessRequestsByUser(user.id),
-      listCategories(),
-    ]);
+  const [subscriptions, categories] = await Promise.all([
+    listActiveUserProgramSubscriptions(user.id),
+    listCategories(),
+  ]);
 
-  const pendingRequests = requests.filter((r) => r.status === "pending");
-  const used = ownedBusinesses.length + pendingRequests.length;
-  const canRegister = totalPackages > 0 && used < totalPackages;
+  const directoryLicenses = subscriptions.filter((subscription) => subscription.program === "directory");
+  const availableLicenses = directoryLicenses.filter(
+    (subscription) => !subscription.assignedBusinessId && !subscription.assignedRequestId,
+  );
+  const usedLicenses = directoryLicenses.length - availableLicenses.length;
+  const canRegister = availableLicenses.length > 0;
+  const nextExpiry = directoryLicenses
+    .map((subscription) => subscription.expiresAt)
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0];
 
   const ar = locale === "ar";
+  const formatDate = (iso: string) =>
+    new Intl.DateTimeFormat(ar ? "ar-OM" : "en-OM", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    }).format(new Date(iso));
 
   return (
     <AppPage>
+        <div className="mb-6 rounded-2xl border border-(--surface-border) bg-(--surface) p-4 text-sm text-(--muted-foreground)">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <span>{ar ? `الرخص النشطة: ${directoryLicenses.length}` : `Active licenses: ${directoryLicenses.length}`}</span>
+            <span>{ar ? `المستخدمة: ${usedLicenses}` : `Used: ${usedLicenses}`}</span>
+            <span>{ar ? `المتاحة: ${availableLicenses.length}` : `Available: ${availableLicenses.length}`}</span>
+            {nextExpiry ? (
+              <span>{ar ? `أقرب انتهاء: ${formatDate(nextExpiry)}` : `Next expiry: ${formatDate(nextExpiry)}`}</span>
+            ) : null}
+          </div>
+        </div>
         {success ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30 mb-6">
@@ -82,18 +99,18 @@ export default async function BusinessRequestPage({
               </svg>
             </div>
             <h1 className="text-2xl font-bold tracking-tight mb-2">
-              {totalPackages === 0
+              {directoryLicenses.length === 0
                 ? (ar ? "تحتاج إلى باقة دليل الأعمال" : "Directory Package Required")
                 : (ar ? "تحتاج إلى باقة إضافية" : "Additional Package Required")}
             </h1>
             <p className="text-sm text-(--muted-foreground) max-w-md">
-              {totalPackages === 0
+              {directoryLicenses.length === 0
                 ? (ar
                     ? "لإرسال طلب إضافة أو ربط نشاطك التجاري، يرجى شراء باقة (عضوية) من دليل الأعمال أولاً."
                     : "To submit a business listing request, please purchase a Business Directory package first.")
                 : (ar
-                    ? `لديك ${totalPackages} باقة وقد استخدمت ${used} منها. لتسجيل عمل جديد، يرجى شراء باقة إضافية.`
-                    : `You have ${totalPackages} package${totalPackages > 1 ? "s" : ""} and used ${used}. To register a new business, please purchase an additional package.`)}
+                    ? `لديك ${directoryLicenses.length} رخصة نشطة وقد استخدمت ${usedLicenses} منها. لتسجيل عمل جديد، يرجى شراء رخصة إضافية.`
+                    : `You have ${directoryLicenses.length} active license${directoryLicenses.length > 1 ? "s" : ""} and used ${usedLicenses}. To register a new business, please purchase an additional license.`)}
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link

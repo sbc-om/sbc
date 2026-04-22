@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { nanoid } from "nanoid";
 
 import { requireUser } from "@/lib/auth/requireUser";
-import { countProgramSubscriptions } from "@/lib/db/subscriptions";
-import { createBusinessRequest, updateBusinessRequestMedia, listBusinessRequestsByUser } from "@/lib/db/businessRequests";
-import { checkBusinessUsernameAvailability, listBusinessesByOwner } from "@/lib/db/businesses";
+import {
+  releaseProgramSubscriptionAssignmentByRequest,
+  reserveNextAvailableProgramSubscription,
+} from "@/lib/db/subscriptions";
+import { createBusinessRequest, updateBusinessRequestMedia } from "@/lib/db/businessRequests";
+import { checkBusinessUsernameAvailability } from "@/lib/db/businesses";
 import { isBusinessRequestAutoApprovalEnabled } from "@/lib/db/settings";
 import { convertBusinessRequestToBusiness } from "@/lib/businessRequests/convertRequestToBusiness";
 import { storeRequestUpload } from "@/lib/uploads/storage";
@@ -13,21 +17,6 @@ export const runtime = "nodejs";
 export async function POST(req: Request) {
   try {
     const user = await requireUser("en");
-
-    // Each business requires its own directory package
-    const [totalPackages, ownedBusinesses, requests] = await Promise.all([
-      countProgramSubscriptions(user.id, "directory"),
-      listBusinessesByOwner(user.id),
-      listBusinessRequestsByUser(user.id),
-    ]);
-    const pendingRequests = requests.filter((r) => r.status === "pending");
-    const used = ownedBusinesses.length + pendingRequests.length;
-    if (totalPackages === 0 || used >= totalPackages) {
-      return NextResponse.json(
-        { error: "NO_ACTIVE_SUBSCRIPTION" },
-        { status: 403 },
-      );
-    }
 
     const fd = await req.formData();
 
@@ -58,25 +47,42 @@ export async function POST(req: Request) {
       }
     }
 
-    const request = await createBusinessRequest({
-      userId: user.id,
-      username: username || undefined,
-      businessName: str("name_en") || str("businessName") || str("name"),
-      nameEn: str("name_en") || str("nameEn"),
-      nameAr: str("name_ar") || str("nameAr"),
-      descEn: str("desc_en") || str("descEn"),
-      descAr: str("desc_ar") || str("descAr"),
-      description: str("description"),
-      categoryId: str("categoryId") || undefined,
-      city: str("city") || undefined,
-      address: str("address") || undefined,
-      phone: str("phone") || undefined,
-      email: str("email") || undefined,
-      website: str("website") || undefined,
-      tags: str("tags") || undefined,
-      latitude: num("latitude"),
-      longitude: num("longitude"),
-    });
+    const requestId = nanoid();
+    const reservedLicense = await reserveNextAvailableProgramSubscription(user.id, "directory", requestId);
+    if (!reservedLicense) {
+      return NextResponse.json(
+        { error: "NO_ACTIVE_SUBSCRIPTION" },
+        { status: 403 },
+      );
+    }
+
+    let request;
+    try {
+      request = await createBusinessRequest({
+        userId: user.id,
+        username: username || undefined,
+        businessName: str("name_en") || str("businessName") || str("name"),
+        nameEn: str("name_en") || str("nameEn"),
+        nameAr: str("name_ar") || str("nameAr"),
+        descEn: str("desc_en") || str("descEn"),
+        descAr: str("desc_ar") || str("descAr"),
+        description: str("description"),
+        categoryId: str("categoryId") || undefined,
+        city: str("city") || undefined,
+        address: str("address") || undefined,
+        phone: str("phone") || undefined,
+        email: str("email") || undefined,
+        website: str("website") || undefined,
+        tags: str("tags") || undefined,
+        latitude: num("latitude"),
+        longitude: num("longitude"),
+      }, {
+        requestId,
+      });
+    } catch (error) {
+      await releaseProgramSubscriptionAssignmentByRequest(requestId);
+      throw error;
+    }
 
     // Handle file uploads
     const logoFile = fd.get("logo") as File | null;

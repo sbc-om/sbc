@@ -24,7 +24,10 @@ vi.mock("@/lib/db/wallet", () => ({
 }));
 
 vi.mock("@/lib/db/subscriptions", () => ({
+  assignProgramSubscriptionToRequest: vi.fn(),
   purchaseProgramSubscription: vi.fn(),
+  releaseProgramSubscriptionAssignmentByRequest: vi.fn(),
+  reserveNextAvailableProgramSubscription: vi.fn(),
 }));
 
 vi.mock("@/lib/store/products", () => ({
@@ -43,7 +46,11 @@ import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getAgentByUserId, isAgentClient, createCommission } from "@/lib/db/agents";
 import { createBusinessRequest } from "@/lib/db/businessRequests";
 import { getAvailableBalance, withdrawFromWallet, depositToWallet, ensureWallet } from "@/lib/db/wallet";
-import { purchaseProgramSubscription } from "@/lib/db/subscriptions";
+import {
+  assignProgramSubscriptionToRequest,
+  purchaseProgramSubscription,
+  reserveNextAvailableProgramSubscription,
+} from "@/lib/db/subscriptions";
 import { getStoreProductBySlug } from "@/lib/store/products";
 import { query } from "@/lib/db/postgres";
 import { checkBusinessUsernameAvailability } from "@/lib/db/businesses";
@@ -105,6 +112,7 @@ describe("/api/agent/business-request", () => {
       .mockResolvedValueOnce({ rows: [{ phone: "+96890000000" }] } as never)
       .mockResolvedValueOnce({ rows: [{ user_id: "sbc-treasury" }] } as never);
     vi.mocked(purchaseProgramSubscription).mockResolvedValue({ id: "sub1" } as never);
+    vi.mocked(assignProgramSubscriptionToRequest).mockResolvedValue({ id: "sub1" } as never);
     vi.mocked(createBusinessRequest).mockResolvedValue({ id: "req1" } as never);
 
     const req = new Request("http://localhost/api/agent/business-request", {
@@ -125,6 +133,7 @@ describe("/api/agent/business-request", () => {
     expect(withdrawFromWallet).toHaveBeenCalled();
     expect(depositToWallet).toHaveBeenCalled();
     expect(purchaseProgramSubscription).toHaveBeenCalled();
+    expect(assignProgramSubscriptionToRequest).toHaveBeenCalledWith("sub1", expect.any(String), "client1");
     expect(createCommission).toHaveBeenCalled();
     expect(createBusinessRequest).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -132,6 +141,7 @@ describe("/api/agent/business-request", () => {
         userId: "client1",
         businessName: "Brand Name",
       }),
+      expect.objectContaining({ requestId: expect.any(String) }),
     );
     expect(res.status).toBe(200);
     expect(payload.ok).toBe(true);
@@ -185,6 +195,7 @@ describe("/api/agent/business-request", () => {
     expect(res.status).toBe(404);
     expect(payload.error).toBe("PRODUCT_NOT_FOUND");
     expect(getAvailableBalance).not.toHaveBeenCalled();
+    expect(reserveNextAvailableProgramSubscription).not.toHaveBeenCalled();
   });
 
   it("returns CLIENT_INSUFFICIENT_BALANCE when client funds are low", async () => {

@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
+import { nanoid } from "nanoid";
 
 import { getCurrentUser } from "@/lib/auth/currentUser";
 import { getAgentByUserId, isAgentClient, createCommission } from "@/lib/db/agents";
 import { createBusinessRequest } from "@/lib/db/businessRequests";
 import { getAvailableBalance, withdrawFromWallet, depositToWallet, ensureWallet } from "@/lib/db/wallet";
-import { purchaseProgramSubscription } from "@/lib/db/subscriptions";
+import {
+  assignProgramSubscriptionToRequest,
+  purchaseProgramSubscription,
+  releaseProgramSubscriptionAssignmentByRequest,
+  reserveNextAvailableProgramSubscription,
+} from "@/lib/db/subscriptions";
 import { getStoreProductBySlug } from "@/lib/store/products";
 import { query } from "@/lib/db/postgres";
 import { checkBusinessUsernameAvailability } from "@/lib/db/businesses";
@@ -40,6 +46,9 @@ export async function POST(req: Request) {
 
     const body = await req.json();
     const { clientUserId, productSlug } = body;
+    const requestId = nanoid();
+    const targetUserId = clientUserId || user.id;
+    let reservedLicense = false;
     const username = String(body?.username || "").trim().toLowerCase();
 
     if (username) {
@@ -92,6 +101,12 @@ export async function POST(req: Request) {
         return NextResponse.json(
           { ok: false, error: "PRODUCT_NOT_FOUND" },
           { status: 404 }
+        );
+      }
+      if (product.program !== "directory") {
+        return NextResponse.json(
+          { ok: false, error: "INVALID_PRODUCT_PROGRAM" },
+          { status: 400 }
         );
       }
 
@@ -149,6 +164,9 @@ export async function POST(req: Request) {
         paymentMethod: "wallet",
       });
 
+      await assignProgramSubscriptionToRequest(sub.id, requestId, clientUserId);
+      reservedLicense = true;
+
       // Record agent commission
       if (agent && agent.commissionRate > 0) {
         await createCommission({
@@ -159,28 +177,47 @@ export async function POST(req: Request) {
           commissionRate: agent.commissionRate,
         });
       }
+    } else {
+      const reserved = await reserveNextAvailableProgramSubscription(targetUserId, "directory", requestId);
+      if (!reserved) {
+        return NextResponse.json(
+          { ok: false, error: "NO_ACTIVE_SUBSCRIPTION" },
+          { status: 403 }
+        );
+      }
+      reservedLicense = true;
     }
 
     // ── Create business request ──
-    const request = await createBusinessRequest({
-      userId: body.clientUserId || undefined, // client user id if registering for a specific client
-      agentUserId: user.id,
-      businessName: body.name_en || body.businessName || body.name || "",
-      nameEn: body.name_en || body.nameEn,
-      nameAr: body.name_ar || body.nameAr,
-      descEn: body.desc_en || body.descEn,
-      descAr: body.desc_ar || body.descAr,
-      description: body.description,
-      categoryId: body.categoryId,
-      city: body.city,
-      address: body.address,
-      phone: body.phone,
-      email: body.email,
-      website: body.website,
-      tags: body.tags,
-      latitude: body.latitude,
-      longitude: body.longitude,
-    });
+    let request;
+    try {
+      request = await createBusinessRequest({
+        userId: body.clientUserId || undefined,
+        agentUserId: user.id,
+        businessName: body.name_en || body.businessName || body.name || "",
+        nameEn: body.name_en || body.nameEn,
+        nameAr: body.name_ar || body.nameAr,
+        descEn: body.desc_en || body.descEn,
+        descAr: body.desc_ar || body.descAr,
+        description: body.description,
+        categoryId: body.categoryId,
+        city: body.city,
+        address: body.address,
+        phone: body.phone,
+        email: body.email,
+        website: body.website,
+        tags: body.tags,
+        latitude: body.latitude,
+        longitude: body.longitude,
+      }, {
+        requestId,
+      });
+    } catch (error) {
+      if (reservedLicense) {
+        await releaseProgramSubscriptionAssignmentByRequest(requestId);
+      }
+      throw error;
+    }
 
     return NextResponse.json({ ok: true, request });
   } catch (error: unknown) {

@@ -142,9 +142,12 @@ function rowToRequest(r: BusinessRequestRow): BusinessRequest {
   };
 }
 
-export async function createBusinessRequest(input: BusinessRequestInput): Promise<BusinessRequest> {
+export async function createBusinessRequest(
+  input: BusinessRequestInput,
+  options?: { requestId?: string },
+): Promise<BusinessRequest> {
   const data = businessRequestSchema.parse(input);
-  const id = nanoid();
+  const id = options?.requestId || nanoid();
   const now = new Date();
 
   const result = await query<BusinessRequestRow>(`

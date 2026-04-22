@@ -582,6 +582,9 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       start_date TIMESTAMPTZ NOT NULL,
       end_date TIMESTAMPTZ NOT NULL,
       is_active BOOLEAN DEFAULT true,
+      assigned_request_id TEXT,
+      assigned_business_id TEXT,
+      assigned_at TIMESTAMPTZ,
       payment_id TEXT,
       payment_method TEXT,
       amount DECIMAL(10,2) DEFAULT 0,
@@ -1259,6 +1262,27 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
       END IF;
     END $$;
     CREATE INDEX IF NOT EXISTS idx_business_requests_agent ON business_requests(agent_user_id);
+
+    -- Migration: ensure program subscriptions can be assigned to directory requests/businesses.
+    DO $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'program_subscriptions' AND column_name = 'assigned_request_id') THEN
+        ALTER TABLE program_subscriptions ADD COLUMN assigned_request_id TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'program_subscriptions' AND column_name = 'assigned_business_id') THEN
+        ALTER TABLE program_subscriptions ADD COLUMN assigned_business_id TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'program_subscriptions' AND column_name = 'assigned_at') THEN
+        ALTER TABLE program_subscriptions ADD COLUMN assigned_at TIMESTAMPTZ;
+      END IF;
+    END $$;
+    CREATE INDEX IF NOT EXISTS idx_program_subscriptions_assigned_request_id ON program_subscriptions(assigned_request_id);
+    CREATE INDEX IF NOT EXISTS idx_program_subscriptions_assigned_business_id ON program_subscriptions(assigned_business_id);
+
+    -- Migration: old directory purchases used duration stacking. Reactivate future rows so each purchase can serve as an independent license.
+    UPDATE program_subscriptions
+    SET is_active = true, updated_at = NOW()
+    WHERE program = 'directory' AND end_date > NOW();
 
     -- Business AI Agents (workflow builder)
     CREATE TABLE IF NOT EXISTS business_ai_agents (

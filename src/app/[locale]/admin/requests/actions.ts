@@ -10,6 +10,7 @@ import {
   deleteBusinessRequest,
 } from "@/lib/db/businessRequests";
 import { convertBusinessRequestToBusiness } from "@/lib/businessRequests/convertRequestToBusiness";
+import { releaseProgramSubscriptionAssignmentByRequest } from "@/lib/db/subscriptions";
 
 export async function respondToRequestAction(
   locale: Locale,
@@ -50,6 +51,7 @@ export async function convertRequestToBusinessAction(
 
 export async function deleteRequestAction(locale: Locale, requestId: string) {
   await requireAdmin(locale);
+  await releaseProgramSubscriptionAssignmentByRequest(requestId);
   await deleteBusinessRequest(requestId);
 
   revalidatePath(`/${locale}/admin/requests`);

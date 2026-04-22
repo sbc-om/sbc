@@ -7,19 +7,36 @@ vi.mock("@/lib/auth/requireUser", () => ({
 }));
 
 vi.mock("@/lib/db/subscriptions", () => ({
-  ensureActiveProgramSubscription: vi.fn(),
+  releaseProgramSubscriptionAssignmentByRequest: vi.fn(),
+  reserveNextAvailableProgramSubscription: vi.fn(),
 }));
 
 vi.mock("@/lib/db/businessRequests", () => ({
   createBusinessRequest: vi.fn(),
+  updateBusinessRequestMedia: vi.fn(),
 }));
 
 vi.mock("@/lib/db/businesses", () => ({
   checkBusinessUsernameAvailability: vi.fn(),
 }));
 
+vi.mock("@/lib/db/settings", () => ({
+  isBusinessRequestAutoApprovalEnabled: vi.fn().mockResolvedValue(false),
+}));
+
+vi.mock("@/lib/businessRequests/convertRequestToBusiness", () => ({
+  convertBusinessRequestToBusiness: vi.fn(),
+}));
+
+vi.mock("@/lib/uploads/storage", () => ({
+  storeRequestUpload: vi.fn(),
+}));
+
 import { requireUser } from "@/lib/auth/requireUser";
-import { ensureActiveProgramSubscription } from "@/lib/db/subscriptions";
+import {
+  releaseProgramSubscriptionAssignmentByRequest,
+  reserveNextAvailableProgramSubscription,
+} from "@/lib/db/subscriptions";
 import { createBusinessRequest } from "@/lib/db/businessRequests";
 import { checkBusinessUsernameAvailability } from "@/lib/db/businesses";
 import { POST } from "./route";
@@ -31,29 +48,29 @@ describe("/api/business-request", () => {
 
   it("submits request successfully with normalized username check", async () => {
     vi.mocked(requireUser).mockResolvedValue({ id: "u1" } as never);
-    vi.mocked(ensureActiveProgramSubscription).mockResolvedValue(undefined);
+    vi.mocked(reserveNextAvailableProgramSubscription).mockResolvedValue({ id: "sub1" } as never);
     vi.mocked(checkBusinessUsernameAvailability).mockResolvedValue({ available: true } as never);
     vi.mocked(createBusinessRequest).mockResolvedValue({ id: "req1", status: "pending" } as never);
 
+    const body = new FormData();
+    body.set("username", "  MyBrand  ");
+    body.set("name_en", "My Brand");
+    body.set("name_ar", "علامتي");
+    body.set("desc_en", "desc");
+    body.set("desc_ar", "وصف");
+    body.set("categoryId", "cat1");
+    body.set("city", "Muscat");
+
     const req = new Request("http://localhost/api/business-request", {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        username: "  MyBrand  ",
-        name_en: "My Brand",
-        name_ar: "علامتي",
-        desc_en: "desc",
-        desc_ar: "وصف",
-        categoryId: "cat1",
-        city: "Muscat",
-      }),
+      body,
     });
 
     const res = await POST(req);
     const payload = await res.json();
 
-    expect(ensureActiveProgramSubscription).toHaveBeenCalledWith("u1", "directory");
     expect(checkBusinessUsernameAvailability).toHaveBeenCalledWith("mybrand");
+    expect(reserveNextAvailableProgramSubscription).toHaveBeenCalledWith("u1", "directory", expect.any(String));
     expect(createBusinessRequest).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "u1",
@@ -61,7 +78,9 @@ describe("/api/business-request", () => {
         nameEn: "My Brand",
         city: "Muscat",
       }),
+      expect.objectContaining({ requestId: expect.any(String) }),
     );
+    expect(releaseProgramSubscriptionAssignmentByRequest).not.toHaveBeenCalled();
     expect(payload.id).toBe("req1");
     expect(res.status).toBe(200);
   });
@@ -69,10 +88,12 @@ describe("/api/business-request", () => {
   it("returns USERNAME_TOO_SHORT for short usernames", async () => {
     vi.mocked(requireUser).mockResolvedValue({ id: "u1" } as never);
 
+    const body = new FormData();
+    body.set("username", "abc");
+
     const req = new Request("http://localhost/api/business-request", {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username: "abc" }),
+      body,
     });
 
     const res = await POST(req);
@@ -81,16 +102,19 @@ describe("/api/business-request", () => {
     expect(res.status).toBe(400);
     expect(payload.error).toBe("USERNAME_TOO_SHORT");
     expect(createBusinessRequest).not.toHaveBeenCalled();
+    expect(reserveNextAvailableProgramSubscription).not.toHaveBeenCalled();
   });
 
   it("returns USERNAME_TAKEN when username is unavailable", async () => {
     vi.mocked(requireUser).mockResolvedValue({ id: "u1" } as never);
     vi.mocked(checkBusinessUsernameAvailability).mockResolvedValue({ available: false, reason: "TAKEN" } as never);
 
+    const body = new FormData();
+    body.set("username", "taken-name");
+
     const req = new Request("http://localhost/api/business-request", {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ username: "taken-name" }),
+      body,
     });
 
     const res = await POST(req);
@@ -98,5 +122,6 @@ describe("/api/business-request", () => {
 
     expect(res.status).toBe(400);
     expect(payload.error).toBe("USERNAME_TAKEN");
+    expect(reserveNextAvailableProgramSubscription).not.toHaveBeenCalled();
   });
 });

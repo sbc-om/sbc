@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/Button";
 import { requireUser } from "@/lib/auth/requireUser";
 import { getBusinessById } from "@/lib/db/businesses";
 import { listCategories } from "@/lib/db/categories";
-import { getProgramSubscriptionByUser, hasActiveSubscription } from "@/lib/db/subscriptions";
+import { getActiveProgramSubscriptionForBusiness } from "@/lib/db/subscriptions";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import Link from "next/link";
 import { OwnerEditBusinessForm } from "./OwnerEditBusinessForm";
@@ -22,14 +22,14 @@ export default async function DirectoryBusinessEditPage({
 
   const user = await requireUser(locale as Locale);
 
-  await getProgramSubscriptionByUser(user.id);
-  if (!(await hasActiveSubscription(user.id, "directory"))) {
-    redirect(`/${locale}/profile/businesses`);
-  }
-
   const business = await getBusinessById(id);
   if (!business) notFound();
   if (!business.ownerId || business.ownerId !== user.id) notFound();
+
+  const license = await getActiveProgramSubscriptionForBusiness(user.id, business.id, "directory");
+  if (!license) {
+    redirect(`/${locale}/profile/businesses`);
+  }
 
   const categories = await listCategories();
 
@@ -77,6 +77,12 @@ export default async function DirectoryBusinessEditPage({
         {ar
           ? "بعد الحفظ سيتم إرسال التعديلات للمراجعة وإيقاف الظهور حتى الموافقة."
           : "After saving, changes will be reviewed and listing will be hidden until approved."}
+      </div>
+
+      <div className="mt-4 rounded-2xl border border-(--surface-border) bg-(--surface) p-4 text-sm text-(--muted-foreground)">
+        {ar
+          ? `تنتهي رخصة هذا النشاط في ${new Intl.DateTimeFormat("ar-OM", { year: "numeric", month: "short", day: "2-digit" }).format(new Date(license.expiresAt))}.`
+          : `This business license expires on ${new Intl.DateTimeFormat("en-OM", { year: "numeric", month: "short", day: "2-digit" }).format(new Date(license.expiresAt))}.`}
       </div>
 
       <OwnerEditBusinessForm locale={locale as Locale} business={business} categories={categories} />

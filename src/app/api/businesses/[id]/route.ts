@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getBusinessBySlug, getBusinessById, deleteBusiness } from '@/lib/db/businesses';
 import { getCurrentUser } from '@/lib/auth/currentUser';
+import { releaseProgramSubscriptionAssignmentByBusiness } from '@/lib/db/subscriptions';
 
 export const runtime = 'nodejs';
 
@@ -103,6 +104,7 @@ export async function DELETE(
       );
     }
 
+    await releaseProgramSubscriptionAssignmentByBusiness(id);
     await deleteBusiness(id);
 
     return NextResponse.json({ ok: true });

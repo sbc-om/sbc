@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { query } from "./postgres";
+import { query, transaction } from "./postgres";
 
 export type ProgramSubscription = {
   id: string;
@@ -14,6 +14,9 @@ export type ProgramSubscription = {
   /** Alias for endDate - when subscription expires */
   expiresAt: string;
   isActive: boolean;
+  assignedRequestId?: string;
+  assignedBusinessId?: string;
+  assignedAt?: string;
   paymentId?: string;
   paymentMethod?: string;
   amount: number;
@@ -44,6 +47,9 @@ type ProgramSubscriptionRow = {
   start_date: Date | null;
   end_date: Date | null;
   is_active: boolean | null;
+  assigned_request_id: string | null;
+  assigned_business_id: string | null;
+  assigned_at: Date | null;
   payment_id?: string | null;
   payment_method?: string | null;
   amount: string | number | null;
@@ -81,6 +87,9 @@ function rowToSubscription(r: ProgramSubscriptionRow): ProgramSubscription {
     endDate: endDateStr,
     expiresAt: endDateStr,
     isActive: r.is_active ?? true,
+    assignedRequestId: r.assigned_request_id ?? undefined,
+    assignedBusinessId: r.assigned_business_id ?? undefined,
+    assignedAt: r.assigned_at?.toISOString(),
     paymentId: r.payment_id ?? undefined,
     paymentMethod: r.payment_method ?? undefined,
     amount: parseFloat(String(r.amount ?? "0")) || 0,
@@ -90,11 +99,43 @@ function rowToSubscription(r: ProgramSubscriptionRow): ProgramSubscription {
   };
 }
 
+function isPerBusinessDirectoryProgram(program: string): boolean {
+  return program === "directory";
+}
+
 export async function createProgramSubscription(input: ProgramSubscriptionInput): Promise<ProgramSubscription> {
   const id = nanoid();
   const now = new Date();
   const startDate = now;
   const durationMs = input.durationDays * 24 * 60 * 60 * 1000;
+
+  if (isPerBusinessDirectoryProgram(input.program)) {
+    const endDate = new Date(startDate.getTime() + durationMs);
+    const result = await query<ProgramSubscriptionRow>(`
+      INSERT INTO program_subscriptions (
+        id, user_id, product_id, product_slug, program, start_date, end_date,
+        is_active, assigned_request_id, assigned_business_id, assigned_at,
+        payment_id, payment_method, amount, currency, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULL, NULL, NULL, $9, $10, $11, $12, $13, $13)
+      RETURNING *
+    `, [
+      id,
+      input.userId,
+      input.productId,
+      input.productSlug,
+      input.program,
+      startDate,
+      endDate,
+      true,
+      input.paymentId,
+      input.paymentMethod,
+      input.amount,
+      input.currency,
+      now,
+    ]);
+
+    return rowToSubscription(result.rows[0]);
+  }
 
   // Check if the user already has an active subscription for the same program.
   // If so, stack the new duration on top of the existing end date.
@@ -118,8 +159,9 @@ export async function createProgramSubscription(input: ProgramSubscriptionInput)
   const result = await query<ProgramSubscriptionRow>(`
     INSERT INTO program_subscriptions (
       id, user_id, product_id, product_slug, program, start_date, end_date,
-      is_active, payment_id, payment_method, amount, currency, created_at, updated_at
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $13)
+      is_active, assigned_request_id, assigned_business_id, assigned_at,
+      payment_id, payment_method, amount, currency, created_at, updated_at
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULL, NULL, NULL, $9, $10, $11, $12, $13, $13)
     RETURNING *
   `, [
     id, input.userId, input.productId, input.productSlug, input.program,
@@ -156,6 +198,189 @@ export async function listActiveUserProgramSubscriptions(userId: string): Promis
     ORDER BY created_at DESC
   `, [userId]);
   return result.rows.map(rowToSubscription);
+}
+
+export async function listAvailableProgramSubscriptions(
+  userId: string,
+  program: string,
+): Promise<ProgramSubscription[]> {
+  const result = await query<ProgramSubscriptionRow>(`
+    SELECT * FROM program_subscriptions
+    WHERE user_id = $1
+      AND program = $2
+      AND is_active = true
+      AND end_date > NOW()
+      AND assigned_request_id IS NULL
+      AND assigned_business_id IS NULL
+    ORDER BY end_date ASC, created_at ASC
+  `, [userId, program]);
+
+  return result.rows.map(rowToSubscription);
+}
+
+export async function countAvailableProgramSubscriptions(userId: string, program: string): Promise<number> {
+  const result = await query<{ count: string }>(`
+    SELECT COUNT(*) AS count
+    FROM program_subscriptions
+    WHERE user_id = $1
+      AND program = $2
+      AND is_active = true
+      AND end_date > NOW()
+      AND assigned_request_id IS NULL
+      AND assigned_business_id IS NULL
+  `, [userId, program]);
+
+  return parseInt(result.rows[0]?.count ?? "0", 10);
+}
+
+export async function reserveNextAvailableProgramSubscription(
+  userId: string,
+  program: string,
+  requestId: string,
+): Promise<ProgramSubscription | null> {
+  return transaction(async (client) => {
+    const selected = await client.query<ProgramSubscriptionRow>(`
+      SELECT *
+      FROM program_subscriptions
+      WHERE user_id = $1
+        AND program = $2
+        AND is_active = true
+        AND end_date > NOW()
+        AND assigned_request_id IS NULL
+        AND assigned_business_id IS NULL
+      ORDER BY end_date ASC, created_at ASC
+      LIMIT 1
+      FOR UPDATE SKIP LOCKED
+    `, [userId, program]);
+
+    if (selected.rows.length === 0) {
+      return null;
+    }
+
+    const subscriptionId = selected.rows[0].id;
+    const updated = await client.query<ProgramSubscriptionRow>(`
+      UPDATE program_subscriptions
+      SET assigned_request_id = $1,
+          assigned_business_id = NULL,
+          assigned_at = NOW(),
+          updated_at = NOW()
+      WHERE id = $2
+      RETURNING *
+    `, [requestId, subscriptionId]);
+
+    return rowToSubscription(updated.rows[0]);
+  });
+}
+
+export async function assignProgramSubscriptionToRequest(
+  subscriptionId: string,
+  requestId: string,
+  userId?: string,
+): Promise<ProgramSubscription> {
+  return transaction(async (client) => {
+    const params: string[] = [subscriptionId];
+    let where = `id = $1`;
+    if (userId) {
+      params.push(userId);
+      where += ` AND user_id = $2`;
+    }
+
+    const current = await client.query<ProgramSubscriptionRow>(`
+      SELECT * FROM program_subscriptions
+      WHERE ${where}
+        AND program = 'directory'
+        AND is_active = true
+        AND end_date > NOW()
+      LIMIT 1
+      FOR UPDATE
+    `, params);
+
+    if (current.rows.length === 0) {
+      throw new Error("NO_ACTIVE_SUBSCRIPTION");
+    }
+
+    const subscription = current.rows[0];
+    if (
+      (subscription.assigned_request_id && subscription.assigned_request_id !== requestId) ||
+      subscription.assigned_business_id
+    ) {
+      throw new Error("SUBSCRIPTION_ALREADY_ASSIGNED");
+    }
+
+    const updated = await client.query<ProgramSubscriptionRow>(`
+      UPDATE program_subscriptions
+      SET assigned_request_id = $1,
+          assigned_business_id = NULL,
+          assigned_at = NOW(),
+          updated_at = NOW()
+      WHERE id = $2
+      RETURNING *
+    `, [requestId, subscriptionId]);
+
+    return rowToSubscription(updated.rows[0]);
+  });
+}
+
+export async function transferProgramSubscriptionFromRequestToBusiness(
+  requestId: string,
+  businessId: string,
+): Promise<ProgramSubscription | null> {
+  const result = await query<ProgramSubscriptionRow>(`
+    UPDATE program_subscriptions
+    SET assigned_request_id = NULL,
+        assigned_business_id = $2,
+        assigned_at = COALESCE(assigned_at, NOW()),
+        updated_at = NOW()
+    WHERE assigned_request_id = $1
+      AND program = 'directory'
+    RETURNING *
+  `, [requestId, businessId]);
+
+  return result.rows.length > 0 ? rowToSubscription(result.rows[0]) : null;
+}
+
+export async function releaseProgramSubscriptionAssignmentByRequest(requestId: string): Promise<number> {
+  const result = await query(`
+    UPDATE program_subscriptions
+    SET assigned_request_id = NULL,
+        assigned_at = NULL,
+        updated_at = NOW()
+    WHERE assigned_request_id = $1
+      AND assigned_business_id IS NULL
+  `, [requestId]);
+
+  return result.rowCount ?? 0;
+}
+
+export async function releaseProgramSubscriptionAssignmentByBusiness(businessId: string): Promise<number> {
+  const result = await query(`
+    UPDATE program_subscriptions
+    SET assigned_business_id = NULL,
+        assigned_at = NULL,
+        updated_at = NOW()
+    WHERE assigned_business_id = $1
+  `, [businessId]);
+
+  return result.rowCount ?? 0;
+}
+
+export async function getActiveProgramSubscriptionForBusiness(
+  userId: string,
+  businessId: string,
+  program: string,
+): Promise<ProgramSubscription | null> {
+  const result = await query<ProgramSubscriptionRow>(`
+    SELECT * FROM program_subscriptions
+    WHERE user_id = $1
+      AND assigned_business_id = $2
+      AND program = $3
+      AND is_active = true
+      AND end_date > NOW()
+    ORDER BY end_date DESC
+    LIMIT 1
+  `, [userId, businessId, program]);
+
+  return result.rows.length > 0 ? rowToSubscription(result.rows[0]) : null;
 }
 
 export async function listActiveProgramSubscriptionsForUsers(
