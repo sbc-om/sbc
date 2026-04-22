@@ -68,6 +68,74 @@ const getHomepageData = unstable_cache(
 
 export async function HomepageBusinessSections({ locale }: { locale: Locale }) {
   const { topRowBusinesses, featuredBusinesses, latestBusinesses } = await getHomepageData();
+  const sectionCopy =
+    locale === "ar"
+      ? {
+          top:
+            "تستند هذه الواجهة إلى مجتمع أعمال ذكي يمنح العلامات الموثوقة حضورًا أقوى داخل السوق، ويجعل الوصول إلى الخدمات أكثر تنظيمًا وفاعلية.",
+          featured: (
+            <>
+              يعتمد هذا المسار على
+              {" "}
+              <strong className="font-semibold text-foreground">SBC Scalable Business Cloud</strong>
+              {" "}
+              لتوفير بنية آمنة وقابلة للتوسع، مع
+              {" "}
+              <strong className="font-semibold text-foreground">SBC Smart Business Connectivity</strong>
+              {" "}
+              لخلق تواصل مباشر ومؤثر بين العملاء ومقدمي الخدمات.
+            </>
+          ),
+          latest: (
+            <>
+              ويعزز ذلك كل من
+              {" "}
+              <strong className="font-semibold text-foreground">SBC Strategic Business Collaboration</strong>
+              {" "}
+              لتوسيع فرص الشراكات المهنية، و
+              <strong className="font-semibold text-foreground">SBC Smart Business Intelligence</strong>
+              {" "}
+              و
+              <strong className="font-semibold text-foreground">SBC Seamless Business Communication</strong>
+              {" "}
+              لتحليل السلوك وتحسين الأداء وتجربة التفاعل الرقمي بسلاسة.
+            </>
+          ),
+        }
+      : {
+          top:
+            "This experience is built for a smart business community where verified brands gain stronger market presence and customers reach relevant services through a more organized, high-trust digital journey.",
+          featured: (
+            <>
+              It is powered by
+              {" "}
+              <strong className="font-semibold text-foreground">SBC Scalable Business Cloud</strong>
+              {" "}
+              for secure, resilient infrastructure and by
+              {" "}
+              <strong className="font-semibold text-foreground">SBC Smart Business Connectivity</strong>
+              {" "}
+              to create direct, effective links between customers and service providers.
+            </>
+          ),
+          latest: (
+            <>
+              Growth is further supported through
+              {" "}
+              <strong className="font-semibold text-foreground">SBC Strategic Business Collaboration</strong>
+              {" "}
+              for professional partnerships, alongside
+              {" "}
+              <strong className="font-semibold text-foreground">SBC Smart Business Intelligence</strong>
+              {" "}
+              and
+              {" "}
+              <strong className="font-semibold text-foreground">SBC Seamless Business Communication</strong>
+              {" "}
+              to sharpen decisions, optimize performance, and keep digital interactions smooth.
+            </>
+          ),
+        };
 
   return (
     <>
@@ -80,7 +148,7 @@ export async function HomepageBusinessSections({ locale }: { locale: Locale }) {
                   {locale === "ar" ? "أفضل الأنشطة التجارية" : "Top Businesses"}
                 </h2>
                 <p className="text-base text-foreground opacity-70">
-                  {locale === "ar" ? "أنشطة تجارية موثوقة ومحبوبة لدى الناس." : "Popular and trusted businesses."}
+                  {sectionCopy.top}
                 </p>
               </div>
             </FadeInSection>
@@ -105,7 +173,7 @@ export async function HomepageBusinessSections({ locale }: { locale: Locale }) {
                   {locale === "ar" ? "المقترحة" : "Recommended"}
                 </h2>
                 <p className="text-base text-foreground opacity-70">
-                  {locale === "ar" ? "الأنشطة التجارية الأكثر توصية." : "Businesses people recommend most."}
+                  {sectionCopy.featured}
                 </p>
               </div>
             </FadeInSection>
@@ -130,7 +198,7 @@ export async function HomepageBusinessSections({ locale }: { locale: Locale }) {
                   {locale === "ar" ? "الأحدث" : "New Businesses"}
                 </h2>
                 <p className="text-base text-foreground opacity-70">
-                  {locale === "ar" ? "الأنشطة التجارية المضافة حديثًا." : "Recently added businesses."}
+                  {sectionCopy.latest}
                 </p>
               </div>
             </FadeInSection>

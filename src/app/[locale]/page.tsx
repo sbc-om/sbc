@@ -63,6 +63,20 @@ export default async function LocaleHome({
   if (!isLocale(locale)) notFound();
 
   const dict = await getDictionary(locale as Locale);
+  const heroCopy =
+    locale === "ar"
+      ? {
+          lines: [
+            "مجتمع أعمال ذكي",
+            "بحث حسب التصنيف",
+          ],
+        }
+      : {
+          lines: [
+            "Smart Business Community",
+            "Search by Category",
+          ],
+        };
 
   return (
     <PublicPage>
@@ -75,9 +89,13 @@ export default async function LocaleHome({
               <h1 className="mb-6 whitespace-nowrap text-[clamp(1.45rem,7vw,4.5rem)] font-bold leading-tight tracking-tight bg-linear-to-r from-accent via-accent-2 to-accent bg-clip-text text-transparent">
                 <TypewriterText text={dict.home.title} speedMs={70} />
               </h1>
-              <p className="max-w-3xl mx-auto text-xl leading-8 text-muted-foreground">
-                {dict.home.subtitle}
-              </p>
+              <div className="mx-auto flex max-w-2xl flex-col gap-2 text-muted-foreground">
+                {heroCopy.lines.map((line) => (
+                  <p key={line} className="text-lg leading-7 sm:text-xl">
+                    {line}
+                  </p>
+                ))}
+              </div>
             </div>
           </FadeInSection>
 
