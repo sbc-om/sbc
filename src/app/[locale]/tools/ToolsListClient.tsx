@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  Bot,
   QrCode,
   CandlestickChart,
   FileText,
@@ -17,6 +18,7 @@ interface Tool {
   label: string;
   description: string;
   tone: "accent" | "accent-2";
+  badge?: string;
 }
 
 export function ToolsListClient({ locale }: { locale: Locale }) {
@@ -53,6 +55,17 @@ export function ToolsListClient({ locale }: { locale: Locale }) {
         ? "حوّل ملفات PDF إلى مستندات Word قابلة للتعديل مع دعم كامل للغة العربية والإنجليزية."
         : "Convert PDF files to editable Word documents with full Arabic & English support.",
       tone: "accent",
+    },
+    {
+      key: "mcp-business-review",
+      href: `/${locale}/mcp-business-review`,
+      icon: <Bot className="h-7 w-7" />,
+      label: ar ? "مراجعة الأعمال بالـ MCP" : "MCP Business Review",
+      description: ar
+        ? "اربط SBC مع Claude أو Cursor أو أي عميل MCP لمراجعة الأنشطة التجارية وتحليل جاهزية ملفاتها."
+        : "Connect SBC to Claude, Cursor, or any MCP client to review member businesses and analyze profile readiness.",
+      tone: "accent-2",
+      badge: ar ? "AI" : "AI",
     },
   ];
 
@@ -91,9 +104,18 @@ export function ToolsListClient({ locale }: { locale: Locale }) {
               >
                 {tool.icon}
               </span>
-              <h2 className="text-lg font-semibold text-foreground">
-                {tool.label}
-              </h2>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {tool.label}
+                  </h2>
+                  {tool.badge ? (
+                    <span className="inline-flex items-center rounded-full bg-accent-2/15 px-2 py-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-accent-2">
+                      {tool.badge}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
             </div>
             <p className="flex-1 text-sm leading-relaxed text-(--muted-foreground)">
               {tool.description}

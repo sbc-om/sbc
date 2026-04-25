@@ -6,7 +6,7 @@ import Image from "next/image";
 import { FaInstagram, FaFacebook, FaTwitter, FaThLarge } from "react-icons/fa";
 import {
   HiOutlineBuildingOffice2,
-  HiOutlineGlobeAlt,
+  HiOutlineServerStack,
   HiOutlineSparkles,
   HiOutlineWrenchScrewdriver,
 } from "react-icons/hi2";
@@ -137,6 +137,16 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
       href: `/${locale}/tools`,
       Icon: HiOutlineWrenchScrewdriver,
       color: "#10B981",
+    },
+    {
+      key: "mcp-business-review",
+      label: locale === "ar" ? "مراجعة الأعمال بالـ MCP" : "MCP Business Review",
+      description: locale === "ar"
+        ? "راجع الأنشطة التجارية عبر عميل AI باستخدام بروتوكول MCP"
+        : "Review member businesses from an AI client using MCP",
+      href: `/${locale}/mcp-business-review`,
+      Icon: HiOutlineServerStack,
+      color: "#3B82F6",
     },
   ];
 

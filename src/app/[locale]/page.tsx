@@ -105,7 +105,7 @@ export default async function LocaleHome({
           </FadeInSection>
 
           <FadeInSection duration={700} delay={260}>
-            <div className="mt-6 grid items-stretch gap-3 sm:mt-8 sm:gap-4 md:grid-cols-2">
+            <div className="mt-6 grid items-stretch gap-3 sm:mt-8 sm:gap-4 md:grid-cols-3">
               <article className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-linear-to-br from-amber-500/12 via-rose-500/10 to-fuchsia-500/12 p-4 shadow-[0_24px_70px_rgba(244,63,94,0.14)] sm:rounded-3xl sm:p-6 lg:p-7">
                 <div className="pointer-events-none absolute -right-14 -top-16 h-44 w-44 rounded-full bg-rose-400/18 blur-3xl" />
                 <h2 className="text-xl font-semibold text-foreground sm:text-2xl">
@@ -142,6 +142,34 @@ export default async function LocaleHome({
                     className={buttonVariants({ variant: "secondary", size: "md", className: "w-full justify-center sm:w-auto" })}
                   >
                     {locale === "ar" ? "فتح دليل الأعمال" : "Open Business Directory"}
+                  </Link>
+                </div>
+              </article>
+
+              <article className="relative flex h-full flex-col overflow-hidden rounded-2xl bg-linear-to-br from-indigo-500/12 via-sky-500/10 to-cyan-500/12 p-4 shadow-[0_24px_70px_rgba(59,130,246,0.16)] sm:rounded-3xl sm:p-6 lg:p-7">
+                <div className="pointer-events-none absolute -right-10 -top-12 h-40 w-40 rounded-full bg-sky-400/18 blur-3xl" />
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex w-fit items-center rounded-full bg-accent/12 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-accent">
+                    AI
+                  </div>
+                  <div className="inline-flex w-fit items-center rounded-full bg-emerald-500/12 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-300">
+                    New
+                  </div>
+                </div>
+                <h2 className="mt-3 text-xl font-semibold text-foreground sm:text-2xl">
+                  {locale === "ar" ? "MCP لمراجعة الأعمال" : "MCP Business Review"}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-(--muted-foreground) sm:text-base sm:leading-7">
+                  {locale === "ar"
+                    ? "اربط أنشطة SBC مع Claude أو Cursor لمراجعة جودة الملفات التجارية وتحليل جاهزيتها."
+                    : "Connect SBC businesses to Claude or Cursor for profile-quality reviews and readiness analysis."}
+                </p>
+                <div className="mt-auto pt-4">
+                  <Link
+                    href={`/${locale}/mcp-business-review`}
+                    className={buttonVariants({ variant: "secondary", size: "md", className: "w-full justify-center sm:w-auto" })}
+                  >
+                    {locale === "ar" ? "اكتشف MCP" : "Explore MCP"}
                   </Link>
                 </div>
               </article>

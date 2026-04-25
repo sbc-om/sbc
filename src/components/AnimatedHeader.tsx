@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Bot } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { HiX, HiMenu } from "react-icons/hi";
 import {
@@ -222,6 +223,18 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                   {servicesLabel}
                 </Link>
 
+                <Link
+                  href={`/${locale}/mcp-business-review`}
+                  className={buttonVariants({
+                    variant: "ghost",
+                    size: "sm",
+                    className: `${topNavStableClass} ${topNavNoShadowClass} hover:bg-accent hover:text-white`,
+                  })}
+                >
+                  <Bot className="h-4 w-4" />
+                  {locale === "ar" ? "MCP" : "MCP"}
+                </Link>
+
                 {user ? (
                   <a
                     href={`/${locale}/explorer`}
@@ -360,6 +373,19 @@ export function AnimatedHeader({ locale, dict, user }: AnimatedHeaderProps) {
                         })}
                       >
                         {servicesLabel}
+                      </Link>
+
+                      <Link
+                        href={`/${locale}/mcp-business-review`}
+                        onClick={() => setMobileOpen(false)}
+                        className={buttonVariants({
+                          variant: "ghost",
+                          size: "md",
+                          className: `w-full justify-start rounded-xl ${topNavNoShadowClass}`,
+                        })}
+                      >
+                        <Bot className="h-4 w-4" />
+                        {locale === "ar" ? "MCP لمراجعة الأعمال" : "MCP Business Review"}
                       </Link>
 
                       {user ? (

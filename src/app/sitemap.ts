@@ -16,6 +16,7 @@ const staticPaths = [
   "loyalty",
   "services",
   "ai-business-indexing",
+  "mcp-business-review",
   "store",
 ];
 
