@@ -11,6 +11,7 @@ import {
   HiOutlineGift,
   HiOutlineGlobeAlt,
   HiOutlineLightBulb,
+  HiOutlineServer,
   HiOutlineSparkles,
 } from "react-icons/hi";
 
@@ -282,6 +283,19 @@ export default async function MarketingPlatformPage({
       iconTone: "text-white",
       borderClassName: "border-cyan-400/35 hover:border-emerald-500/50",
       glowColor: "rgba(6,182,212,0.16)",
+    },
+    {
+      icon: HiOutlineServer,
+      title: ar ? "MCP لمراجعة الأعمال" : "MCP Business Review",
+      desc: ar
+        ? "واجهة AI عامة لمراجعة الأنشطة التجارية وتحليل جودة ملفاتها."
+        : "A public AI interface for reviewing business profiles and auditing readiness.",
+      href: `/${locale}/mcp-business-review`,
+      hrefLabel: ar ? "اكتشف MCP" : "Explore MCP",
+      iconWrap: "from-indigo-300 via-sky-400 to-cyan-500",
+      iconTone: "text-white",
+      borderClassName: "border-sky-400/35 hover:border-indigo-500/50",
+      glowColor: "rgba(59,130,246,0.16)",
     },
   ];
 

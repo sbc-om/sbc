@@ -347,6 +347,16 @@ export default async function AdminPage({
       color: "purple",
     },
     {
+      href: `/${locale}/admin/mcp-business-review`,
+      icon: (
+        <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.75h4.5m-7.5 3h10.5A2.25 2.25 0 0119.5 9v8.25a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 17.25V9a2.25 2.25 0 012.25-2.25Zm1.5 4.5 2.25 2.25 4.5-4.5" />
+        </svg>
+      ),
+      label: ar ? "MCP" : "MCP Console",
+      color: "cyan",
+    },
+    {
       href: `/${locale}/admin/backup`,
       icon: (
         <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

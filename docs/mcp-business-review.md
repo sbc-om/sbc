@@ -32,6 +32,84 @@ OPENAI_BASE_URL=https://api.openai.com/v1
 pnpm mcp:business-review
 ```
 
+## Public endpoint
+
+If the app is deployed publicly, the MCP is also available over HTTP at:
+
+```text
+/api/mcp/business-review
+```
+
+Info / health endpoint:
+
+```text
+/api/mcp/business-review/info
+```
+
+Example remote MCP config:
+
+```json
+{
+  "mcpServers": {
+    "sbc-business-review": {
+      "type": "streamable-http",
+      "url": "https://your-domain.com/api/mcp/business-review"
+    }
+  }
+}
+```
+
+If API key protection is enabled:
+
+```json
+{
+  "mcpServers": {
+    "sbc-business-review": {
+      "type": "streamable-http",
+      "url": "https://your-domain.com/api/mcp/business-review",
+      "headers": {
+        "x-api-key": "YOUR_MCP_BUSINESS_REVIEW_API_KEY"
+      }
+    }
+  }
+}
+```
+
+## Ready-made client configs
+
+Claude Desktop / compatible JSON config:
+
+```json
+{
+  "mcpServers": {
+    "sbc-business-review": {
+      "type": "streamable-http",
+      "url": "https://your-domain.com/api/mcp/business-review"
+    }
+  }
+}
+```
+
+Cursor project/workspace MCP config:
+
+```json
+{
+  "mcpServers": {
+    "sbc-business-review": {
+      "url": "https://your-domain.com/api/mcp/business-review"
+    }
+  }
+}
+```
+
+## Operational checks
+
+- Open `/api/mcp/business-review/info` to confirm database connectivity and endpoint availability.
+- Use the public HTTP endpoint for remote clients.
+- Use `pnpm mcp:business-review` when you want a local stdio server instead.
+- Optional: protect the public endpoint with `MCP_BUSINESS_REVIEW_API_KEY` and `MCP_BUSINESS_REVIEW_REQUIRE_API_KEY=true`.
+- Optional: tune request limits with `MCP_BUSINESS_REVIEW_RATE_LIMIT_MAX` and `MCP_BUSINESS_REVIEW_RATE_LIMIT_WINDOW_MS`.
+
 ## Example MCP client config
 
 ```json

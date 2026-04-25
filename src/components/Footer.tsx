@@ -85,6 +85,11 @@ export function Footer({ locale, homepageOnlyInstagram = true }: FooterProps) {
       href: `/${locale}/tools`,
     },
     {
+      key: "mcp",
+      label: locale === "ar" ? "MCP" : "MCP",
+      href: `/${locale}/mcp-business-review`,
+    },
+    {
       key: "loyalty",
       label: locale === "ar" ? "نظام الولاء" : "Loyalty",
       href: `/${locale}/loyalty`,

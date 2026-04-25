@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import {
   HiOutlineArrowRight,
   HiOutlineCheckCircle,
@@ -18,6 +19,47 @@ import { buttonVariants } from "@/components/ui/Button";
 import { isLocale } from "@/lib/i18n/locales";
 
 export const runtime = "nodejs";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isLocale(locale)) return {};
+
+  const ar = locale === "ar";
+  const title = ar ? "MCP لمراجعة الأنشطة التجارية" : "MCP Business Review";
+  const description = ar
+    ? "اربط SBC مع عملاء AI عبر MCP لمراجعة الأنشطة التجارية وتحليل جودة الملفات التجارية بشكل منظم."
+    : "Connect SBC to AI clients over MCP to review member businesses and analyze profile quality in a structured way.";
+  const canonical = `/${locale}/mcp-business-review`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      type: "website",
+      locale: ar ? "ar_OM" : "en_US",
+      url: canonical,
+      title,
+      description,
+      images: [
+        {
+          url: "/images/sbc.svg",
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/images/sbc.svg"],
+    },
+  };
+}
 
 export default async function McpBusinessReviewPage({
   params,
@@ -95,6 +137,7 @@ export default async function McpBusinessReviewPage({
     ar ? "قاعدة بيانات SBC متصلة وتعمل" : "A working SBC database connection",
     ar ? "عميل يدعم MCP" : "An MCP-compatible client",
     ar ? "اختياري: مفتاح OPENAI_API_KEY لتفعيل التحليل المتقدم" : "Optional: an OPENAI_API_KEY for advanced AI review",
+    ar ? "اختياري: مفتاح MCP_BUSINESS_REVIEW_API_KEY عند تفعيل الحماية" : "Optional: MCP_BUSINESS_REVIEW_API_KEY when endpoint protection is enabled",
   ];
 
   const configSnippet = `{
@@ -109,6 +152,38 @@ export default async function McpBusinessReviewPage({
 
   const commandSnippet = `pnpm install
 pnpm mcp:business-review`;
+
+  const remoteEndpoint = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/api/mcp/business-review`;
+  const infoEndpoint = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/api/mcp/business-review/info`;
+
+  const remoteConfigSnippet = `{
+  "mcpServers": {
+    "sbc-business-review": {
+      "type": "streamable-http",
+      "url": "${remoteEndpoint}"
+    }
+  }
+}`;
+
+  const protectedRemoteConfigSnippet = `{
+  "mcpServers": {
+    "sbc-business-review": {
+      "type": "streamable-http",
+      "url": "${remoteEndpoint}",
+      "headers": {
+        "x-api-key": "YOUR_MCP_BUSINESS_REVIEW_API_KEY"
+      }
+    }
+  }
+}`;
+
+  const cursorConfigSnippet = `{
+  "mcpServers": {
+    "sbc-business-review": {
+      "url": "${remoteEndpoint}"
+    }
+  }
+}`;
 
   return (
     <PublicPage>
@@ -250,6 +325,87 @@ pnpm mcp:business-review`;
             {ar
               ? "استبدل المسار بالقيمة الفعلية للمشروع على جهازك أو على السيرفر المستضيف."
               : "Replace the working directory with the real project path on your machine or hosted environment."}
+          </p>
+        </div>
+      </section>
+
+      <section className="mt-12 grid gap-5 lg:grid-cols-2">
+        <div className="sbc-card rounded-3xl p-7 sm:p-8">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15 text-accent">
+              <HiOutlineCodeBracket className="h-6 w-6" />
+            </div>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              {ar ? "إعداد Cursor" : "Cursor config"}
+            </h2>
+          </div>
+          <pre className="mt-5 overflow-x-auto rounded-2xl border border-(--surface-border) bg-slate-950 p-5 text-sm leading-7 text-slate-100">
+            <code>{cursorConfigSnippet}</code>
+          </pre>
+        </div>
+
+        <div className="sbc-card rounded-3xl p-7 sm:p-8">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+              <HiOutlineCheckCircle className="h-6 w-6" />
+            </div>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              {ar ? "فحص الجاهزية" : "Readiness check"}
+            </h2>
+          </div>
+          <div className="mt-5 rounded-2xl border border-(--surface-border) bg-(--surface) px-4 py-3 text-sm font-medium text-(--muted-foreground)">
+            {infoEndpoint}
+          </div>
+          <p className="mt-4 text-sm leading-7 text-(--muted-foreground)">
+            {ar
+              ? "افتح هذا المسار للتأكد من اتصال قاعدة البيانات وحالة endpoint العام قبل ربطه بعميل MCP."
+              : "Open this route to confirm database connectivity and public endpoint readiness before connecting an MCP client."}
+          </p>
+        </div>
+      </section>
+
+      <section className="mt-12 grid gap-5 lg:grid-cols-2">
+        <div className="sbc-card rounded-3xl p-7 sm:p-8">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-accent/15 text-accent">
+              <HiOutlineServerStack className="h-6 w-6" />
+            </div>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              {ar ? "الاستخدام العام عبر HTTP" : "Public HTTP usage"}
+            </h2>
+          </div>
+          <p className="mt-4 text-sm leading-7 text-(--muted-foreground)">
+            {ar
+              ? "يمكن الآن استخدام MCP مباشرة عبر endpoint عام بدون تشغيل `pnpm mcp:business-review` محلياً، طالما أن الموقع المستضاف متصل بقاعدة البيانات."
+              : "The MCP can now be used directly through a public endpoint without running `pnpm mcp:business-review` locally, as long as the hosted site is connected to the database."}
+          </p>
+          <pre className="mt-5 overflow-x-auto rounded-2xl border border-(--surface-border) bg-slate-950 p-5 text-sm leading-7 text-slate-100">
+            <code>{remoteConfigSnippet}</code>
+          </pre>
+          <p className="mt-4 text-sm leading-7 text-(--muted-foreground)">
+            {ar ? "إذا فعّلت حماية API key، استخدم التهيئة التالية:" : "If API key protection is enabled, use this config instead:"}
+          </p>
+          <pre className="mt-4 overflow-x-auto rounded-2xl border border-(--surface-border) bg-slate-950 p-5 text-sm leading-7 text-slate-100">
+            <code>{protectedRemoteConfigSnippet}</code>
+          </pre>
+        </div>
+
+        <div className="sbc-card rounded-3xl p-7 sm:p-8">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+              <HiOutlineCheckCircle className="h-6 w-6" />
+            </div>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              {ar ? "الـ endpoint العام" : "Public endpoint"}
+            </h2>
+          </div>
+          <div className="mt-5 rounded-2xl border border-(--surface-border) bg-(--surface) px-4 py-3 text-sm font-medium text-(--muted-foreground)">
+            {remoteEndpoint}
+          </div>
+          <p className="mt-4 text-sm leading-7 text-(--muted-foreground)">
+            {ar
+              ? "هذا المسار يدعم GET وPOST وDELETE وOPTIONS باستخدام Streamable HTTP transport."
+              : "This route supports GET, POST, DELETE, and OPTIONS using the Streamable HTTP transport."}
           </p>
         </div>
       </section>

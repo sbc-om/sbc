@@ -506,6 +506,18 @@ async function runSchemaInit(pool: pg.Pool): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_realtime_engagement_health_logs_user_id_created_at
       ON realtime_engagement_health_logs(user_id, created_at DESC);
 
+    -- MCP endpoint rate limiting
+    CREATE TABLE IF NOT EXISTS mcp_rate_limits (
+      scope TEXT NOT NULL,
+      client_key TEXT NOT NULL,
+      count INTEGER NOT NULL DEFAULT 0,
+      reset_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (scope, client_key)
+    );
+    CREATE INDEX IF NOT EXISTS idx_mcp_rate_limits_reset_at ON mcp_rate_limits(reset_at);
+
     -- Chat conversations
     CREATE TABLE IF NOT EXISTS chat_conversations (
       id TEXT PRIMARY KEY,
