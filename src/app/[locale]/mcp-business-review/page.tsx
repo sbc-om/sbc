@@ -189,10 +189,6 @@ pnpm mcp:business-review`;
     <PublicPage>
       <section>
         <div className="max-w-4xl">
-          <p className="inline-flex items-center gap-2 rounded-full border border-(--surface-border) bg-(--surface) px-3 py-1 text-sm font-semibold text-(--muted-foreground)">
-            <HiOutlineServerStack className="h-4 w-4" />
-            {ar ? "متاح للعامة" : "Publicly Available"}
-          </p>
           <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
             {ar ? "MCP لمراجعة الأنشطة التجارية" : "MCP for Business Review"}
           </h1>

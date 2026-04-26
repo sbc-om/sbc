@@ -81,7 +81,7 @@ export async function HomepageBusinessSections({ locale }: { locale: Locale }) {
               {" "}
               لتوفير بنية آمنة وقابلة للتوسع، مع
               {" "}
-              <strong className="font-semibold text-foreground">SBC Smart Business Connectivity</strong>
+              <strong className="font-semibold text-foreground">Smart Business Connectivity</strong>
               {" "}
               لخلق تواصل مباشر ومؤثر بين العملاء ومقدمي الخدمات.
             </>
@@ -90,13 +90,13 @@ export async function HomepageBusinessSections({ locale }: { locale: Locale }) {
             <>
               ويعزز ذلك كل من
               {" "}
-              <strong className="font-semibold text-foreground">SBC Strategic Business Collaboration</strong>
+              <strong className="font-semibold text-foreground">Strategic Business Collaboration</strong>
               {" "}
               لتوسيع فرص الشراكات المهنية، و
-              <strong className="font-semibold text-foreground">SBC Smart Business Intelligence</strong>
+              <strong className="font-semibold text-foreground">Smart Business Community</strong>
               {" "}
               و
-              <strong className="font-semibold text-foreground">SBC Seamless Business Communication</strong>
+              <strong className="font-semibold text-foreground">Seamless Business Communication</strong>
               {" "}
               لتحليل السلوك وتحسين الأداء وتجربة التفاعل الرقمي بسلاسة.
             </>
@@ -109,11 +109,11 @@ export async function HomepageBusinessSections({ locale }: { locale: Locale }) {
             <>
               It is powered by
               {" "}
-              <strong className="font-semibold text-foreground">SBC Scalable Business Cloud</strong>
+              <strong className="font-semibold text-foreground">Scalable Business Cloud</strong>
               {" "}
               for secure, resilient infrastructure and by
               {" "}
-              <strong className="font-semibold text-foreground">SBC Smart Business Connectivity</strong>
+              <strong className="font-semibold text-foreground">Smart Business Connectivity</strong>
               {" "}
               to create direct, effective links between customers and service providers.
             </>
@@ -122,15 +122,15 @@ export async function HomepageBusinessSections({ locale }: { locale: Locale }) {
             <>
               Growth is further supported through
               {" "}
-              <strong className="font-semibold text-foreground">SBC Strategic Business Collaboration</strong>
+              <strong className="font-semibold text-foreground">Strategic Business Collaboration</strong>
               {" "}
               for professional partnerships, alongside
               {" "}
-              <strong className="font-semibold text-foreground">SBC Smart Business Intelligence</strong>
+              <strong className="font-semibold text-foreground">Smart Business Community</strong>
               {" "}
               and
               {" "}
-              <strong className="font-semibold text-foreground">SBC Seamless Business Communication</strong>
+              <strong className="font-semibold text-foreground">Seamless Business Communication</strong>
               {" "}
               to sharpen decisions, optimize performance, and keep digital interactions smooth.
             </>
