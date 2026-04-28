@@ -340,9 +340,7 @@ export default async function LocaleLayout({
   }
 
   // ── Shell rendering ────────────────────────────────────────────────
-  // When the user is logged in we render BOTH shell chromes and let the
-  // client-side <DynamicShell> component instantly swap between them
-  // based on `usePathname()`.  No full-page reload required.
+  // Authenticated users always stay inside the dashboard shell.
 
   if (user) {
     // If user needs phone verification, render a minimal public shell
@@ -379,11 +377,6 @@ export default async function LocaleLayout({
     const mobileNavNode = (
       <MobileNav locale={locale as Locale} dict={dict} user={{ role: user.role }} />
     );
-    const headerNode = <Header locale={locale as Locale} dict={dict} />;
-    const footerNode = (
-      <Footer locale={locale as Locale} dict={dict} homepageOnlyInstagram={isLocaleHomePage} />
-    );
-
     return (
       <DictionaryProvider locale={locale as Locale} dict={dict}>
         <AISearchProvider>
@@ -393,8 +386,6 @@ export default async function LocaleLayout({
             <SidebarLayout initialCollapsed={initialSidebarCollapsed}>
               <DynamicShell
                 sidebar={sidebarNode}
-                header={headerNode}
-                footer={footerNode}
                 mobileNav={mobileNavNode}
               >
                 <PageTransition>{children}</PageTransition>

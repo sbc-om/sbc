@@ -1,10 +1,12 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { PublicPage } from "@/components/PublicPage";
 import { getDictionary } from "@/lib/i18n/getDictionary";
 import { isLocale, type Locale } from "@/lib/i18n/locales";
 import { createHumanChallenge } from "@/lib/auth/humanChallenge";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { getCurrentUser } from "@/lib/auth/currentUser";
+import { isWAHAEnabled } from "@/lib/waha/client";
 
 export const runtime = "nodejs";
 
@@ -21,6 +23,19 @@ export default async function RegisterPage({
   const challenge = createHumanChallenge(locale as Locale);
 
   const { next, error } = await searchParams;
+  const user = await getCurrentUser();
+
+  if (user) {
+    if (isWAHAEnabled() && !user.isPhoneVerified) {
+      redirect(`/${locale}/verify-phone`);
+    }
+
+    if (next && next.startsWith(`/${locale}/`)) {
+      redirect(next);
+    }
+
+    redirect(`/${locale}/dashboard`);
+  }
 
   return (
     <PublicPage>
